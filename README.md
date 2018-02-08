@@ -42,6 +42,10 @@ provided by **libyubihsm** is exposed.
 [yubihsm-connector]: https://developers.yubico.com/YubiHSM2/Component_Reference/yubihsm-connector/
 [reqwest]: https://github.com/seanmonstar/reqwest
 
+## Status
+
+Not ready. Nascent. Do not attempt to use.
+
 ## Testing
 
 Tests for **yubihsm-client** assume you have a YubiHSM2 hardware device, have
