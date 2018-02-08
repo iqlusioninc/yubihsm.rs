@@ -5,9 +5,12 @@
 #![deny(warnings, missing_docs, trivial_casts, trivial_numeric_casts)]
 #![deny(unsafe_code, unused_import_braces, unused_qualifications)]
 
+extern crate failure;
 extern crate reqwest;
 
-/// Client for yubihsm-connector and main entry point to library
+#[macro_use]
+extern crate failure_derive;
+
 pub mod connector;
 
 pub use connector::Connector;
