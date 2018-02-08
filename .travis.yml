@@ -1,0 +1,16 @@
+language: rust
+
+rust:
+  - stable
+  - beta
+  - nightly
+
+script:
+  - rustc --version --verbose
+  - cargo --version --verbose
+  - cargo build
+
+branches:
+  only:
+    - master
+
