@@ -1,3 +1,6 @@
+//! Client for yubihsm-connector
+
+use failure::Error;
 use reqwest::{Client, StatusCode};
 use std::io::Read;
 
@@ -5,6 +8,28 @@ use std::io::Read;
 pub struct Connector {
     http: Client,
     url: String,
+}
+
+/// yubihsm-connector related errors
+#[derive(Debug, Fail)]
+pub enum ConnectorError {
+    /// URL provided for yubihsm-connector is not valid
+    #[fail(display = "invalid URL")]
+    InvalidURL,
+
+    /// Connection to yubihsm-connector failed
+    #[fail(display = "connection failed to: {}", url)]
+    ConnectionFailed {
+        /// URL which we attempted to connect to
+        url: String,
+    },
+
+    /// yubihsm-connector sent bad response
+    #[fail(display = "bad response from yubihsm-connector: {}", description)]
+    ResponseError {
+        /// Description of the bad response we received
+        description: String,
+    },
 }
 
 /// yubihsm-connector status
@@ -25,7 +50,12 @@ pub struct Status {
 
 impl Connector {
     /// Open a connection to a yubihsm-connector
-    pub fn open(mut connector_url: &str) -> Self {
+    pub fn open(mut connector_url: &str) -> Result<Self, Error> {
+        if !connector_url.starts_with("http://") && !connector_url.starts_with("https://") {
+            Err(ConnectorError::InvalidURL)?;
+        }
+
+        // Strip trailing slash if present (all paths need to be '/'-prefixed
         if connector_url.chars().last() == Some('/') {
             connector_url = &connector_url[..connector_url.len() - 1];
         }
@@ -35,33 +65,38 @@ impl Connector {
             url: connector_url.to_owned(),
         };
 
-        if connector.status().status != "OK" {
-            panic!("bad connector status")
+        if connector.status()?.status == "OK" {
+            Ok(connector)
+        } else {
+            Err(ConnectorError::ConnectionFailed { url: connector.url }.into())
         }
-
-        connector
     }
 
     /// Make an HTTP GET request to the yubihsm-connector
-    pub fn get(&self, path: &str) -> Vec<u8> {
+    pub fn get(&self, path: &str) -> Result<Vec<u8>, Error> {
+        // All paths must start with '/'
+        if !path.starts_with("/") {
+            Err(ConnectorError::InvalidURL)?;
+        }
+
         let url = format!("{}{}", self.url, path);
-        let mut response = self.http.get(&url).send().expect("HTTP request failed");
+        let mut response = self.http.get(&url).send()?;
 
         if response.status() != StatusCode::Ok {
-            panic!("unexpected HTTP status: {}", response.status())
+            Err(ConnectorError::ResponseError {
+                description: format!("unexpected HTTP status: {}", response.status()),
+            })?;
         }
 
         let mut body = Vec::new();
-        response
-            .read_to_end(&mut body)
-            .expect("HTTP body read failed");
+        response.read_to_end(&mut body)?;
 
-        body
+        Ok(body)
     }
 
     /// GET /connector/status returning the result as connector::Status
-    pub fn status(&self) -> Status {
-        let response = String::from_utf8(self.get("/connector/status")).expect("invalid UTF-8!");
+    pub fn status(&self) -> Result<Status, Error> {
+        let response = String::from_utf8(self.get("/connector/status")?)?;
 
         let mut status: Option<&str> = None;
         let mut serial: Option<&str> = None;
@@ -74,28 +109,54 @@ impl Connector {
             }
 
             let mut fields = line.split("=");
-            let key = fields.next().expect("couldn't parse key!");
-            let value = fields.next().expect("couldn't parse value!");
+
+            let key = fields.next().ok_or_else(|| ConnectorError::ResponseError {
+                description: "couldn't parse key from status line".to_owned(),
+            })?;
+
+            let value = fields.next().ok_or_else(|| ConnectorError::ResponseError {
+                description: "couldn't parse value from status line".to_owned(),
+            })?;
 
             if fields.next() != None {
-                panic!("Unexpected additional data in line!")
+                Err(ConnectorError::ResponseError {
+                    description: "unexpected additional data in status line!".to_owned(),
+                })?;
             }
 
             match key {
                 "status" => status = Some(value),
                 "serial" => serial = Some(value),
                 "version" => version = Some(value),
-                "pid" => pid = Some(value.parse().expect("PID with value 0-65535")),
+                "pid" => {
+                    pid = Some(value.parse().map_err(|_| ConnectorError::ResponseError {
+                        description: "bad PID value in status response!".to_owned(),
+                    })?)
+                }
                 _ => (),
             }
         }
 
-        Status {
-            status: status.expect("no status in response!").to_owned(),
-            serial: serial.expect("no serial in response!").to_owned(),
-            version: version.expect("no version in response!").to_owned(),
-            pid: pid.expect("no pid in response!"),
-        }
+        Ok(Status {
+            status: status
+                .ok_or_else(|| ConnectorError::ResponseError {
+                    description: "no status in status response".to_owned(),
+                })?
+                .to_owned(),
+            serial: serial
+                .ok_or_else(|| ConnectorError::ResponseError {
+                    description: "no serial in status response".to_owned(),
+                })?
+                .to_owned(),
+            version: version
+                .ok_or_else(|| ConnectorError::ResponseError {
+                    description: "no version in status response".to_owned(),
+                })?
+                .to_owned(),
+            pid: pid.ok_or_else(|| ConnectorError::ResponseError {
+                description: "no PID in status response".to_owned(),
+            })?,
+        })
     }
 }
 
@@ -107,6 +168,8 @@ mod tests {
 
     #[test]
     fn test_connect() {
-        Connector::open(DEFAULT_CONNECTOR_URL);
+        Connector::open(DEFAULT_CONNECTOR_URL).unwrap_or_else(|err| {
+            panic!("cannot open connection to yubihsm-connector: {:?}", err)
+        });
     }
 }
