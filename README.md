@@ -1,5 +1,18 @@
 # yubihsm-client.rs
 
+[![crate][crate-image]][crate-link]
+[![Docs][docs-image]][docs-link]
+[![Build Status][build-image]][build-link]
+![MIT/Apache2 licensed][license-image]
+
+[crate-image]: https://img.shields.io/crates/v/yubihsm-client.svg
+[crate-link]: https://crates.io/crates/yubihsm-client
+[docs-image]: https://docs.rs/yubihsm-client/badge.svg
+[docs-link]: https://docs.rs/yubihsm-client/
+[build-image]: https://secure.travis-ci.org/tarcieri/yubihsm-client.svg?branch=master
+[build-link]: https://travis-ci.org/tarcieri/yubihsm-client
+[license-image]: https://img.shields.io/badge/license-MIT/Apache2.0-blue.svg
+
 An experimental pure Rust reimplementation of [libyubihsm] providing an
 interface to [YubiHSM2] devices from [Yubico].
 
