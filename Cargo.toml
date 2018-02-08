@@ -1,0 +1,13 @@
+[package]
+name        = "yubihsm-client"
+description = "Pure Rust client for YubiHSM2 devices"
+version     = "0.0.0"
+license     = "MIT/Apache-2.0"
+authors     = ["Tony Arcieri <bascule@gmail.com>"]
+homepage    = "https://github.com/tarcieri/yubihsm-client"
+readme      = "README.md"
+categories  = ["cryptography"]
+keywords    = ["cryptography", "encryption", "security"]
+
+[dependencies]
+reqwest = "0.8"
