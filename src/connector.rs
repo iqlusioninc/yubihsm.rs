@@ -1,8 +1,25 @@
-//! Client for yubihsm-connector
+//! Client for yubihsm-connector and main library entry point
 
+use byteorder::{BigEndian, WriteBytesExt};
+use command::{CommandType, Response};
 use failure::Error;
 use reqwest::{Client, StatusCode};
+use reqwest::Response as HttpResponse;
+use reqwest::header::{ContentType, UserAgent};
+use scp03::{Challenge, IdentityKeys};
+use session::Session;
 use std::io::Read;
+use std::u16;
+use super::KeyID;
+
+/// User-Agent string to supply
+pub const USER_AGENT: &str = concat!("yubihsm-client.rs ", env!("CARGO_PKG_VERSION"));
+
+/// Salt value to use with PBKDF2
+pub const PBKDF2_SALT: &[u8] = b"Yubico";
+
+/// Number of PBKDF2 iterations to perform
+pub const PBKDF2_ITERATIONS: usize = 10_000;
 
 /// yubihsm-connector client
 pub struct Connector {
@@ -22,6 +39,13 @@ pub enum ConnectorError {
     ConnectionFailed {
         /// URL which we attempted to connect to
         url: String,
+    },
+
+    /// Error making request
+    #[fail(display = "invalid request: {}", description)]
+    RequestError {
+        /// Description of the error
+        description: String,
     },
 
     /// yubihsm-connector sent bad response
@@ -70,28 +94,6 @@ impl Connector {
         } else {
             Err(ConnectorError::ConnectionFailed { url: connector.url }.into())
         }
-    }
-
-    /// Make an HTTP GET request to the yubihsm-connector
-    pub fn get(&self, path: &str) -> Result<Vec<u8>, Error> {
-        // All paths must start with '/'
-        if !path.starts_with("/") {
-            Err(ConnectorError::InvalidURL)?;
-        }
-
-        let url = format!("{}{}", self.url, path);
-        let mut response = self.http.get(&url).send()?;
-
-        if response.status() != StatusCode::Ok {
-            Err(ConnectorError::ResponseError {
-                description: format!("unexpected HTTP status: {}", response.status()),
-            })?;
-        }
-
-        let mut body = Vec::new();
-        response.read_to_end(&mut body)?;
-
-        Ok(body)
     }
 
     /// GET /connector/status returning the result as connector::Status
@@ -158,18 +160,84 @@ impl Connector {
             })?,
         })
     }
+
+    /// Open a new session to the HSM, authenticating with the given keypair
+    pub fn create_session(&self, auth_key_id: KeyID, keys: IdentityKeys) -> Result<Session, Error> {
+        let host_challenge = Challenge::random();
+        Session::new(self, &host_challenge, auth_key_id, keys)
+    }
+
+    /// Open a new session to the HSM, authenticating with a given password
+    pub fn create_session_from_password(
+        &self,
+        auth_key_id: KeyID,
+        password: &str,
+    ) -> Result<Session, Error> {
+        let keys =
+            IdentityKeys::derive_from_password(password.as_bytes(), PBKDF2_SALT, PBKDF2_ITERATIONS);
+        self.create_session(auth_key_id, keys)
+    }
+
+    /// POST /connector/api requesting a given command type be performed with a given payload
+    pub(crate) fn command(
+        &self,
+        cmd: CommandType,
+        mut payload: Vec<u8>,
+    ) -> Result<Response, Error> {
+        if payload.len() > u16::MAX as usize {
+            Err(ConnectorError::RequestError {
+                description: format!("oversized payload: {}", payload.len()),
+            })?;
+        }
+
+        let mut body = Vec::with_capacity(3 + payload.len());
+        body.push(cmd as u8);
+        body.write_u16::<BigEndian>(payload.len() as u16)?;
+        body.append(&mut payload);
+
+        let response_bytes = self.post("/connector/api", body)?;
+        Response::parse(response_bytes)
+    }
+
+    /// Make an HTTP GET request to the yubihsm-connector
+    fn get(&self, path: &str) -> Result<Vec<u8>, Error> {
+        let mut response = self.http.get(&self.url_for(path)?).send()?;
+        handle_http_response(&mut response)
+    }
+
+    /// Make an HTTP POST request to the yubihsm-connector
+    fn post(&self, path: &str, body: Vec<u8>) -> Result<Vec<u8>, Error> {
+        let mut response = self.http
+            .post(&self.url_for(path)?)
+            .header(ContentType::octet_stream())
+            .header(UserAgent::new(USER_AGENT))
+            .body(body)
+            .send()?;
+
+        handle_http_response(&mut response)
+    }
+
+    /// Obtain the full URL for a given path
+    fn url_for(&self, path: &str) -> Result<String, Error> {
+        // All paths must start with '/'
+        if !path.starts_with("/") {
+            Err(ConnectorError::InvalidURL)?;
+        }
+
+        Ok(format!("{}{}", self.url, path))
+    }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::Connector;
-
-    const DEFAULT_CONNECTOR_URL: &str = "http://127.0.0.1:12345";
-
-    #[test]
-    fn test_connect() {
-        Connector::open(DEFAULT_CONNECTOR_URL).unwrap_or_else(|err| {
-            panic!("cannot open connection to yubihsm-connector: {:?}", err)
-        });
+// Handle responses from Reqwest
+fn handle_http_response(response: &mut HttpResponse) -> Result<Vec<u8>, Error> {
+    if response.status() != StatusCode::Ok {
+        Err(ConnectorError::ResponseError {
+            description: format!("unexpected HTTP status: {}", response.status()),
+        })?;
     }
+
+    let mut body = Vec::new();
+    response.read_to_end(&mut body)?;
+
+    Ok(body)
 }

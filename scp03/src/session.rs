@@ -8,7 +8,6 @@ use identity::IdentityKeys;
 use super::KEY_SIZE;
 
 /// Session keys as derived from per-session challenges
-#[allow(dead_code)]
 pub struct SessionKeys {
     // Session encryption key (S-ENC)
     enc_key: [u8; KEY_SIZE],
