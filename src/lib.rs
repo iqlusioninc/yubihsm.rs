@@ -7,6 +7,7 @@
 
 extern crate failure;
 extern crate reqwest;
+extern crate scp03;
 
 #[macro_use]
 extern crate failure_derive;

@@ -10,6 +10,7 @@ categories  = ["cryptography"]
 keywords    = ["cryptography", "encryption", "security"]
 
 [dependencies]
+scp03 = { path = "scp03" }
 failure = "0.1"
 failure_derive = "*"
 reqwest = "0.8"

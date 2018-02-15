@@ -1,8 +1,9 @@
 language: rust
 
 rust:
-  - stable
-  - beta
+# TODO: test on stable/beta when aesni crate works with stdsimd
+#  - stable
+#  - beta
   - nightly
 
 script:
