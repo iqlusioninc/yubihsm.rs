@@ -31,11 +31,9 @@ platform-specific dynamic library which needs its own special versions of
 libcurl and OpenSSL.
 
 **yubihsm-client** is a pure-Rust reimplementation of a similar HTTP(S) client
-library for **yubihsm-connector** based on black box reverse engineering of the
-HTTP requests and responses. This process involves a lot of guesswork and
-therefore what is implemented in this library may not be an accurate reflection
-of how the protocol actually works. Only a small amount of the functionality
-provided by **libyubihsm** is exposed.
+library for **yubihsm-connector** based on documentation provided by Yubico.
+Only a small amount of the functionality provided by **libyubihsm** has been
+reimplemented.
 
 **yubihsm-client** is implemented using the [reqwest] Rust HTTP client library.
 
