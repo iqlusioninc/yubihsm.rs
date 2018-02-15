@@ -9,7 +9,7 @@ rust:
 script:
   - rustc --version --verbose
   - cargo --version --verbose
-  - cargo build
+  - cargo test --features mockhsm
 
 branches:
   only:

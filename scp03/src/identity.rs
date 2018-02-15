@@ -8,7 +8,6 @@ use sha2::Sha256;
 use super::KEY_SIZE;
 
 /// Static identity keys from which session keys are derived
-#[allow(dead_code)]
 pub struct IdentityKeys {
     // Static encryption key (K-ENC)
     pub(crate) enc_key: [u8; KEY_SIZE],

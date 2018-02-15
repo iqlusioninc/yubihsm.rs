@@ -28,7 +28,7 @@ mod session;
 /// AES key size in bytes
 pub const KEY_SIZE: usize = 16;
 
-pub use challenge::Challenge;
+pub use challenge::{Challenge, CHALLENGE_SIZE};
 pub use context::Context;
 pub use cryptogram::Cryptogram;
 pub use identity::IdentityKeys;
