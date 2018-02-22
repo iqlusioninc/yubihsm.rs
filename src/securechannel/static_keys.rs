@@ -1,4 +1,4 @@
-//! Static key operations for proving identity
+//! Static Secure Channel keys from which session keys are derived
 
 use clear_on_drop::clear::Clear;
 use hmac::Hmac;
@@ -7,8 +7,8 @@ use sha2::Sha256;
 
 use super::KEY_SIZE;
 
-/// Static identity keys from which session keys are derived
-pub struct IdentityKeys {
+/// Static Secure Channel keys from which session keys are derived
+pub struct StaticKeys {
     // Static encryption key (K-ENC)
     pub(crate) enc_key: [u8; KEY_SIZE],
 
@@ -16,8 +16,8 @@ pub struct IdentityKeys {
     pub(crate) mac_key: [u8; KEY_SIZE],
 }
 
-impl IdentityKeys {
-    /// Derive identity keys from a password
+impl StaticKeys {
+    /// Derive static_keys keys from a password
     pub fn derive_from_password(password: &[u8], salt: &[u8], iterations: usize) -> Self {
         let mut kdf_output = [0u8; KEY_SIZE * 2];
         pbkdf2::<Hmac<Sha256>>(password, salt, iterations, &mut kdf_output);
@@ -40,7 +40,7 @@ impl IdentityKeys {
     }
 }
 
-impl Drop for IdentityKeys {
+impl Drop for StaticKeys {
     fn drop(&mut self) {
         self.enc_key.clear();
         self.mac_key.clear();

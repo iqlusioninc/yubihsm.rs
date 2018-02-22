@@ -9,7 +9,8 @@ rust:
 script:
   - rustc --version --verbose
   - cargo --version --verbose
-  - cargo test --features mockhsm
+  - cargo build --verbose # ensure project builds without mockhsm feature
+  - cargo test --verbose --features=mockhsm
 
 branches:
   only:

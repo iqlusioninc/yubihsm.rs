@@ -1,24 +1,19 @@
-//! YubiHSM2 sessions: primary API for performing HSM operations
+//! `YubiHSM2` sessions: primary API for performing HSM operations
 //!
 //! See <https://developers.yubico.com/YubiHSM2/Concepts/Session.html>
 
 use byteorder::{BigEndian, WriteBytesExt};
-use command::CommandType;
 use connector::Connector;
 use failure::Error;
-use scp03::{Challenge, Context, Cryptogram, IdentityKeys, SessionKeys, CHALLENGE_SIZE};
-use super::KeyID;
+use securechannel::{Challenge, Channel, Command, CommandType, Cryptogram, StaticKeys,
+                    CHALLENGE_SIZE};
+use super::{KeyId, SessionId};
 
-/// Maximum session identifier
-const MAX_SESSION_ID: u8 = 16;
-
-/// Encrypted session with the YubiHSM2
-// TODO: don't allow dead code
-#[allow(dead_code)]
+/// Encrypted session with the `YubiHSM2`
 pub struct Session<'a> {
+    id: SessionId,
+    channel: Channel,
     connector: &'a Connector,
-    id: SessionID,
-    keys: SessionKeys,
 }
 
 /// Session-related errors
@@ -33,7 +28,7 @@ pub enum SessionError {
 
     /// Couldn't authenticate session
     #[fail(display = "authentication failed: {}", description)]
-    AuthenticationFailed {
+    AuthFailed {
         /// Details about the authentication failure
         description: String,
     },
@@ -44,14 +39,15 @@ impl<'a> Session<'a> {
     pub fn new(
         connector: &'a Connector,
         host_challenge: &Challenge,
-        auth_key_id: KeyID,
-        static_keys: IdentityKeys,
+        auth_key_id: KeyId,
+        static_keys: &StaticKeys,
     ) -> Result<Self, Error> {
-        let mut payload = Vec::with_capacity(10);
-        payload.write_u16::<BigEndian>(auth_key_id)?;
-        payload.extend_from_slice(host_challenge.as_slice());
+        let mut command_data = Vec::with_capacity(10);
+        command_data.write_u16::<BigEndian>(auth_key_id)?;
+        command_data.extend_from_slice(host_challenge.as_slice());
 
-        let response = connector.command(CommandType::CreateSession, payload)?;
+        let command = Command::new(CommandType::CreateSession, &command_data);
+        let response = connector.command(command)?;
 
         if response.is_err() {
             Err(SessionError::CreateFailed {
@@ -59,7 +55,8 @@ impl<'a> Session<'a> {
             })?;
         }
 
-        if response.command().unwrap() != CommandType::CreateSession {
+        let response_body = response.body();
+        if response_body.len() != 1 + CHALLENGE_SIZE * 2 {
             Err(SessionError::CreateFailed {
                 description: format!(
                     "invalid response length {} (expected {})",
@@ -69,49 +66,36 @@ impl<'a> Session<'a> {
             })?;
         }
 
-        let response_body = response.body();
-        if response_body.len() != 1 + CHALLENGE_SIZE * 2 {
-            Err(SessionError::CreateFailed {
-                description: format!("command type mismatch: {:?}", response.command().unwrap()),
-            })?;
-        }
-
-        let session_id = SessionID::new(response_body[0])?;
+        let id = SessionId::new(response_body[0])?;
         let card_challenge = Challenge::from_slice(&response_body[1..9]);
-        let context = Context::from_challenges(&host_challenge, &card_challenge);
-        let session_keys = SessionKeys::derive(&static_keys, &context);
-        let expected_card_cryptogram = session_keys.card_cryptogram(&context);
+        let channel = Channel::new(id, static_keys, host_challenge, &card_challenge);
+        let expected_card_cryptogram = channel.card_cryptogram();
         let actual_card_cryptogram = Cryptogram::from_slice(&response_body[9..17]);
 
         if expected_card_cryptogram != actual_card_cryptogram {
-            Err(SessionError::AuthenticationFailed {
+            Err(SessionError::AuthFailed {
                 description: "card cryptogram verification failed!".to_owned(),
             })?;
         }
 
-        Ok(Self {
+        let mut session = Self {
+            id,
+            channel,
             connector,
-            id: session_id,
-            keys: session_keys,
-        })
+        };
+
+        session.authenticate()?;
+        Ok(session)
+    }
+
+    /// Authenticate the current session with the `YubiHSM2`
+    fn authenticate(&mut self) -> Result<(), Error> {
+        let response = self.connector.command(self.channel.authenticate_session())?;
+        self.channel.finish_authenticate_session(&response)
     }
 
     /// Get the current session ID
-    pub fn id(&self) -> SessionID {
+    pub fn id(&self) -> SessionId {
         self.id
-    }
-}
-
-/// Session IDs
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub struct SessionID(pub u8);
-
-impl SessionID {
-    fn new(id: u8) -> Result<Self, Error> {
-        if id > MAX_SESSION_ID {
-            bail!("session ID exceeds the maximum allowed")
-        }
-
-        Ok(SessionID(id))
     }
 }

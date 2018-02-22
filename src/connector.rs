@@ -1,16 +1,13 @@
 //! Client for yubihsm-connector and main library entry point
 
-use byteorder::{BigEndian, WriteBytesExt};
-use command::{CommandType, Response};
 use failure::Error;
 use reqwest::{Client, StatusCode};
 use reqwest::Response as HttpResponse;
 use reqwest::header::{ContentType, UserAgent};
-use scp03::{Challenge, IdentityKeys};
+use securechannel::{Challenge, Command, Response, StaticKeys};
 use session::Session;
 use std::io::Read;
-use std::u16;
-use super::KeyID;
+use super::KeyId;
 
 /// User-Agent string to supply
 pub const USER_AGENT: &str = concat!("yubihsm-client.rs ", env!("CARGO_PKG_VERSION"));
@@ -62,14 +59,14 @@ pub struct Status {
     /// Status message for yubihsm-connector e.g. "OK"
     pub status: String,
 
-    /// Serial number of YubiHSM2 device(?)
+    /// Serial number of `YubiHSM2` device(?)
     pub serial: String,
 
-    /// YubiHSM2 SDK version for yubihsm-connector
+    /// `YubiHSM2` SDK version for yubihsm-connector
     pub version: String,
 
     /// PID of yubihsm-connector
-    pub pid: u16,
+    pub pid: u32,
 }
 
 impl Connector {
@@ -80,7 +77,7 @@ impl Connector {
         }
 
         // Strip trailing slash if present (all paths need to be '/'-prefixed
-        if connector_url.chars().last() == Some('/') {
+        if connector_url.ends_with('/') {
             connector_url = &connector_url[..connector_url.len() - 1];
         }
 
@@ -103,14 +100,14 @@ impl Connector {
         let mut status: Option<&str> = None;
         let mut serial: Option<&str> = None;
         let mut version: Option<&str> = None;
-        let mut pid: Option<u16> = None;
+        let mut pid: Option<u32> = None;
 
-        for line in response.split("\n") {
+        for line in response.split('\n') {
             if line.is_empty() {
                 continue;
             }
 
-            let mut fields = line.split("=");
+            let mut fields = line.split('=');
 
             let key = fields.next().ok_or_else(|| ConnectorError::ResponseError {
                 description: "couldn't parse key from status line".to_owned(),
@@ -162,41 +159,50 @@ impl Connector {
     }
 
     /// Open a new session to the HSM, authenticating with the given keypair
-    pub fn create_session(&self, auth_key_id: KeyID, keys: IdentityKeys) -> Result<Session, Error> {
+    pub fn create_session(
+        &self,
+        auth_key_id: KeyId,
+        static_keys: &StaticKeys,
+    ) -> Result<Session, Error> {
         let host_challenge = Challenge::random();
-        Session::new(self, &host_challenge, auth_key_id, keys)
+        Session::new(self, &host_challenge, auth_key_id, static_keys)
     }
 
     /// Open a new session to the HSM, authenticating with a given password
     pub fn create_session_from_password(
         &self,
-        auth_key_id: KeyID,
+        auth_key_id: KeyId,
         password: &str,
     ) -> Result<Session, Error> {
-        let keys =
-            IdentityKeys::derive_from_password(password.as_bytes(), PBKDF2_SALT, PBKDF2_ITERATIONS);
-        self.create_session(auth_key_id, keys)
+        self.create_session(
+            auth_key_id,
+            &StaticKeys::derive_from_password(password.as_bytes(), PBKDF2_SALT, PBKDF2_ITERATIONS),
+        )
     }
 
-    /// POST /connector/api requesting a given command type be performed with a given payload
-    pub(crate) fn command(
-        &self,
-        cmd: CommandType,
-        mut payload: Vec<u8>,
-    ) -> Result<Response, Error> {
-        if payload.len() > u16::MAX as usize {
-            Err(ConnectorError::RequestError {
-                description: format!("oversized payload: {}", payload.len()),
+    /// POST /connector/api with a given command message
+    pub(crate) fn command(&self, cmd: Command) -> Result<Response, Error> {
+        let cmd_type = cmd.command_type;
+        let response_bytes = self.post("/connector/api", cmd.into_vec())?;
+        let response = Response::parse(response_bytes)?;
+
+        if response.is_err() {
+            Err(ConnectorError::ResponseError {
+                description: format!("Error response code from HSM: {:?}", response.code()),
             })?;
         }
 
-        let mut body = Vec::with_capacity(3 + payload.len());
-        body.push(cmd as u8);
-        body.write_u16::<BigEndian>(payload.len() as u16)?;
-        body.append(&mut payload);
+        if response.command().unwrap() != cmd_type {
+            Err(ConnectorError::ResponseError {
+                description: format!(
+                    "command type mismatch: expected {:?}, got {:?}",
+                    cmd_type,
+                    response.command().unwrap()
+                ),
+            })?;
+        }
 
-        let response_bytes = self.post("/connector/api", body)?;
-        Response::parse(response_bytes)
+        Ok(response)
     }
 
     /// Make an HTTP GET request to the yubihsm-connector
@@ -220,7 +226,7 @@ impl Connector {
     /// Obtain the full URL for a given path
     fn url_for(&self, path: &str) -> Result<String, Error> {
         // All paths must start with '/'
-        if !path.starts_with("/") {
+        if !path.starts_with('/') {
             Err(ConnectorError::InvalidURL)?;
         }
 

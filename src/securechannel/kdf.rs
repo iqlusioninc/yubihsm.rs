@@ -1,58 +1,23 @@
-//! Authentication cryptograms (8-byte MACs) used for session verification
+//! SCP03 Key Derivation Function: CMAC (NIST 800-38B) as the PRF for a
+//! counter mode KDF as described in NIST SP 800-108 (NIST 800-108)
+//! with "fixed input data" specific to the SCP03 protocol
 
 use aesni::Aes128;
 use byteorder::{BigEndian, ByteOrder};
-use clear_on_drop::clear::Clear;
-use constant_time_eq::constant_time_eq;
 use cmac::Cmac;
 use cmac::crypto_mac::Mac;
 
-use challenge::CHALLENGE_SIZE;
-use context::Context;
-use super::KEY_SIZE;
+use super::{Context, KEY_SIZE};
 
-/// Authentication cryptograms used to verify sessions
-#[derive(Eq)]
-pub struct Cryptogram([u8; CHALLENGE_SIZE]);
-
-impl Cryptogram {
-    /// Create a new cryptogram from a slice
-    ///
-    /// Panics if the slice is not 8-bytes
-    pub fn from_slice(slice: &[u8]) -> Self {
-        assert_eq!(slice.len(), 8, "cryptogram must be 8-bytes long");
-
-        let mut cryptogram = [0u8; CHALLENGE_SIZE];
-        cryptogram.copy_from_slice(slice);
-        Cryptogram(cryptogram)
-    }
-
-    /// Borrow the cryptogram value as a slice
-    pub fn as_slice(&self) -> &[u8] {
-        &self.0
-    }
-}
-
-impl PartialEq for Cryptogram {
-    fn eq(&self, other: &Cryptogram) -> bool {
-        constant_time_eq(&self.0[..], &other.0[..])
-    }
-}
-
-impl Drop for Cryptogram {
-    fn drop(&mut self) {
-        self.0.clear();
-    }
-}
-
-/// Calculate an SCP03 cryptogram of arbitrary size
-pub(crate) fn calculate(
+/// Derive a slice of output data using SCP03's KDF
+pub fn derive(
     mac_key: &[u8; KEY_SIZE],
     derivation_constant: u8,
     context: &Context,
     output: &mut [u8],
 ) {
     let output_len = output.len();
+
     assert!(
         output_len <= 16,
         "up to 16-bytes of data supported ({} requested)",
