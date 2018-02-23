@@ -163,6 +163,7 @@ impl Channel {
 
     /// Handle the authenticate session response from the card
     pub fn finish_authenticate_session(&mut self, response: &Response) -> Result<(), Error> {
+        // The EXTERNAL_AUTHENTICATE command does not send an R-MAC value
         if !response.body().is_empty() {
             Err(SecureChannelError::ProtocolError {
                 description: format!(
