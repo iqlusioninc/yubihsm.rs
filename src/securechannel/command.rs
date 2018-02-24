@@ -22,7 +22,7 @@ pub(crate) struct Command {
     pub session_id: Option<SessionId>,
 
     /// Command Data field (i.e. message payload)
-    pub command_data: Vec<u8>,
+    pub data: Vec<u8>,
 
     /// Optional Message Authentication Code (MAC)
     pub mac: Option<[u8; MAC_SIZE]>,
@@ -34,7 +34,7 @@ impl Command {
         Self {
             command_type,
             session_id: None,
-            command_data: command_data.into(),
+            data: command_data.into(),
             mac: None,
         }
     }
@@ -53,18 +53,86 @@ impl Command {
         Self {
             command_type,
             session_id: Some(session_id),
-            command_data: command_data.into(),
+            data: command_data.into(),
             mac: Some(mac),
         }
+    }
+
+    /// Parse a command structure from a vector, taking ownership of the vector
+    #[cfg(feature = "mockhsm")]
+    pub fn parse(mut bytes: Vec<u8>) -> Result<Self, Error> {
+        if bytes.len() < 3 {
+            Err(SecureChannelError::ProtocolError {
+                description: format!(
+                    "command too short: {} (expected at least 3-bytes)",
+                    bytes.len()
+                ),
+            })?;
+        }
+
+        let command_type = CommandType::from_byte(bytes[0])?;
+        let length = BigEndian::read_u16(&bytes[1..3]) as usize;
+
+        if length + 3 != bytes.len() {
+            Err(SecureChannelError::ProtocolError {
+                description: format!(
+                    "unexpected command length {} (expecting {})",
+                    bytes.len() - 3,
+                    length
+                ),
+            })?;
+        }
+
+        bytes.drain(..3);
+
+        let session_id = if command_type.has_session_id() {
+            if bytes.is_empty() {
+                Err(SecureChannelError::ProtocolError {
+                    description: "expected session ID but command data is empty".to_owned(),
+                })?;
+            }
+
+            Some(SessionId::new(bytes.remove(0))?)
+        } else {
+            None
+        };
+
+        let mac = if command_type.has_mac() {
+            if bytes.len() < MAC_SIZE {
+                Err(SecureChannelError::ProtocolError {
+                    description: format!(
+                        "expected MAC for {:?} but command data is too short: {}",
+                        command_type,
+                        bytes.len(),
+                    ),
+                })?;
+            }
+
+            let mut m = [0u8; MAC_SIZE];
+            m.copy_from_slice(&bytes[bytes.len() - MAC_SIZE..]);
+            let command_data_len = bytes.len() - MAC_SIZE;
+            bytes.truncate(command_data_len);
+
+            Some(m)
+        } else {
+            None
+        };
+
+        Ok(Self {
+            command_type,
+            session_id,
+            data: bytes,
+            mac,
+        })
     }
 
     /// Calculate the length of the serialized message, sans command type and length field
     pub fn len(&self) -> usize {
         if self.mac.is_some() {
             // Include extra byte for session ID
-            1 + self.command_data.len() + MAC_SIZE
+            1 + self.data.len() + MAC_SIZE
         } else {
-            self.command_data.len()
+            self.data.len()
         }
     }
 
@@ -78,7 +146,7 @@ impl Command {
             result.push(session_id.to_u8());
         }
 
-        result.append(&mut self.command_data);
+        result.append(&mut self.data);
 
         if let Some(mac) = self.mac {
             result.extend_from_slice(&mac);
@@ -217,6 +285,26 @@ impl CommandType {
             })?,
         })
     }
+
+    /// Does this command include a session ID?
+    #[cfg(feature = "mockhsm")]
+    pub fn has_session_id(&self) -> bool {
+        match *self {
+            CommandType::CreateSession => false,
+            _ => true,
+        }
+    }
+
+    /// Does this command have a Command-MAC (C-MAC) value on the end?
+    #[cfg(feature = "mockhsm")]
+    pub fn has_mac(&self) -> bool {
+        match *self {
+            CommandType::CreateSession => false,
+            // NOTE: there are other command types that don't carry a C-MAC which aren't
+            // enumerated here, but most should have a C-MAC so we otherwise assume that they do
+            _ => true,
+        }
+    }
 }
 
 /// Command responses
@@ -231,7 +319,10 @@ impl Response {
     pub fn parse(mut bytes: Vec<u8>) -> Result<Self, Error> {
         if bytes.len() < 3 {
             Err(SecureChannelError::ProtocolError {
-                description: format!("response too short: {} (expected at lest 3)", bytes.len()),
+                description: format!(
+                    "response too short: {} (expected at least 3-bytes)",
+                    bytes.len()
+                ),
             })?;
         }
 
@@ -249,7 +340,7 @@ impl Response {
         }
 
         bytes.drain(..3);
-        Ok(Response { code, body: bytes })
+        Ok(Self { code, body: bytes })
     }
 
     /// Was this command successful?

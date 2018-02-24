@@ -179,40 +179,22 @@ impl Channel {
 
     /// Verify a host authentication message (for simulating a connector/card)
     #[cfg(feature = "mockhsm")]
-    pub fn verify_authenticate_session(
-        &mut self,
-        command_header: &[u8],
-        command_data: &[u8],
-    ) -> Result<(), Error> {
-        assert_eq!(
-            command_data.len(),
-            CRYPTOGRAM_SIZE + MAC_SIZE,
-            "expected {}-byte command data (got {})",
-            CRYPTOGRAM_SIZE + MAC_SIZE,
-            command_data.len()
-        );
-
+    pub fn verify_authenticate_session(&mut self, command: &Command) -> Result<(), Error> {
         assert_eq!(self.security_level, SecurityLevel::NoSecurityLevel);
+        assert_eq!(self.mac_chaining_value, [0u8; MAC_SIZE * 2]);
 
-        let mut mac = Cmac::<Aes128>::new_varkey(&self.mac_key[..]).unwrap();
-        mac.input(&self.mac_chaining_value);
-        mac.input(command_header);
-
-        let expected_host_cryptogram = self.host_cryptogram();
-        let actual_host_cryptogram = Cryptogram::from_slice(&command_data[..CRYPTOGRAM_SIZE]);
-
-        mac.input(actual_host_cryptogram.as_slice());
-
-        let tag = mac.result().code();
-
-        if !constant_time_eq(
-            &command_data[CRYPTOGRAM_SIZE..],
-            &tag.as_slice()[..MAC_SIZE],
-        ) {
-            Err(SecureChannelError::VerifyFailed {
-                description: "Command-MAC (C-MAC) verification failure!".to_owned(),
+        if command.data.len() != CRYPTOGRAM_SIZE {
+            Err(SecureChannelError::ProtocolError {
+                description: format!(
+                    "expected {}-byte command data (got {})",
+                    CRYPTOGRAM_SIZE,
+                    command.data.len()
+                ),
             })?;
         }
+
+        let expected_host_cryptogram = self.host_cryptogram();
+        let actual_host_cryptogram = Cryptogram::from_slice(&command.data);
 
         if expected_host_cryptogram != actual_host_cryptogram {
             Err(SecureChannelError::VerifyFailed {
@@ -220,9 +202,34 @@ impl Channel {
             })?;
         }
 
-        self.mac_chaining_value.copy_from_slice(tag.as_slice());
+        self.verify_command_mac(command)?;
         self.security_level = SecurityLevel::Authenticated;
 
+        Ok(())
+    }
+
+    /// Verify a Command MAC (C-MAC) value, updating the internal session state
+    #[cfg(feature = "mockhsm")]
+    pub fn verify_command_mac(&mut self, command: &Command) -> Result<(), Error> {
+        let mut mac = Cmac::<Aes128>::new_varkey(&self.mac_key[..]).unwrap();
+        mac.input(&self.mac_chaining_value);
+        mac.input(&[command.command_type as u8]);
+
+        let mut length = [0u8; 2];
+        BigEndian::write_u16(&mut length, command.len() as u16);
+        mac.input(&length);
+        mac.input(&[command.session_id.unwrap().to_u8()]);
+        mac.input(&command.data);
+
+        let tag = mac.result().code();
+
+        if !constant_time_eq(&command.mac.unwrap(), &tag.as_slice()[..MAC_SIZE]) {
+            Err(SecureChannelError::VerifyFailed {
+                description: "Command-MAC (C-MAC) verification failure!".to_owned(),
+            })?;
+        }
+
+        self.mac_chaining_value.copy_from_slice(tag.as_slice());
         Ok(())
     }
 }
