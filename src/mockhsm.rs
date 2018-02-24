@@ -12,8 +12,7 @@ use std::collections::HashMap;
 use std::io::Cursor;
 
 use connector::{PBKDF2_ITERATIONS, PBKDF2_SALT};
-use securechannel::{Challenge, Channel, CommandType, StaticKeys};
-use securechannel::{CHALLENGE_SIZE, CRYPTOGRAM_SIZE, MAC_SIZE};
+use securechannel::{Challenge, Channel, Command, CommandType, StaticKeys, CHALLENGE_SIZE};
 use super::{KeyId, SessionId};
 
 /// Default auth key ID slot
@@ -53,13 +52,6 @@ impl MockHSM {
     pub fn run(&mut self, num_requests: usize) {
         for _ in 0..num_requests {
             let mut request = self.server.recv().unwrap();
-
-            println!(
-                "received request! method: {:?}, url: {:?}, headers: {:?}",
-                request.method(),
-                request.url(),
-                request.headers()
-            );
 
             let response = match *request.method() {
                 Method::Get => match request.url() {
@@ -109,42 +101,33 @@ impl MockHSM {
             .read_to_end(&mut body)
             .expect("HTTP request read error");
 
-        let length = BigEndian::read_u16(&body[1..3]);
-        if (length + 3) as usize != body.len() {
-            panic!(
-                "unexpected HSM command length: {} (expected {})",
-                body.len() - 3,
-                length
-            );
-        }
+        let command = Command::parse(body).unwrap();
 
-        let command_data = &body[3..];
-
-        match CommandType::from_byte(body[0]).unwrap() {
-            CommandType::CreateSession => self.create_session(command_data),
-            CommandType::AuthSession => self.authenticate_session(command_data),
-            CommandType::SessionMessage => self.session_message(command_data),
+        match command.command_type {
+            CommandType::CreateSession => self.create_session(&command),
+            CommandType::AuthSession => self.authenticate_session(&command),
+            CommandType::SessionMessage => self.session_message(&command),
             unsupported => panic!("unsupported command type: {:?}", unsupported),
         }
     }
 
     /// Create a new HSM session
-    fn create_session(&mut self, command_data: &[u8]) -> Response<Cursor<Vec<u8>>> {
+    fn create_session(&mut self, command: &Command) -> Response<Cursor<Vec<u8>>> {
         assert_eq!(
-            command_data.len(),
+            command.data.len(),
             10,
             "create_session: unexpected command data length {} (expected 10)",
-            command_data.len()
+            command.data.len()
         );
 
-        let auth_key_id = BigEndian::read_u16(&command_data[..2]);
+        let auth_key_id = BigEndian::read_u16(&command.data[..2]);
         assert_eq!(
             auth_key_id, DEFAULT_AUTH_KEY_ID,
             "unexpected auth key ID: {}",
             auth_key_id
         );
 
-        let host_challenge = Challenge::from_slice(&command_data[2..]);
+        let host_challenge = Challenge::from_slice(&command.data[2..]);
         let card_challenge = Challenge::random();
 
         let session_id = self.sessions
@@ -167,53 +150,26 @@ impl MockHSM {
         response_body.extend_from_slice(card_challenge.as_slice());
         response_body.extend_from_slice(card_cryptogram.as_slice());
 
-        println!("opening session ({:?})", session_id.to_u8());
         assert!(self.sessions.insert(session_id, channel).is_none());
         respond_success(CommandType::CreateSession, &response_body)
     }
 
     /// Authenticate an HSM session
-    fn authenticate_session(&mut self, command_data: &[u8]) -> Response<Cursor<Vec<u8>>> {
-        assert_eq!(
-            command_data.len(),
-            1 + CRYPTOGRAM_SIZE + MAC_SIZE,
-            "create_session: unexpected command data length {} (expected {})",
-            command_data.len(),
-            1 + CRYPTOGRAM_SIZE + MAC_SIZE
-        );
-
-        let session_id = SessionId::new(command_data[0]).unwrap();
-        println!(
-            "authenticate_session ({}) command data: {:?})",
-            session_id.to_u8(),
-            command_data
-        );
+    fn authenticate_session(&mut self, command: &Command) -> Response<Cursor<Vec<u8>>> {
+        let session_id = command.session_id.unwrap();
 
         self.sessions
             .get_mut(&session_id)
             .expect("invalid session ID")
-            .verify_authenticate_session(
-                &[
-                    CommandType::AuthSession as u8,
-                    0,
-                    (1 + CRYPTOGRAM_SIZE + MAC_SIZE) as u8,
-                    session_id.to_u8(),
-                ],
-                &command_data[1..],
-            )
+            .verify_authenticate_session(command)
             .unwrap();
 
         respond_success(CommandType::AuthSession, b"")
     }
 
     /// Session keepalive(?) messages
-    fn session_message(&self, command_data: &[u8]) -> Response<Cursor<Vec<u8>>> {
-        let session_id = SessionId::new(command_data[0]).unwrap();
-        println!(
-            "session_message ({}) command data: {:?})",
-            session_id.to_u8(),
-            command_data
-        );
+    fn session_message(&self, _command: &Command) -> Response<Cursor<Vec<u8>>> {
+        // TODO: verify C-MAC and send R-MAC
         respond_success(CommandType::SessionMessage, b"")
     }
 }
