@@ -50,20 +50,21 @@ impl<'a> Session<'a> {
         let response = connector.command(command)?;
 
         if response.is_err() {
-            Err(SessionError::CreateFailed {
-                description: format!("HSM error: {:?}", response.code()),
-            })?;
+            fail!(
+                SessionError::CreateFailed,
+                "HSM error: {:?}",
+                response.code()
+            );
         }
 
         let response_body = response.body();
         if response_body.len() != 1 + CHALLENGE_SIZE * 2 {
-            Err(SessionError::CreateFailed {
-                description: format!(
-                    "invalid response length {} (expected {})",
-                    response.body().len(),
-                    1 + CHALLENGE_SIZE * 2
-                ),
-            })?;
+            fail!(
+                SessionError::CreateFailed,
+                "invalid response length {} (expected {})",
+                response.body().len(),
+                1 + CHALLENGE_SIZE * 2
+            );
         }
 
         let id = SessionId::new(response_body[0])?;
@@ -73,9 +74,7 @@ impl<'a> Session<'a> {
         let actual_card_cryptogram = Cryptogram::from_slice(&response_body[9..17]);
 
         if expected_card_cryptogram != actual_card_cryptogram {
-            Err(SessionError::AuthFailed {
-                description: "card cryptogram verification failed!".to_owned(),
-            })?;
+            fail!(SessionError::AuthFailed, "card cryptogram mismatch!");
         }
 
         let mut session = Self {

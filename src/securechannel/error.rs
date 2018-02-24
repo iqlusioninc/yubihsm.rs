@@ -5,7 +5,7 @@
 pub enum SecureChannelError {
     /// MAC or cryptogram verify failed
     #[cfg(feature = "mockhsm")]
-    #[fail(display = "couldn't create session: {}", description)]
+    #[fail(display = "verification failed: {}", description)]
     VerifyFailed {
         /// Description of the verification failure
         description: String,
