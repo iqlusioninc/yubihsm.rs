@@ -52,9 +52,7 @@ impl Mac {
         let crypto_mac_code = crypto_mac.code();
 
         if !constant_time_eq(&self.0, &crypto_mac_code.as_slice()[..MAC_SIZE]) {
-            Err(SecureChannelError::VerifyFailed {
-                description: "MAC verification failure!".to_owned(),
-            })?;
+            fail!(SecureChannelError::VerifyFailed, "MAC mismatch!");
         }
 
         chaining_value.copy_from_slice(crypto_mac_code.as_slice());

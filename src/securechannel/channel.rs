@@ -19,12 +19,12 @@ impl Id {
     /// Create a new session ID from a byte value
     pub fn new(id: u8) -> Result<Self, Error> {
         if id > MAX_SESSION_ID.0 {
-            Err(SecureChannelError::ProtocolError {
-                description: format!(
-                    "session ID exceeds the maximum allowed: {} (max {})",
-                    id, MAX_SESSION_ID.0
-                ),
-            })?;
+            fail!(
+                SecureChannelError::ProtocolError,
+                "session ID exceeds the maximum allowed: {} (max {})",
+                id,
+                MAX_SESSION_ID.0
+            );
         }
 
         Ok(Id(id))
@@ -163,12 +163,11 @@ impl Channel {
     pub fn finish_authenticate_session(&mut self, response: &Response) -> Result<(), Error> {
         // The EXTERNAL_AUTHENTICATE command does not send an R-MAC value
         if !response.body().is_empty() {
-            Err(SecureChannelError::ProtocolError {
-                description: format!(
-                    "expected empty response data (got {}-bytes)",
-                    response.body().len(),
-                ),
-            })?;
+            fail!(
+                SecureChannelError::ProtocolError,
+                "expected empty response data (got {}-bytes)",
+                response.body().len(),
+            );
         }
 
         self.security_level = SecurityLevel::Authenticated;
@@ -182,22 +181,22 @@ impl Channel {
         assert_eq!(self.mac_chaining_value, [0u8; MAC_SIZE * 2]);
 
         if command.data.len() != CRYPTOGRAM_SIZE {
-            Err(SecureChannelError::ProtocolError {
-                description: format!(
-                    "expected {}-byte command data (got {})",
-                    CRYPTOGRAM_SIZE,
-                    command.data.len()
-                ),
-            })?;
+            fail!(
+                SecureChannelError::ProtocolError,
+                "expected {}-byte command data (got {})",
+                CRYPTOGRAM_SIZE,
+                command.data.len()
+            );
         }
 
         let expected_host_cryptogram = self.host_cryptogram();
         let actual_host_cryptogram = Cryptogram::from_slice(&command.data);
 
         if expected_host_cryptogram != actual_host_cryptogram {
-            Err(SecureChannelError::VerifyFailed {
-                description: "host cryptogram verification failure!".to_owned(),
-            })?;
+            fail!(
+                SecureChannelError::VerifyFailed,
+                "host cryptogram mismatch!"
+            );
         }
 
         self.verify_command_mac(command)?;

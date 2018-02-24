@@ -57,34 +57,33 @@ impl Command {
     #[cfg(feature = "mockhsm")]
     pub fn parse(mut bytes: Vec<u8>) -> Result<Self, Error> {
         if bytes.len() < 3 {
-            Err(SecureChannelError::ProtocolError {
-                description: format!(
-                    "command too short: {} (expected at least 3-bytes)",
-                    bytes.len()
-                ),
-            })?;
+            fail!(
+                SecureChannelError::ProtocolError,
+                "command too short: {} (expected at least 3-bytes)",
+                bytes.len()
+            );
         }
 
         let command_type = CommandType::from_byte(bytes[0])?;
         let length = BigEndian::read_u16(&bytes[1..3]) as usize;
 
         if length + 3 != bytes.len() {
-            Err(SecureChannelError::ProtocolError {
-                description: format!(
-                    "unexpected command length {} (expecting {})",
-                    bytes.len() - 3,
-                    length
-                ),
-            })?;
+            fail!(
+                SecureChannelError::ProtocolError,
+                "unexpected command length {} (expecting {})",
+                bytes.len() - 3,
+                length
+            );
         }
 
         bytes.drain(..3);
 
         let session_id = if command_type.has_session_id() {
             if bytes.is_empty() {
-                Err(SecureChannelError::ProtocolError {
-                    description: "expected session ID but command data is empty".to_owned(),
-                })?;
+                fail!(
+                    SecureChannelError::ProtocolError,
+                    "expected session ID but command data is empty"
+                );
             }
 
             Some(SessionId::new(bytes.remove(0))?)
@@ -94,13 +93,12 @@ impl Command {
 
         let mac = if command_type.has_mac() {
             if bytes.len() < MAC_SIZE {
-                Err(SecureChannelError::ProtocolError {
-                    description: format!(
-                        "expected MAC for {:?} but command data is too short: {}",
-                        command_type,
-                        bytes.len(),
-                    ),
-                })?;
+                fail!(
+                    SecureChannelError::ProtocolError,
+                    "expected MAC for {:?} but command data is too short: {}",
+                    command_type,
+                    bytes.len(),
+                );
             }
 
             let mac_index = bytes.len() - MAC_SIZE;
@@ -263,9 +261,11 @@ impl CommandType {
             0x6a => CommandType::SignDataEdDSA,
             0x6b => CommandType::Blink,
             0x7f => CommandType::Error,
-            _ => Err(SecureChannelError::ProtocolError {
-                description: format!("invalid command type: {}", byte),
-            })?,
+            _ => fail!(
+                SecureChannelError::ProtocolError,
+                "invalid command type: {}",
+                byte
+            ),
         })
     }
 
@@ -301,25 +301,23 @@ impl Response {
     /// Parse a response into a response struct
     pub fn parse(mut bytes: Vec<u8>) -> Result<Self, Error> {
         if bytes.len() < 3 {
-            Err(SecureChannelError::ProtocolError {
-                description: format!(
-                    "response too short: {} (expected at least 3-bytes)",
-                    bytes.len()
-                ),
-            })?;
+            fail!(
+                SecureChannelError::ProtocolError,
+                "response too short: {} (expected at least 3-bytes)",
+                bytes.len()
+            );
         }
 
         let code = ResponseCode::from_byte(bytes[0])?;
         let length = BigEndian::read_u16(&bytes[1..3]) as usize;
 
         if length + 3 != bytes.len() {
-            Err(SecureChannelError::ProtocolError {
-                description: format!(
-                    "unexpected response length {} (expecting {})",
-                    bytes.len() - 3,
-                    length
-                ),
-            })?;
+            fail!(
+                SecureChannelError::ProtocolError,
+                "unexpected response length {} (expecting {})",
+                bytes.len() - 3,
+                length
+            );
         }
 
         bytes.drain(..3);
@@ -431,9 +429,11 @@ impl ResponseCode {
                 if byte >= 0x80 {
                     ResponseCode::Success(CommandType::from_byte(byte - 0x80)?)
                 } else {
-                    Err(SecureChannelError::ProtocolError {
-                        description: format!("invalid response code: {}", 80 - byte),
-                    })?
+                    fail!(
+                        SecureChannelError::ProtocolError,
+                        "invalid response code: {}",
+                        80 - byte
+                    )
                 }
             }
         })

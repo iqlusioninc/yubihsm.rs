@@ -32,10 +32,10 @@ pub enum ConnectorError {
     InvalidURL,
 
     /// Connection to yubihsm-connector failed
-    #[fail(display = "connection failed to: {}", url)]
+    #[fail(display = "connection failed: {}", description)]
     ConnectionFailed {
-        /// URL which we attempted to connect to
-        url: String,
+        /// Description of why the connection failed
+        description: String,
     },
 
     /// Error making request
@@ -89,7 +89,11 @@ impl Connector {
         if connector.status()?.status == "OK" {
             Ok(connector)
         } else {
-            Err(ConnectorError::ConnectionFailed { url: connector.url }.into())
+            fail!(
+                ConnectorError::ConnectionFailed,
+                "bad status response from {}",
+                connector.url
+            );
         }
     }
 
@@ -109,18 +113,20 @@ impl Connector {
 
             let mut fields = line.split('=');
 
-            let key = fields.next().ok_or_else(|| ConnectorError::ResponseError {
-                description: "couldn't parse key from status line".to_owned(),
-            })?;
+            let key = fields
+                .next()
+                .ok_or_else(|| err!(ConnectorError::ResponseError, "couldn't parse key"))?;
 
-            let value = fields.next().ok_or_else(|| ConnectorError::ResponseError {
-                description: "couldn't parse value from status line".to_owned(),
-            })?;
+            let value = fields
+                .next()
+                .ok_or_else(|| err!(ConnectorError::ResponseError, "couldn't parse value"))?;
 
-            if fields.next() != None {
-                Err(ConnectorError::ResponseError {
-                    description: "unexpected additional data in status line!".to_owned(),
-                })?;
+            if let Some(remaining) = fields.next() {
+                fail!(
+                    ConnectorError::ResponseError,
+                    "unexpected additional data: {}",
+                    remaining
+                )
             }
 
             match key {
@@ -128,8 +134,8 @@ impl Connector {
                 "serial" => serial = Some(value),
                 "version" => version = Some(value),
                 "pid" => {
-                    pid = Some(value.parse().map_err(|_| ConnectorError::ResponseError {
-                        description: "bad PID value in status response!".to_owned(),
+                    pid = Some(value.parse().map_err(|_| {
+                        err!(ConnectorError::ResponseError, "invalid PID: {}", value)
                     })?)
                 }
                 _ => (),
@@ -138,23 +144,15 @@ impl Connector {
 
         Ok(Status {
             status: status
-                .ok_or_else(|| ConnectorError::ResponseError {
-                    description: "no status in status response".to_owned(),
-                })?
+                .ok_or_else(|| err!(ConnectorError::ResponseError, "missing status"))?
                 .to_owned(),
             serial: serial
-                .ok_or_else(|| ConnectorError::ResponseError {
-                    description: "no serial in status response".to_owned(),
-                })?
+                .ok_or_else(|| err!(ConnectorError::ResponseError, "missing serial"))?
                 .to_owned(),
             version: version
-                .ok_or_else(|| ConnectorError::ResponseError {
-                    description: "no version in status response".to_owned(),
-                })?
+                .ok_or_else(|| err!(ConnectorError::ResponseError, "missing version"))?
                 .to_owned(),
-            pid: pid.ok_or_else(|| ConnectorError::ResponseError {
-                description: "no PID in status response".to_owned(),
-            })?,
+            pid: pid.ok_or_else(|| err!(ConnectorError::ResponseError, "missing PID"))?,
         })
     }
 
@@ -187,19 +185,20 @@ impl Connector {
         let response = Response::parse(response_bytes)?;
 
         if response.is_err() {
-            Err(ConnectorError::ResponseError {
-                description: format!("Error response code from HSM: {:?}", response.code()),
-            })?;
+            fail!(
+                ConnectorError::ResponseError,
+                "Error response code from HSM: {:?}",
+                response.code()
+            );
         }
 
         if response.command().unwrap() != cmd_type {
-            Err(ConnectorError::ResponseError {
-                description: format!(
-                    "command type mismatch: expected {:?}, got {:?}",
-                    cmd_type,
-                    response.command().unwrap()
-                ),
-            })?;
+            fail!(
+                ConnectorError::ResponseError,
+                "command type mismatch: expected {:?}, got {:?}",
+                cmd_type,
+                response.command().unwrap()
+            );
         }
 
         Ok(response)
@@ -237,9 +236,11 @@ impl Connector {
 // Handle responses from Reqwest
 fn handle_http_response(response: &mut HttpResponse) -> Result<Vec<u8>, Error> {
     if response.status() != StatusCode::Ok {
-        Err(ConnectorError::ResponseError {
-            description: format!("unexpected HTTP status: {}", response.status()),
-        })?;
+        fail!(
+            ConnectorError::ResponseError,
+            "unexpected HTTP status: {}",
+            response.status()
+        );
     }
 
     let mut body = Vec::new();
