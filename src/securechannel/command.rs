@@ -7,9 +7,8 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/>
 
 use byteorder::{BigEndian, ByteOrder, WriteBytesExt};
-use clear_on_drop::clear::Clear;
 use failure::Error;
-use super::{SecureChannelError, SessionId, MAC_SIZE};
+use super::{Mac, SecureChannelError, SessionId, MAC_SIZE};
 
 /// A command sent from the host to the `YubiHSM2`. May or may not be
 /// authenticated using SCP03's chained/evolving MAC protocol.
@@ -25,7 +24,7 @@ pub(crate) struct Command {
     pub data: Vec<u8>,
 
     /// Optional Message Authentication Code (MAC)
-    pub mac: Option<[u8; MAC_SIZE]>,
+    pub mac: Option<Mac>,
 }
 
 impl Command {
@@ -44,12 +43,8 @@ impl Command {
         command_type: CommandType,
         session_id: SessionId,
         command_data: &[u8],
-        mac_slice: &[u8],
+        mac: Mac,
     ) -> Self {
-        // TODO: a MAC type?
-        let mut mac = [0u8; MAC_SIZE];
-        mac.copy_from_slice(mac_slice);
-
         Self {
             command_type,
             session_id: Some(session_id),
@@ -108,12 +103,8 @@ impl Command {
                 })?;
             }
 
-            let mut m = [0u8; MAC_SIZE];
-            m.copy_from_slice(&bytes[bytes.len() - MAC_SIZE..]);
-            let command_data_len = bytes.len() - MAC_SIZE;
-            bytes.truncate(command_data_len);
-
-            Some(m)
+            let mac_index = bytes.len() - MAC_SIZE;
+            Some(Mac::from_slice(&bytes.split_off(mac_index)))
         } else {
             None
         };
@@ -149,18 +140,10 @@ impl Command {
         result.append(&mut self.data);
 
         if let Some(mac) = self.mac {
-            result.extend_from_slice(&mac);
+            result.extend_from_slice(mac.as_slice());
         }
 
         result
-    }
-}
-
-impl Drop for Command {
-    fn drop(&mut self) {
-        if let Some(mut mac) = self.mac {
-            mac.clear()
-        }
     }
 }
 

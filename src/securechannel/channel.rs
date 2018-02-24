@@ -4,14 +4,12 @@ use aesni::Aes128;
 use byteorder::{BigEndian, ByteOrder};
 use clear_on_drop::clear::Clear;
 use cmac::Cmac;
-use cmac::crypto_mac::Mac;
-#[cfg(feature = "mockhsm")]
-use constant_time_eq::constant_time_eq;
+use cmac::crypto_mac::Mac as CryptoMac;
 use failure::Error;
 
 use super::kdf;
-use super::{Challenge, Command, CommandType, Context, Cryptogram, Response, SecureChannelError,
-            StaticKeys, CRYPTOGRAM_SIZE, KEY_SIZE, MAC_SIZE};
+use super::{Challenge, Command, CommandType, Context, Cryptogram, Mac, Response,
+            SecureChannelError, StaticKeys, CRYPTOGRAM_SIZE, KEY_SIZE, MAC_SIZE};
 
 /// Session/Channel IDs
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
@@ -148,7 +146,7 @@ impl Channel {
             command_type,
             self.id,
             command_data,
-            &tag.as_slice()[..MAC_SIZE],
+            Mac::from_slice(&tag.as_slice()[..MAC_SIZE]),
         )
     }
 
@@ -221,15 +219,12 @@ impl Channel {
         mac.input(&[command.session_id.unwrap().to_u8()]);
         mac.input(&command.data);
 
-        let tag = mac.result().code();
+        command
+            .mac
+            .as_ref()
+            .expect("missing MAC tag!")
+            .verify(mac.result(), &mut self.mac_chaining_value)?;
 
-        if !constant_time_eq(&command.mac.unwrap(), &tag.as_slice()[..MAC_SIZE]) {
-            Err(SecureChannelError::VerifyFailed {
-                description: "Command-MAC (C-MAC) verification failure!".to_owned(),
-            })?;
-        }
-
-        self.mac_chaining_value.copy_from_slice(tag.as_slice());
         Ok(())
     }
 }
