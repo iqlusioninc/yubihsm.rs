@@ -24,15 +24,13 @@ mod context;
 mod cryptogram;
 mod error;
 mod kdf;
+mod mac;
 mod static_keys;
 
 /// AES key size in bytes. SCP03 theoretically supports other key sizes, but
 /// since this crate is somewhat specialized to the `YubiHSM2` (at least for now)
 /// we hardcode to 128-bit for simplicity.
 pub const KEY_SIZE: usize = 16;
-
-/// Size of the MAC in bytes: SCP03 truncates it to 8-bytes
-pub const MAC_SIZE: usize = 8;
 
 pub use self::challenge::{Challenge, CHALLENGE_SIZE};
 pub(crate) use self::channel::Channel;
@@ -42,4 +40,5 @@ pub use self::command::{CommandType, Response, ResponseCode};
 pub use self::context::{Context, CONTEXT_SIZE};
 pub use self::cryptogram::{Cryptogram, CRYPTOGRAM_SIZE};
 pub use self::error::SecureChannelError;
+pub(crate) use self::mac::{Mac, MAC_SIZE};
 pub use self::static_keys::StaticKeys;
