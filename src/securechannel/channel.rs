@@ -45,7 +45,6 @@ impl Id {
 pub const MAX_SESSION_ID: Id = Id(16);
 
 /// Current Security Level: protocol state
-#[allow(dead_code)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum SecurityLevel {
     /// 'NO_SECURITY_LEVEL' i.e. session is terminated or not fully initialized
@@ -56,7 +55,6 @@ pub enum SecurityLevel {
 }
 
 /// SCP03 Secure Channel
-#[allow(dead_code)]
 pub(crate) struct Channel {
     // ID of this channel (a.k.a. session ID)
     id: Id,

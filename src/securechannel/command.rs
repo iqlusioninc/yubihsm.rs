@@ -12,7 +12,6 @@ use super::{Mac, SecureChannelError, SessionId, MAC_SIZE};
 
 /// A command sent from the host to the `YubiHSM2`. May or may not be
 /// authenticated using SCP03's chained/evolving MAC protocol.
-#[allow(dead_code)]
 pub(crate) struct Command {
     /// Type of command to be invoked
     pub command_type: CommandType,
@@ -146,7 +145,6 @@ impl Command {
 }
 
 /// Command IDs for `YubiHSM2` operations
-#[allow(dead_code, missing_docs)]
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum CommandType {
     Unknown = 0x00,
@@ -357,7 +355,6 @@ impl Response {
 }
 
 /// Codes associated with `YubiHSM2` responses
-#[allow(dead_code, missing_docs)]
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum ResponseCode {
     Success(CommandType),
