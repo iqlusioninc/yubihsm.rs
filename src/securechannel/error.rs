@@ -17,4 +17,11 @@ pub enum SecureChannelError {
         /// Description of the protocol error
         description: String,
     },
+
+    /// Max commands per session exceeded and a new session should be created
+    #[fail(display = "session limit reached: {}", description)]
+    SessionLimitReached {
+        /// Description of the protocol error
+        description: String,
+    },
 }
