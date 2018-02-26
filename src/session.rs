@@ -89,7 +89,8 @@ impl<'a> Session<'a> {
 
     /// Authenticate the current session with the `YubiHSM2`
     fn authenticate(&mut self) -> Result<(), Error> {
-        let response = self.connector.command(self.channel.authenticate_session())?;
+        let command = self.channel.authenticate_session()?;
+        let response = self.connector.command(command)?;
         self.channel.finish_authenticate_session(&response)
     }
 

@@ -18,12 +18,12 @@ pub struct Id(u8);
 impl Id {
     /// Create a new session ID from a byte value
     pub fn new(id: u8) -> Result<Self, Error> {
-        if id > MAX_SESSION_ID.0 {
+        if id > MAX_ID.0 {
             fail!(
                 SecureChannelError::ProtocolError,
                 "session ID exceeds the maximum allowed: {} (max {})",
                 id,
-                MAX_SESSION_ID.0
+                MAX_ID.0
             );
         }
 
@@ -42,7 +42,15 @@ impl Id {
 }
 
 /// Maximum session identifier
-pub const MAX_SESSION_ID: Id = Id(16);
+pub const MAX_ID: Id = Id(16);
+
+/// Maximum number of messages allowed in a single session: 2^20.
+///
+/// This is a conservative number chosen due to the small MAC size used by
+/// the SCP03 protocol: 8-bytes. This small tag has an even smaller birthday
+/// bound on collisions, so to avoid these we force generation of fresh
+/// session keys after the following number of messages have been sent.
+pub const MAX_COMMANDS_PER_SESSION: usize = 0x10_0000;
 
 /// Current Security Level: protocol state
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -58,6 +66,9 @@ pub enum SecurityLevel {
 pub(crate) struct Channel {
     // ID of this channel (a.k.a. session ID)
     id: Id,
+
+    // Counter of total commands performed in this session
+    counter: usize,
 
     // External authentication state
     security_level: SecurityLevel,
@@ -94,6 +105,7 @@ impl Channel {
 
         Self {
             id,
+            counter: 0,
             security_level: SecurityLevel::NoSecurityLevel,
             context,
             enc_key,
@@ -126,7 +138,19 @@ impl Channel {
     }
 
     /// Compute a command message with a MAC value for this session
-    pub fn command_with_mac(&mut self, command_type: CommandType, command_data: &[u8]) -> Command {
+    pub fn command_with_mac(
+        &mut self,
+        command_type: CommandType,
+        command_data: &[u8],
+    ) -> Result<Command, Error> {
+        if self.counter >= MAX_COMMANDS_PER_SESSION {
+            fail!(
+                SecureChannelError::SessionLimitReached,
+                "max of {} commands per session exceeded",
+                MAX_COMMANDS_PER_SESSION
+            );
+        }
+
         let mut mac = Cmac::<Aes128>::new_varkey(&self.mac_key[..]).unwrap();
         mac.input(&self.mac_chaining_value);
         mac.input(&[command_type as u8]);
@@ -139,17 +163,18 @@ impl Channel {
 
         let tag = mac.result().code();
         self.mac_chaining_value.copy_from_slice(tag.as_slice());
+        self.counter += 1;
 
-        Command::new_with_mac(
+        Ok(Command::new_with_mac(
             command_type,
             self.id,
             command_data,
             Mac::from_slice(&tag.as_slice()[..MAC_SIZE]),
-        )
+        ))
     }
 
     /// Compute a message for authenticating the host to the card
-    pub fn authenticate_session(&mut self) -> Command {
+    pub fn authenticate_session(&mut self) -> Result<Command, Error> {
         assert_eq!(self.security_level, SecurityLevel::NoSecurityLevel);
         assert_eq!(self.mac_chaining_value, [0u8; MAC_SIZE * 2]);
 
