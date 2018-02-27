@@ -179,7 +179,7 @@ impl Connector {
     }
 
     /// POST /connector/api with a given command message
-    pub(crate) fn command(&self, cmd: Command) -> Result<Response, Error> {
+    pub(crate) fn send_command(&self, cmd: Command) -> Result<Response, Error> {
         let cmd_type = cmd.command_type;
         let response_bytes = self.post("/connector/api", cmd.into_vec())?;
         let response = Response::parse(response_bytes)?;
@@ -188,7 +188,7 @@ impl Connector {
             fail!(
                 ConnectorError::ResponseError,
                 "Error response code from HSM: {:?}",
-                response.code()
+                response.code
             );
         }
 

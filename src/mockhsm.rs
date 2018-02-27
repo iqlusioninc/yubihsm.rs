@@ -4,15 +4,16 @@
 
 extern crate tiny_http;
 
-use self::tiny_http::{Method, Request, Response, Server, StatusCode};
+use self::tiny_http::{Method, Request, Server, StatusCode};
+use self::tiny_http::Response as HttpResponse;
 
-use byteorder::{BigEndian, ByteOrder, WriteBytesExt};
+use byteorder::{BigEndian, ByteOrder};
 use failure::Error;
 use std::collections::HashMap;
 use std::io::Cursor;
 
 use connector::{PBKDF2_ITERATIONS, PBKDF2_SALT};
-use securechannel::{Challenge, Channel, Command, CommandType, StaticKeys, CHALLENGE_SIZE};
+use securechannel::{Challenge, Channel, Command, CommandType, Response, StaticKeys, CHALLENGE_SIZE};
 use super::{KeyId, SessionId};
 
 /// Default auth key ID slot
@@ -64,7 +65,7 @@ impl MockHSM {
                 },
                 _ => None,
             }.unwrap_or_else(|| {
-                Response::new(
+                HttpResponse::new(
                     StatusCode::from(404),
                     vec![],
                     Cursor::new(vec![]),
@@ -78,10 +79,10 @@ impl MockHSM {
     }
 
     /// GET /connector/status - status page
-    fn status(&self) -> Response<Cursor<Vec<u8>>> {
+    fn status(&self) -> HttpResponse<Cursor<Vec<u8>>> {
         let mut addr_parts = self.addr.split(':');
 
-        Response::from_string(
+        HttpResponse::from_string(
             [
                 "status=OK",
                 "serial=*",
@@ -94,7 +95,7 @@ impl MockHSM {
     }
 
     /// POST /connector/api - perform HSM operation
-    fn api(&mut self, request: &mut Request) -> Response<Cursor<Vec<u8>>> {
+    fn api(&mut self, request: &mut Request) -> HttpResponse<Cursor<Vec<u8>>> {
         let mut body = Vec::new();
         request
             .as_reader()
@@ -106,13 +107,13 @@ impl MockHSM {
         match command.command_type {
             CommandType::CreateSession => self.create_session(&command),
             CommandType::AuthSession => self.authenticate_session(&command),
-            CommandType::SessionMessage => self.session_message(&command),
+            CommandType::SessionMessage => self.session_message(command),
             unsupported => panic!("unsupported command type: {:?}", unsupported),
         }
     }
 
     /// Create a new HSM session
-    fn create_session(&mut self, command: &Command) -> Response<Cursor<Vec<u8>>> {
+    fn create_session(&mut self, command: &Command) -> HttpResponse<Cursor<Vec<u8>>> {
         assert_eq!(
             command.data.len(),
             10,
@@ -151,36 +152,59 @@ impl MockHSM {
         response_body.extend_from_slice(card_cryptogram.as_slice());
 
         assert!(self.sessions.insert(session_id, channel).is_none());
-        respond_success(CommandType::CreateSession, &response_body)
+
+        HttpResponse::from_data(
+            Response::success(CommandType::CreateSession, response_body).into_vec(),
+        )
     }
 
     /// Authenticate an HSM session
-    fn authenticate_session(&mut self, command: &Command) -> Response<Cursor<Vec<u8>>> {
-        let session_id = command.session_id.unwrap();
+    fn authenticate_session(&mut self, command: &Command) -> HttpResponse<Cursor<Vec<u8>>> {
+        let session_id = command
+            .session_id
+            .unwrap_or_else(|| panic!("no session ID in command: {:?}", command.command_type));
 
-        self.sessions
-            .get_mut(&session_id)
-            .expect("invalid session ID")
+        self.channel(&session_id)
             .verify_authenticate_session(command)
             .unwrap();
 
-        respond_success(CommandType::AuthSession, b"")
+        HttpResponse::from_data(Response::success(CommandType::AuthSession, vec![]).into_vec())
     }
 
-    /// Session keepalive(?) messages
-    fn session_message(&self, _command: &Command) -> Response<Cursor<Vec<u8>>> {
-        // TODO: verify C-MAC and send R-MAC
-        respond_success(CommandType::SessionMessage, b"")
+    /// Encrypted session messages
+    fn session_message(&mut self, encrypted_command: Command) -> HttpResponse<Cursor<Vec<u8>>> {
+        let session_id = encrypted_command.session_id.unwrap_or_else(|| {
+            panic!(
+                "no session ID in command: {:?}",
+                encrypted_command.command_type
+            )
+        });
+
+        let command = self.channel(&session_id)
+            .decrypt_command(encrypted_command)
+            .unwrap();
+
+        let response = match command.command_type {
+            CommandType::Echo => self.echo(command),
+            unsupported => panic!("unsupported command type: {:?}", unsupported),
+        };
+
+        let encrypted_response = self.channel(&session_id)
+            .encrypt_response(response)
+            .unwrap();
+
+        HttpResponse::from_data(encrypted_response.into_vec())
     }
-}
 
-/// Create a response for a successful request
-fn respond_success(cmd: CommandType, command_data: &[u8]) -> Response<Cursor<Vec<u8>>> {
-    let mut body = Vec::with_capacity(3 + command_data.len());
-    body.push(cmd as u8 + 128);
-    body.write_u16::<BigEndian>(command_data.len() as u16)
-        .unwrap();
-    body.extend_from_slice(command_data);
+    /// Echo a message back to the host
+    fn echo(&self, command: Command) -> Response {
+        Response::success(CommandType::Echo, command.data)
+    }
 
-    Response::from_data(body)
+    /// Obtain the channel for a session by its ID
+    fn channel(&mut self, id: &SessionId) -> &mut Channel {
+        self.sessions
+            .get_mut(id)
+            .unwrap_or_else(|| panic!("invalid session ID: {:?}", id))
+    }
 }

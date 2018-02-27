@@ -7,15 +7,12 @@
 //! lower (~2^32 messages).
 
 use clear_on_drop::clear::Clear;
-#[cfg(feature = "mockhsm")]
-use cmac::crypto_mac::MacResult;
-#[cfg(feature = "mockhsm")]
+use cmac::crypto_mac::generic_array::GenericArray;
 use cmac::crypto_mac::generic_array::typenum::U16;
 use constant_time_eq::constant_time_eq;
-#[cfg(feature = "mockhsm")]
 use failure::Error;
+use std::fmt;
 
-#[cfg(feature = "mockhsm")]
 use super::SecureChannelError;
 
 /// Size of the MAC in bytes: SCP03 truncates it to 8-bytes
@@ -42,20 +39,17 @@ impl Mac {
         &self.0
     }
 
-    /// Verify a crypto_mac::MacResult against this MAC tag
-    #[cfg(feature = "mockhsm")]
-    pub fn verify(
-        &self,
-        crypto_mac: MacResult<U16>,
-        chaining_value: &mut [u8],
-    ) -> Result<(), Error> {
-        let crypto_mac_code = crypto_mac.code();
+    /// Verify a 16-byte GenericArray against this MAC tag
+    pub fn verify<M>(&self, other: M) -> Result<(), Error>
+    where
+        M: Into<Mac>,
+    {
+        let other_mac: Mac = other.into();
 
-        if !constant_time_eq(&self.0, &crypto_mac_code.as_slice()[..MAC_SIZE]) {
+        if *self != other_mac {
             fail!(SecureChannelError::VerifyFailed, "MAC mismatch!");
         }
 
-        chaining_value.copy_from_slice(crypto_mac_code.as_slice());
         Ok(())
     }
 }
@@ -66,8 +60,20 @@ impl PartialEq for Mac {
     }
 }
 
+impl fmt::Debug for Mac {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "yubihsm_client::Mac")
+    }
+}
+
 impl Drop for Mac {
     fn drop(&mut self) {
         self.0.clear();
+    }
+}
+
+impl<'a> From<&'a GenericArray<u8, U16>> for Mac {
+    fn from(array: &'a GenericArray<u8, U16>) -> Self {
+        Self::from_slice(&array.as_slice()[..MAC_SIZE])
     }
 }
