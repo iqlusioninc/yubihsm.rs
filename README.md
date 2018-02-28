@@ -41,6 +41,9 @@ from the [RustCrypto GitHub Organization].
 
 The [reqwest] crate is used to make HTTP(S) requests to **yubihsm-connector**.
 
+Note that this is **NOT** an official Yubico project and is in no way supported
+or endorsed by Yubico.
+
 [yubihsm-connector]: https://developers.yubico.com/YubiHSM2/Component_Reference/yubihsm-connector/
 [GlobalPlatform Secure Channel Protocol "03"]: https://www.globalplatform.org/specificationscard.asp
 [RustCrypto GitHub Organization]: https://github.com/RustCrypto
