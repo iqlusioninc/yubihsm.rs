@@ -22,32 +22,19 @@ interface to [YubiHSM2] devices from [Yubico].
 
 ## About
 
-This is a pure-Rust crate for interfacing with YubiHSM2 devices.
+This is a pure-Rust client which supports interfacing with YubiHSM2 devices
+over an encrypted channel.
 
 It presently reimplements a small subset of the of the functionality of
 **libyubihsm**, a closed-source C library which acts as a libcurl-based HTTP(S)
 client and sends commands to the [yubihsm-connector] process, which implements
-an HTTP(S) server which sends the commands to the YubiHSM2 hardware device over USB.
-
-**libyubihsm** can be difficult to work with because it is shipped as a
-platform-specific dynamic library which needs its own special versions of
-libcurl and OpenSSL.
-
-**yubihsm-client** is a pure-Rust reimplementation of a similar HTTP(S) client
-library for **yubihsm-connector** based on documentation provided by Yubico.
-It implements an encrypted connection to the YubiHSM2 using
-[GlobalPlatform Secure Channel Protocol "03"] implemented using AES crates
-from the [RustCrypto GitHub Organization].
-
-The [reqwest] crate is used to make HTTP(S) requests to **yubihsm-connector**.
+an HTTP(S) server which sends the commands to the YubiHSM2 hardware device over
+USB.
 
 Note that this is **NOT** an official Yubico project and is in no way supported
 or endorsed by Yubico.
 
 [yubihsm-connector]: https://developers.yubico.com/YubiHSM2/Component_Reference/yubihsm-connector/
-[GlobalPlatform Secure Channel Protocol "03"]: https://www.globalplatform.org/specificationscard.asp
-[RustCrypto GitHub Organization]: https://github.com/RustCrypto
-[reqwest]: https://github.com/seanmonstar/reqwest
 
 ## Status
 
