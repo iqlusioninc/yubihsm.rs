@@ -6,6 +6,7 @@
 #![deny(unsafe_code, unused_import_braces, unused_qualifications)]
 
 extern crate aesni;
+extern crate block_modes;
 extern crate byteorder;
 extern crate clear_on_drop;
 extern crate cmac;
@@ -47,6 +48,7 @@ pub mod session;
 
 pub use connector::Connector;
 pub use securechannel::SessionId;
+pub use session::{Session, SessionError};
 
 /// Key identifiers
 pub type KeyId = u16;

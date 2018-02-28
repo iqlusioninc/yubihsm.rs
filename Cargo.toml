@@ -11,6 +11,7 @@ keywords    = ["cryptography", "encryption", "security"]
 
 [dependencies]
 aesni = "0.2"
+block-modes = { git = "https://github.com/RustCrypto/block-ciphers.git" }
 byteorder = "1.2"
 clear_on_drop = "0.2"
 cmac = "0.1"

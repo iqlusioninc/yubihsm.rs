@@ -4,7 +4,6 @@
 #[derive(Debug, Fail)]
 pub enum SecureChannelError {
     /// MAC or cryptogram verify failed
-    #[cfg(feature = "mockhsm")]
     #[fail(display = "verification failed: {}", description)]
     VerifyFailed {
         /// Description of the verification failure

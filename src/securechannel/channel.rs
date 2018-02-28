@@ -1,6 +1,10 @@
 //! Secure Channel provided by the SCP03 protocol
 
-use aesni::Aes128;
+use aesni::{Aes128, BlockCipher};
+use aesni::block_cipher_trait::generic_array::GenericArray;
+use aesni::block_cipher_trait::generic_array::typenum::U16;
+use block_modes::{BlockMode, BlockModeIv, Cbc};
+use block_modes::block_padding::Iso7816;
 use byteorder::{BigEndian, ByteOrder};
 use clear_on_drop::clear::Clear;
 use cmac::Cmac;
@@ -8,8 +12,13 @@ use cmac::crypto_mac::Mac as CryptoMac;
 use failure::Error;
 
 use super::kdf;
-use super::{Challenge, Command, CommandType, Context, Cryptogram, Mac, Response,
-            SecureChannelError, StaticKeys, CRYPTOGRAM_SIZE, KEY_SIZE, MAC_SIZE};
+use super::{Challenge, Command, CommandType, Context, Cryptogram, Response, SecureChannelError,
+            StaticKeys, CRYPTOGRAM_SIZE, KEY_SIZE, MAC_SIZE};
+#[cfg(feature = "mockhsm")]
+use super::ResponseCode;
+
+// Size of an AES block
+const AES_BLOCK_SIZE: usize = 16;
 
 /// Session/Channel IDs
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
@@ -50,7 +59,7 @@ pub const MAX_ID: Id = Id(16);
 /// the SCP03 protocol: 8-bytes. This small tag has an even smaller birthday
 /// bound on collisions, so to avoid these we force generation of fresh
 /// session keys after the following number of messages have been sent.
-pub const MAX_COMMANDS_PER_SESSION: usize = 0x10_0000;
+pub const MAX_COMMANDS_PER_SESSION: u32 = 0x10_0000;
 
 /// Current Security Level: protocol state
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -68,7 +77,7 @@ pub(crate) struct Channel {
     id: Id,
 
     // Counter of total commands performed in this session
-    counter: usize,
+    counter: u32,
 
     // External authentication state
     security_level: SecurityLevel,
@@ -153,7 +162,7 @@ impl Channel {
 
         let mut mac = Cmac::<Aes128>::new_varkey(&self.mac_key[..]).unwrap();
         mac.input(&self.mac_chaining_value);
-        mac.input(&[command_type as u8]);
+        mac.input(&[command_type.to_u8()]);
 
         let mut length = [0u8; 2];
         BigEndian::write_u16(&mut length, (1 + command_data.len() + MAC_SIZE) as u16);
@@ -163,13 +172,12 @@ impl Channel {
 
         let tag = mac.result().code();
         self.mac_chaining_value.copy_from_slice(tag.as_slice());
-        self.counter += 1;
 
         Ok(Command::new_with_mac(
             command_type,
             self.id,
             command_data,
-            Mac::from_slice(&tag.as_slice()[..MAC_SIZE]),
+            &tag,
         ))
     }
 
@@ -185,15 +193,105 @@ impl Channel {
     /// Handle the authenticate session response from the card
     pub fn finish_authenticate_session(&mut self, response: &Response) -> Result<(), Error> {
         // The EXTERNAL_AUTHENTICATE command does not send an R-MAC value
-        if !response.body().is_empty() {
+        if !response.data.is_empty() {
             fail!(
                 SecureChannelError::ProtocolError,
                 "expected empty response data (got {}-bytes)",
-                response.body().len(),
+                response.data.len(),
             );
         }
 
         self.security_level = SecurityLevel::Authenticated;
+
+        // "The encryption counter’s start value shall be set to 1 for the
+        // first command following a successful EXTERNAL AUTHENTICATE
+        // command." -- GPC_SPE_014 section 6.2.6
+        self.counter = 1;
+
+        Ok(())
+    }
+
+    /// Encrypt a command to be sent to the card
+    pub fn encrypt_command(&mut self, command: Command) -> Result<Command, Error> {
+        assert_eq!(self.security_level, SecurityLevel::Authenticated);
+
+        let mut message = command.into_vec();
+        let pos = message.len();
+
+        // Provide space at the end of the vec for the padding
+        for _ in 0..(AES_BLOCK_SIZE - (pos % AES_BLOCK_SIZE)) {
+            message.push(0);
+        }
+
+        let cipher = Aes128::new_varkey(&self.enc_key).unwrap();
+        let icv = compute_icv(&cipher, self.counter);
+        let cbc_encryptor = Cbc::<Aes128, Iso7816>::new(cipher, &icv);
+        let ciphertext = cbc_encryptor.encrypt_pad(&mut message, pos).unwrap();
+
+        self.command_with_mac(CommandType::SessionMessage, ciphertext)
+    }
+
+    /// Verify and decrypt a response from the card
+    pub fn decrypt_response(&mut self, encrypted_response: Response) -> Result<Response, Error> {
+        assert_eq!(self.security_level, SecurityLevel::Authenticated);
+
+        let cipher = Aes128::new_varkey(&self.enc_key).unwrap();
+        let icv = compute_icv(&cipher, self.counter);
+
+        self.verify_response_mac(&encrypted_response)?;
+
+        let cipher = Aes128::new_varkey(&self.enc_key).unwrap();
+        let cbc_decryptor = Cbc::<Aes128, Iso7816>::new(cipher, &icv);
+
+        let mut response_message = encrypted_response.data;
+        let response_len = cbc_decryptor
+            .decrypt_pad(&mut response_message)
+            .map_err(|e| {
+                err!(
+                    SecureChannelError::ProtocolError,
+                    "error decrypting response: {:?}",
+                    e
+                )
+            })?
+            .len();
+
+        response_message.truncate(response_len);
+        let mut decrypted_response = Response::parse(response_message)?;
+        decrypted_response.session_id = encrypted_response.session_id;
+
+        Ok(decrypted_response)
+    }
+
+    /// Ensure message authenticity by verifying the response MAC (R-MAC) sent from the card
+    pub fn verify_response_mac(&mut self, response: &Response) -> Result<(), Error> {
+        assert_eq!(self.security_level, SecurityLevel::Authenticated);
+
+        let session_id = response.session_id.ok_or_else(|| {
+            err!(
+                SecureChannelError::ProtocolError,
+                "no session ID in response"
+            )
+        })?;
+
+        assert_eq!(self.id, session_id, "session ID mismatch: {:?}", session_id);
+
+        let mut mac = Cmac::<Aes128>::new_varkey(&self.rmac_key[..]).unwrap();
+        mac.input(&self.mac_chaining_value);
+        mac.input(&[response.code.to_u8()]);
+
+        let mut length = [0u8; 2];
+        BigEndian::write_u16(&mut length, response.len() as u16);
+        mac.input(&length);
+        mac.input(&[session_id.to_u8()]);
+        mac.input(&response.data);
+
+        response
+            .mac
+            .as_ref()
+            .expect("response missing MAC tag!")
+            .verify(&mac.result().code())?;
+
+        self.increment_counter();
         Ok(())
     }
 
@@ -225,15 +323,59 @@ impl Channel {
         self.verify_command_mac(command)?;
         self.security_level = SecurityLevel::Authenticated;
 
+        // "The encryption counter’s start value shall be set to 1 for the
+        // first command following a successful EXTERNAL AUTHENTICATE
+        // command." -- GPC_SPE_014 section 6.2.6
+        self.counter = 1;
+
         Ok(())
+    }
+
+    /// Verify and decrypt a command from the host
+    #[cfg(feature = "mockhsm")]
+    pub fn decrypt_command(&mut self, encrypted_command: Command) -> Result<Command, Error> {
+        assert_eq!(self.security_level, SecurityLevel::Authenticated);
+
+        let cipher = Aes128::new_varkey(&self.enc_key).unwrap();
+        let icv = compute_icv(&cipher, self.counter);
+
+        self.verify_command_mac(&encrypted_command)?;
+
+        let cipher = Aes128::new_varkey(&self.enc_key).unwrap();
+        let cbc_decryptor = Cbc::<Aes128, Iso7816>::new(cipher, &icv);
+
+        let mut command_data = encrypted_command.data;
+        let command_len = cbc_decryptor
+            .decrypt_pad(&mut command_data)
+            .map_err(|e| {
+                err!(
+                    SecureChannelError::ProtocolError,
+                    "error decrypting command: {:?}",
+                    e
+                )
+            })?
+            .len();
+
+        command_data.truncate(command_len);
+        let mut decrypted_command = Command::parse(command_data)?;
+        decrypted_command.session_id = encrypted_command.session_id;
+
+        Ok(decrypted_command)
     }
 
     /// Verify a Command MAC (C-MAC) value, updating the internal session state
     #[cfg(feature = "mockhsm")]
     pub fn verify_command_mac(&mut self, command: &Command) -> Result<(), Error> {
+        assert_eq!(
+            command.session_id.unwrap(),
+            self.id,
+            "session ID mismatch: {:?}",
+            command.session_id
+        );
+
         let mut mac = Cmac::<Aes128>::new_varkey(&self.mac_key[..]).unwrap();
         mac.input(&self.mac_chaining_value);
-        mac.input(&[command.command_type as u8]);
+        mac.input(&[command.command_type.to_u8()]);
 
         let mut length = [0u8; 2];
         BigEndian::write_u16(&mut length, command.len() as u16);
@@ -241,13 +383,78 @@ impl Channel {
         mac.input(&[command.session_id.unwrap().to_u8()]);
         mac.input(&command.data);
 
+        let tag = mac.result().code();
+
         command
             .mac
             .as_ref()
-            .expect("missing MAC tag!")
-            .verify(mac.result(), &mut self.mac_chaining_value)?;
+            .expect("command missing MAC tag!")
+            .verify(&tag)?;
+
+        self.mac_chaining_value.copy_from_slice(tag.as_slice());
 
         Ok(())
+    }
+
+    /// Encrypt a response to be sent back to the host
+    #[cfg(feature = "mockhsm")]
+    pub fn encrypt_response(&mut self, response: Response) -> Result<Response, Error> {
+        assert_eq!(self.security_level, SecurityLevel::Authenticated);
+
+        let mut message = response.into_vec();
+        let pos = message.len();
+
+        // Provide space at the end of the vec for the padding
+        for _ in 0..(AES_BLOCK_SIZE - (pos % AES_BLOCK_SIZE)) {
+            message.push(0);
+        }
+
+        let cipher = Aes128::new_varkey(&self.enc_key).unwrap();
+        let icv = compute_icv(&cipher, self.counter);
+        let cbc_encryptor = Cbc::<Aes128, Iso7816>::new(cipher, &icv);
+        let ct_len = cbc_encryptor.encrypt_pad(&mut message, pos).unwrap().len();
+        message.truncate(ct_len);
+
+        self.response_with_mac(ResponseCode::Success(CommandType::SessionMessage), message)
+    }
+
+    /// Compute the MAC for a response message
+    #[cfg(feature = "mockhsm")]
+    pub fn response_with_mac<T>(
+        &mut self,
+        code: ResponseCode,
+        response_data: T,
+    ) -> Result<Response, Error>
+    where
+        T: Into<Vec<u8>>,
+    {
+        assert_eq!(self.security_level, SecurityLevel::Authenticated);
+        let body = response_data.into();
+
+        let mut mac = Cmac::<Aes128>::new_varkey(&self.rmac_key[..]).unwrap();
+        mac.input(&self.mac_chaining_value);
+        mac.input(&[code.to_u8()]);
+
+        let mut length = [0u8; 2];
+        BigEndian::write_u16(&mut length, (1 + body.len() + MAC_SIZE) as u16);
+        mac.input(&length);
+        mac.input(&[self.id.to_u8()]);
+        mac.input(&body);
+
+        let tag = mac.result().code();
+        self.mac_chaining_value.copy_from_slice(tag.as_slice());
+        self.increment_counter();
+
+        Ok(Response::new_with_mac(code, self.id, body, &tag))
+    }
+
+    /// Increment the internal message counter
+    fn increment_counter(&mut self) {
+        self.counter = self.counter.checked_add(1).unwrap_or_else(|| {
+            // We should always hit MAX_COMMANDS_PER_SESSION before this
+            // happens unless there is a bug.
+            panic!("session counter overflowed!");
+        });
     }
 }
 
@@ -268,4 +475,13 @@ fn derive_key(
     let mut key = [0u8; KEY_SIZE];
     kdf::derive(parent_key, derivation_constant, context, &mut key);
     key
+}
+
+/// Compute an "Initial Chaining Vector" (ICV) from a counter
+fn compute_icv(cipher: &Aes128, counter: u32) -> GenericArray<u8, U16> {
+    // "Initial Chaining Vector" - CBC IVs generated from encrypting a counter
+    let mut icv = GenericArray::clone_from_slice(&[0u8; AES_BLOCK_SIZE]);
+    BigEndian::write_u32(&mut icv.as_mut_slice()[12..], counter);
+    cipher.encrypt_block(&mut icv);
+    icv
 }

@@ -6,7 +6,9 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/>
 
-use byteorder::{BigEndian, ByteOrder, WriteBytesExt};
+use byteorder::{BigEndian, WriteBytesExt};
+#[cfg(feature = "mockhsm")]
+use byteorder::ByteOrder;
 use failure::Error;
 use super::{Mac, SecureChannelError, SessionId, MAC_SIZE};
 
@@ -28,7 +30,10 @@ pub(crate) struct Command {
 
 impl Command {
     /// Create a new command message without a MAC
-    pub fn new(command_type: CommandType, command_data: &[u8]) -> Self {
+    pub fn new<T>(command_type: CommandType, command_data: T) -> Self
+    where
+        T: Into<Vec<u8>>,
+    {
         Self {
             command_type,
             session_id: None,
@@ -38,17 +43,21 @@ impl Command {
     }
 
     /// Create a new command message with a MAC
-    pub fn new_with_mac(
+    pub fn new_with_mac<D, M>(
         command_type: CommandType,
         session_id: SessionId,
-        command_data: &[u8],
-        mac: Mac,
-    ) -> Self {
+        command_data: D,
+        mac: M,
+    ) -> Self
+    where
+        D: Into<Vec<u8>>,
+        M: Into<Mac>,
+    {
         Self {
             command_type,
             session_id: Some(session_id),
             data: command_data.into(),
-            mac: Some(mac),
+            mac: Some(mac.into()),
         }
     }
 
@@ -63,7 +72,7 @@ impl Command {
             );
         }
 
-        let command_type = CommandType::from_byte(bytes[0])?;
+        let command_type = CommandType::from_u8(bytes[0])?;
         let length = BigEndian::read_u16(&bytes[1..3]) as usize;
 
         if length + 3 != bytes.len() {
@@ -116,12 +125,17 @@ impl Command {
 
     /// Calculate the length of the serialized message, sans command type and length field
     pub fn len(&self) -> usize {
-        if self.mac.is_some() {
-            // Include extra byte for session ID
-            1 + self.data.len() + MAC_SIZE
-        } else {
-            self.data.len()
+        let mut result = self.data.len();
+
+        if self.session_id.is_some() {
+            result += 1;
         }
+
+        if self.mac.is_some() {
+            result += MAC_SIZE;
+        }
+
+        result
     }
 
     /// Serialize this Command, consuming it and creating a Vec<u8>
@@ -204,7 +218,7 @@ pub enum CommandType {
 
 impl CommandType {
     /// Convert an unsigned byte into a CommandType (if valid)
-    pub fn from_byte(byte: u8) -> Result<Self, Error> {
+    pub fn from_u8(byte: u8) -> Result<Self, Error> {
         Ok(match byte {
             0x00 => CommandType::Unknown,
             0x01 => CommandType::Echo,
@@ -267,12 +281,17 @@ impl CommandType {
         })
     }
 
+    /// Serialize a command as a byte
+    pub fn to_u8(&self) -> u8 {
+        *self as u8
+    }
+
     /// Does this command include a session ID?
     #[cfg(feature = "mockhsm")]
     pub fn has_session_id(&self) -> bool {
         match *self {
-            CommandType::CreateSession => false,
-            _ => true,
+            CommandType::AuthSession | CommandType::SessionMessage => true,
+            _ => false,
         }
     }
 
@@ -280,159 +299,8 @@ impl CommandType {
     #[cfg(feature = "mockhsm")]
     pub fn has_mac(&self) -> bool {
         match *self {
-            CommandType::CreateSession => false,
-            // NOTE: there are other command types that don't carry a C-MAC which aren't
-            // enumerated here, but most should have a C-MAC so we otherwise assume that they do
-            _ => true,
-        }
-    }
-}
-
-/// Command responses
-#[derive(Debug, Eq, PartialEq)]
-pub struct Response {
-    code: ResponseCode,
-    body: Vec<u8>,
-}
-
-impl Response {
-    /// Parse a response into a response struct
-    pub fn parse(mut bytes: Vec<u8>) -> Result<Self, Error> {
-        if bytes.len() < 3 {
-            fail!(
-                SecureChannelError::ProtocolError,
-                "response too short: {} (expected at least 3-bytes)",
-                bytes.len()
-            );
-        }
-
-        let code = ResponseCode::from_byte(bytes[0])?;
-        let length = BigEndian::read_u16(&bytes[1..3]) as usize;
-
-        if length + 3 != bytes.len() {
-            fail!(
-                SecureChannelError::ProtocolError,
-                "unexpected response length {} (expecting {})",
-                bytes.len() - 3,
-                length
-            );
-        }
-
-        bytes.drain(..3);
-        Ok(Self { code, body: bytes })
-    }
-
-    /// Was this command successful?
-    pub fn is_ok(&self) -> bool {
-        match self.code {
-            ResponseCode::Success(_) => true,
+            CommandType::AuthSession | CommandType::SessionMessage => true,
             _ => false,
         }
-    }
-
-    /// Did an error occur?
-    pub fn is_err(&self) -> bool {
-        !self.is_ok()
-    }
-
-    /// Get the command being responded to
-    pub fn command(&self) -> Option<CommandType> {
-        match self.code {
-            ResponseCode::Success(cmd) => Some(cmd),
-            _ => None,
-        }
-    }
-
-    /// Get the code for this response
-    pub fn code(&self) -> ResponseCode {
-        self.code
-    }
-
-    /// Get the body of this response
-    pub fn body(&self) -> &[u8] {
-        &self.body
-    }
-}
-
-/// Codes associated with `YubiHSM2` responses
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub enum ResponseCode {
-    Success(CommandType),
-    MemoryError,
-    InitError,
-    NetError,
-    ConnectorNotFound,
-    InvalidParams,
-    WrongLength,
-    BufferTooSmall,
-    CryptogramMismatch,
-    AuthSessionError,
-    MACMismatch,
-    DeviceOK,
-    DeviceInvalidCommand,
-    DeviceInvalidData,
-    DeviceInvalidSession,
-    DeviceAuthFail,
-    DeviceSessionsFull,
-    DeviceSessionFailed,
-    DeviceStorageFailed,
-    DeviceWrongLength,
-    DeviceInvalidPermission,
-    DeviceLogFull,
-    DeviceObjNotFound,
-    DeviceIDIllegal,
-    DeviceInvalidOTP,
-    DeviceDemoMode,
-    DeviceCmdUnexecuted,
-    GenericError,
-    DeviceObjectExists,
-    ConnectorError,
-}
-
-impl ResponseCode {
-    /// Convert an unsigned byte into a ResponseCode (if valid)
-    pub fn from_byte(byte: u8) -> Result<Self, Error> {
-        Ok(match byte {
-            0x7f => ResponseCode::MemoryError,
-            0x7e => ResponseCode::InitError,
-            0x7d => ResponseCode::NetError,
-            0x7c => ResponseCode::ConnectorNotFound,
-            0x7b => ResponseCode::InvalidParams,
-            0x7a => ResponseCode::WrongLength,
-            0x79 => ResponseCode::BufferTooSmall,
-            0x78 => ResponseCode::CryptogramMismatch,
-            0x77 => ResponseCode::AuthSessionError,
-            0x76 => ResponseCode::MACMismatch,
-            0x75 => ResponseCode::DeviceOK,
-            0x74 => ResponseCode::DeviceInvalidCommand,
-            0x73 => ResponseCode::DeviceInvalidData,
-            0x72 => ResponseCode::DeviceInvalidSession,
-            0x71 => ResponseCode::DeviceAuthFail,
-            0x70 => ResponseCode::DeviceSessionsFull,
-            0x6f => ResponseCode::DeviceSessionFailed,
-            0x6e => ResponseCode::DeviceStorageFailed,
-            0x6d => ResponseCode::DeviceWrongLength,
-            0x6c => ResponseCode::DeviceInvalidPermission,
-            0x6b => ResponseCode::DeviceLogFull,
-            0x6a => ResponseCode::DeviceObjNotFound,
-            0x69 => ResponseCode::DeviceIDIllegal,
-            0x68 => ResponseCode::DeviceInvalidOTP,
-            0x67 => ResponseCode::DeviceDemoMode,
-            0x66 => ResponseCode::DeviceCmdUnexecuted,
-            0x65 => ResponseCode::GenericError,
-            0x64 => ResponseCode::DeviceObjectExists,
-            0x63 => ResponseCode::ConnectorError,
-            _ => {
-                if byte >= 0x80 {
-                    ResponseCode::Success(CommandType::from_byte(byte - 0x80)?)
-                } else {
-                    fail!(
-                        SecureChannelError::ProtocolError,
-                        "invalid response code: {}",
-                        80 - byte
-                    )
-                }
-            }
-        })
     }
 }

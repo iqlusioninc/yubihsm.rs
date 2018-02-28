@@ -5,7 +5,7 @@
 use byteorder::{BigEndian, WriteBytesExt};
 use connector::Connector;
 use failure::Error;
-use securechannel::{Challenge, Channel, Command, CommandType, Cryptogram, StaticKeys,
+use securechannel::{Challenge, Channel, Command, CommandType, Cryptogram, Response, StaticKeys,
                     CHALLENGE_SIZE};
 use super::{KeyId, SessionId};
 
@@ -46,32 +46,26 @@ impl<'a> Session<'a> {
         command_data.write_u16::<BigEndian>(auth_key_id)?;
         command_data.extend_from_slice(host_challenge.as_slice());
 
-        let command = Command::new(CommandType::CreateSession, &command_data);
-        let response = connector.command(command)?;
+        let command = Command::new(CommandType::CreateSession, command_data);
+        let response = connector.send_command(command)?;
 
-        if response.is_err() {
-            fail!(
-                SessionError::CreateFailed,
-                "HSM error: {:?}",
-                response.code()
-            );
-        }
-
-        let response_body = response.body();
-        if response_body.len() != 1 + CHALLENGE_SIZE * 2 {
+        if response.data.len() != CHALLENGE_SIZE * 2 {
             fail!(
                 SessionError::CreateFailed,
                 "invalid response length {} (expected {})",
-                response.body().len(),
-                1 + CHALLENGE_SIZE * 2
+                response.data.len(),
+                CHALLENGE_SIZE * 2
             );
         }
 
-        let id = SessionId::new(response_body[0])?;
-        let card_challenge = Challenge::from_slice(&response_body[1..9]);
+        let id = response
+            .session_id
+            .ok_or_else(|| err!(SessionError::CreateFailed, "no session ID in response"))?;
+
+        let card_challenge = Challenge::from_slice(&response.data[..CHALLENGE_SIZE]);
         let channel = Channel::new(id, static_keys, host_challenge, &card_challenge);
         let expected_card_cryptogram = channel.card_cryptogram();
-        let actual_card_cryptogram = Cryptogram::from_slice(&response_body[9..17]);
+        let actual_card_cryptogram = Cryptogram::from_slice(&response.data[CHALLENGE_SIZE..]);
 
         if expected_card_cryptogram != actual_card_cryptogram {
             fail!(SessionError::AuthFailed, "card cryptogram mismatch!");
@@ -87,15 +81,30 @@ impl<'a> Session<'a> {
         Ok(session)
     }
 
-    /// Authenticate the current session with the `YubiHSM2`
-    fn authenticate(&mut self) -> Result<(), Error> {
-        let command = self.channel.authenticate_session()?;
-        let response = self.connector.command(command)?;
-        self.channel.finish_authenticate_session(&response)
-    }
-
     /// Get the current session ID
     pub fn id(&self) -> SessionId {
         self.id
+    }
+
+    /// Have the card echo an input message
+    pub fn echo(&mut self, msg: &[u8]) -> Result<Vec<u8>, Error> {
+        let command = Command::new(CommandType::Echo, msg);
+        let response = self.send_encrypted_command(command)?;
+        Ok(response.data)
+    }
+
+    /// Authenticate the current session with the `YubiHSM2`
+    fn authenticate(&mut self) -> Result<(), Error> {
+        let command = self.channel.authenticate_session()?;
+        let response = self.connector.send_command(command)?;
+        self.channel.finish_authenticate_session(&response)
+    }
+
+    /// Encrypt a command and send it to the card, then authenticate and
+    /// decrypt the response
+    fn send_encrypted_command(&mut self, plaintext_cmd: Command) -> Result<Response, Error> {
+        let encrypted_cmd = self.channel.encrypt_command(plaintext_cmd)?;
+        let encrypted_response = self.connector.send_command(encrypted_cmd)?;
+        self.channel.decrypt_response(encrypted_response)
     }
 }
