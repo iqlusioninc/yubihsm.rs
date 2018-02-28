@@ -7,7 +7,7 @@ use connector::Connector;
 use failure::Error;
 use securechannel::{Challenge, Channel, Command, CommandType, Cryptogram, Response, StaticKeys,
                     CHALLENGE_SIZE};
-use super::{KeyId, SessionId};
+use super::{KeyId, Object, SessionId};
 
 /// Encrypted session with the `YubiHSM2`
 pub struct Session<'a> {
@@ -30,6 +30,13 @@ pub enum SessionError {
     #[fail(display = "authentication failed: {}", description)]
     AuthFailed {
         /// Details about the authentication failure
+        description: String,
+    },
+
+    /// Protocol error occurred
+    #[fail(display = "protocol error: {}", description)]
+    ProtocolError {
+        /// Details about the protocol error
         description: String,
     },
 }
@@ -91,6 +98,21 @@ impl<'a> Session<'a> {
         let command = Command::new(CommandType::Echo, msg);
         let response = self.send_encrypted_command(command)?;
         Ok(response.data)
+    }
+
+    /// List objects visible from the current session
+    pub fn list_objects(&mut self) -> Result<Vec<Object>, Error> {
+        // TODO: support for filtering objects
+        let command = Command::new(CommandType::ListObjects, vec![]);
+        let response = self.send_encrypted_command(command)?;
+
+        let mut objects = Vec::with_capacity(response.data.len() / 4);
+
+        for object_data in response.data.chunks(4) {
+            objects.push(Object::from_list_response(object_data)?);
+        }
+
+        Ok(objects)
     }
 
     /// Authenticate the current session with the `YubiHSM2`

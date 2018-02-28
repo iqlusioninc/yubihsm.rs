@@ -43,10 +43,12 @@ macro_rules! fail {
 pub mod connector;
 #[cfg(any(feature = "mockhsm"))]
 pub mod mockhsm;
+pub mod object;
 mod securechannel;
 pub mod session;
 
 pub use connector::Connector;
+pub use object::{Object, ObjectType};
 pub use securechannel::SessionId;
 pub use session::{Session, SessionError};
 

@@ -14,6 +14,7 @@ use super::{Mac, SecureChannelError, SessionId, MAC_SIZE};
 
 /// A command sent from the host to the `YubiHSM2`. May or may not be
 /// authenticated using SCP03's chained/evolving MAC protocol.
+#[derive(Debug)]
 pub(crate) struct Command {
     /// Type of command to be invoked
     pub command_type: CommandType,
