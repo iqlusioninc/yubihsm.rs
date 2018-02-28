@@ -69,6 +69,9 @@ pub enum SecurityLevel {
 
     /// 'AUTHENTICATED' i.e. the EXTERNAL_AUTHENTICATE command has completed
     Authenticated,
+
+    /// Terminated: either explicitly closed or due to protocol error
+    Terminated,
 }
 
 /// SCP03 Secure Channel
@@ -153,6 +156,7 @@ impl Channel {
         command_data: &[u8],
     ) -> Result<Command, Error> {
         if self.counter >= MAX_COMMANDS_PER_SESSION {
+            self.terminate();
             fail!(
                 SecureChannelError::SessionLimitReached,
                 "max of {} commands per session exceeded",
@@ -194,6 +198,7 @@ impl Channel {
     pub fn finish_authenticate_session(&mut self, response: &Response) -> Result<(), Error> {
         // The EXTERNAL_AUTHENTICATE command does not send an R-MAC value
         if !response.data.is_empty() {
+            self.terminate();
             fail!(
                 SecureChannelError::ProtocolError,
                 "expected empty response data (got {}-bytes)",
@@ -247,6 +252,7 @@ impl Channel {
         let response_len = cbc_decryptor
             .decrypt_pad(&mut response_message)
             .map_err(|e| {
+                self.terminate();
                 err!(
                     SecureChannelError::ProtocolError,
                     "error decrypting response: {:?}",
@@ -267,6 +273,7 @@ impl Channel {
         assert_eq!(self.security_level, SecurityLevel::Authenticated);
 
         let session_id = response.session_id.ok_or_else(|| {
+            self.terminate();
             err!(
                 SecureChannelError::ProtocolError,
                 "no session ID in response"
@@ -285,11 +292,16 @@ impl Channel {
         mac.input(&[session_id.to_u8()]);
         mac.input(&response.data);
 
-        response
+        if response
             .mac
             .as_ref()
-            .expect("response missing MAC tag!")
-            .verify(&mac.result().code())?;
+            .expect("missing R-MAC tag!")
+            .verify(&mac.result().code())
+            .is_err()
+        {
+            self.terminate();
+            fail!(SecureChannelError::VerifyFailed, "R-MAC mismatch!");
+        }
 
         self.increment_counter();
         Ok(())
@@ -302,6 +314,7 @@ impl Channel {
         assert_eq!(self.mac_chaining_value, [0u8; MAC_SIZE * 2]);
 
         if command.data.len() != CRYPTOGRAM_SIZE {
+            self.terminate();
             fail!(
                 SecureChannelError::ProtocolError,
                 "expected {}-byte command data (got {})",
@@ -314,6 +327,7 @@ impl Channel {
         let actual_host_cryptogram = Cryptogram::from_slice(&command.data);
 
         if expected_host_cryptogram != actual_host_cryptogram {
+            self.terminate();
             fail!(
                 SecureChannelError::VerifyFailed,
                 "host cryptogram mismatch!"
@@ -348,6 +362,7 @@ impl Channel {
         let command_len = cbc_decryptor
             .decrypt_pad(&mut command_data)
             .map_err(|e| {
+                self.terminate();
                 err!(
                     SecureChannelError::ProtocolError,
                     "error decrypting command: {:?}",
@@ -385,11 +400,16 @@ impl Channel {
 
         let tag = mac.result().code();
 
-        command
+        if command
             .mac
             .as_ref()
-            .expect("command missing MAC tag!")
-            .verify(&tag)?;
+            .expect("missing C-MAC tag!")
+            .verify(&tag)
+            .is_err()
+        {
+            self.terminate();
+            fail!(SecureChannelError::VerifyFailed, "C-MAC mismatch!");
+        }
 
         self.mac_chaining_value.copy_from_slice(tag.as_slice());
 
@@ -456,13 +476,19 @@ impl Channel {
             panic!("session counter overflowed!");
         });
     }
+
+    /// Terminate the session
+    fn terminate(&mut self) {
+        self.security_level = SecurityLevel::Terminated;
+        self.enc_key.clear();
+        self.mac_key.clear();
+        self.rmac_key.clear();
+    }
 }
 
 impl Drop for Channel {
     fn drop(&mut self) {
-        self.enc_key.clear();
-        self.mac_key.clear();
-        self.rmac_key.clear();
+        self.terminate();
     }
 }
 
