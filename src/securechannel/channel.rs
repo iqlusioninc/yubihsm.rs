@@ -224,9 +224,7 @@ impl Channel {
         let pos = message.len();
 
         // Provide space at the end of the vec for the padding
-        for _ in 0..(AES_BLOCK_SIZE - (pos % AES_BLOCK_SIZE)) {
-            message.push(0);
-        }
+        message.extend_from_slice(&[0u8; AES_BLOCK_SIZE]);
 
         let cipher = Aes128::new_varkey(&self.enc_key).unwrap();
         let icv = compute_icv(&cipher, self.counter);
@@ -412,7 +410,6 @@ impl Channel {
         }
 
         self.mac_chaining_value.copy_from_slice(tag.as_slice());
-
         Ok(())
     }
 
@@ -425,13 +422,12 @@ impl Channel {
         let pos = message.len();
 
         // Provide space at the end of the vec for the padding
-        for _ in 0..(AES_BLOCK_SIZE - (pos % AES_BLOCK_SIZE)) {
-            message.push(0);
-        }
+        message.extend_from_slice(&[0u8; AES_BLOCK_SIZE]);
 
         let cipher = Aes128::new_varkey(&self.enc_key).unwrap();
         let icv = compute_icv(&cipher, self.counter);
         let cbc_encryptor = Cbc::<Aes128, Iso7816>::new(cipher, &icv);
+
         let ct_len = cbc_encryptor.encrypt_pad(&mut message, pos).unwrap().len();
         message.truncate(ct_len);
 
@@ -461,11 +457,14 @@ impl Channel {
         mac.input(&[self.id.to_u8()]);
         mac.input(&body);
 
-        let tag = mac.result().code();
-        self.mac_chaining_value.copy_from_slice(tag.as_slice());
         self.increment_counter();
 
-        Ok(Response::new_with_mac(code, self.id, body, &tag))
+        Ok(Response::new_with_mac(
+            code,
+            self.id,
+            body,
+            &mac.result().code(),
+        ))
     }
 
     /// Increment the internal message counter

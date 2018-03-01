@@ -3,7 +3,7 @@ extern crate yubihsm_client;
 #[cfg(feature = "mockhsm")]
 use std::thread;
 
-use yubihsm_client::{Connector, KeyId, Session, SessionId};
+use yubihsm_client::{Connector, KeyId, ObjectType, Session};
 #[cfg(feature = "mockhsm")]
 use yubihsm_client::mockhsm::MockHSM;
 
@@ -30,8 +30,7 @@ fn yubihsm_integration_test() {
     let mut session = conn.create_session_from_password(DEFAULT_AUTH_KEY_ID, DEFAULT_PASSWORD)
         .unwrap_or_else(|err| panic!("error creating session: {:?}", err));
 
-    assert_eq!(session.id(), SessionId::new(0).unwrap());
-    echo_test(&mut session);
+    integration_tests(&mut session);
 }
 
 #[cfg(feature = "mockhsm")]
@@ -42,7 +41,7 @@ fn start_mockhsm(num_requests: usize) -> thread::JoinHandle<()> {
 #[cfg(feature = "mockhsm")]
 #[test]
 fn mockhsm_integration_test() {
-    let num_requests = 4;
+    let num_requests = 5;
     let mockhsm_thread = start_mockhsm(num_requests);
 
     let conn = Connector::open(&format!("http://{}", MOCKHSM_ADDR))
@@ -51,10 +50,14 @@ fn mockhsm_integration_test() {
     let mut session = conn.create_session_from_password(DEFAULT_AUTH_KEY_ID, DEFAULT_PASSWORD)
         .unwrap_or_else(|err| panic!("error creating session: {:?}", err));
 
-    assert_eq!(session.id(), SessionId::new(0).unwrap());
-    echo_test(&mut session);
-
+    integration_tests(&mut session);
     mockhsm_thread.join().unwrap();
+}
+
+// Tests to be performed as part of our integration testing process
+fn integration_tests(session: &mut Session) {
+    echo_test(session);
+    list_objects_test(session);
 }
 
 // Send a simple echo request
@@ -65,4 +68,17 @@ fn echo_test(session: &mut Session) {
         .unwrap_or_else(|err| panic!("error sending echo: {:?}", err));
 
     assert_eq!(&message[..], &echo_result[..]);
+}
+
+// List the objects in the YubiHSM2
+fn list_objects_test(session: &mut Session) {
+    let objects = session
+        .list_objects()
+        .unwrap_or_else(|err| panic!("error listing objects: {:?}", err));
+
+    assert_eq!(objects.len(), 1);
+    let object = &objects[0];
+
+    assert_eq!(object.id, 1);
+    assert_eq!(object.object_type, ObjectType::AuthKey)
 }

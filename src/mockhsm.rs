@@ -186,6 +186,7 @@ impl MockHSM {
 
         let response = match command.command_type {
             CommandType::Echo => self.echo(command),
+            CommandType::ListObjects => self.list_objects(&command),
             unsupported => panic!("unsupported command type: {:?}", unsupported),
         };
 
@@ -199,6 +200,12 @@ impl MockHSM {
     /// Echo a message back to the host
     fn echo(&self, command: Command) -> Response {
         Response::success(CommandType::Echo, command.data)
+    }
+
+    /// List all objects presently accessible to a session
+    fn list_objects(&self, _command: &Command) -> Response {
+        // TODO: actually model the objects present in the MockHSM
+        Response::success(CommandType::ListObjects, vec![0, 1, 2, 0])
     }
 
     /// Obtain the channel for a session by its ID
