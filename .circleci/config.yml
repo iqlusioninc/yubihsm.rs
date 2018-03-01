@@ -1,0 +1,38 @@
+version: 2
+
+jobs:
+  build:
+    docker:
+      - image: tarcieri/rust-yubihsm-sdk:latest
+
+    steps:
+      - checkout
+      - restore_cache:
+          # Bump this (and below) whenever the Docker image is updated
+          key: cache-20180228
+      - run:
+          name: rustfmt
+          command: |
+            rustfmt --version
+            cargo fmt -- --write-mode=diff
+      - run:
+          name: clippy
+          command: |
+            cargo clippy --version
+            cargo clippy --verbose --features=mockhsm
+      - run:
+          name: build (nightly-2018-02-04)
+          command: |
+            rustc --version --verbose
+            cargo --version --verbose
+            cargo build --verbose
+      - run:
+          name: test (nightly-2018-02-04)
+          command: |
+            cargo test --verbose --features=mockhsm
+      - save_cache:
+          # Bump this (and above) whenever the Docker image is updated
+          key: cache-20180228
+          paths:
+            - "~/.cargo"
+            - "./target"
