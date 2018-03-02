@@ -38,17 +38,17 @@ or endorsed by Yubico.
 
 ## Status
 
-Currently working:
+Initial support for creating encrypted channels to a YubiHSM2 via
+**yubihsm-connector** is complete, along with authenticating to the
+YubiHSM2 via a password/authentication key.
 
-* Creating encrypted sessions with YubiHSM2
-* Authenticating to YubiHSM2
-* The [Echo Command], which you can use to send "Hello, world!"
+The following commands are presently supported:
 
-Not working:
-
-* Anything actually useful
-
-[Echo Command]: https://developers.yubico.com/YubiHSM2/Commands/Echo.html
+* [Delete Object](https://developers.yubico.com/YubiHSM2/Commands/Delete_Object.html)
+* [Echo](https://developers.yubico.com/YubiHSM2/Commands/Echo.html)
+* [Generate Asymmetric Key](https://developers.yubico.com/YubiHSM2/Commands/Generate_Asymmetric_Key.html)
+* [Get Object Info](https://developers.yubico.com/YubiHSM2/Commands/Get_Object_Info.html)
+* [List Objects](https://developers.yubico.com/YubiHSM2/Commands/List_Objects.html)
 
 ## Testing
 
