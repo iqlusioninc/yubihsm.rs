@@ -3,11 +3,15 @@
 //! See <https://developers.yubico.com/YubiHSM2/Concepts/Session.html>
 
 use byteorder::{BigEndian, WriteBytesExt};
+use commands::{Command, DeleteObjectCommand, EchoCommand, GenAsymmetricKeyCommand,
+               GetObjectInfoCommand, ListObjectsCommand};
 use connector::Connector;
 use failure::Error;
-use securechannel::{Challenge, Channel, Command, CommandType, Cryptogram, Response, StaticKeys,
+use responses::{DeleteObjectResponse, EchoResponse, GenAsymmetricKeyResponse,
+                GetObjectInfoResponse, ListObjectsResponse, Response};
+use securechannel::{Challenge, Channel, CommandMessage, CommandType, Cryptogram, StaticKeys,
                     CHALLENGE_SIZE};
-use super::{KeyId, Object, SessionId};
+use super::{Algorithm, Capability, Domain, ObjectId, ObjectLabel, ObjectType, SessionId};
 
 /// Encrypted session with the `YubiHSM2`
 pub struct Session<'a> {
@@ -39,6 +43,13 @@ pub enum SessionError {
         /// Details about the protocol error
         description: String,
     },
+
+    /// HSM returned an error response
+    #[fail(display = "error response from HSM: {}", description)]
+    ResponseError {
+        /// Description of the bad response we received
+        description: String,
+    },
 }
 
 impl<'a> Session<'a> {
@@ -46,14 +57,14 @@ impl<'a> Session<'a> {
     pub fn new(
         connector: &'a Connector,
         host_challenge: &Challenge,
-        auth_key_id: KeyId,
+        auth_key_id: ObjectId,
         static_keys: &StaticKeys,
     ) -> Result<Self, Error> {
-        let mut command_data = Vec::with_capacity(10);
-        command_data.write_u16::<BigEndian>(auth_key_id)?;
-        command_data.extend_from_slice(host_challenge.as_slice());
+        let mut cmd_data = Vec::with_capacity(10);
+        cmd_data.write_u16::<BigEndian>(auth_key_id).unwrap();
+        cmd_data.extend_from_slice(host_challenge.as_slice());
 
-        let command = Command::new(CommandType::CreateSession, command_data);
+        let command = CommandMessage::new(CommandType::CreateSession, cmd_data);
         let response = connector.send_command(command)?;
 
         if response.data.len() != CHALLENGE_SIZE * 2 {
@@ -88,31 +99,67 @@ impl<'a> Session<'a> {
         Ok(session)
     }
 
+    /// Delete an object of the given ID and type
+    pub fn delete_object(
+        &mut self,
+        object_id: ObjectId,
+        object_type: ObjectType,
+    ) -> Result<DeleteObjectResponse, Error> {
+        self.send_encrypted_command(DeleteObjectCommand {
+            object_id,
+            object_type,
+        })
+    }
+
+    /// Have the card echo an input message
+    pub fn echo<T>(&mut self, message: T) -> Result<EchoResponse, Error>
+    where
+        T: Into<Vec<u8>>,
+    {
+        self.send_encrypted_command(EchoCommand {
+            message: message.into(),
+        })
+    }
+
+    /// Generate a new asymmetric key within the `YubiHSM2`
+    pub fn generate_asymmetric_key(
+        &mut self,
+        key_id: ObjectId,
+        label: ObjectLabel,
+        domains: &[Domain],
+        capabilities: &[Capability],
+        algorithm: Algorithm,
+    ) -> Result<GenAsymmetricKeyResponse, Error> {
+        self.send_encrypted_command(GenAsymmetricKeyCommand {
+            key_id,
+            label,
+            domains: domains.into(),
+            capabilities: capabilities.into(),
+            algorithm,
+        })
+    }
+
+    /// Get information about an object
+    pub fn get_object_info(
+        &mut self,
+        object_id: ObjectId,
+        object_type: ObjectType,
+    ) -> Result<GetObjectInfoResponse, Error> {
+        self.send_encrypted_command(GetObjectInfoCommand {
+            object_id,
+            object_type,
+        })
+    }
+
     /// Get the current session ID
     pub fn id(&self) -> SessionId {
         self.id
     }
 
-    /// Have the card echo an input message
-    pub fn echo(&mut self, msg: &[u8]) -> Result<Vec<u8>, Error> {
-        let command = Command::new(CommandType::Echo, msg);
-        let response = self.send_encrypted_command(command)?;
-        Ok(response.data)
-    }
-
     /// List objects visible from the current session
-    pub fn list_objects(&mut self) -> Result<Vec<Object>, Error> {
+    pub fn list_objects(&mut self) -> Result<ListObjectsResponse, Error> {
         // TODO: support for filtering objects
-        let command = Command::new(CommandType::ListObjects, vec![]);
-        let response = self.send_encrypted_command(command)?;
-
-        let mut objects = Vec::with_capacity(response.data.len() / 4);
-
-        for object_data in response.data.chunks(4) {
-            objects.push(Object::from_list_response(object_data)?);
-        }
-
-        Ok(objects)
+        self.send_encrypted_command(ListObjectsCommand {})
     }
 
     /// Authenticate the current session with the `YubiHSM2`
@@ -124,9 +171,25 @@ impl<'a> Session<'a> {
 
     /// Encrypt a command and send it to the card, then authenticate and
     /// decrypt the response
-    fn send_encrypted_command(&mut self, plaintext_cmd: Command) -> Result<Response, Error> {
+    fn send_encrypted_command<C: Command>(&mut self, command: C) -> Result<C::ResponseType, Error> {
+        let plaintext_cmd = command.into();
         let encrypted_cmd = self.channel.encrypt_command(plaintext_cmd)?;
         let encrypted_response = self.connector.send_command(encrypted_cmd)?;
-        self.channel.decrypt_response(encrypted_response)
+        let response = self.channel.decrypt_response(encrypted_response)?;
+
+        if response.is_err() {
+            fail!(SessionError::ResponseError, "{:?}", response.code);
+        }
+
+        if response.command().unwrap() != C::COMMAND_TYPE {
+            fail!(
+                SessionError::ResponseError,
+                "command type mismatch: expected {:?}, got {:?}",
+                C::COMMAND_TYPE,
+                response.command().unwrap()
+            );
+        }
+
+        C::ResponseType::parse(response.data)
     }
 }

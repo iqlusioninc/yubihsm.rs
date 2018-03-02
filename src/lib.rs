@@ -6,12 +6,16 @@
 #![deny(unsafe_code, unused_import_braces, unused_qualifications)]
 
 extern crate aesni;
+#[macro_use]
+extern crate bitflags;
 extern crate block_modes;
 extern crate byteorder;
 extern crate clear_on_drop;
 extern crate cmac;
 extern crate constant_time_eq;
-#[cfg_attr(feature = "mockhsm", macro_use)]
+#[cfg(feature = "mockhsm")]
+extern crate ed25519_dalek;
+#[macro_use]
 extern crate failure;
 #[macro_use]
 extern crate failure_derive;
@@ -40,17 +44,26 @@ macro_rules! fail {
     };
 }
 
+pub mod algorithm;
+pub mod capability;
+mod commands;
 pub mod connector;
+pub mod domain;
 #[cfg(any(feature = "mockhsm"))]
 pub mod mockhsm;
 pub mod object;
+pub mod responses;
 mod securechannel;
 pub mod session;
 
+pub use algorithm::Algorithm;
+pub use capability::Capability;
 pub use connector::Connector;
-pub use object::{Object, ObjectType};
+pub use domain::Domain;
+pub use object::Id as ObjectId;
+pub use object::Label as ObjectLabel;
+pub use object::Origin as ObjectOrigin;
+pub use object::Type as ObjectType;
+pub use object::SequenceId;
 pub use securechannel::SessionId;
 pub use session::{Session, SessionError};
-
-/// Key identifiers
-pub type KeyId = u16;

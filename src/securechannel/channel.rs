@@ -12,8 +12,8 @@ use cmac::crypto_mac::Mac as CryptoMac;
 use failure::Error;
 
 use super::kdf;
-use super::{Challenge, Command, CommandType, Context, Cryptogram, Response, SecureChannelError,
-            StaticKeys, CRYPTOGRAM_SIZE, KEY_SIZE, MAC_SIZE};
+use super::{Challenge, CommandMessage, CommandType, Context, Cryptogram, ResponseMessage,
+            SecureChannelError, StaticKeys, CRYPTOGRAM_SIZE, KEY_SIZE, MAC_SIZE};
 #[cfg(feature = "mockhsm")]
 use super::ResponseCode;
 
@@ -154,7 +154,7 @@ impl Channel {
         &mut self,
         command_type: CommandType,
         command_data: &[u8],
-    ) -> Result<Command, Error> {
+    ) -> Result<CommandMessage, Error> {
         if self.counter >= MAX_COMMANDS_PER_SESSION {
             self.terminate();
             fail!(
@@ -177,7 +177,7 @@ impl Channel {
         let tag = mac.result().code();
         self.mac_chaining_value.copy_from_slice(tag.as_slice());
 
-        Ok(Command::new_with_mac(
+        Ok(CommandMessage::new_with_mac(
             command_type,
             self.id,
             command_data,
@@ -186,7 +186,7 @@ impl Channel {
     }
 
     /// Compute a message for authenticating the host to the card
-    pub fn authenticate_session(&mut self) -> Result<Command, Error> {
+    pub fn authenticate_session(&mut self) -> Result<CommandMessage, Error> {
         assert_eq!(self.security_level, SecurityLevel::NoSecurityLevel);
         assert_eq!(self.mac_chaining_value, [0u8; MAC_SIZE * 2]);
 
@@ -195,7 +195,7 @@ impl Channel {
     }
 
     /// Handle the authenticate session response from the card
-    pub fn finish_authenticate_session(&mut self, response: &Response) -> Result<(), Error> {
+    pub fn finish_authenticate_session(&mut self, response: &ResponseMessage) -> Result<(), Error> {
         // The EXTERNAL_AUTHENTICATE command does not send an R-MAC value
         if !response.data.is_empty() {
             self.terminate();
@@ -217,7 +217,7 @@ impl Channel {
     }
 
     /// Encrypt a command to be sent to the card
-    pub fn encrypt_command(&mut self, command: Command) -> Result<Command, Error> {
+    pub fn encrypt_command(&mut self, command: CommandMessage) -> Result<CommandMessage, Error> {
         assert_eq!(self.security_level, SecurityLevel::Authenticated);
 
         let mut message = command.into_vec();
@@ -235,7 +235,10 @@ impl Channel {
     }
 
     /// Verify and decrypt a response from the card
-    pub fn decrypt_response(&mut self, encrypted_response: Response) -> Result<Response, Error> {
+    pub fn decrypt_response(
+        &mut self,
+        encrypted_response: ResponseMessage,
+    ) -> Result<ResponseMessage, Error> {
         assert_eq!(self.security_level, SecurityLevel::Authenticated);
 
         let cipher = Aes128::new_varkey(&self.enc_key).unwrap();
@@ -260,14 +263,14 @@ impl Channel {
             .len();
 
         response_message.truncate(response_len);
-        let mut decrypted_response = Response::parse(response_message)?;
+        let mut decrypted_response = ResponseMessage::parse(response_message)?;
         decrypted_response.session_id = encrypted_response.session_id;
 
         Ok(decrypted_response)
     }
 
     /// Ensure message authenticity by verifying the response MAC (R-MAC) sent from the card
-    pub fn verify_response_mac(&mut self, response: &Response) -> Result<(), Error> {
+    pub fn verify_response_mac(&mut self, response: &ResponseMessage) -> Result<(), Error> {
         assert_eq!(self.security_level, SecurityLevel::Authenticated);
 
         let session_id = response.session_id.ok_or_else(|| {
@@ -307,7 +310,7 @@ impl Channel {
 
     /// Verify a host authentication message (for simulating a connector/card)
     #[cfg(feature = "mockhsm")]
-    pub fn verify_authenticate_session(&mut self, command: &Command) -> Result<(), Error> {
+    pub fn verify_authenticate_session(&mut self, command: &CommandMessage) -> Result<(), Error> {
         assert_eq!(self.security_level, SecurityLevel::NoSecurityLevel);
         assert_eq!(self.mac_chaining_value, [0u8; MAC_SIZE * 2]);
 
@@ -345,7 +348,10 @@ impl Channel {
 
     /// Verify and decrypt a command from the host
     #[cfg(feature = "mockhsm")]
-    pub fn decrypt_command(&mut self, encrypted_command: Command) -> Result<Command, Error> {
+    pub fn decrypt_command(
+        &mut self,
+        encrypted_command: CommandMessage,
+    ) -> Result<CommandMessage, Error> {
         assert_eq!(self.security_level, SecurityLevel::Authenticated);
 
         let cipher = Aes128::new_varkey(&self.enc_key).unwrap();
@@ -370,7 +376,7 @@ impl Channel {
             .len();
 
         command_data.truncate(command_len);
-        let mut decrypted_command = Command::parse(command_data)?;
+        let mut decrypted_command = CommandMessage::parse(command_data)?;
         decrypted_command.session_id = encrypted_command.session_id;
 
         Ok(decrypted_command)
@@ -378,7 +384,7 @@ impl Channel {
 
     /// Verify a Command MAC (C-MAC) value, updating the internal session state
     #[cfg(feature = "mockhsm")]
-    pub fn verify_command_mac(&mut self, command: &Command) -> Result<(), Error> {
+    pub fn verify_command_mac(&mut self, command: &CommandMessage) -> Result<(), Error> {
         assert_eq!(
             command.session_id.unwrap(),
             self.id,
@@ -415,7 +421,10 @@ impl Channel {
 
     /// Encrypt a response to be sent back to the host
     #[cfg(feature = "mockhsm")]
-    pub fn encrypt_response(&mut self, response: Response) -> Result<Response, Error> {
+    pub fn encrypt_response(
+        &mut self,
+        response: ResponseMessage,
+    ) -> Result<ResponseMessage, Error> {
         assert_eq!(self.security_level, SecurityLevel::Authenticated);
 
         let mut message = response.into_vec();
@@ -440,7 +449,7 @@ impl Channel {
         &mut self,
         code: ResponseCode,
         response_data: T,
-    ) -> Result<Response, Error>
+    ) -> Result<ResponseMessage, Error>
     where
         T: Into<Vec<u8>>,
     {
@@ -459,7 +468,7 @@ impl Channel {
 
         self.increment_counter();
 
-        Ok(Response::new_with_mac(
+        Ok(ResponseMessage::new_with_mac(
             code,
             self.id,
             body,
