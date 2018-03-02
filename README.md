@@ -66,6 +66,9 @@ The YubiHSM2 device should be in the default factory state. To reset it to this
 state, either use the [yubihsm-shell reset] command or press on the YubiHSM2 for
 10 seconds immediately after inserting it.
 
+**NOTE THAT THESE TESTS ARE DESTRUCTIVE: DO NOT RUN THEM AGAINST A YUBIHSM2
+WHICH CONTAINS KEYS YOU CARE ABOUT**
+
 [YubiHSM2 SDK]: https://developers.yubico.com/YubiHSM2/Releases/
 [yubihsm-shell reset]: https://developers.yubico.com/YubiHSM2/Commands/Reset.html
 

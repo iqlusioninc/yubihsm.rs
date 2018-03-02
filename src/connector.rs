@@ -4,10 +4,10 @@ use failure::Error;
 use reqwest::{Client, StatusCode};
 use reqwest::Response as HttpResponse;
 use reqwest::header::{ContentType, UserAgent};
-use securechannel::{Challenge, Command, Response, StaticKeys};
+use securechannel::{Challenge, CommandMessage, ResponseMessage, StaticKeys};
 use session::Session;
 use std::io::Read;
-use super::KeyId;
+use super::ObjectId;
 
 /// User-Agent string to supply
 pub const USER_AGENT: &str = concat!("yubihsm-client.rs ", env!("CARGO_PKG_VERSION"));
@@ -159,7 +159,7 @@ impl Connector {
     /// Open a new session to the HSM, authenticating with the given keypair
     pub fn create_session(
         &self,
-        auth_key_id: KeyId,
+        auth_key_id: ObjectId,
         static_keys: &StaticKeys,
     ) -> Result<Session, Error> {
         let host_challenge = Challenge::random();
@@ -169,7 +169,7 @@ impl Connector {
     /// Open a new session to the HSM, authenticating with a given password
     pub fn create_session_from_password(
         &self,
-        auth_key_id: KeyId,
+        auth_key_id: ObjectId,
         password: &str,
     ) -> Result<Session, Error> {
         self.create_session(
@@ -179,10 +179,10 @@ impl Connector {
     }
 
     /// POST /connector/api with a given command message
-    pub(crate) fn send_command(&self, cmd: Command) -> Result<Response, Error> {
+    pub(crate) fn send_command(&self, cmd: CommandMessage) -> Result<ResponseMessage, Error> {
         let cmd_type = cmd.command_type;
         let response_bytes = self.post("/connector/api", cmd.into_vec())?;
-        let response = Response::parse(response_bytes)?;
+        let response = ResponseMessage::parse(response_bytes)?;
 
         if response.is_err() {
             fail!(

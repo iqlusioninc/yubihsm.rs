@@ -36,13 +36,13 @@ pub const KEY_SIZE: usize = 16;
 pub use self::challenge::{Challenge, CHALLENGE_SIZE};
 pub(crate) use self::channel::Channel;
 pub use self::channel::Id as SessionId;
-pub(crate) use self::command::Command;
+pub(crate) use self::command::CommandMessage;
 pub use self::command::CommandType;
 pub use self::context::{Context, CONTEXT_SIZE};
 pub use self::cryptogram::{Cryptogram, CRYPTOGRAM_SIZE};
 pub use self::error::SecureChannelError;
 pub(crate) use self::mac::{Mac, MAC_SIZE};
-pub(crate) use self::response::Response;
+pub(crate) use self::response::ResponseMessage;
 #[cfg(feature = "mockhsm")]
 pub(crate) use self::response::ResponseCode;
 pub use self::static_keys::StaticKeys;

@@ -8,16 +8,25 @@ use self::tiny_http::{Method, Request, Server, StatusCode};
 use self::tiny_http::Response as HttpResponse;
 
 use byteorder::{BigEndian, ByteOrder};
+use ed25519_dalek::Keypair as Ed25519Keypair;
 use failure::Error;
+use rand::OsRng;
+use sha2::Sha512;
 use std::collections::HashMap;
 use std::io::Cursor;
 
+use {Algorithm, Capability, Domain, ObjectId, ObjectLabel, ObjectOrigin, ObjectType, SequenceId,
+     SessionId};
+use commands::{Command, DeleteObjectCommand, GenAsymmetricKeyCommand, GetObjectInfoCommand,
+               ListObjectsCommand};
 use connector::{PBKDF2_ITERATIONS, PBKDF2_SALT};
-use securechannel::{Challenge, Channel, Command, CommandType, Response, StaticKeys, CHALLENGE_SIZE};
-use super::{KeyId, SessionId};
+use responses::{DeleteObjectResponse, EchoResponse, GenAsymmetricKeyResponse,
+                GetObjectInfoResponse, ListObjectsEntry, ListObjectsResponse, Response};
+use securechannel::{Challenge, Channel, CommandMessage, CommandType, ResponseMessage, StaticKeys,
+                    CHALLENGE_SIZE};
 
 /// Default auth key ID slot
-const DEFAULT_AUTH_KEY_ID: KeyId = 1;
+const DEFAULT_AUTH_KEY_ID: ObjectId = 1;
 
 /// Default password
 const DEFAULT_PASSWORD: &str = "password";
@@ -28,6 +37,58 @@ pub struct MockHSM {
     server: Server,
     static_keys: StaticKeys,
     sessions: HashMap<SessionId, Channel>,
+    ed25519_keys: HashMap<ObjectId, Object<Ed25519Keypair>>,
+}
+
+/// Objects stored in the `MockHSM`
+#[allow(dead_code)]
+struct Object<T> {
+    value: T,
+    object_type: ObjectType,
+    algorithm: Algorithm,
+    capabilities: Vec<Capability>,
+    delegated_capabilities: Vec<Capability>,
+    domains: Vec<Domain>,
+    length: u16,
+    sequence: SequenceId,
+    origin: ObjectOrigin,
+    label: ObjectLabel,
+}
+
+impl<T> Object<T> {
+    pub fn object_info_response(&self, object_id: ObjectId) -> GetObjectInfoResponse {
+        GetObjectInfoResponse {
+            capabilities: self.capabilities.clone(),
+            id: object_id,
+            length: self.length,
+            domains: self.domains.clone(),
+            object_type: self.object_type,
+            algorithm: self.algorithm,
+            sequence: self.sequence,
+            origin: self.origin,
+            label: self.label.clone(),
+            delegated_capabilities: self.delegated_capabilities.clone(),
+        }
+    }
+}
+
+impl Object<Ed25519Keypair> {
+    pub fn new(label: ObjectLabel, capabilities: Vec<Capability>, domains: Vec<Domain>) -> Self {
+        let mut cspring = OsRng::new().unwrap();
+
+        Self {
+            value: Ed25519Keypair::generate::<Sha512>(&mut cspring),
+            object_type: ObjectType::Asymmetric,
+            algorithm: Algorithm::EC_ED25519,
+            capabilities,
+            delegated_capabilities: vec![],
+            domains,
+            length: 24,
+            sequence: 1,
+            origin: ObjectOrigin::Generated,
+            label,
+        }
+    }
 }
 
 impl MockHSM {
@@ -46,6 +107,7 @@ impl MockHSM {
                 PBKDF2_ITERATIONS,
             ),
             sessions: HashMap::new(),
+            ed25519_keys: HashMap::new(),
         })
     }
 
@@ -102,7 +164,7 @@ impl MockHSM {
             .read_to_end(&mut body)
             .expect("HTTP request read error");
 
-        let command = Command::parse(body).unwrap();
+        let command = CommandMessage::parse(body).unwrap();
 
         match command.command_type {
             CommandType::CreateSession => self.create_session(&command),
@@ -113,7 +175,7 @@ impl MockHSM {
     }
 
     /// Create a new HSM session
-    fn create_session(&mut self, command: &Command) -> HttpResponse<Cursor<Vec<u8>>> {
+    fn create_session(&mut self, command: &CommandMessage) -> HttpResponse<Cursor<Vec<u8>>> {
         assert_eq!(
             command.data.len(),
             10,
@@ -154,12 +216,12 @@ impl MockHSM {
         assert!(self.sessions.insert(session_id, channel).is_none());
 
         HttpResponse::from_data(
-            Response::success(CommandType::CreateSession, response_body).into_vec(),
+            ResponseMessage::success(CommandType::CreateSession, response_body).into_vec(),
         )
     }
 
     /// Authenticate an HSM session
-    fn authenticate_session(&mut self, command: &Command) -> HttpResponse<Cursor<Vec<u8>>> {
+    fn authenticate_session(&mut self, command: &CommandMessage) -> HttpResponse<Cursor<Vec<u8>>> {
         let session_id = command
             .session_id
             .unwrap_or_else(|| panic!("no session ID in command: {:?}", command.command_type));
@@ -168,11 +230,16 @@ impl MockHSM {
             .verify_authenticate_session(command)
             .unwrap();
 
-        HttpResponse::from_data(Response::success(CommandType::AuthSession, vec![]).into_vec())
+        HttpResponse::from_data(
+            ResponseMessage::success(CommandType::AuthSession, vec![]).into_vec(),
+        )
     }
 
     /// Encrypted session messages
-    fn session_message(&mut self, encrypted_command: Command) -> HttpResponse<Cursor<Vec<u8>>> {
+    fn session_message(
+        &mut self,
+        encrypted_command: CommandMessage,
+    ) -> HttpResponse<Cursor<Vec<u8>>> {
         let session_id = encrypted_command.session_id.unwrap_or_else(|| {
             panic!(
                 "no session ID in command: {:?}",
@@ -185,8 +252,11 @@ impl MockHSM {
             .unwrap();
 
         let response = match command.command_type {
+            CommandType::DeleteObject => self.delete_object(command),
             CommandType::Echo => self.echo(command),
-            CommandType::ListObjects => self.list_objects(&command),
+            CommandType::GenAsymmetricKey => self.gen_asymmetric_key(command),
+            CommandType::GetObjectInfo => self.get_object_info(command),
+            CommandType::ListObjects => self.list_objects(command),
             unsupported => panic!("unsupported command type: {:?}", unsupported),
         };
 
@@ -197,15 +267,81 @@ impl MockHSM {
         HttpResponse::from_data(encrypted_response.into_vec())
     }
 
+    /// Delete an object
+    fn delete_object(&mut self, cmd_message: CommandMessage) -> ResponseMessage {
+        let command = DeleteObjectCommand::parse(cmd_message)
+            .unwrap_or_else(|e| panic!("error parsing CommandType::DeleteObject: {:?}", e));
+
+        match command.object_type {
+            // TODO: support other asymmetric keys besides Ed25519 keys
+            ObjectType::Asymmetric => match self.ed25519_keys.remove(&command.object_id) {
+                Some(_) => respond(DeleteObjectResponse {}),
+                None => {
+                    ResponseMessage::error(&format!("no such object ID: {:?}", command.object_id))
+                }
+            },
+            _ => panic!("MockHSM only supports delete_object for ObjectType::Asymmetric"),
+        }
+    }
+
     /// Echo a message back to the host
-    fn echo(&self, command: Command) -> Response {
-        Response::success(CommandType::Echo, command.data)
+    fn echo(&self, cmd_message: CommandMessage) -> ResponseMessage {
+        respond(EchoResponse {
+            message: cmd_message.data,
+        })
+    }
+
+    /// Generate a new random asymmetric key
+    fn gen_asymmetric_key(&mut self, cmd_message: CommandMessage) -> ResponseMessage {
+        let command = GenAsymmetricKeyCommand::parse(cmd_message)
+            .unwrap_or_else(|e| panic!("error parsing CommandType::GetObjectInfo: {:?}", e));
+
+        match command.algorithm {
+            Algorithm::EC_ED25519 => {
+                let key = Object::new(command.label, command.capabilities, command.domains);
+                assert!(self.ed25519_keys.insert(command.key_id, key).is_none());
+            }
+            other => panic!("unsupported algorithm: {:?}", other),
+        }
+
+        respond(GenAsymmetricKeyResponse {
+            key_id: command.key_id,
+        })
+    }
+
+    /// Get detailed info about a specific object
+    fn get_object_info(&self, cmd_message: CommandMessage) -> ResponseMessage {
+        let command = GetObjectInfoCommand::parse(cmd_message)
+            .unwrap_or_else(|e| panic!("error parsing CommandType::GetObjectInfo: {:?}", e));
+
+        if command.object_type != ObjectType::Asymmetric {
+            panic!("MockHSM only supports ObjectType::Asymmetric for now");
+        }
+
+        // TODO: support other asymmetric keys besides Ed25519 keys
+        match self.ed25519_keys.get(&command.object_id) {
+            Some(key) => respond(key.object_info_response(command.object_id)),
+            None => ResponseMessage::error(&format!("no such object ID: {:?}", command.object_id)),
+        }
     }
 
     /// List all objects presently accessible to a session
-    fn list_objects(&self, _command: &Command) -> Response {
-        // TODO: actually model the objects present in the MockHSM
-        Response::success(CommandType::ListObjects, vec![0, 1, 2, 0])
+    fn list_objects(&self, cmd_message: CommandMessage) -> ResponseMessage {
+        // TODO: filter support
+        let _command = ListObjectsCommand::parse(cmd_message);
+
+        let list_entries = self.ed25519_keys
+            .iter()
+            .map(|(object_id, object)| ListObjectsEntry {
+                id: *object_id,
+                object_type: object.object_type,
+                sequence: object.sequence,
+            })
+            .collect();
+
+        respond(ListObjectsResponse {
+            objects: list_entries,
+        })
     }
 
     /// Obtain the channel for a session by its ID
@@ -214,4 +350,9 @@ impl MockHSM {
             .get_mut(id)
             .unwrap_or_else(|| panic!("invalid session ID: {:?}", id))
     }
+}
+
+/// Send a `Response` message back to the client
+fn respond<R: Response>(response: R) -> ResponseMessage {
+    ResponseMessage::success(R::COMMAND_TYPE, response.into_vec())
 }

@@ -8,7 +8,7 @@ use super::{CommandType, Mac, SecureChannelError, SessionId, MAC_SIZE};
 
 /// Command responses
 #[derive(Debug, Eq, PartialEq)]
-pub struct Response {
+pub struct ResponseMessage {
     /// Success (for a given command type) or an error type
     pub code: ResponseCode,
 
@@ -22,7 +22,7 @@ pub struct Response {
     pub mac: Option<Mac>,
 }
 
-impl Response {
+impl ResponseMessage {
     /// Parse a response into a Response struct
     pub fn parse(mut bytes: Vec<u8>) -> Result<Self, Error> {
         if bytes.len() < 3 {
@@ -86,11 +86,11 @@ impl Response {
 
     /// Create a new response without an associated session
     #[cfg(feature = "mockhsm")]
-    pub fn new<T>(code: ResponseCode, response_data: T) -> Response
+    pub fn new<T>(code: ResponseCode, response_data: T) -> ResponseMessage
     where
         T: Into<Vec<u8>>,
     {
-        Response {
+        ResponseMessage {
             code,
             session_id: None,
             data: response_data.into(),
@@ -120,7 +120,7 @@ impl Response {
 
     /// Create a successful response
     #[cfg(feature = "mockhsm")]
-    pub fn success<T>(command_type: CommandType, response_data: T) -> Response
+    pub fn success<T>(command_type: CommandType, response_data: T) -> ResponseMessage
     where
         T: Into<Vec<u8>>,
     {
@@ -133,6 +133,12 @@ impl Response {
             ResponseCode::Success(_) => true,
             _ => false,
         }
+    }
+
+    /// Create an error response
+    #[cfg(feature = "mockhsm")]
+    pub fn error(message: &str) -> ResponseMessage {
+        ResponseMessage::new(ResponseCode::MemoryError, message.as_bytes())
     }
 
     /// Did an error occur?
