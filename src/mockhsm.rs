@@ -4,26 +4,27 @@
 
 extern crate tiny_http;
 
-use self::tiny_http::{Method, Request, Server, StatusCode};
-use self::tiny_http::Response as HttpResponse;
+use std::collections::HashMap;
+use std::io::Cursor;
 
 use byteorder::{BigEndian, ByteOrder};
 use ed25519_dalek::Keypair as Ed25519Keypair;
 use failure::Error;
 use rand::OsRng;
 use sha2::Sha512;
-use std::collections::HashMap;
-use std::io::Cursor;
+use self::tiny_http::{Method, Request, Server, StatusCode};
+use self::tiny_http::Response as HttpResponse;
 
-use {Algorithm, Capability, Domain, ObjectId, ObjectLabel, ObjectOrigin, ObjectType, SequenceId,
-     SessionId};
-use commands::{Command, DeleteObjectCommand, GenAsymmetricKeyCommand, GetObjectInfoCommand,
+use {Algorithm, Capabilities, Domains, ObjectId, ObjectLabel, ObjectOrigin, ObjectType,
+     SequenceId, SessionId};
+use commands::{DeleteObjectCommand, GenAsymmetricKeyCommand, GetObjectInfoCommand,
                ListObjectsCommand};
 use connector::{PBKDF2_ITERATIONS, PBKDF2_SALT};
 use responses::{DeleteObjectResponse, EchoResponse, GenAsymmetricKeyResponse,
                 GetObjectInfoResponse, ListObjectsEntry, ListObjectsResponse, Response};
 use securechannel::{Challenge, Channel, CommandMessage, CommandType, ResponseMessage, StaticKeys,
                     CHALLENGE_SIZE};
+use serializers::{deserialize, serialize};
 
 /// Default auth key ID slot
 const DEFAULT_AUTH_KEY_ID: ObjectId = 1;
@@ -46,9 +47,9 @@ struct Object<T> {
     value: T,
     object_type: ObjectType,
     algorithm: Algorithm,
-    capabilities: Vec<Capability>,
-    delegated_capabilities: Vec<Capability>,
-    domains: Vec<Domain>,
+    capabilities: Capabilities,
+    delegated_capabilities: Capabilities,
+    domains: Domains,
     length: u16,
     sequence: SequenceId,
     origin: ObjectOrigin,
@@ -73,7 +74,7 @@ impl<T> Object<T> {
 }
 
 impl Object<Ed25519Keypair> {
-    pub fn new(label: ObjectLabel, capabilities: Vec<Capability>, domains: Vec<Domain>) -> Self {
+    pub fn new(label: ObjectLabel, capabilities: Capabilities, domains: Domains) -> Self {
         let mut cspring = OsRng::new().unwrap();
 
         Self {
@@ -81,7 +82,7 @@ impl Object<Ed25519Keypair> {
             object_type: ObjectType::Asymmetric,
             algorithm: Algorithm::EC_ED25519,
             capabilities,
-            delegated_capabilities: vec![],
+            delegated_capabilities: Capabilities::default(),
             domains,
             length: 24,
             sequence: 1,
@@ -252,11 +253,11 @@ impl MockHSM {
             .unwrap();
 
         let response = match command.command_type {
-            CommandType::DeleteObject => self.delete_object(command),
-            CommandType::Echo => self.echo(command),
-            CommandType::GenAsymmetricKey => self.gen_asymmetric_key(command),
-            CommandType::GetObjectInfo => self.get_object_info(command),
-            CommandType::ListObjects => self.list_objects(command),
+            CommandType::DeleteObject => self.delete_object(&command.data),
+            CommandType::Echo => self.echo(&command.data),
+            CommandType::GenAsymmetricKey => self.gen_asymmetric_key(&command.data),
+            CommandType::GetObjectInfo => self.get_object_info(&command.data),
+            CommandType::ListObjects => self.list_objects(&command.data),
             unsupported => panic!("unsupported command type: {:?}", unsupported),
         };
 
@@ -268,14 +269,14 @@ impl MockHSM {
     }
 
     /// Delete an object
-    fn delete_object(&mut self, cmd_message: CommandMessage) -> ResponseMessage {
-        let command = DeleteObjectCommand::parse(cmd_message)
+    fn delete_object(&mut self, cmd_data: &[u8]) -> ResponseMessage {
+        let command: DeleteObjectCommand = deserialize(cmd_data)
             .unwrap_or_else(|e| panic!("error parsing CommandType::DeleteObject: {:?}", e));
 
         match command.object_type {
             // TODO: support other asymmetric keys besides Ed25519 keys
             ObjectType::Asymmetric => match self.ed25519_keys.remove(&command.object_id) {
-                Some(_) => respond(DeleteObjectResponse {}),
+                Some(_) => respond(&DeleteObjectResponse {}),
                 None => {
                     ResponseMessage::error(&format!("no such object ID: {:?}", command.object_id))
                 }
@@ -285,15 +286,15 @@ impl MockHSM {
     }
 
     /// Echo a message back to the host
-    fn echo(&self, cmd_message: CommandMessage) -> ResponseMessage {
-        respond(EchoResponse {
-            message: cmd_message.data,
+    fn echo(&self, cmd_data: &[u8]) -> ResponseMessage {
+        respond(&EchoResponse {
+            message: cmd_data.into(),
         })
     }
 
     /// Generate a new random asymmetric key
-    fn gen_asymmetric_key(&mut self, cmd_message: CommandMessage) -> ResponseMessage {
-        let command = GenAsymmetricKeyCommand::parse(cmd_message)
+    fn gen_asymmetric_key(&mut self, cmd_data: &[u8]) -> ResponseMessage {
+        let command: GenAsymmetricKeyCommand = deserialize(cmd_data)
             .unwrap_or_else(|e| panic!("error parsing CommandType::GetObjectInfo: {:?}", e));
 
         match command.algorithm {
@@ -304,14 +305,14 @@ impl MockHSM {
             other => panic!("unsupported algorithm: {:?}", other),
         }
 
-        respond(GenAsymmetricKeyResponse {
+        respond(&GenAsymmetricKeyResponse {
             key_id: command.key_id,
         })
     }
 
     /// Get detailed info about a specific object
-    fn get_object_info(&self, cmd_message: CommandMessage) -> ResponseMessage {
-        let command = GetObjectInfoCommand::parse(cmd_message)
+    fn get_object_info(&self, cmd_data: &[u8]) -> ResponseMessage {
+        let command: GetObjectInfoCommand = deserialize(cmd_data)
             .unwrap_or_else(|e| panic!("error parsing CommandType::GetObjectInfo: {:?}", e));
 
         if command.object_type != ObjectType::Asymmetric {
@@ -320,15 +321,16 @@ impl MockHSM {
 
         // TODO: support other asymmetric keys besides Ed25519 keys
         match self.ed25519_keys.get(&command.object_id) {
-            Some(key) => respond(key.object_info_response(command.object_id)),
+            Some(key) => respond(&key.object_info_response(command.object_id)),
             None => ResponseMessage::error(&format!("no such object ID: {:?}", command.object_id)),
         }
     }
 
     /// List all objects presently accessible to a session
-    fn list_objects(&self, cmd_message: CommandMessage) -> ResponseMessage {
+    fn list_objects(&self, cmd_data: &[u8]) -> ResponseMessage {
         // TODO: filter support
-        let _command = ListObjectsCommand::parse(cmd_message);
+        let _command: ListObjectsCommand = deserialize(cmd_data)
+            .unwrap_or_else(|e| panic!("error parsing CommandType::ListObjects: {:?}", e));
 
         let list_entries = self.ed25519_keys
             .iter()
@@ -339,7 +341,7 @@ impl MockHSM {
             })
             .collect();
 
-        respond(ListObjectsResponse {
+        respond(&ListObjectsResponse {
             objects: list_entries,
         })
     }
@@ -353,6 +355,6 @@ impl MockHSM {
 }
 
 /// Send a `Response` message back to the client
-fn respond<R: Response>(response: R) -> ResponseMessage {
-    ResponseMessage::success(R::COMMAND_TYPE, response.into_vec())
+fn respond<R: Response>(response: &R) -> ResponseMessage {
+    ResponseMessage::success(R::COMMAND_TYPE, serialize(response).unwrap())
 }

@@ -1,6 +1,10 @@
 //! Cryptographic algorithms supported by the `YubiHSM2`
 
+use std::fmt;
+
 use failure::Error;
+use serde::ser::{Serialize, Serializer};
+use serde::de::{self, Deserialize, Deserializer, Visitor};
 
 /// Cryptographic algorithm types supported by the `YubiHSM2`
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -205,5 +209,40 @@ impl Algorithm {
     /// Serialize algorithm ID as a byte
     pub fn to_u8(&self) -> u8 {
         *self as u8
+    }
+}
+
+impl Serialize for Algorithm {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_u8(self.to_u8())
+    }
+}
+
+impl<'de> Deserialize<'de> for Algorithm {
+    fn deserialize<D>(deserializer: D) -> Result<Algorithm, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct AlgorithmVisitor;
+
+        impl<'de> Visitor<'de> for AlgorithmVisitor {
+            type Value = Algorithm;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("an unsigned byte between 0x01 and 0x07")
+            }
+
+            fn visit_u8<E>(self, value: u8) -> Result<Algorithm, E>
+            where
+                E: de::Error,
+            {
+                Algorithm::from_u8(value).or_else(|e| Err(E::custom(format!("{}", e))))
+            }
+        }
+
+        deserializer.deserialize_u8(AlgorithmVisitor)
     }
 }

@@ -3,8 +3,8 @@ extern crate yubihsm_client;
 #[cfg(feature = "mockhsm")]
 use std::thread;
 
-use yubihsm_client::{Algorithm, Capability, Connector, Domain, ObjectId, ObjectOrigin, ObjectType,
-                     Session};
+use yubihsm_client::{Algorithm, Capabilities, Capability, Connector, Domain, Domains, ObjectId,
+                     ObjectOrigin, ObjectType, Session};
 #[cfg(feature = "mockhsm")]
 use yubihsm_client::mockhsm::MockHSM;
 
@@ -98,16 +98,16 @@ fn generate_asymmetric_key_test(session: &mut Session) {
     );
 
     let label = "yubihsm-client.rs test key";
-    let domains = [Domain::new(1).unwrap()];
-    let capabilities = [Capability::ASYMMETRIC_SIGN_EDDSA];
+    let domains: Domains = [Domain::new(1).unwrap()].as_ref().into();
+    let capabilities: Capabilities = [Capability::ASYMMETRIC_SIGN_EDDSA].as_ref().into();
     let algorithm = Algorithm::EC_ED25519;
 
     let response = session
         .generate_asymmetric_key(
             TEST_KEY_ID,
             label.into(),
-            &domains,
-            &capabilities,
+            domains.clone(),
+            capabilities.clone(),
             algorithm,
         )
         .unwrap_or_else(|err| panic!("error generating asymmetric key: {:?}", err));
@@ -117,9 +117,9 @@ fn generate_asymmetric_key_test(session: &mut Session) {
         .get_object_info(TEST_KEY_ID, ObjectType::Asymmetric)
         .unwrap_or_else(|err| panic!("error getting object info: {:?}", err));
 
-    assert_eq!(object_info.capabilities, &capabilities);
+    assert_eq!(object_info.capabilities, capabilities);
     assert_eq!(object_info.id, TEST_KEY_ID);
-    assert_eq!(object_info.domains, &domains);
+    assert_eq!(object_info.domains, domains);
     assert_eq!(object_info.object_type, ObjectType::Asymmetric);
     assert_eq!(object_info.algorithm, algorithm);
     assert_eq!(object_info.origin, ObjectOrigin::Generated);
