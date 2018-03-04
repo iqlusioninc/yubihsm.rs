@@ -3,14 +3,14 @@
 // Apparently bitflags isn't clippy-safe
 #![allow(unknown_lints, redundant_field_names, suspicious_arithmetic_impl)]
 
-use std::{fmt, slice};
+use std::fmt;
 
 use serde::ser::{Serialize, Serializer};
 use serde::de::{self, Deserialize, Deserializer, Visitor};
 
 bitflags! {
     /// Object attributes specifying which operations are allowed to be performed
-    pub struct Capability: u64 {
+    pub struct Capabilities: u64 {
         /// asymmetric_decrypt_ecdh: perform ECDH operation
         const ASYMMETRIC_DECRYPT_ECDH = 0x800;
 
@@ -151,91 +151,9 @@ bitflags! {
     }
 }
 
-impl Capability {
-    /// Set of all capabilities
-    pub fn iter() -> slice::Iter<'static, Self> {
-        // TODO: does bitflags provide this functionality?
-        [
-            Self::ASYMMETRIC_DECRYPT_ECDH,
-            Self::ASYMMETRIC_DECRYPT_OAEP,
-            Self::ASYMMETRIC_DECRYPT_PKCS,
-            Self::ASYMMETRIC_GEN,
-            Self::ASYMMETRIC_SIGN_ECDSA,
-            Self::ASYMMETRIC_SIGN_EDDSA,
-            Self::ASYMMETRIC_SIGN_PKCS,
-            Self::ASYMMETRIC_SIGN_PSS,
-            Self::ATTEST,
-            Self::AUDIT,
-            Self::DELETE_ASYMMETRIC,
-            Self::DELETE_AUTHKEY,
-            Self::DELETE_HMACKEY,
-            Self::DELETE_OPAQUE,
-            Self::DELETE_OTP_AEAD_KEY,
-            Self::DELETE_TEMPLATE,
-            Self::DELETE_WRAPKEY,
-            Self::EXPORT_UNDER_WRAP,
-            Self::EXPORT_WRAPPED,
-            Self::GENERATE_OTP_AEAD_KEY,
-            Self::GENERATE_WRAPKEY,
-            Self::GET_OPAQUE,
-            Self::GET_OPTION,
-            Self::GET_RANDOMNESS,
-            Self::GET_TEMPLATE,
-            Self::HMACKEY_GENERATE,
-            Self::HMAC_DATA,
-            Self::HMAC_VERIFY,
-            Self::IMPORT_WRAPPED,
-            Self::OTP_AEAD_CREATE,
-            Self::OTP_AEAD_RANDOM,
-            Self::OTP_AEAD_REWRAP_FROM,
-            Self::OTP_AEAD_REWRAP_TO,
-            Self::OTP_DECRYPT,
-            Self::PUT_ASYMMETRIC,
-            Self::PUT_AUTHKEY,
-            Self::PUT_HMACKEY,
-            Self::PUT_OPAQUE,
-            Self::PUT_OPTION,
-            Self::PUT_OTP_AEAD_KEY,
-            Self::PUT_TEMPLATE,
-            Self::PUT_WRAPKEY,
-            Self::RESET,
-            Self::SSH_CERTIFY,
-            Self::UNWRAP_DATA,
-            Self::WRAP_DATA,
-        ].iter()
-    }
-}
-
-/// Capabilities stored as a collection
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct Capabilities(Vec<Capability>);
-
-impl Capabilities {
-    /// Decode a u64 of capability bitflags into a Capabilities value
-    pub fn from_u64(bitfield: u64) -> Self {
-        let mut result = vec![];
-
-        for capability in Capability::iter() {
-            if bitfield & capability.bits() != 0 {
-                result.push(*capability);
-            }
-        }
-
-        Capabilities(result)
-    }
-
-    /// Convert a set of Capability objects to a 64-bit integer bitfield
-    pub fn to_u64(&self) -> u64 {
-        self.0
-            .iter()
-            .fold(0, |result, capability| result | capability.bits())
-    }
-}
-
-impl<'a> From<&'a [Capability]> for Capabilities {
-    /// Create a capabilities object from a slice
-    fn from(capabilities: &'a [Capability]) -> Self {
-        Capabilities(capabilities.into())
+impl Default for Capabilities {
+    fn default() -> Self {
+        Capabilities::empty()
     }
 }
 
@@ -244,7 +162,7 @@ impl Serialize for Capabilities {
     where
         S: Serializer,
     {
-        serializer.serialize_u64(self.to_u64())
+        serializer.serialize_u64(self.bits())
     }
 }
 
@@ -266,7 +184,8 @@ impl<'de> Deserialize<'de> for Capabilities {
             where
                 E: de::Error,
             {
-                Ok(Capabilities::from_u64(value))
+                Capabilities::from_bits(value)
+                    .ok_or_else(|| E::custom("invalid capability bitflags"))
             }
         }
 

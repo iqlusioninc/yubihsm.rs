@@ -48,10 +48,10 @@ macro_rules! fail {
 }
 
 pub mod algorithm;
-pub mod capability;
+pub mod capabilities;
 mod commands;
 pub mod connector;
-pub mod domain;
+pub mod domains;
 #[cfg(any(feature = "mockhsm"))]
 pub mod mockhsm;
 pub mod object;
@@ -61,9 +61,9 @@ mod serializers;
 pub mod session;
 
 pub use algorithm::Algorithm;
-pub use capability::{Capabilities, Capability};
+pub use capabilities::Capabilities;
 pub use connector::Connector;
-pub use domain::{Domain, Domains};
+pub use domains::{Domain, Domains};
 pub use object::Id as ObjectId;
 pub use object::Label as ObjectLabel;
 pub use object::Origin as ObjectOrigin;

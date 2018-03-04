@@ -301,7 +301,7 @@ impl MockHSM {
         // TODO: support other asymmetric keys besides Ed25519 keys
         match self.ed25519_keys.get(&command.object_id) {
             Some(key) => GetObjectInfoResponse {
-                capabilities: key.capabilities.clone(),
+                capabilities: key.capabilities,
                 id: command.object_id,
                 length: key.length,
                 domains: key.domains.clone(),
@@ -310,7 +310,7 @@ impl MockHSM {
                 sequence: key.sequence,
                 origin: key.origin,
                 label: key.label.clone(),
-                delegated_capabilities: key.delegated_capabilities.clone(),
+                delegated_capabilities: key.delegated_capabilities,
             }.serialize(),
             None => ResponseMessage::error(&format!("no such object ID: {:?}", command.object_id)),
         }

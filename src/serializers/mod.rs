@@ -9,6 +9,8 @@ mod de;
 mod ser;
 mod error;
 
+pub use self::error::SerializationError;
+
 /// Serialize a message into a byte vector
 pub fn serialize<T: serde::Serialize>(value: &T) -> Result<Vec<u8>, Error> {
     let mut result = vec![];
