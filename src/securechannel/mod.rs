@@ -3,6 +3,9 @@
 //! See GPC_SPE_014: GlobalPlatform Card Technology Secure Channel Protocol '03' at:
 //! <https://www.globalplatform.org/specificationscard.asp>
 //!
+//! SCP03 provides an encrypted channel using symmetric encryption alone.
+//! AES-128-CBC is used for encryption, and AES-128-CMAC for authentication.
+//!
 //! While SCP03 is a multipurpose protocol, this implementation has been
 //! written with the specific intention of communicating with Yubico's
 //! YubiHSM2 devices and therefore omits certain features (e.g. additional

@@ -1,4 +1,4 @@
-//! Secure Channel provided by the SCP03 protocol
+//! Secure Channels using the SCP03 encrypted channel protocol
 
 use aesni::{Aes128, BlockCipher};
 use aesni::block_cipher_trait::generic_array::GenericArray;
@@ -19,6 +19,9 @@ use super::ResponseCode;
 
 // Size of an AES block
 const AES_BLOCK_SIZE: usize = 16;
+
+// SCP03 uses AES-128 encryption in CBC mode with ISO 7816 padding
+type Aes128Cbc = Cbc<Aes128, Iso7816>;
 
 /// Session/Channel IDs
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
@@ -228,7 +231,7 @@ impl Channel {
 
         let cipher = Aes128::new_varkey(&self.enc_key).unwrap();
         let icv = compute_icv(&cipher, self.counter);
-        let cbc_encryptor = Cbc::<Aes128, Iso7816>::new(cipher, &icv);
+        let cbc_encryptor = Aes128Cbc::new(cipher, &icv);
         let ciphertext = cbc_encryptor.encrypt_pad(&mut message, pos).unwrap();
 
         self.command_with_mac(CommandType::SessionMessage, ciphertext)
@@ -247,7 +250,7 @@ impl Channel {
         self.verify_response_mac(&encrypted_response)?;
 
         let cipher = Aes128::new_varkey(&self.enc_key).unwrap();
-        let cbc_decryptor = Cbc::<Aes128, Iso7816>::new(cipher, &icv);
+        let cbc_decryptor = Aes128Cbc::new(cipher, &icv);
 
         let mut response_message = encrypted_response.data;
         let response_len = cbc_decryptor
@@ -360,7 +363,7 @@ impl Channel {
         self.verify_command_mac(&encrypted_command)?;
 
         let cipher = Aes128::new_varkey(&self.enc_key).unwrap();
-        let cbc_decryptor = Cbc::<Aes128, Iso7816>::new(cipher, &icv);
+        let cbc_decryptor = Aes128Cbc::new(cipher, &icv);
 
         let mut command_data = encrypted_command.data;
         let command_len = cbc_decryptor
@@ -435,7 +438,7 @@ impl Channel {
 
         let cipher = Aes128::new_varkey(&self.enc_key).unwrap();
         let icv = compute_icv(&cipher, self.counter);
-        let cbc_encryptor = Cbc::<Aes128, Iso7816>::new(cipher, &icv);
+        let cbc_encryptor = Aes128Cbc::new(cipher, &icv);
 
         let ct_len = cbc_encryptor.encrypt_pad(&mut message, pos).unwrap().len();
         message.truncate(ct_len);
