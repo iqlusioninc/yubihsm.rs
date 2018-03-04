@@ -3,8 +3,8 @@ extern crate yubihsm_client;
 #[cfg(feature = "mockhsm")]
 use std::thread;
 
-use yubihsm_client::{Algorithm, Capabilities, Capability, Connector, Domain, Domains, ObjectId,
-                     ObjectOrigin, ObjectType, Session};
+use yubihsm_client::{Algorithm, Capabilities, Connector, Domain, Domains, ObjectId, ObjectOrigin,
+                     ObjectType, Session};
 #[cfg(feature = "mockhsm")]
 use yubihsm_client::mockhsm::MockHSM;
 
@@ -99,7 +99,7 @@ fn generate_asymmetric_key_test(session: &mut Session) {
 
     let label = "yubihsm-client.rs test key";
     let domains: Domains = [Domain::new(1).unwrap()].as_ref().into();
-    let capabilities: Capabilities = [Capability::ASYMMETRIC_SIGN_EDDSA].as_ref().into();
+    let capabilities = Capabilities::ASYMMETRIC_SIGN_EDDSA;
     let algorithm = Algorithm::EC_ED25519;
 
     let response = session
@@ -107,7 +107,7 @@ fn generate_asymmetric_key_test(session: &mut Session) {
             TEST_KEY_ID,
             label.into(),
             domains.clone(),
-            capabilities.clone(),
+            capabilities,
             algorithm,
         )
         .unwrap_or_else(|err| panic!("error generating asymmetric key: {:?}", err));
