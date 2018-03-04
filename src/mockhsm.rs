@@ -304,7 +304,7 @@ impl MockHSM {
                 capabilities: key.capabilities,
                 id: command.object_id,
                 length: key.length,
-                domains: key.domains.clone(),
+                domains: key.domains,
                 object_type: key.object_type,
                 algorithm: key.algorithm,
                 sequence: key.sequence,
