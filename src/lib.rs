@@ -63,7 +63,7 @@ pub mod session;
 pub use algorithm::Algorithm;
 pub use capabilities::Capabilities;
 pub use connector::Connector;
-pub use domains::{Domain, Domains};
+pub use domains::Domains;
 pub use object::Id as ObjectId;
 pub use object::Label as ObjectLabel;
 pub use object::Origin as ObjectOrigin;

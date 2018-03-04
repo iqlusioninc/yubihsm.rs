@@ -1,70 +1,37 @@
 //! Logical partitions within the `YubiHSM2`, allowing several applications to
 //! share the device concurrently
 
+// Apparently bitflags isn't clippy-safe
+#![allow(unknown_lints, redundant_field_names, suspicious_arithmetic_impl, missing_docs)]
+
 use std::fmt;
 
-use failure::Error;
 use serde::ser::{Serialize, Serializer};
 use serde::de::{self, Deserialize, Deserializer, Visitor};
 
-use super::SessionError;
-
-/// Logical partition within the `YubiHSM2`
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub struct Domain(pub(crate) u8);
-
-impl Domain {
-    /// Create a new Domain
-    pub fn new(domain: u8) -> Result<Self, Error> {
-        if domain < 1 || domain > 16 {
-            fail!(SessionError::ProtocolError, "invalid domain: {}", domain);
-        }
-
-        Ok(Domain(domain))
-    }
-
-    /// Create a Domain from a byte serialization
-    #[inline]
-    pub fn from_u8(domain: u8) -> Result<Self, Error> {
-        Self::new(domain)
-    }
-
-    /// Serialize this domain as a byte
-    pub fn to_u8(&self) -> u8 {
-        self.0
-    }
-}
-
-/// A collection of Domains
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Domains(Vec<Domain>);
-
-impl Domains {
-    /// Decode a u16 of domain bitflags into a Domains value
-    pub fn from_u16(bitfield: u16) -> Self {
-        let mut result = vec![];
-
-        for i in 1..16 {
-            if bitfield & (1 << i) != 0 {
-                result.push(Domain::new(i).unwrap())
-            }
-        }
-
-        Domains(result)
-    }
-
-    /// Convert an array of Domain objects to a 16-bit integer bitfield
-    pub fn to_u16(&self) -> u16 {
-        self.0
-            .iter()
-            .fold(0, |result, domain| result | (1 << domain.0))
-    }
-}
-
-impl<'a> From<&'a [Domain]> for Domains {
-    /// Create a domains object from a slice
-    fn from(domains: &'a [Domain]) -> Self {
-        Domains(domains.into())
+bitflags! {
+    /// Logical partition within the `YubiHSM2`, allowing several clients
+    /// to access the same device but access controlled on a domain-by-domain
+    /// basis. For more information, see the Yubico documentation:
+    ///
+    /// <https://developers.yubico.com/YubiHSM2/Concepts/Domain.html>
+    pub struct Domains: u16 {
+        const DOMAIN_1 = 0x0001;
+        const DOMAIN_2 = 0x0002;
+        const DOMAIN_3 = 0x0004;
+        const DOMAIN_4 = 0x0008;
+        const DOMAIN_5 = 0x0010;
+        const DOMAIN_6 = 0x0020;
+        const DOMAIN_7 = 0x0040;
+        const DOMAIN_8 = 0x0080;
+        const DOMAIN_9 = 0x0100;
+        const DOMAIN_10 = 0x0200;
+        const DOMAIN_11 = 0x0400;
+        const DOMAIN_12 = 0x0800;
+        const DOMAIN_13 = 0x1000;
+        const DOMAIN_14 = 0x2000;
+        const DOMAIN_15 = 0x4000;
+        const DOMAIN_16 = 0x8000;
     }
 }
 
@@ -73,7 +40,7 @@ impl Serialize for Domains {
     where
         S: Serializer,
     {
-        serializer.serialize_u16(self.to_u16())
+        serializer.serialize_u16(self.bits())
     }
 }
 
@@ -95,7 +62,7 @@ impl<'de> Deserialize<'de> for Domains {
             where
                 E: de::Error,
             {
-                Ok(Domains::from_u16(value))
+                Domains::from_bits(value).ok_or_else(|| E::custom("invalid domain bitflags"))
             }
         }
 

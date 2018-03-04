@@ -10,6 +10,8 @@ use serde::de::{self, Deserialize, Deserializer, Visitor};
 
 bitflags! {
     /// Object attributes specifying which operations are allowed to be performed
+    ///
+    /// <https://developers.yubico.com/YubiHSM2/Concepts/Capability.html>
     pub struct Capabilities: u64 {
         /// asymmetric_decrypt_ecdh: perform ECDH operation
         const ASYMMETRIC_DECRYPT_ECDH = 0x800;
