@@ -8,10 +8,11 @@ use commands::{Command, DeleteObjectCommand, EchoCommand, GenAsymmetricKeyComman
 use connector::Connector;
 use failure::Error;
 use responses::{DeleteObjectResponse, EchoResponse, GenAsymmetricKeyResponse,
-                GetObjectInfoResponse, ListObjectsResponse, Response};
+                GetObjectInfoResponse, ListObjectsResponse};
 use securechannel::{Challenge, Channel, CommandMessage, CommandType, Cryptogram, StaticKeys,
                     CHALLENGE_SIZE};
-use super::{Algorithm, Capability, Domain, ObjectId, ObjectLabel, ObjectType, SessionId};
+use serializers::deserialize;
+use super::{Algorithm, Capabilities, Domains, ObjectId, ObjectLabel, ObjectType, SessionId};
 
 /// Encrypted session with the `YubiHSM2`
 pub struct Session<'a> {
@@ -126,15 +127,15 @@ impl<'a> Session<'a> {
         &mut self,
         key_id: ObjectId,
         label: ObjectLabel,
-        domains: &[Domain],
-        capabilities: &[Capability],
+        domains: Domains,
+        capabilities: Capabilities,
         algorithm: Algorithm,
     ) -> Result<GenAsymmetricKeyResponse, Error> {
         self.send_encrypted_command(GenAsymmetricKeyCommand {
             key_id,
             label,
-            domains: domains.into(),
-            capabilities: capabilities.into(),
+            domains,
+            capabilities,
             algorithm,
         })
     }
@@ -190,6 +191,6 @@ impl<'a> Session<'a> {
             );
         }
 
-        C::ResponseType::parse(response.data)
+        deserialize(&response.data[..])
     }
 }

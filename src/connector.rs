@@ -1,13 +1,15 @@
 //! Client for yubihsm-connector and main library entry point
 
+use std::io::Read;
+
 use failure::Error;
 use reqwest::{Client, StatusCode};
 use reqwest::Response as HttpResponse;
 use reqwest::header::{ContentType, UserAgent};
+
+use ObjectId;
 use securechannel::{Challenge, CommandMessage, ResponseMessage, StaticKeys};
 use session::Session;
-use std::io::Read;
-use super::ObjectId;
 
 /// User-Agent string to supply
 pub const USER_AGENT: &str = concat!("yubihsm-client.rs ", env!("CARGO_PKG_VERSION"));

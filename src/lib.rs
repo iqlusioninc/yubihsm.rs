@@ -23,6 +23,9 @@ extern crate hmac;
 extern crate pbkdf2;
 extern crate rand;
 extern crate reqwest;
+extern crate serde;
+#[macro_use]
+extern crate serde_derive;
 extern crate sha2;
 
 /// Custom error macros for using enums with descriptions for errors
@@ -54,12 +57,13 @@ pub mod mockhsm;
 pub mod object;
 pub mod responses;
 mod securechannel;
+mod serializers;
 pub mod session;
 
 pub use algorithm::Algorithm;
-pub use capability::Capability;
+pub use capability::{Capabilities, Capability};
 pub use connector::Connector;
-pub use domain::Domain;
+pub use domain::{Domain, Domains};
 pub use object::Id as ObjectId;
 pub use object::Label as ObjectLabel;
 pub use object::Origin as ObjectOrigin;

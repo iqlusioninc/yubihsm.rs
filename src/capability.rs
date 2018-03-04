@@ -3,9 +3,10 @@
 // Apparently bitflags isn't clippy-safe
 #![allow(unknown_lints, redundant_field_names, suspicious_arithmetic_impl)]
 
-use byteorder::{BigEndian, ByteOrder};
-use failure::Error;
-use std::slice;
+use std::{fmt, slice};
+
+use serde::ser::{Serialize, Serializer};
+use serde::de::{self, Deserialize, Deserializer, Visitor};
 
 bitflags! {
     /// Object attributes specifying which operations are allowed to be performed
@@ -203,29 +204,72 @@ impl Capability {
             Self::WRAP_DATA,
         ].iter()
     }
+}
 
-    /// Parse capabilities from a byte serialization
-    pub fn parse(bytes: &[u8]) -> Result<Vec<Self>, Error> {
-        if bytes.len() != 8 {
-            bail!("invalid capability length {} (expected {})", bytes.len(), 8);
-        }
+/// Capabilities stored as a collection
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Capabilities(Vec<Capability>);
 
-        let bitfield = BigEndian::read_u64(bytes);
+impl Capabilities {
+    /// Decode a u64 of capability bitflags into a Capabilities value
+    pub fn from_u64(bitfield: u64) -> Self {
         let mut result = vec![];
 
-        for capability in Self::iter() {
+        for capability in Capability::iter() {
             if bitfield & capability.bits() != 0 {
                 result.push(*capability);
             }
         }
 
-        Ok(result)
+        Capabilities(result)
     }
 
-    /// Convert an array of Capability objects to a 64-bit integer bitfield
-    pub fn bitfield(capabilities: &[Self]) -> u64 {
-        capabilities
+    /// Convert a set of Capability objects to a 64-bit integer bitfield
+    pub fn to_u64(&self) -> u64 {
+        self.0
             .iter()
             .fold(0, |result, capability| result | capability.bits())
+    }
+}
+
+impl<'a> From<&'a [Capability]> for Capabilities {
+    /// Create a capabilities object from a slice
+    fn from(capabilities: &'a [Capability]) -> Self {
+        Capabilities(capabilities.into())
+    }
+}
+
+impl Serialize for Capabilities {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_u64(self.to_u64())
+    }
+}
+
+impl<'de> Deserialize<'de> for Capabilities {
+    fn deserialize<D>(deserializer: D) -> Result<Capabilities, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct CapabilitiesVisitor;
+
+        impl<'de> Visitor<'de> for CapabilitiesVisitor {
+            type Value = Capabilities;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("8-bytes containing capability bitflags")
+            }
+
+            fn visit_u64<E>(self, value: u64) -> Result<Capabilities, E>
+            where
+                E: de::Error,
+            {
+                Ok(Capabilities::from_u64(value))
+            }
+        }
+
+        deserializer.deserialize_u64(CapabilitiesVisitor)
     }
 }

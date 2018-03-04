@@ -3,8 +3,12 @@
 //! For more information, see:
 //! <https://developers.yubico.com/YubiHSM2/Concepts/Object.html>
 
-use failure::Error;
 use std::{fmt, str};
+use std::ops::{Deref, DerefMut};
+
+use failure::Error;
+use serde::ser::{Serialize, Serializer};
+use serde::de::{self, Deserialize, Deserializer, SeqAccess, Visitor};
 
 /// Number of bytes in a label on an object (fixed-size)
 pub const LABEL_SIZE: usize = 40;
@@ -80,6 +84,64 @@ impl PartialEq for Label {
     }
 }
 
+impl Deref for Label {
+    type Target = [u8; LABEL_SIZE];
+
+    fn deref(&self) -> &[u8; LABEL_SIZE] {
+        &self.0
+    }
+}
+
+impl DerefMut for Label {
+    fn deref_mut(&mut self) -> &mut [u8; LABEL_SIZE] {
+        &mut self.0
+    }
+}
+
+impl Serialize for Label {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        self.0.serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for Label {
+    fn deserialize<D>(deserializer: D) -> Result<Label, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct LabelVisitor;
+
+        impl<'de> Visitor<'de> for LabelVisitor {
+            type Value = Label;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("40-byte string of arbitrary bytes")
+            }
+
+            fn visit_seq<S>(self, mut seq: S) -> Result<Label, S::Error>
+            where
+                S: SeqAccess<'de>,
+            {
+                let mut label = [0; LABEL_SIZE];
+
+                for elem in label.iter_mut().take(LABEL_SIZE) {
+                    match seq.next_element()? {
+                        Some(val) => *elem = val,
+                        None => return Err(de::Error::custom("end of stream")),
+                    };
+                }
+
+                Ok(Label(label))
+            }
+        }
+
+        deserializer.deserialize_seq(LabelVisitor)
+    }
+}
+
 /// Information about how a key was originally generated
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum Origin {
@@ -111,6 +173,41 @@ impl Origin {
     /// Serialize this object origin as a byte
     pub fn to_u8(&self) -> u8 {
         *self as u8
+    }
+}
+
+impl Serialize for Origin {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_u8(self.to_u8())
+    }
+}
+
+impl<'de> Deserialize<'de> for Origin {
+    fn deserialize<D>(deserializer: D) -> Result<Origin, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct OriginVisitor;
+
+        impl<'de> Visitor<'de> for OriginVisitor {
+            type Value = Origin;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("an unsigned byte between 0x01 and 0x07")
+            }
+
+            fn visit_u8<E>(self, value: u8) -> Result<Origin, E>
+            where
+                E: de::Error,
+            {
+                Origin::from_u8(value).or_else(|e| Err(E::custom(format!("{}", e))))
+            }
+        }
+
+        deserializer.deserialize_u8(OriginVisitor)
     }
 }
 
@@ -157,5 +254,40 @@ impl Type {
     /// Serialize this object type as a byte
     pub fn to_u8(&self) -> u8 {
         *self as u8
+    }
+}
+
+impl Serialize for Type {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_u8(self.to_u8())
+    }
+}
+
+impl<'de> Deserialize<'de> for Type {
+    fn deserialize<D>(deserializer: D) -> Result<Type, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct TypeVisitor;
+
+        impl<'de> Visitor<'de> for TypeVisitor {
+            type Value = Type;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("an unsigned byte between 0x01 and 0x07")
+            }
+
+            fn visit_u8<E>(self, value: u8) -> Result<Type, E>
+            where
+                E: de::Error,
+            {
+                Type::from_u8(value).or_else(|e| Err(E::custom(format!("{}", e))))
+            }
+        }
+
+        deserializer.deserialize_u8(TypeVisitor)
     }
 }
