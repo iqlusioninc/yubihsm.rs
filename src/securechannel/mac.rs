@@ -56,7 +56,7 @@ impl Mac {
 
 impl PartialEq for Mac {
     fn eq(&self, other: &Mac) -> bool {
-        constant_time_eq(&self.0[..], &other.0[..])
+        constant_time_eq(self.0.as_ref(), other.0.as_ref())
     }
 }
 

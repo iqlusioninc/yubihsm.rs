@@ -164,7 +164,7 @@ impl Channel {
             );
         }
 
-        let mut mac = Cmac::<Aes128>::new_varkey(&self.mac_key[..]).unwrap();
+        let mut mac = Cmac::<Aes128>::new_varkey(self.mac_key.as_ref()).unwrap();
         mac.input(&self.mac_chaining_value);
         mac.input(&[command_type.to_u8()]);
 
@@ -220,7 +220,7 @@ impl Channel {
     pub fn encrypt_command(&mut self, command: CommandMessage) -> Result<CommandMessage, Error> {
         assert_eq!(self.security_level, SecurityLevel::Authenticated);
 
-        let mut message = command.into_vec();
+        let mut message: Vec<u8> = command.into();
         let pos = message.len();
 
         // Provide space at the end of the vec for the padding
@@ -283,7 +283,7 @@ impl Channel {
 
         assert_eq!(self.id, session_id, "session ID mismatch: {:?}", session_id);
 
-        let mut mac = Cmac::<Aes128>::new_varkey(&self.rmac_key[..]).unwrap();
+        let mut mac = Cmac::<Aes128>::new_varkey(self.rmac_key.as_ref()).unwrap();
         mac.input(&self.mac_chaining_value);
         mac.input(&[response.code.to_u8()]);
 
@@ -392,7 +392,7 @@ impl Channel {
             command.session_id
         );
 
-        let mut mac = Cmac::<Aes128>::new_varkey(&self.mac_key[..]).unwrap();
+        let mut mac = Cmac::<Aes128>::new_varkey(self.mac_key.as_ref()).unwrap();
         mac.input(&self.mac_chaining_value);
         mac.input(&[command.command_type.to_u8()]);
 
@@ -427,7 +427,7 @@ impl Channel {
     ) -> Result<ResponseMessage, Error> {
         assert_eq!(self.security_level, SecurityLevel::Authenticated);
 
-        let mut message = response.into_vec();
+        let mut message: Vec<u8> = response.into();
         let pos = message.len();
 
         // Provide space at the end of the vec for the padding
@@ -456,7 +456,7 @@ impl Channel {
         assert_eq!(self.security_level, SecurityLevel::Authenticated);
         let body = response_data.into();
 
-        let mut mac = Cmac::<Aes128>::new_varkey(&self.rmac_key[..]).unwrap();
+        let mut mac = Cmac::<Aes128>::new_varkey(self.rmac_key.as_ref()).unwrap();
         mac.input(&self.mac_chaining_value);
         mac.input(&[code.to_u8()]);
 

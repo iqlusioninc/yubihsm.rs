@@ -2,17 +2,16 @@
 //!
 //! See <https://developers.yubico.com/YubiHSM2/Concepts/Session.html>
 
-use byteorder::{BigEndian, WriteBytesExt};
-use commands::{Command, DeleteObjectCommand, EchoCommand, GenAsymmetricKeyCommand,
-               GetObjectInfoCommand, ListObjectsCommand};
 use connector::Connector;
 use failure::Error;
-use responses::{DeleteObjectResponse, EchoResponse, GenAsymmetricKeyResponse,
-                GetObjectInfoResponse, ListObjectsResponse};
-use securechannel::{Challenge, Channel, CommandMessage, CommandType, Cryptogram, StaticKeys,
-                    CHALLENGE_SIZE};
+use securechannel::{Challenge, Channel, StaticKeys};
 use serializers::deserialize;
 use super::{Algorithm, Capabilities, Domains, ObjectId, ObjectLabel, ObjectType, SessionId};
+
+use commands::{Command, CreateSessionCommand, DeleteObjectCommand, EchoCommand,
+               GenAsymmetricKeyCommand, GetObjectInfoCommand, ListObjectsCommand};
+use responses::{CreateSessionResponse, DeleteObjectResponse, EchoResponse,
+                GenAsymmetricKeyResponse, GetObjectInfoResponse, ListObjectsResponse};
 
 /// Encrypted session with the `YubiHSM2`
 pub struct Session<'a> {
@@ -61,37 +60,33 @@ impl<'a> Session<'a> {
         auth_key_id: ObjectId,
         static_keys: &StaticKeys,
     ) -> Result<Self, Error> {
-        let mut cmd_data = Vec::with_capacity(10);
-        cmd_data.write_u16::<BigEndian>(auth_key_id).unwrap();
-        cmd_data.extend_from_slice(host_challenge.as_slice());
+        let response_message = connector.send_command(
+            CreateSessionCommand {
+                auth_key_id,
+                host_challenge: *host_challenge,
+            }.into(),
+        )?;
 
-        let command = CommandMessage::new(CommandType::CreateSession, cmd_data);
-        let response = connector.send_command(command)?;
-
-        if response.data.len() != CHALLENGE_SIZE * 2 {
-            fail!(
-                SessionError::CreateFailed,
-                "invalid response length {} (expected {})",
-                response.data.len(),
-                CHALLENGE_SIZE * 2
-            );
-        }
-
-        let id = response
+        let session_id = response_message
             .session_id
             .ok_or_else(|| err!(SessionError::CreateFailed, "no session ID in response"))?;
 
-        let card_challenge = Challenge::from_slice(&response.data[..CHALLENGE_SIZE]);
-        let channel = Channel::new(id, static_keys, host_challenge, &card_challenge);
-        let expected_card_cryptogram = channel.card_cryptogram();
-        let actual_card_cryptogram = Cryptogram::from_slice(&response.data[CHALLENGE_SIZE..]);
+        let response: CreateSessionResponse = deserialize(response_message.data.as_ref())?;
 
-        if expected_card_cryptogram != actual_card_cryptogram {
+        let channel = Channel::new(
+            session_id,
+            static_keys,
+            host_challenge,
+            &response.card_challenge,
+        );
+
+        // NOTE: Cryptogram implements constant-time equality comparison
+        if channel.card_cryptogram() != response.card_cryptogram {
             fail!(SessionError::AuthFailed, "card cryptogram mismatch!");
         }
 
         let mut session = Self {
-            id,
+            id: session_id,
             channel,
             connector,
         };
@@ -191,6 +186,6 @@ impl<'a> Session<'a> {
             );
         }
 
-        deserialize(&response.data[..])
+        deserialize(response.data.as_ref())
     }
 }

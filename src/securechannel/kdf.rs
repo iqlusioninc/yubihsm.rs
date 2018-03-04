@@ -43,7 +43,7 @@ pub fn derive(
     // Derivation context (i.e. challenges concatenated)
     derivation_data[16..].copy_from_slice(context.as_slice());
 
-    let mut mac = Cmac::<Aes128>::new_varkey(&mac_key[..]).unwrap();
+    let mut mac = Cmac::<Aes128>::new_varkey(mac_key.as_ref()).unwrap();
     mac.input(&derivation_data);
     output.copy_from_slice(&mac.result().code().as_slice()[..output_len]);
 }

@@ -7,7 +7,6 @@ extern crate tiny_http;
 use std::collections::HashMap;
 use std::io::Cursor;
 
-use byteorder::{BigEndian, ByteOrder};
 use ed25519_dalek::Keypair as Ed25519Keypair;
 use failure::Error;
 use rand::OsRng;
@@ -17,14 +16,15 @@ use self::tiny_http::Response as HttpResponse;
 
 use {Algorithm, Capabilities, Domains, ObjectId, ObjectLabel, ObjectOrigin, ObjectType,
      SequenceId, SessionId};
-use commands::{DeleteObjectCommand, GenAsymmetricKeyCommand, GetObjectInfoCommand,
-               ListObjectsCommand};
 use connector::{PBKDF2_ITERATIONS, PBKDF2_SALT};
-use responses::{DeleteObjectResponse, EchoResponse, GenAsymmetricKeyResponse,
-                GetObjectInfoResponse, ListObjectsEntry, ListObjectsResponse, Response};
-use securechannel::{Challenge, Channel, CommandMessage, CommandType, ResponseMessage, StaticKeys,
-                    CHALLENGE_SIZE};
-use serializers::{deserialize, serialize};
+use securechannel::{Challenge, Channel, CommandMessage, CommandType, ResponseMessage, StaticKeys};
+use serializers::deserialize;
+
+use commands::{CreateSessionCommand, DeleteObjectCommand, GenAsymmetricKeyCommand,
+               GetObjectInfoCommand, ListObjectsCommand};
+use responses::{CreateSessionResponse, DeleteObjectResponse, EchoResponse,
+                GenAsymmetricKeyResponse, GetObjectInfoResponse, ListObjectsEntry,
+                ListObjectsResponse, Response};
 
 /// Default auth key ID slot
 const DEFAULT_AUTH_KEY_ID: ObjectId = 1;
@@ -54,23 +54,6 @@ struct Object<T> {
     sequence: SequenceId,
     origin: ObjectOrigin,
     label: ObjectLabel,
-}
-
-impl<T> Object<T> {
-    pub fn object_info_response(&self, object_id: ObjectId) -> GetObjectInfoResponse {
-        GetObjectInfoResponse {
-            capabilities: self.capabilities.clone(),
-            id: object_id,
-            length: self.length,
-            domains: self.domains.clone(),
-            object_type: self.object_type,
-            algorithm: self.algorithm,
-            sequence: self.sequence,
-            origin: self.origin,
-            label: self.label.clone(),
-            delegated_capabilities: self.delegated_capabilities.clone(),
-        }
-    }
 }
 
 impl Object<Ed25519Keypair> {
@@ -176,22 +159,17 @@ impl MockHSM {
     }
 
     /// Create a new HSM session
-    fn create_session(&mut self, command: &CommandMessage) -> HttpResponse<Cursor<Vec<u8>>> {
-        assert_eq!(
-            command.data.len(),
-            10,
-            "create_session: unexpected command data length {} (expected 10)",
-            command.data.len()
-        );
+    fn create_session(&mut self, cmd_message: &CommandMessage) -> HttpResponse<Cursor<Vec<u8>>> {
+        let cmd: CreateSessionCommand = deserialize(cmd_message.data.as_ref())
+            .unwrap_or_else(|e| panic!("error parsing CreateSession command data: {:?}", e));
 
-        let auth_key_id = BigEndian::read_u16(&command.data[..2]);
         assert_eq!(
-            auth_key_id, DEFAULT_AUTH_KEY_ID,
+            cmd.auth_key_id, DEFAULT_AUTH_KEY_ID,
             "unexpected auth key ID: {}",
-            auth_key_id
+            cmd.auth_key_id
         );
 
-        let host_challenge = Challenge::from_slice(&command.data[2..]);
+        // Generate a random card challenge to send back to the client
         let card_challenge = Challenge::random();
 
         let session_id = self.sessions
@@ -203,22 +181,22 @@ impl MockHSM {
         let channel = Channel::new(
             session_id,
             &self.static_keys,
-            &host_challenge,
+            &cmd.host_challenge,
             &card_challenge,
         );
 
         let card_cryptogram = channel.card_cryptogram();
-
-        let mut response_body = Vec::with_capacity(1 + CHALLENGE_SIZE * 2);
-        response_body.push(session_id.to_u8());
-        response_body.extend_from_slice(card_challenge.as_slice());
-        response_body.extend_from_slice(card_cryptogram.as_slice());
-
         assert!(self.sessions.insert(session_id, channel).is_none());
 
-        HttpResponse::from_data(
-            ResponseMessage::success(CommandType::CreateSession, response_body).into_vec(),
-        )
+        let mut response = CreateSessionResponse {
+            card_challenge,
+            card_cryptogram,
+        }.serialize();
+
+        response.session_id = Some(session_id);
+        let response_bytes: Vec<u8> = response.into();
+
+        HttpResponse::from_data(response_bytes)
     }
 
     /// Authenticate an HSM session
@@ -231,9 +209,9 @@ impl MockHSM {
             .verify_authenticate_session(command)
             .unwrap();
 
-        HttpResponse::from_data(
-            ResponseMessage::success(CommandType::AuthSession, vec![]).into_vec(),
-        )
+        let response_bytes: Vec<u8> =
+            ResponseMessage::success(CommandType::AuthSession, vec![]).into();
+        HttpResponse::from_data(response_bytes)
     }
 
     /// Encrypted session messages
@@ -261,11 +239,12 @@ impl MockHSM {
             unsupported => panic!("unsupported command type: {:?}", unsupported),
         };
 
-        let encrypted_response = self.channel(&session_id)
+        let encrypted_response: Vec<u8> = self.channel(&session_id)
             .encrypt_response(response)
-            .unwrap();
+            .unwrap()
+            .into();
 
-        HttpResponse::from_data(encrypted_response.into_vec())
+        HttpResponse::from_data(encrypted_response)
     }
 
     /// Delete an object
@@ -276,7 +255,7 @@ impl MockHSM {
         match command.object_type {
             // TODO: support other asymmetric keys besides Ed25519 keys
             ObjectType::Asymmetric => match self.ed25519_keys.remove(&command.object_id) {
-                Some(_) => respond(&DeleteObjectResponse {}),
+                Some(_) => DeleteObjectResponse {}.serialize(),
                 None => {
                     ResponseMessage::error(&format!("no such object ID: {:?}", command.object_id))
                 }
@@ -287,9 +266,9 @@ impl MockHSM {
 
     /// Echo a message back to the host
     fn echo(&self, cmd_data: &[u8]) -> ResponseMessage {
-        respond(&EchoResponse {
+        EchoResponse {
             message: cmd_data.into(),
-        })
+        }.serialize()
     }
 
     /// Generate a new random asymmetric key
@@ -305,9 +284,9 @@ impl MockHSM {
             other => panic!("unsupported algorithm: {:?}", other),
         }
 
-        respond(&GenAsymmetricKeyResponse {
+        GenAsymmetricKeyResponse {
             key_id: command.key_id,
-        })
+        }.serialize()
     }
 
     /// Get detailed info about a specific object
@@ -321,7 +300,18 @@ impl MockHSM {
 
         // TODO: support other asymmetric keys besides Ed25519 keys
         match self.ed25519_keys.get(&command.object_id) {
-            Some(key) => respond(&key.object_info_response(command.object_id)),
+            Some(key) => GetObjectInfoResponse {
+                capabilities: key.capabilities.clone(),
+                id: command.object_id,
+                length: key.length,
+                domains: key.domains.clone(),
+                object_type: key.object_type,
+                algorithm: key.algorithm,
+                sequence: key.sequence,
+                origin: key.origin,
+                label: key.label.clone(),
+                delegated_capabilities: key.delegated_capabilities.clone(),
+            }.serialize(),
             None => ResponseMessage::error(&format!("no such object ID: {:?}", command.object_id)),
         }
     }
@@ -341,9 +331,9 @@ impl MockHSM {
             })
             .collect();
 
-        respond(&ListObjectsResponse {
+        ListObjectsResponse {
             objects: list_entries,
-        })
+        }.serialize()
     }
 
     /// Obtain the channel for a session by its ID
@@ -352,9 +342,4 @@ impl MockHSM {
             .get_mut(id)
             .unwrap_or_else(|| panic!("invalid session ID: {:?}", id))
     }
-}
-
-/// Send a `Response` message back to the client
-fn respond<R: Response>(response: &R) -> ResponseMessage {
-    ResponseMessage::success(R::COMMAND_TYPE, serialize(response).unwrap())
 }

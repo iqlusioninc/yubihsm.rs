@@ -82,7 +82,7 @@ fn integration_tests(session: &mut Session) {
 fn echo_test(session: &mut Session) {
     let message = b"Hello, world!";
     let response = session
-        .echo(&message[..])
+        .echo(message.as_ref())
         .unwrap_or_else(|err| panic!("error sending echo: {:?}", err));
 
     assert_eq!(&message[..], &response.message[..]);
