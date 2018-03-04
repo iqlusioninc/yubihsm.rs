@@ -3,14 +3,41 @@
 
 pub use failure::Error;
 pub(crate) use securechannel::CommandType;
+#[cfg(feature = "mockhsm")]
+use securechannel::ResponseMessage;
 use serde::ser::Serialize;
 use serde::de::DeserializeOwned;
 
 use {Algorithm, Capabilities, Domains, ObjectId, ObjectLabel, ObjectOrigin, ObjectType, SequenceId};
+use securechannel::{Challenge, Cryptogram};
+#[cfg(feature = "mockhsm")]
+use serializers::serialize;
 
 pub(crate) trait Response: Serialize + DeserializeOwned + Sized {
     /// Command ID this response is for
     const COMMAND_TYPE: CommandType;
+
+    /// Serialize a response type into a ResponseMessage
+    #[cfg(feature = "mockhsm")]
+    fn serialize(&self) -> ResponseMessage {
+        ResponseMessage::success(Self::COMMAND_TYPE, serialize(self).unwrap())
+    }
+}
+
+/// Response from `CommandType::CreateSession`
+///
+/// <https://developers.yubico.com/YubiHSM2/Commands/Create_Session.html>
+#[derive(Serialize, Deserialize, Debug)]
+pub struct CreateSessionResponse {
+    /// Randomly generated challenge from the card
+    pub card_challenge: Challenge,
+
+    /// MAC-like authentication tag across host and card challenges
+    pub card_cryptogram: Cryptogram,
+}
+
+impl Response for CreateSessionResponse {
+    const COMMAND_TYPE: CommandType = CommandType::CreateSession;
 }
 
 /// Response from `CommandType::DeleteObject`

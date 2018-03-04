@@ -9,6 +9,7 @@ use serde::de::DeserializeOwned;
 use serializers::serialize;
 
 use {Algorithm, Capabilities, Domains, ObjectId, ObjectLabel, ObjectType};
+use securechannel::Challenge;
 use responses::*;
 
 pub(crate) trait Command: Serialize + DeserializeOwned + Sized {
@@ -23,6 +24,23 @@ impl<C: Command> From<C> for CommandMessage {
     fn from(command: C) -> CommandMessage {
         Self::new(C::COMMAND_TYPE, serialize(&command).unwrap())
     }
+}
+
+/// Request parameters for `CommandType::CreateSession`
+///
+/// <https://developers.yubico.com/YubiHSM2/Commands/Create_Session.html>
+#[derive(Serialize, Deserialize, Debug)]
+pub struct CreateSessionCommand {
+    /// Authentication key ID to use
+    pub auth_key_id: ObjectId,
+
+    /// Randomly generated challenge from the host
+    pub host_challenge: Challenge,
+}
+
+impl Command for CreateSessionCommand {
+    const COMMAND_TYPE: CommandType = CommandType::CreateSession;
+    type ResponseType = CreateSessionResponse;
 }
 
 /// Request parameters for `CommandType::DeleteObject`

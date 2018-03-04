@@ -168,10 +168,12 @@ impl ResponseMessage {
 
         result
     }
+}
 
+#[cfg(feature = "mockhsm")]
+impl Into<Vec<u8>> for ResponseMessage {
     /// Serialize this response, consuming it and producing a Vec<u8>
-    #[cfg(feature = "mockhsm")]
-    pub fn into_vec(mut self) -> Vec<u8> {
+    fn into(mut self) -> Vec<u8> {
         let mut result = Vec::with_capacity(3 + self.len());
         result.push(self.code.to_u8());
         result.write_u16::<BigEndian>(self.len() as u16).unwrap();

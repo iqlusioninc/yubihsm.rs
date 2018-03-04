@@ -183,7 +183,7 @@ impl Connector {
     /// POST /connector/api with a given command message
     pub(crate) fn send_command(&self, cmd: CommandMessage) -> Result<ResponseMessage, Error> {
         let cmd_type = cmd.command_type;
-        let response_bytes = self.post("/connector/api", cmd.into_vec())?;
+        let response_bytes = self.post("/connector/api", cmd.into())?;
         let response = ResponseMessage::parse(response_bytes)?;
 
         if response.is_err() {

@@ -138,9 +138,11 @@ impl CommandMessage {
 
         result
     }
+}
 
+impl Into<Vec<u8>> for CommandMessage {
     /// Serialize this Command, consuming it and creating a Vec<u8>
-    pub fn into_vec(mut self) -> Vec<u8> {
+    fn into(mut self) -> Vec<u8> {
         let mut result = Vec::with_capacity(3 + self.len());
         result.push(self.command_type as u8);
         result.write_u16::<BigEndian>(self.len() as u16).unwrap();

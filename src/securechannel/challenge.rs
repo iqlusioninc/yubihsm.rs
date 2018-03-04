@@ -4,6 +4,7 @@ use rand::{OsRng, Rng};
 pub const CHALLENGE_SIZE: usize = 8;
 
 /// A challenge message, sent by either host or the card
+#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 pub struct Challenge([u8; CHALLENGE_SIZE]);
 
 impl Challenge {
