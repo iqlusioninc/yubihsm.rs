@@ -13,11 +13,11 @@ use securechannel::Challenge;
 use responses::*;
 
 pub(crate) trait Command: Serialize + DeserializeOwned + Sized {
-    /// Command ID for this command
-    const COMMAND_TYPE: CommandType;
-
     /// Response type for this command
     type ResponseType: Response;
+
+    /// Command ID for this command
+    const COMMAND_TYPE: CommandType = Self::ResponseType::COMMAND_TYPE;
 }
 
 impl<C: Command> From<C> for CommandMessage {
@@ -39,7 +39,6 @@ pub struct CreateSessionCommand {
 }
 
 impl Command for CreateSessionCommand {
-    const COMMAND_TYPE: CommandType = CommandType::CreateSession;
     type ResponseType = CreateSessionResponse;
 }
 
@@ -56,7 +55,6 @@ pub struct DeleteObjectCommand {
 }
 
 impl Command for DeleteObjectCommand {
-    const COMMAND_TYPE: CommandType = CommandType::DeleteObject;
     type ResponseType = DeleteObjectResponse;
 }
 
@@ -70,7 +68,6 @@ pub struct EchoCommand {
 }
 
 impl Command for EchoCommand {
-    const COMMAND_TYPE: CommandType = CommandType::Echo;
     type ResponseType = EchoResponse;
 }
 
@@ -96,7 +93,6 @@ pub struct GenAsymmetricKeyCommand {
 }
 
 impl Command for GenAsymmetricKeyCommand {
-    const COMMAND_TYPE: CommandType = CommandType::GenAsymmetricKey;
     type ResponseType = GenAsymmetricKeyResponse;
 }
 
@@ -110,7 +106,6 @@ pub struct GetPubKeyCommand {
 }
 
 impl Command for GetPubKeyCommand {
-    const COMMAND_TYPE: CommandType = CommandType::GetPubKey;
     type ResponseType = GetPubKeyResponse;
 }
 
@@ -127,7 +122,6 @@ pub struct GetObjectInfoCommand {
 }
 
 impl Command for GetObjectInfoCommand {
-    const COMMAND_TYPE: CommandType = CommandType::GetObjectInfo;
     type ResponseType = GetObjectInfoResponse;
 }
 
@@ -138,7 +132,6 @@ impl Command for GetObjectInfoCommand {
 pub struct ListObjectsCommand {}
 
 impl Command for ListObjectsCommand {
-    const COMMAND_TYPE: CommandType = CommandType::ListObjects;
     type ResponseType = ListObjectsResponse;
 }
 
@@ -153,6 +146,5 @@ pub struct SignDataEdDSACommand {
 }
 
 impl Command for SignDataEdDSACommand {
-    const COMMAND_TYPE: CommandType = CommandType::SignDataEdDSA;
     type ResponseType = SignDataEdDSAResponse;
 }
