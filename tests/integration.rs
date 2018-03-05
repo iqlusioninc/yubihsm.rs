@@ -1,5 +1,13 @@
 extern crate yubihsm_client;
 
+#[cfg(feature = "dalek")]
+extern crate ed25519_dalek;
+#[cfg(feature = "dalek")]
+extern crate sha2;
+
+#[cfg(feature = "dalek")]
+use sha2::Sha512;
+
 #[cfg(feature = "mockhsm")]
 use std::thread;
 
@@ -30,7 +38,7 @@ const TEST_KEY_ID: ObjectId = 100;
 /// NOTE: This will need to be increased whenever adding additional tests
 /// to the suite.
 #[cfg(feature = "mockhsm")]
-const NUM_HTTP_REQUESTS: usize = 10;
+const NUM_HTTP_REQUESTS: usize = 12;
 
 #[cfg(not(feature = "mockhsm"))]
 #[test]
@@ -74,6 +82,8 @@ fn integration_tests(session: &mut Session) {
     // as described at the top of this file
     echo_test(session);
     generate_asymmetric_key_test(session);
+    #[cfg(feature = "dalek")]
+    sign_ed25519_test(session);
     list_objects_test(session);
     delete_object_test(session);
 }
@@ -118,6 +128,34 @@ fn generate_asymmetric_key_test(session: &mut Session) {
     assert_eq!(object_info.algorithm, algorithm);
     assert_eq!(object_info.origin, ObjectOrigin::Generated);
     assert_eq!(&object_info.label.to_string().unwrap(), label);
+}
+
+// Compute a signature using the Ed25519 key generated in the last test
+#[cfg(feature = "dalek")]
+fn sign_ed25519_test(session: &mut Session) {
+    let pubkey_response = session
+        .get_pubkey(TEST_KEY_ID)
+        .unwrap_or_else(|err| panic!("error getting public key: {:?}", err));
+
+    assert_eq!(pubkey_response.algorithm, Algorithm::EC_ED25519);
+
+    let public_key = ::ed25519_dalek::PublicKey::from_bytes(&pubkey_response.data)
+        .unwrap_or_else(|err| panic!("error decoding Ed25519 public key: {:?}", err));
+
+    let test_message = b"The Edwards-curve Digital Signature Algorithm (EdDSA) is a \
+        variant of Schnorr's signature system with (possibly twisted) Edwards curves.";
+
+    let signature_response = session
+        .sign_data_eddsa(TEST_KEY_ID, test_message.as_ref())
+        .unwrap_or_else(|err| panic!("error performing Ed25519 signature: {:?}", err));
+
+    let signature = ::ed25519_dalek::Signature::from_bytes(&signature_response.signature)
+        .unwrap_or_else(|err| panic!("error decoding Ed25519 signature: {:?}", err));
+
+    assert!(
+        public_key.verify::<Sha512>(test_message.as_ref(), &signature),
+        "Ed25519 signature verification failed!"
+    );
 }
 
 // List the objects in the YubiHSM2

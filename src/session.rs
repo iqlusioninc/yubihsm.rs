@@ -2,16 +2,13 @@
 //!
 //! See <https://developers.yubico.com/YubiHSM2/Concepts/Session.html>
 
+use commands::*;
 use connector::Connector;
 use failure::Error;
+use responses::*;
 use securechannel::{Challenge, Channel, StaticKeys};
 use serializers::deserialize;
 use super::{Algorithm, Capabilities, Domains, ObjectId, ObjectLabel, ObjectType, SessionId};
-
-use commands::{Command, CreateSessionCommand, DeleteObjectCommand, EchoCommand,
-               GenAsymmetricKeyCommand, GetObjectInfoCommand, ListObjectsCommand};
-use responses::{CreateSessionResponse, DeleteObjectResponse, EchoResponse,
-                GenAsymmetricKeyResponse, GetObjectInfoResponse, ListObjectsResponse};
 
 /// Encrypted session with the `YubiHSM2`
 pub struct Session<'a> {
@@ -147,6 +144,13 @@ impl<'a> Session<'a> {
         })
     }
 
+    /// Get the public key for an asymmetric key stored on the device
+    ///
+    /// See `GetPubKeyResponse` for more information about public key formats
+    pub fn get_pubkey(&mut self, key_id: ObjectId) -> Result<GetPubKeyResponse, Error> {
+        self.send_encrypted_command(GetPubKeyCommand { key_id })
+    }
+
     /// Get the current session ID
     pub fn id(&self) -> SessionId {
         self.id
@@ -156,6 +160,21 @@ impl<'a> Session<'a> {
     pub fn list_objects(&mut self) -> Result<ListObjectsResponse, Error> {
         // TODO: support for filtering objects
         self.send_encrypted_command(ListObjectsCommand {})
+    }
+
+    /// Compute an Ed25519 signature with the given key ID
+    pub fn sign_data_eddsa<T>(
+        &mut self,
+        key_id: ObjectId,
+        data: T,
+    ) -> Result<SignDataEdDSAResponse, Error>
+    where
+        T: Into<Vec<u8>>,
+    {
+        self.send_encrypted_command(SignDataEdDSACommand {
+            key_id,
+            data: data.into(),
+        })
     }
 
     /// Authenticate the current session with the `YubiHSM2`

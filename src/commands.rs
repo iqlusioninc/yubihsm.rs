@@ -100,6 +100,20 @@ impl Command for GenAsymmetricKeyCommand {
     type ResponseType = GenAsymmetricKeyResponse;
 }
 
+/// Request parameters for `CommandType::GetPubKey`
+///
+/// <https://developers.yubico.com/YubiHSM2/Commands/Get_Pubkey.html>
+#[derive(Serialize, Deserialize, Debug)]
+pub struct GetPubKeyCommand {
+    /// Object ID of the key to obtain the corresponding pubkey for
+    pub key_id: ObjectId,
+}
+
+impl Command for GetPubKeyCommand {
+    const COMMAND_TYPE: CommandType = CommandType::GetPubKey;
+    type ResponseType = GetPubKeyResponse;
+}
+
 /// Request parameters for `CommandType::GetObjectInfo`
 ///
 /// <https://developers.yubico.com/YubiHSM2/Commands/Delete_Object.html>
@@ -126,4 +140,19 @@ pub struct ListObjectsCommand {}
 impl Command for ListObjectsCommand {
     const COMMAND_TYPE: CommandType = CommandType::ListObjects;
     type ResponseType = ListObjectsResponse;
+}
+
+/// Request parameters `CommandType::SignDataEdDSA`
+#[derive(Serialize, Deserialize, Debug)]
+pub struct SignDataEdDSACommand {
+    /// ID of the key to perform the signature with
+    pub key_id: ObjectId,
+
+    /// Data to be signed
+    pub data: Vec<u8>,
+}
+
+impl Command for SignDataEdDSACommand {
+    const COMMAND_TYPE: CommandType = CommandType::SignDataEdDSA;
+    type ResponseType = SignDataEdDSAResponse;
 }

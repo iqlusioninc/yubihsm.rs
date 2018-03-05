@@ -13,7 +13,7 @@ extern crate byteorder;
 extern crate clear_on_drop;
 extern crate cmac;
 extern crate constant_time_eq;
-#[cfg(feature = "mockhsm")]
+#[cfg(feature = "dalek")]
 extern crate ed25519_dalek;
 #[macro_use]
 extern crate failure;
