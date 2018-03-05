@@ -31,4 +31,5 @@ tiny_http = { version = "0.5", optional = true }
 
 [features]
 default = []
-mockhsm = ["ed25519-dalek", "tiny_http"]
+dalek = ["ed25519-dalek"]
+mockhsm = ["dalek", "tiny_http"]

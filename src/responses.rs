@@ -117,6 +117,28 @@ impl Response for GetObjectInfoResponse {
     const COMMAND_TYPE: CommandType = CommandType::GetObjectInfo;
 }
 
+/// Response from `CommandType::GetPubKey`
+///
+/// <https://developers.yubico.com/YubiHSM2/Commands/Get_Pubkey.html>
+#[derive(Serialize, Deserialize, Debug)]
+pub struct GetPubKeyResponse {
+    /// Algorithm of the public key
+    pub algorithm: Algorithm,
+
+    /// The public key in raw bytes. Keys have the following structure:
+    ///
+    /// - RSA: Public modulus N (0x100 | 0x200 | 0x400 bytes)
+    /// - ECC (non-Ed25519):
+    ///   - Public point X (0x20 | 0x30 | 0x40 | 0x42 bytes)
+    ///   - Public point Y (0x20 | 0x30 | 0x40 | 0x42 bytes)
+    /// - Ed25519: Public point A, compressed (0x20 bytes)
+    pub data: Vec<u8>,
+}
+
+impl Response for GetPubKeyResponse {
+    const COMMAND_TYPE: CommandType = CommandType::GetPubKey;
+}
+
 /// Response from `CommandType::ListObjects`
 ///
 /// <https://developers.yubico.com/YubiHSM2/Commands/List_Objects.html>
@@ -142,4 +164,15 @@ pub struct ListObjectsEntry {
 
 impl Response for ListObjectsResponse {
     const COMMAND_TYPE: CommandType = CommandType::ListObjects;
+}
+
+/// Response from `CommandType::SignDataEdDSA`
+#[derive(Serialize, Deserialize, Debug)]
+pub struct SignDataEdDSAResponse {
+    /// Ed25519 signature (64-bytes)
+    pub signature: Vec<u8>,
+}
+
+impl Response for SignDataEdDSAResponse {
+    const COMMAND_TYPE: CommandType = CommandType::SignDataEdDSA;
 }

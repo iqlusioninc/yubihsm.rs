@@ -16,15 +16,11 @@ use self::tiny_http::Response as HttpResponse;
 
 use {Algorithm, Capabilities, Domains, ObjectId, ObjectLabel, ObjectOrigin, ObjectType,
      SequenceId, SessionId};
+use commands::*;
 use connector::{PBKDF2_ITERATIONS, PBKDF2_SALT};
+use responses::*;
 use securechannel::{Challenge, Channel, CommandMessage, CommandType, ResponseMessage, StaticKeys};
 use serializers::deserialize;
-
-use commands::{CreateSessionCommand, DeleteObjectCommand, GenAsymmetricKeyCommand,
-               GetObjectInfoCommand, ListObjectsCommand};
-use responses::{CreateSessionResponse, DeleteObjectResponse, EchoResponse,
-                GenAsymmetricKeyResponse, GetObjectInfoResponse, ListObjectsEntry,
-                ListObjectsResponse, Response};
 
 /// Default auth key ID slot
 const DEFAULT_AUTH_KEY_ID: ObjectId = 1;
@@ -38,11 +34,26 @@ pub struct MockHSM {
     server: Server,
     static_keys: StaticKeys,
     sessions: HashMap<SessionId, Channel>,
-    ed25519_keys: HashMap<ObjectId, Object<Ed25519Keypair>>,
+    objects: Objects,
 }
 
 /// Objects stored in the `MockHSM`
-#[allow(dead_code)]
+#[derive(Default)]
+pub struct Objects {
+    // TODO: other object types besides Ed25519 keys
+    ed25519_keys: HashMap<ObjectId, Object<Ed25519Keypair>>,
+}
+
+impl Objects {
+    /// Create a new MockHSM object store
+    pub fn new() -> Self {
+        Objects {
+            ed25519_keys: HashMap::new(),
+        }
+    }
+}
+
+/// An individual object in the `MockHSM`, specialized for a given object type
 struct Object<T> {
     value: T,
     object_type: ObjectType,
@@ -91,7 +102,7 @@ impl MockHSM {
                 PBKDF2_ITERATIONS,
             ),
             sessions: HashMap::new(),
-            ed25519_keys: HashMap::new(),
+            objects: Objects::new(),
         })
     }
 
@@ -235,7 +246,9 @@ impl MockHSM {
             CommandType::Echo => self.echo(&command.data),
             CommandType::GenAsymmetricKey => self.gen_asymmetric_key(&command.data),
             CommandType::GetObjectInfo => self.get_object_info(&command.data),
+            CommandType::GetPubKey => self.get_pubkey(&command.data),
             CommandType::ListObjects => self.list_objects(&command.data),
+            CommandType::SignDataEdDSA => self.sign_data_eddsa(&command.data),
             unsupported => panic!("unsupported command type: {:?}", unsupported),
         };
 
@@ -254,7 +267,7 @@ impl MockHSM {
 
         match command.object_type {
             // TODO: support other asymmetric keys besides Ed25519 keys
-            ObjectType::Asymmetric => match self.ed25519_keys.remove(&command.object_id) {
+            ObjectType::Asymmetric => match self.objects.ed25519_keys.remove(&command.object_id) {
                 Some(_) => DeleteObjectResponse {}.serialize(),
                 None => {
                     ResponseMessage::error(&format!("no such object ID: {:?}", command.object_id))
@@ -279,7 +292,12 @@ impl MockHSM {
         match command.algorithm {
             Algorithm::EC_ED25519 => {
                 let key = Object::new(command.label, command.capabilities, command.domains);
-                assert!(self.ed25519_keys.insert(command.key_id, key).is_none());
+                assert!(
+                    self.objects
+                        .ed25519_keys
+                        .insert(command.key_id, key)
+                        .is_none()
+                );
             }
             other => panic!("unsupported algorithm: {:?}", other),
         }
@@ -299,7 +317,7 @@ impl MockHSM {
         }
 
         // TODO: support other asymmetric keys besides Ed25519 keys
-        match self.ed25519_keys.get(&command.object_id) {
+        match self.objects.ed25519_keys.get(&command.object_id) {
             Some(key) => GetObjectInfoResponse {
                 capabilities: key.capabilities,
                 id: command.object_id,
@@ -316,13 +334,30 @@ impl MockHSM {
         }
     }
 
+    /// Get the public key associated with a key in the HSM
+    fn get_pubkey(&self, cmd_data: &[u8]) -> ResponseMessage {
+        let command: GetPubKeyCommand = deserialize(cmd_data)
+            .unwrap_or_else(|e| panic!("error parsing CommandType::GetPubKey: {:?}", e));
+
+        // TODO: support other asymmetric keys besides Ed25519 keys
+        match self.objects.ed25519_keys.get(&command.key_id) {
+            Some(key) => GetPubKeyResponse {
+                algorithm: Algorithm::EC_ED25519,
+                data: Vec::from(key.value.public.as_bytes().as_ref()),
+            }.serialize(),
+            None => ResponseMessage::error(&format!("no such object ID: {:?}", command.key_id)),
+        }
+    }
+
     /// List all objects presently accessible to a session
     fn list_objects(&self, cmd_data: &[u8]) -> ResponseMessage {
         // TODO: filter support
         let _command: ListObjectsCommand = deserialize(cmd_data)
             .unwrap_or_else(|e| panic!("error parsing CommandType::ListObjects: {:?}", e));
 
-        let list_entries = self.ed25519_keys
+        // TODO: support other asymmetric keys besides Ed25519 keys
+        let list_entries = self.objects
+            .ed25519_keys
             .iter()
             .map(|(object_id, object)| ListObjectsEntry {
                 id: *object_id,
@@ -334,6 +369,23 @@ impl MockHSM {
         ListObjectsResponse {
             objects: list_entries,
         }.serialize()
+    }
+
+    /// Sign a message using the Ed25519 signature algorithm
+    fn sign_data_eddsa(&self, cmd_data: &[u8]) -> ResponseMessage {
+        let command: SignDataEdDSACommand = deserialize(cmd_data)
+            .unwrap_or_else(|e| panic!("error parsing CommandType::SignDataEdDSA: {:?}", e));
+
+        // TODO: support other asymmetric keys besides Ed25519 keys
+        match self.objects.ed25519_keys.get(&command.key_id) {
+            Some(key) => {
+                let signature = key.value.sign::<Sha512>(command.data.as_ref()).to_bytes();
+                SignDataEdDSAResponse {
+                    signature: Vec::from(signature.as_ref()),
+                }.serialize()
+            }
+            None => ResponseMessage::error(&format!("no such object ID: {:?}", command.key_id)),
+        }
     }
 
     /// Obtain the channel for a session by its ID
