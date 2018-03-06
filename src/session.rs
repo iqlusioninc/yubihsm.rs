@@ -6,7 +6,7 @@ use commands::*;
 use connector::Connector;
 use failure::Error;
 use responses::*;
-use securechannel::{Challenge, Channel, StaticKeys};
+use securechannel::{Challenge, Channel, ResponseCode, StaticKeys};
 use serializers::deserialize;
 use super::{Algorithm, Capabilities, Domains, ObjectId, ObjectLabel, ObjectType, SessionId};
 
@@ -193,7 +193,13 @@ impl<'a> Session<'a> {
         let response = self.channel.decrypt_response(encrypted_response)?;
 
         if response.is_err() {
-            fail!(SessionError::ResponseError, "{:?}", response.code);
+            // TODO: factor this into ResponseMessage or ResponseCode?
+            let description = match response.code {
+                ResponseCode::MemoryError => "HSM memory error (missing object?)".to_owned(),
+                other => format!("{:?}", other),
+            };
+
+            fail!(SessionError::ResponseError, description);
         }
 
         if response.command().unwrap() != C::COMMAND_TYPE {

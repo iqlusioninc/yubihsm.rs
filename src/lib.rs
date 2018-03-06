@@ -2,6 +2,7 @@
 
 #![crate_name = "yubihsm_client"]
 #![crate_type = "lib"]
+#![cfg_attr(feature = "bench", feature(test))]
 #![deny(warnings, missing_docs, trivial_casts, trivial_numeric_casts)]
 #![deny(unsafe_code, unused_import_braces, unused_qualifications)]
 
@@ -27,6 +28,8 @@ extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 extern crate sha2;
+#[cfg(feature = "bench")]
+extern crate test;
 
 /// Custom error macros for using enums with descriptions for errors
 macro_rules! err {
@@ -48,11 +51,13 @@ macro_rules! fail {
 }
 
 pub mod algorithm;
+#[cfg(feature = "bench")]
+mod bench;
 pub mod capabilities;
 mod commands;
 pub mod connector;
 pub mod domains;
-#[cfg(any(feature = "mockhsm"))]
+#[cfg(feature = "mockhsm")]
 pub mod mockhsm;
 pub mod object;
 pub mod responses;

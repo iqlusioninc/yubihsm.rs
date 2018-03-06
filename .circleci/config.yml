@@ -23,13 +23,13 @@ jobs:
             cargo clippy --version
             cargo clippy --verbose --features=mockhsm
       - run:
-          name: build (nightly-2018-02-04)
+          name: build (nightly-2018-03-05)
           command: |
             rustc --version --verbose
             cargo --version --verbose
             cargo build --verbose
       - run:
-          name: test (nightly-2018-02-04)
+          name: test (nightly-2018-03-05)
           command: |
             cargo test --verbose --features=mockhsm
       - save_cache:
