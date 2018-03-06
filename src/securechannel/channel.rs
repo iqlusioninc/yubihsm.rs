@@ -313,7 +313,10 @@ impl Channel {
 
     /// Verify a host authentication message (for simulating a connector/card)
     #[cfg(feature = "mockhsm")]
-    pub fn verify_authenticate_session(&mut self, command: &CommandMessage) -> Result<(), Error> {
+    pub fn verify_authenticate_session(
+        &mut self,
+        command: &CommandMessage,
+    ) -> Result<ResponseMessage, Error> {
         assert_eq!(self.security_level, SecurityLevel::NoSecurityLevel);
         assert_eq!(self.mac_chaining_value, [0u8; MAC_SIZE * 2]);
 
@@ -346,7 +349,7 @@ impl Channel {
         // command." -- GPC_SPE_014 section 6.2.6
         self.counter = 1;
 
-        Ok(())
+        Ok(ResponseMessage::success(CommandType::AuthSession, vec![]))
     }
 
     /// Verify and decrypt a command from the host
@@ -521,4 +524,68 @@ fn compute_icv(cipher: &Aes128, counter: u32) -> GenericArray<u8, U16> {
     BigEndian::write_u32(&mut icv.as_mut_slice()[12..], counter);
     cipher.encrypt_block(&mut icv);
     icv
+}
+
+#[cfg(all(test, feature = "mockhsm"))]
+mod tests {
+    use securechannel::{Challenge, Channel, CommandMessage, CommandType, ResponseMessage,
+                        SessionId, StaticKeys};
+
+    const PASSWORD: &[u8] = b"password";
+    const SALT: &[u8] = b"Yubico";
+    const PBKDF_ITERATIONS: usize = 10000;
+    const HOST_CHALLENGE: &[u8] = &[0u8; 8];
+    const CARD_CHALLENGE: &[u8] = &[0u8; 8];
+    const COMMAND_TYPE: CommandType = CommandType::Echo;
+    const COMMAND_DATA: &[u8] = b"Hello, world!";
+
+    #[test]
+    fn happy_path_test() {
+        let static_keys = StaticKeys::derive_from_password(PASSWORD, SALT, PBKDF_ITERATIONS);
+
+        let host_challenge = Challenge::from_slice(HOST_CHALLENGE);
+        let card_challenge = Challenge::from_slice(CARD_CHALLENGE);
+
+        let session_id = SessionId::new(0).unwrap();
+
+        // Create channels
+        let mut host_channel =
+            Channel::new(session_id, &static_keys, &host_challenge, &card_challenge);
+
+        let mut card_channel =
+            Channel::new(session_id, &static_keys, &host_challenge, &card_challenge);
+
+        // Auth host to card
+        let auth_command = host_channel.authenticate_session().unwrap();
+        let auth_response = card_channel
+            .verify_authenticate_session(&auth_command)
+            .unwrap();
+
+        host_channel
+            .finish_authenticate_session(&auth_response)
+            .unwrap();
+
+        // Host sends encrypted command
+        let command_ciphertext = host_channel
+            .encrypt_command(CommandMessage::new(COMMAND_TYPE, Vec::from(COMMAND_DATA)))
+            .unwrap();
+
+        // Card decrypts command
+        let decrypted_command = card_channel.decrypt_command(command_ciphertext).unwrap();
+
+        // Card sends decrypted response
+        let response_ciphertext = card_channel
+            .encrypt_response(ResponseMessage::success(
+                decrypted_command.command_type,
+                decrypted_command.data,
+            ))
+            .unwrap();
+
+        let decrypted_response = host_channel.decrypt_response(response_ciphertext).unwrap();
+
+        assert_eq!(decrypted_response.command().unwrap(), COMMAND_TYPE);
+        assert_eq!(&decrypted_response.data[..], COMMAND_DATA);
+    }
+
+    // TODO: test MAC/cryptogram verification failures
 }

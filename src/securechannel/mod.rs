@@ -22,13 +22,13 @@
 
 mod challenge;
 mod channel;
-mod command;
+mod command_message;
 mod context;
 mod cryptogram;
 mod error;
 mod kdf;
 mod mac;
-mod response;
+mod response_message;
 mod static_keys;
 
 /// AES key size in bytes. SCP03 theoretically supports other key sizes, but
@@ -39,13 +39,13 @@ pub const KEY_SIZE: usize = 16;
 pub use self::challenge::{Challenge, CHALLENGE_SIZE};
 pub(crate) use self::channel::Channel;
 pub use self::channel::Id as SessionId;
-pub(crate) use self::command::CommandMessage;
-pub use self::command::CommandType;
+pub(crate) use self::command_message::CommandMessage;
+pub use self::command_message::CommandType;
 pub use self::context::{Context, CONTEXT_SIZE};
 pub use self::cryptogram::{Cryptogram, CRYPTOGRAM_SIZE};
 pub use self::error::SecureChannelError;
 pub(crate) use self::mac::{Mac, MAC_SIZE};
-pub(crate) use self::response::ResponseMessage;
+pub(crate) use self::response_message::ResponseMessage;
 #[cfg(feature = "mockhsm")]
-pub(crate) use self::response::ResponseCode;
+pub(crate) use self::response_message::ResponseCode;
 pub use self::static_keys::StaticKeys;
