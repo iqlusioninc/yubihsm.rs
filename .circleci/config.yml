@@ -3,13 +3,15 @@ version: 2
 jobs:
   build:
     docker:
-      - image: tarcieri/rust-yubihsm-sdk:latest
+      - image: tarcieri/rust-yubihsm-sdk:20180306
+    environment:
+      - RUSTFLAGS=-C target-feature=+aes
 
     steps:
       - checkout
       - restore_cache:
           # Bump this (and below) whenever the Docker image is updated
-          key: cache-20180228
+          key: cache-20180306
       - run:
           name: rustfmt
           command: |
@@ -32,7 +34,7 @@ jobs:
             cargo test --verbose --features=mockhsm
       - save_cache:
           # Bump this (and above) whenever the Docker image is updated
-          key: cache-20180228
+          key: cache-20180306
           paths:
             - "~/.cargo"
             - "./target"
