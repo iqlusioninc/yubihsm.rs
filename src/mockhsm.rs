@@ -216,12 +216,11 @@ impl MockHSM {
             .session_id
             .unwrap_or_else(|| panic!("no session ID in command: {:?}", command.command_type));
 
-        self.channel(&session_id)
+        let response_bytes: Vec<u8> = self.channel(&session_id)
             .verify_authenticate_session(command)
-            .unwrap();
+            .unwrap()
+            .into();
 
-        let response_bytes: Vec<u8> =
-            ResponseMessage::success(CommandType::AuthSession, vec![]).into();
         HttpResponse::from_data(response_bytes)
     }
 
