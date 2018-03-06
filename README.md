@@ -16,6 +16,8 @@
 An experimental pure Rust reimplementation of [libyubihsm] providing an
 interface to [YubiHSM2] devices from [Yubico].
 
+[Documentation][docs-link]
+
 [libyubihsm]: https://developers.yubico.com/YubiHSM2/Component_Reference/libyubihsm/
 [YubiHSM2]: https://www.yubico.com/products/yubihsm/
 [Yubico]: https://www.yubico.com/
@@ -50,8 +52,10 @@ The following commands are presently supported:
 * [Echo](https://developers.yubico.com/YubiHSM2/Commands/Echo.html)
 * [Generate Asymmetric Key](https://developers.yubico.com/YubiHSM2/Commands/Generate_Asymmetric_Key.html)
 * [Get Object Info](https://developers.yubico.com/YubiHSM2/Commands/Get_Object_Info.html)
+* [Get Pubkey](https://developers.yubico.com/YubiHSM2/Commands/Get_Pubkey.html)
 * [List Objects](https://developers.yubico.com/YubiHSM2/Commands/List_Objects.html)
 * [Session Message](https://developers.yubico.com/YubiHSM2/Commands/Session_Message.html)
+* [Sign Data EdDSA](https://developers.yubico.com/YubiHSM2/Commands/Sign_Data_Eddsa.html) i.e. Ed25519 signatures
 
 ## Testing
 
