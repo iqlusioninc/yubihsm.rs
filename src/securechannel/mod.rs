@@ -45,7 +45,5 @@ pub use self::context::{Context, CONTEXT_SIZE};
 pub use self::cryptogram::{Cryptogram, CRYPTOGRAM_SIZE};
 pub use self::error::SecureChannelError;
 pub(crate) use self::mac::{Mac, MAC_SIZE};
-pub(crate) use self::response_message::ResponseMessage;
-#[cfg(feature = "mockhsm")]
-pub(crate) use self::response_message::ResponseCode;
+pub(crate) use self::response_message::{ResponseCode, ResponseMessage};
 pub use self::static_keys::StaticKeys;
