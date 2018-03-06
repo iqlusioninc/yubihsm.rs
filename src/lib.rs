@@ -1,4 +1,23 @@
 //! yubihsm-client: client for `YubiHSM2` hardware security modules
+//!
+//! # Build Notes
+//!
+//! This crate depends on the `aesni` crate, which uses the "stdsimd"
+//! API to invoke hardware AES instructions via `core::arch`.
+//!
+//! To access these features, you will need both a relatively recent
+//! Rust nightly and to pass the following as RUSTFLAGS:
+//!
+//! ```
+//! RUSTFLAGS=-C target-feature=+aes
+//! ```
+//!
+//! You can configure your `~/.cargo/config` to always pass these flags:
+//!
+//! ```toml
+//! [build]
+//! rustflags = ["-C", "target-feature=+aes"]
+//! ```
 
 #![crate_name = "yubihsm_client"]
 #![crate_type = "lib"]
