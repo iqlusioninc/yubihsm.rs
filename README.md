@@ -57,6 +57,26 @@ The following commands are presently supported:
 * [Session Message](https://developers.yubico.com/YubiHSM2/Commands/Session_Message.html)
 * [Sign Data EdDSA](https://developers.yubico.com/YubiHSM2/Commands/Sign_Data_Eddsa.html) i.e. Ed25519 signatures
 
+# Build Notes
+
+This crate depends on the `aesni` crate, which uses the new "stdsimd" API
+(which recently landed in nightly) to invoke hardware AES instructions via
+`core::arch`.
+
+To access these features, you will need both a relatively recent
+Rust nightly and to pass the following as RUSTFLAGS:
+
+```
+RUSTFLAGS=-C target-feature=+aes`
+```
+
+You can configure your `~/.cargo/config` to always pass these flags:
+
+```toml
+[build]
+rustflags = ["-C", "target-feature=+aes"]
+```
+
 ## Testing
 
 This crate allows you to run the integration test suite in two different ways:
