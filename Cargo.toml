@@ -1,13 +1,18 @@
 [package]
-name        = "yubihsm-client"
-description = "Pure Rust client for YubiHSM2 devices"
-version     = "0.0.0"
-license     = "MIT/Apache-2.0"
-authors     = ["Tony Arcieri <bascule@gmail.com>"]
-homepage    = "https://github.com/tendermint/yubihsm-client"
-readme      = "README.md"
-categories  = ["cryptography"]
-keywords    = ["cryptography", "encryption", "security"]
+name          = "yubihsm"
+description   = "Pure Rust client for YubiHSM2 devices"
+version       = "0.0.0" # Also update html_root_url in lib.rs when bumping this
+license       = "MIT/Apache-2.0"
+authors       = ["Tony Arcieri <bascule@gmail.com>"]
+documentation = "https://docs.rs/yubihsm"
+homepage      = "https://github.com/tendermint/yubihsm-client"
+repository    = "https://github.com/tendermint/yubihsm-client/tree/master/"
+readme        = "README.md"
+categories    = ["cryptography"]
+keywords      = ["cryptography", "encryption", "security"]
+
+[badges]
+circle-ci = { repository = "tendermint/yubihsm-client" }
 
 [dependencies]
 aesni = "0.3"

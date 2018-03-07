@@ -1,4 +1,4 @@
-extern crate yubihsm_client;
+extern crate yubihsm;
 
 #[cfg(feature = "dalek")]
 extern crate ed25519_dalek;
@@ -11,10 +11,10 @@ use sha2::Sha512;
 #[cfg(feature = "mockhsm")]
 use std::thread;
 
-use yubihsm_client::{Algorithm, Capabilities, Connector, Domains, ObjectId, ObjectOrigin,
-                     ObjectType, Session};
+use yubihsm::{Algorithm, Capabilities, Connector, Domains, ObjectId, ObjectOrigin, ObjectType,
+              Session};
 #[cfg(feature = "mockhsm")]
-use yubihsm_client::mockhsm::MockHSM;
+use yubihsm::mockhsm::MockHSM;
 
 /// Test against the real yubihsm-connector
 #[cfg(not(feature = "mockhsm"))]
