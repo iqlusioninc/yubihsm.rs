@@ -107,7 +107,7 @@ fn generate_asymmetric_key_test(session: &mut Session) {
             .is_err()
     );
 
-    let label = "yubihsm-client.rs test key";
+    let label = "yubihsm.rs test key";
     let domains = Domains::DOMAIN_1;
     let capabilities = Capabilities::ASYMMETRIC_SIGN_EDDSA;
     let algorithm = Algorithm::EC_ED25519;

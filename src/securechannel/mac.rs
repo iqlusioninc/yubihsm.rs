@@ -62,7 +62,8 @@ impl PartialEq for Mac {
 
 impl fmt::Debug for Mac {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "yubihsm_client::Mac")
+        // Avoid leaking secrets in debug messages
+        write!(f, "yubihsm::Mac")
     }
 }
 

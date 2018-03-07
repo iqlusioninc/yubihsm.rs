@@ -7,7 +7,7 @@ const DEFAULT_AUTH_KEY_ID: ObjectId = 1;
 const DEFAULT_PASSWORD: &str = "password";
 const EXAMPLE_MESSAGE: &[u8] = b"";
 const TEST_KEY_ID: ObjectId = 100;
-const TEST_KEY_LABEL: &str = "yubihsm-rs benchmarking key";
+const TEST_KEY_LABEL: &str = "yubihsm.rs benchmarking key";
 const TEST_CAPABILITIES: Capabilities = Capabilities::ASYMMETRIC_SIGN_EDDSA;
 const TEST_DOMAINS: Domains = Domains::DOMAIN_1;
 
