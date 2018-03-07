@@ -39,3 +39,6 @@ bench = []
 default = []
 dalek = ["ed25519-dalek"]
 mockhsm = ["dalek", "tiny_http"]
+
+[package.metadata.docs.rs]
+rustc-args = ["-C", "target-feature=+aes"]
