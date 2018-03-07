@@ -1,6 +1,6 @@
 //! Software simulation of the `YubiHSM2` for integration testing
 //!
-//! To enable, make sure to build yubihsm-client with the "mockhsm" feature
+//! To enable, make sure to build yubihsm.rs with the "mockhsm" feature
 
 extern crate tiny_http;
 

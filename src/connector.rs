@@ -12,7 +12,7 @@ use securechannel::{Challenge, CommandMessage, ResponseMessage, StaticKeys};
 use session::Session;
 
 /// User-Agent string to supply
-pub const USER_AGENT: &str = concat!("yubihsm-client.rs ", env!("CARGO_PKG_VERSION"));
+pub const USER_AGENT: &str = concat!("yubihsm.rs ", env!("CARGO_PKG_VERSION"));
 
 /// Salt value to use with PBKDF2
 pub const PBKDF2_SALT: &[u8] = b"Yubico";

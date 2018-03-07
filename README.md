@@ -1,14 +1,14 @@
-# yubihsm-client.rs
+# yubihsm.rs
 
 [![crate][crate-image]][crate-link]
 [![Docs][docs-image]][docs-link]
 [![Build Status][build-image]][build-link]
 ![MIT/Apache2 licensed][license-image]
 
-[crate-image]: https://img.shields.io/crates/v/yubihsm-client.svg
-[crate-link]: https://crates.io/crates/yubihsm-client
-[docs-image]: https://docs.rs/yubihsm-client/badge.svg
-[docs-link]: https://docs.rs/yubihsm-client/
+[crate-image]: https://img.shields.io/crates/v/yubihsm.svg
+[crate-link]: https://crates.io/crates/yubihsm
+[docs-image]: https://docs.rs/yubihsm/badge.svg
+[docs-link]: https://docs.rs/yubihsm/
 [build-image]: https://circleci.com/gh/tendermint/yubihsm-client.svg?style=shield
 [build-link]: https://circleci.com/gh/tendermint/yubihsm-client
 [license-image]: https://img.shields.io/badge/license-MIT/Apache2.0-blue.svg
@@ -86,7 +86,7 @@ hardware, such as CI environments.
 
 ## License
 
-**yubihsm-client** is distributed under the terms of both the MIT license and
+**yubihsm.rs** is distributed under the terms of both the MIT license and
 the Apache License (Version 2.0).
 
 See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT) for details.

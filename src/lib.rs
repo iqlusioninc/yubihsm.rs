@@ -1,4 +1,4 @@
-//! yubihsm-client: client for `YubiHSM2` hardware security modules
+//! yubihsm.rs: client for `YubiHSM2` hardware security modules
 //!
 //! # Build Notes
 //!
@@ -8,9 +8,7 @@
 //! To access these features, you will need both a relatively recent
 //! Rust nightly and to pass the following as RUSTFLAGS:
 //!
-//! ```
-//! RUSTFLAGS=-C target-feature=+aes
-//! ```
+//! `RUSTFLAGS=-C target-feature=+aes`
 //!
 //! You can configure your `~/.cargo/config` to always pass these flags:
 //!
@@ -19,11 +17,12 @@
 //! rustflags = ["-C", "target-feature=+aes"]
 //! ```
 
-#![crate_name = "yubihsm_client"]
-#![crate_type = "lib"]
+#![crate_name = "yubihsm"]
+#![crate_type = "rlib"]
 #![cfg_attr(feature = "bench", feature(test))]
 #![deny(warnings, missing_docs, trivial_casts, trivial_numeric_casts)]
 #![deny(unsafe_code, unused_import_braces, unused_qualifications)]
+#![doc(html_root_url = "https://docs.rs/yubihsm/")]
 
 extern crate aesni;
 #[macro_use]
