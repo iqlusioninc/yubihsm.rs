@@ -5,14 +5,14 @@ version       = "0.0.0" # Also update html_root_url in lib.rs when bumping this
 license       = "MIT/Apache-2.0"
 authors       = ["Tony Arcieri <bascule@gmail.com>"]
 documentation = "https://docs.rs/yubihsm"
-homepage      = "https://github.com/tendermint/yubihsm-client"
-repository    = "https://github.com/tendermint/yubihsm-client/tree/master/"
+homepage      = "https://github.com/tendermint/yubihsm-rs"
+repository    = "https://github.com/tendermint/yubihsm-rs/tree/master/"
 readme        = "README.md"
 categories    = ["cryptography"]
 keywords      = ["cryptography", "encryption", "security"]
 
 [badges]
-circle-ci = { repository = "tendermint/yubihsm-client" }
+circle-ci = { repository = "tendermint/yubihsm-rs" }
 
 [dependencies]
 aesni = "0.3"

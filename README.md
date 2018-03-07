@@ -9,8 +9,8 @@
 [crate-link]: https://crates.io/crates/yubihsm
 [docs-image]: https://docs.rs/yubihsm/badge.svg
 [docs-link]: https://docs.rs/yubihsm/
-[build-image]: https://circleci.com/gh/tendermint/yubihsm-client.svg?style=shield
-[build-link]: https://circleci.com/gh/tendermint/yubihsm-client
+[build-image]: https://circleci.com/gh/tendermint/yubihsm-rs.svg?style=shield
+[build-link]: https://circleci.com/gh/tendermint/yubihsm-rs
 [license-image]: https://img.shields.io/badge/license-MIT/Apache2.0-blue.svg
 
 An experimental pure Rust reimplementation of [libyubihsm] providing an

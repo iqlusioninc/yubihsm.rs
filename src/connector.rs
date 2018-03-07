@@ -208,7 +208,11 @@ impl Connector {
 
     /// Make an HTTP GET request to the yubihsm-connector
     fn get(&self, path: &str) -> Result<Vec<u8>, Error> {
-        let mut response = self.http.get(&self.url_for(path)?).send()?;
+        let mut response = self.http
+            .get(&self.url_for(path)?)
+            .header(UserAgent::new(USER_AGENT))
+            .send()?;
+
         handle_http_response(&mut response)
     }
 
