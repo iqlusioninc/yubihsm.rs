@@ -13,6 +13,7 @@ use securechannel::{Challenge, Cryptogram};
 #[cfg(feature = "mockhsm")]
 use serializers::serialize;
 
+/// Structured responses to `Command` messages sent from the HSM
 pub(crate) trait Response: Serialize + DeserializeOwned + Sized {
     /// Command ID this response is for
     const COMMAND_TYPE: CommandType;

@@ -12,6 +12,8 @@ use {Algorithm, Capabilities, Domains, ObjectId, ObjectLabel, ObjectType};
 use securechannel::Challenge;
 use responses::*;
 
+/// Structured commands (i.e. requests) which are encrypted and then sent to
+/// the HSM. Every command has a corresponding `ResponseType`.
 pub(crate) trait Command: Serialize + DeserializeOwned + Sized {
     /// Response type for this command
     type ResponseType: Response;
