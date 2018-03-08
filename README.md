@@ -77,6 +77,40 @@ You can configure your `~/.cargo/config` to always pass these flags:
 rustflags = ["-C", "target-feature=+aes"]
 ```
 
+## Contributing
+
+If there are additional [YubiHSM2 commands] you would like to use but aren't
+presently supported, adding them is very easy, and PRs are welcome!
+
+The YubiHSM2 uses a simple, bincode-like message format, which largely consists
+of fixed-width integers, bytestrings, and bitfields. This crate implements a
+[Serde-based message parser] which can automatically parse command/response
+messages used by the HSM derived from a corresponding Rust struct describing
+their structure.
+
+Here's a list of steps necessary to implement a new command type:
+
+1. Find the command you wish to implement on the [YubiHSM2 commands] page, and
+   study the structure of the command (i.e. request) and response
+2. Add a struct which matches the structure of the command to [commands.rs]
+3. Add an additional struct which matches the response structure to [responses.rs]
+4. Add a wrapper function to [session.rs] which constructs the command message,
+   performs the command, and returns the corresponding response struct.
+5. (Optional) Implement the command in [mockhsm.rs] and write an
+   [integration test]
+
+Here is an [example PR that implements Ed25519 signing] you can study to see
+what the above steps look like in practice.
+
+[YubiHSM2 commands]: https://developers.yubico.com/YubiHSM2/Commands/
+[Serde-based message parser]: https://github.com/tendermint/yubihsm-rs/tree/master/src/serializers
+[commands.rs]: https://github.com/tendermint/yubihsm-rs/blob/master/src/commands.rs
+[responses.rs]: https://github.com/tendermint/yubihsm-rs/blob/master/src/responses.rs
+[session.rs]: https://github.com/tendermint/yubihsm-rs/blob/master/src/session.rs
+[mockhsm.rs]: https://github.com/tendermint/yubihsm-rs/blob/master/src/mockhsm.rs
+[integration test]:  https://github.com/tendermint/yubihsm-rs/blob/master/tests/integration.rs
+[example PR that implements Ed25519 signing]: https://github.com/tendermint/yubihsm-rs/pull/11/files
+
 ## Testing
 
 This crate allows you to run the integration test suite in two different ways:
