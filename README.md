@@ -16,7 +16,7 @@
 An experimental pure Rust reimplementation of [libyubihsm] providing an
 interface to [YubiHSM2] devices from [Yubico].
 
-[Documentation][docs-link]
+[Documentation][docs-link] (**NOTE:** temporarily broken, should be fixed soon!)
 
 [libyubihsm]: https://developers.yubico.com/YubiHSM2/Component_Reference/libyubihsm/
 [YubiHSM2]: https://www.yubico.com/products/yubihsm/
@@ -126,6 +126,9 @@ process listening on localhost on the default port of 12345.
 The YubiHSM2 device should be in the default factory state. To reset it to this
 state, either use the [yubihsm-shell reset] command or press on the YubiHSM2 for
 10 seconds immediately after inserting it.
+
+You can confirm the tests are running live against the YubiHSM2 by the LED
+blinking rapidly for 1 second.
 
 **NOTE THAT THESE TESTS ARE DESTRUCTIVE: DO NOT RUN THEM AGAINST A YUBIHSM2
 WHICH CONTAINS KEYS YOU CARE ABOUT**

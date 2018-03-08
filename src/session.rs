@@ -92,6 +92,11 @@ impl<'a> Session<'a> {
         Ok(session)
     }
 
+    /// Blink the YubiHSM2's LEDs (to identify it) for the given number of seconds
+    pub fn blink(&mut self, num_seconds: u8) -> Result<BlinkResponse, Error> {
+        self.send_encrypted_command(BlinkCommand { num_seconds })
+    }
+
     /// Delete an object of the given ID and type
     pub fn delete_object(
         &mut self,
