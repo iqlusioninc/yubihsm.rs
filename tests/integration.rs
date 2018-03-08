@@ -40,6 +40,7 @@ const TEST_KEY_ID: ObjectId = 100;
 #[cfg(feature = "mockhsm")]
 const NUM_HTTP_REQUESTS: usize = 12;
 
+/// Perform a live integration test against yubihsm-connector and a real YubiHSM2
 #[cfg(not(feature = "mockhsm"))]
 #[test]
 fn yubihsm_integration_test() {
@@ -52,6 +53,9 @@ fn yubihsm_integration_test() {
     // Delete the key in TEST_KEY_ID slot it exists (we use it for testing)
     // Ignore errors since the object may not exist yet
     let _ = session.delete_object(TEST_KEY_ID, ObjectType::Asymmetric);
+
+    // Blink the YubiHSM2 for 2 seconds to identify it
+    session.blink(2).unwrap();
 
     integration_tests(&mut session);
 }

@@ -25,6 +25,16 @@ pub(crate) trait Response: Serialize + DeserializeOwned + Sized {
     }
 }
 
+/// Response from `CommandType::Blink`
+///
+/// <https://developers.yubico.com/YubiHSM2/Commands/Blink.html>
+#[derive(Serialize, Deserialize, Debug)]
+pub struct BlinkResponse {}
+
+impl Response for BlinkResponse {
+    const COMMAND_TYPE: CommandType = CommandType::Blink;
+}
+
 /// Response from `CommandType::CreateSession`
 ///
 /// <https://developers.yubico.com/YubiHSM2/Commands/Create_Session.html>

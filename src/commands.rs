@@ -28,6 +28,19 @@ impl<C: Command> From<C> for CommandMessage {
     }
 }
 
+/// Request parameters for `CommandType::Blink`
+///
+/// <https://developers.yubico.com/YubiHSM2/Commands/Blink.html>
+#[derive(Serialize, Deserialize, Debug)]
+pub struct BlinkCommand {
+    /// Number of seconds to blink for
+    pub num_seconds: u8,
+}
+
+impl Command for BlinkCommand {
+    type ResponseType = BlinkResponse;
+}
+
 /// Request parameters for `CommandType::CreateSession`
 ///
 /// <https://developers.yubico.com/YubiHSM2/Commands/Create_Session.html>
