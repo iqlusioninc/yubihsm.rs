@@ -22,14 +22,15 @@ ENV PATH "$PATH:/root/.cargo/bin"
 ENV RUST_NIGHTLY_VERSION "nightly-2018-03-05"
 
 # Install Rust
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain $RUST_NIGHTLY_VERSION
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+RUN rustup install $RUST_NIGHTLY_VERSION
 
 RUN bash -l -c "echo $(rustc --print sysroot)/lib >> /etc/ld.so.conf"
 RUN bash -l -c "echo /usr/local/lib64 >> /etc/ld.so.conf"
 RUN ldconfig
 
 ENV RUSTFMT_NIGHTLY_VERSION "0.4.0"
-RUN cargo install rustfmt-nightly --vers $RUSTFMT_NIGHTLY_VERSION --force
+RUN rustup run $RUST_NIGHTLY_VERSION cargo install rustfmt-nightly --vers $RUSTFMT_NIGHTLY_VERSION --force
 
 ENV CLIPPY_VERSION "0.0.187"
-RUN cargo install clippy --vers $CLIPPY_VERSION --force
+RUN rustup run $RUST_NIGHTLY_VERSION cargo install clippy --vers $CLIPPY_VERSION --force
