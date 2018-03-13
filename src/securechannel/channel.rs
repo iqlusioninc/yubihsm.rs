@@ -185,7 +185,7 @@ impl Channel {
             self.id,
             command_data,
             &tag,
-        ))
+        )?)
     }
 
     /// Compute a message for authenticating the host to the card
@@ -567,7 +567,7 @@ mod tests {
 
         // Host sends encrypted command
         let command_ciphertext = host_channel
-            .encrypt_command(CommandMessage::new(COMMAND_TYPE, Vec::from(COMMAND_DATA)))
+            .encrypt_command(CommandMessage::new(COMMAND_TYPE, Vec::from(COMMAND_DATA)).unwrap())
             .unwrap();
 
         // Card decrypts command

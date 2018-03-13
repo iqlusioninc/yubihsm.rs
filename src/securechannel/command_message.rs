@@ -10,7 +10,7 @@ use byteorder::{BigEndian, WriteBytesExt};
 #[cfg(feature = "mockhsm")]
 use byteorder::ByteOrder;
 use failure::Error;
-use super::{Mac, SecureChannelError, SessionId, MAC_SIZE};
+use super::{Mac, SecureChannelError, SessionId, MAC_SIZE, MAX_MSG_SIZE};
 
 /// A command sent from the host to the `YubiHSM2`. May or may not be
 /// authenticated using SCP03's chained/evolving MAC protocol.
@@ -31,16 +31,24 @@ pub(crate) struct CommandMessage {
 
 impl CommandMessage {
     /// Create a new command message without a MAC
-    pub fn new<T>(command_type: CommandType, command_data: T) -> Self
+    pub fn new<T>(command_type: CommandType, command_data: T) -> Result<Self, Error>
     where
         T: Into<Vec<u8>>,
     {
-        Self {
+        let command_data_vec: Vec<u8> = command_data.into();
+        ensure!(
+            command_data_vec.len() <= MAX_MSG_SIZE,
+            "command data too long: {} bytes (max {})",
+            command_data_vec.len(),
+            MAX_MSG_SIZE
+        );
+
+        Ok(Self {
             command_type,
             session_id: None,
-            data: command_data.into(),
+            data: command_data_vec,
             mac: None,
-        }
+        })
     }
 
     /// Create a new command message with a MAC
@@ -49,17 +57,25 @@ impl CommandMessage {
         session_id: SessionId,
         command_data: D,
         mac: M,
-    ) -> Self
+    ) -> Result<Self, Error>
     where
         D: Into<Vec<u8>>,
         M: Into<Mac>,
     {
-        Self {
+        let command_data_vec: Vec<u8> = command_data.into();
+        ensure!(
+            command_data_vec.len() <= MAX_MSG_SIZE,
+            "command data too long: {} bytes (max {})",
+            command_data_vec.len(),
+            MAX_MSG_SIZE
+        );
+
+        Ok(Self {
             command_type,
             session_id: Some(session_id),
-            data: command_data.into(),
+            data: command_data_vec,
             mac: Some(mac.into()),
-        }
+        })
     }
 
     /// Parse a command structure from a vector, taking ownership of the vector

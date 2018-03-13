@@ -36,6 +36,9 @@ mod static_keys;
 /// we hardcode to 128-bit for simplicity.
 pub const KEY_SIZE: usize = 16;
 
+/// Maximum size of the message buffer
+pub const MAX_MSG_SIZE: usize = 2048;
+
 pub use self::challenge::{Challenge, CHALLENGE_SIZE};
 pub(crate) use self::channel::Channel;
 pub use self::channel::Id as SessionId;
