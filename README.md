@@ -57,7 +57,7 @@ The following commands are presently supported:
 * [Session Message](https://developers.yubico.com/YubiHSM2/Commands/Session_Message.html)
 * [Sign Data EdDSA](https://developers.yubico.com/YubiHSM2/Commands/Sign_Data_Eddsa.html) i.e. Ed25519 signatures
 
-# Build Notes
+## Build Notes
 
 This crate depends on the `aesni` crate, which uses the new "stdsimd" API
 (which recently landed in nightly) to invoke hardware AES instructions via
