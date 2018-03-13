@@ -3,38 +3,39 @@ version: 2
 jobs:
   build:
     docker:
-      - image: tarcieri/rust-yubihsm-sdk:20180306
+      - image: tarcieri/rust-yubihsm-sdk:20180312
     environment:
+      # NOTE: RUST_NIGHTLY_VERSION is set in the Dockerfile
       - RUSTFLAGS=-C target-feature=+aes
 
     steps:
       - checkout
       - restore_cache:
           # Bump this (and below) whenever the Docker image is updated
-          key: cache-20180306
+          key: cache-20180312
       - run:
           name: rustfmt
           command: |
-            rustfmt --version
-            cargo fmt -- --write-mode=diff
+            rustup run $RUST_NIGHTLY_VERSION rustfmt --version
+            rustup run $RUST_NIGHTLY_VERSION cargo fmt -- --write-mode=diff
       - run:
           name: clippy
           command: |
-            cargo clippy --version
-            cargo clippy --verbose --features=mockhsm
+            rustup run $RUST_NIGHTLY_VERSION cargo clippy --version
+            rustup run $RUST_NIGHTLY_VERSION cargo clippy --verbose --features=mockhsm
       - run:
           name: build (nightly-2018-03-05)
           command: |
-            rustc --version --verbose
-            cargo --version --verbose
-            cargo build --verbose
+            rustup run $RUST_NIGHTLY_VERSION rustc --version --verbose
+            rustup run $RUST_NIGHTLY_VERSION cargo --version --verbose
+            rustup run $RUST_NIGHTLY_VERSION cargo build --verbose
       - run:
           name: test (nightly-2018-03-05)
           command: |
-            cargo test --verbose --features=mockhsm
+            rustup run $RUST_NIGHTLY_VERSION cargo test --verbose --features=mockhsm
       - save_cache:
           # Bump this (and above) whenever the Docker image is updated
-          key: cache-20180306
+          key: cache-20180312
           paths:
             - "~/.cargo"
             - "./target"
