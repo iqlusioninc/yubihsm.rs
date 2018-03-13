@@ -47,6 +47,7 @@ YubiHSM2 via a password/authentication key.
 The following commands are presently supported:
 
 * [Authenticate Session](https://developers.yubico.com/YubiHSM2/Commands/Authenticate_Session.html)
+* [Blink](https://developers.yubico.com/YubiHSM2/Commands/Blink.html)
 * [Create Session](https://developers.yubico.com/YubiHSM2/Commands/Create_Session.html)
 * [Delete Object](https://developers.yubico.com/YubiHSM2/Commands/Delete_Object.html)
 * [Echo](https://developers.yubico.com/YubiHSM2/Commands/Echo.html)
