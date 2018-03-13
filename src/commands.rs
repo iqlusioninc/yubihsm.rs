@@ -24,7 +24,7 @@ pub(crate) trait Command: Serialize + DeserializeOwned + Sized {
 
 impl<C: Command> From<C> for CommandMessage {
     fn from(command: C) -> CommandMessage {
-        Self::new(C::COMMAND_TYPE, serialize(&command).unwrap())
+        Self::new(C::COMMAND_TYPE, serialize(&command).unwrap()).unwrap()
     }
 }
 
