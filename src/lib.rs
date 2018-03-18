@@ -49,24 +49,8 @@ extern crate sha2;
 #[cfg(feature = "bench")]
 extern crate test;
 
-/// Custom error macros for using enums with descriptions for errors
-macro_rules! err {
-    ($errtype:ident::$variant:ident, $msg:expr) => {
-        $errtype::$variant { description: $msg.to_owned() }
-    };
-    ($errtype:ident::$variant:ident, $fmt:expr, $($arg:tt)+) => {
-        $errtype::$variant { description: format!($fmt, $($arg)+) }
-    };
-}
-
-macro_rules! fail {
-    ($errtype:ident::$variant:ident, $msg:expr) => {
-        return Err(err!($errtype::$variant, $msg).into());
-    };
-    ($errtype:ident::$variant:ident, $fmt:expr, $($arg:tt)+) => {
-        return Err(err!($errtype::$variant, $fmt, $($arg)+).into());
-    };
-}
+#[macro_use]
+mod macros;
 
 pub mod algorithm;
 #[cfg(feature = "bench")]
