@@ -1,22 +1,19 @@
-//! Software simulation of the `YubiHSM2` for integration testing
+//! Software simulation of the `YubiHSM2` for integration testing,
+//! implemented as a `yubihsm::Connector` (skipping HTTP transport)
 //!
 //! To enable, make sure to build yubihsm.rs with the "mockhsm" feature
 
-extern crate tiny_http;
-
 use std::collections::HashMap;
-use std::io::Cursor;
 
 use ed25519_dalek::Keypair as Ed25519Keypair;
 use failure::Error;
 use rand::OsRng;
 use sha2::Sha512;
-use self::tiny_http::{Method, Request, Server, StatusCode};
-use self::tiny_http::Response as HttpResponse;
 
 use {Algorithm, Capabilities, Domains, ObjectId, ObjectLabel, ObjectOrigin, ObjectType,
      SequenceId, SessionId};
 use commands::*;
+use connector::{Connector, Status};
 use session::{PBKDF2_ITERATIONS, PBKDF2_SALT};
 use responses::*;
 use securechannel::{Challenge, Channel, CommandMessage, CommandType, ResponseMessage, StaticKeys};
@@ -30,8 +27,6 @@ const DEFAULT_PASSWORD: &str = "password";
 
 /// Software simulation of a `YubiHSM2` intended for testing
 pub struct MockHSM {
-    addr: String,
-    server: Server,
     static_keys: StaticKeys,
     sessions: HashMap<SessionId, Channel>,
     objects: Objects,
@@ -86,16 +81,10 @@ impl Object<Ed25519Keypair> {
     }
 }
 
-impl MockHSM {
-    /// Create a new MockHSM. This will bind to the given address/port but will
-    /// not start processing requests until the `run` method is invoked
-    pub fn new(addr: &str) -> Result<Self, Error> {
-        let server = Server::http(addr)
-            .or_else(|e| Err(format_err!("error creating MockHSM server: {:?}", e)))?;
-
+impl Connector for MockHSM {
+    /// Open a connection to a yubihsm-connector
+    fn open(_url: &str) -> Result<Self, Error> {
         Ok(Self {
-            addr: addr.to_owned(),
-            server,
             static_keys: StaticKeys::derive_from_password(
                 DEFAULT_PASSWORD.as_bytes(),
                 PBKDF2_SALT,
@@ -106,59 +95,18 @@ impl MockHSM {
         })
     }
 
-    /// Run the MockHSM server, processing the given number of requests and then stopping
-    pub fn run(&mut self, num_requests: usize) {
-        for _ in 0..num_requests {
-            let mut request = self.server.recv().unwrap();
-
-            let response = match *request.method() {
-                Method::Get => match request.url() {
-                    "/connector/status" => Some(self.status()),
-                    _ => None,
-                },
-                Method::Post => match request.url() {
-                    "/connector/api" => Some(self.api(&mut request)),
-                    _ => None,
-                },
-                _ => None,
-            }.unwrap_or_else(|| {
-                HttpResponse::new(
-                    StatusCode::from(404),
-                    vec![],
-                    Cursor::new(vec![]),
-                    None,
-                    None,
-                )
-            });
-
-            request.respond(response).unwrap();
-        }
+    /// GET /connector/status returning the result as connector::Status
+    fn status(&mut self) -> Result<Status, Error> {
+        Ok(Status {
+            message: "OK".to_owned(),
+            serial: None,
+            version: "1.0.1".to_owned(),
+            pid: 12_345,
+        })
     }
 
-    /// GET /connector/status - status page
-    fn status(&self) -> HttpResponse<Cursor<Vec<u8>>> {
-        let mut addr_parts = self.addr.split(':');
-
-        HttpResponse::from_string(
-            [
-                "status=OK",
-                "serial=*",
-                "version=1.0.1",
-                "pid=12345",
-                &format!("address={}", addr_parts.next().unwrap()),
-                &format!("port={}", addr_parts.next().unwrap()),
-            ].join("\n"),
-        )
-    }
-
-    /// POST /connector/api - perform HSM operation
-    fn api(&mut self, request: &mut Request) -> HttpResponse<Cursor<Vec<u8>>> {
-        let mut body = Vec::new();
-        request
-            .as_reader()
-            .read_to_end(&mut body)
-            .expect("HTTP request read error");
-
+    /// POST /connector/api with a given command message and return the response message
+    fn send_command(&mut self, body: Vec<u8>) -> Result<Vec<u8>, Error> {
         let command = CommandMessage::parse(body).unwrap();
 
         match command.command_type {
@@ -168,9 +116,11 @@ impl MockHSM {
             unsupported => panic!("unsupported command type: {:?}", unsupported),
         }
     }
+}
 
+impl MockHSM {
     /// Create a new HSM session
-    fn create_session(&mut self, cmd_message: &CommandMessage) -> HttpResponse<Cursor<Vec<u8>>> {
+    fn create_session(&mut self, cmd_message: &CommandMessage) -> Result<Vec<u8>, Error> {
         let cmd: CreateSessionCommand = deserialize(cmd_message.data.as_ref())
             .unwrap_or_else(|e| panic!("error parsing CreateSession command data: {:?}", e));
 
@@ -205,30 +155,23 @@ impl MockHSM {
         }.serialize();
 
         response.session_id = Some(session_id);
-        let response_bytes: Vec<u8> = response.into();
-
-        HttpResponse::from_data(response_bytes)
+        Ok(response.into())
     }
 
     /// Authenticate an HSM session
-    fn authenticate_session(&mut self, command: &CommandMessage) -> HttpResponse<Cursor<Vec<u8>>> {
+    fn authenticate_session(&mut self, command: &CommandMessage) -> Result<Vec<u8>, Error> {
         let session_id = command
             .session_id
             .unwrap_or_else(|| panic!("no session ID in command: {:?}", command.command_type));
 
-        let response_bytes: Vec<u8> = self.channel(&session_id)
+        Ok(self.channel(&session_id)
             .verify_authenticate_session(command)
             .unwrap()
-            .into();
-
-        HttpResponse::from_data(response_bytes)
+            .into())
     }
 
     /// Encrypted session messages
-    fn session_message(
-        &mut self,
-        encrypted_command: CommandMessage,
-    ) -> HttpResponse<Cursor<Vec<u8>>> {
+    fn session_message(&mut self, encrypted_command: CommandMessage) -> Result<Vec<u8>, Error> {
         let session_id = encrypted_command.session_id.unwrap_or_else(|| {
             panic!(
                 "no session ID in command: {:?}",
@@ -251,12 +194,10 @@ impl MockHSM {
             unsupported => panic!("unsupported command type: {:?}", unsupported),
         };
 
-        let encrypted_response: Vec<u8> = self.channel(&session_id)
+        Ok(self.channel(&session_id)
             .encrypt_response(response)
             .unwrap()
-            .into();
-
-        HttpResponse::from_data(encrypted_response)
+            .into())
     }
 
     /// Delete an object

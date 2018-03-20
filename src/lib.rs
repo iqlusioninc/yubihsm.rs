@@ -104,4 +104,4 @@ pub use object::Origin as ObjectOrigin;
 pub use object::Type as ObjectType;
 pub use object::SequenceId;
 pub use securechannel::SessionId;
-pub use session::{Session, SessionError};
+pub use session::{AbstractSession, Session, SessionError};

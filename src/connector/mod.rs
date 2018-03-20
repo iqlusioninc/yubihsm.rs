@@ -21,8 +21,8 @@ pub trait Connector: Sized {
     fn open(connector_url: &str) -> Result<Self, Error>;
 
     /// GET /connector/status returning the result as connector::Status
-    fn status(&self) -> Result<Status, Error>;
+    fn status(&mut self) -> Result<Status, Error>;
 
     /// POST /connector/api with a given command message and return the response message
-    fn send_command(&self, cmd: Vec<u8>) -> Result<Vec<u8>, Error>;
+    fn send_command(&mut self, cmd: Vec<u8>) -> Result<Vec<u8>, Error>;
 }
