@@ -16,7 +16,7 @@
 An experimental pure Rust reimplementation of [libyubihsm] providing an
 interface to [YubiHSM2] devices from [Yubico].
 
-[Documentation][docs-link] (**NOTE:** temporarily broken, should be fixed soon!)
+[Documentation][docs-link]
 
 [libyubihsm]: https://developers.yubico.com/YubiHSM2/Component_Reference/libyubihsm/
 [YubiHSM2]: https://www.yubico.com/products/yubihsm/
@@ -68,14 +68,14 @@ To access these features, you will need both a relatively recent
 Rust nightly and to pass the following as RUSTFLAGS:
 
 ```
-RUSTFLAGS=-C target-feature=+aes`
+RUSTFLAGS=-Ctarget-feature=+aes`
 ```
 
 You can configure your `~/.cargo/config` to always pass these flags:
 
 ```toml
 [build]
-rustflags = ["-C", "target-feature=+aes"]
+rustflags = ["-Ctarget-feature=+aes"]
 ```
 
 ## Contributing
