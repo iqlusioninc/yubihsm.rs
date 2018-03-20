@@ -16,7 +16,8 @@ pub const LABEL_SIZE: usize = 40;
 /// Object identifiers
 pub type Id = u16;
 
-/// Sequence identifiers
+/// Sequence identifiers: number of times an object with a given ID has been
+/// created in this `YubiHSM` (with all previous versions having been deleted)
 pub type SequenceId = u8;
 
 /// Labels attached to objects

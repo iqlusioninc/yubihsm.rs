@@ -58,6 +58,29 @@ The following commands are presently supported:
 * [Session Message](https://developers.yubico.com/YubiHSM2/Commands/Session_Message.html)
 * [Sign Data EdDSA](https://developers.yubico.com/YubiHSM2/Commands/Sign_Data_Eddsa.html) i.e. Ed25519 signatures
 
+## Getting Started
+
+The main type you'll want to check out is `Session`. Here is an example of
+how to connect to [yubihsm-connector] and perform an Ed25519 signature:
+
+```rust
+extern crate yubihsm;
+use yubihsm::Session;
+
+// Default host, port, auth key ID, and password for yubihsm-connector
+let mut session = Session::create_from_password(
+     "http://127.0.0.1:12345",
+     1,
+     "password",
+     true
+).unwrap();
+
+// Note: You'll need to create this key first. Run the following from yubihsm-shell:
+// `generate asymmetric 0 100 ed25519_test_key 1 asymmetric_sign_eddsa ed25519`
+let response = session.sign_data_eddsa(100, "Hello, world!").unwrap();
+println!("Ed25519 signature: {:?}", response.signature);
+```
+
 ## Build Notes
 
 This crate depends on the `aesni` crate, which uses the new "stdsimd" API

@@ -17,7 +17,7 @@ use self::tiny_http::Response as HttpResponse;
 use {Algorithm, Capabilities, Domains, ObjectId, ObjectLabel, ObjectOrigin, ObjectType,
      SequenceId, SessionId};
 use commands::*;
-use connector::{PBKDF2_ITERATIONS, PBKDF2_SALT};
+use session::{PBKDF2_ITERATIONS, PBKDF2_SALT};
 use responses::*;
 use securechannel::{Challenge, Channel, CommandMessage, CommandType, ResponseMessage, StaticKeys};
 use serializers::deserialize;
