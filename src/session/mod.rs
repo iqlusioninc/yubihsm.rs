@@ -57,7 +57,7 @@ impl<C: Connector> AbstractSession<C> {
         static_keys: StaticKeys,
         reconnect: bool,
     ) -> Result<Self, Error> {
-        let mut connector = C::open(connector_url)?;
+        let connector = C::open(connector_url)?;
         let status = connector.status()?;
 
         if status.message != CONNECTOR_STATUS_OK {
@@ -98,7 +98,7 @@ impl<C: Connector> AbstractSession<C> {
     /// Create a new encrypted session using the given connector, YubiHSM2 auth key ID, and
     /// static identity keys
     pub fn new(
-        mut connector: C,
+        connector: C,
         host_challenge: &Challenge,
         auth_key_id: ObjectId,
         static_keys: StaticKeys,
