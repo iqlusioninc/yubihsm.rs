@@ -1,12 +1,19 @@
+# [0.3.0] (2018-03-20)
+
+[0.3.0]: https://github.com/tendermint/yubihsm-rs/compare/v0.2.0...v0.3.0
+
+* [#24](https://github.com/tendermint/yubihsm-rs/pull/24)
+  Have sessions own connectors.
+
 # [0.2.0] (2018-03-12)
 
 [0.2.0]: https://github.com/tendermint/yubihsm-rs/compare/v0.1.1...v0.2.0
 
 * [#22](https://github.com/tendermint/yubihsm-rs/pull/22)
-  Ensure command data is smaller than the YubiHSM2's buffer
+  Ensure command data is smaller than the YubiHSM2's buffer.
 
 * [#20](https://github.com/tendermint/yubihsm-rs/pull/22)
-  Implement Blink command
+  Implement Blink command.
 
 # [0.1.1] (2018-03-07)
 
