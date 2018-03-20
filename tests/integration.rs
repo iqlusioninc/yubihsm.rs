@@ -47,8 +47,9 @@ fn yubihsm_integration_test() {
     let conn = Connector::open(&format!("http://{}", YUBIHSM_ADDR))
         .unwrap_or_else(|err| panic!("cannot open connection to yubihsm-connector: {:?}", err));
 
-    let mut session = conn.create_session_from_password(DEFAULT_AUTH_KEY_ID, DEFAULT_PASSWORD)
-        .unwrap_or_else(|err| panic!("error creating session: {:?}", err));
+    let mut session =
+        conn.create_session_from_password(DEFAULT_AUTH_KEY_ID, DEFAULT_PASSWORD, true)
+            .unwrap_or_else(|err| panic!("error creating session: {:?}", err));
 
     // Delete the key in TEST_KEY_ID slot it exists (we use it for testing)
     // Ignore errors since the object may not exist yet
@@ -73,8 +74,9 @@ fn mockhsm_integration_test() {
     let conn = Connector::open(&format!("http://{}", MOCKHSM_ADDR))
         .unwrap_or_else(|err| panic!("cannot open connection to mockhsm: {:?}", err));
 
-    let mut session = conn.create_session_from_password(DEFAULT_AUTH_KEY_ID, DEFAULT_PASSWORD)
-        .unwrap_or_else(|err| panic!("error creating session: {:?}", err));
+    let mut session =
+        conn.create_session_from_password(DEFAULT_AUTH_KEY_ID, DEFAULT_PASSWORD, true)
+            .unwrap_or_else(|err| panic!("error creating session: {:?}", err));
 
     integration_tests(&mut session);
     mockhsm_thread.join().unwrap();

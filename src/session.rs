@@ -11,10 +11,20 @@ use serializers::deserialize;
 use super::{Algorithm, Capabilities, Domains, ObjectId, ObjectLabel, ObjectType, SessionId};
 
 /// Encrypted session with the `YubiHSM2`
-pub struct Session<'a> {
+pub struct Session {
+    /// ID of this session
     id: SessionId,
+
+    /// Encrypted channel to the HSM
     channel: Channel,
-    connector: &'a Connector,
+
+    /// Connector to send messages through
+    connector: Connector,
+
+    /// Optional cached static keys for reconnecting lost sessions
+    // TODO: session reconnect support
+    #[allow(dead_code)]
+    static_keys: Option<StaticKeys>,
 }
 
 /// Session-related errors
@@ -49,13 +59,15 @@ pub enum SessionError {
     },
 }
 
-impl<'a> Session<'a> {
-    /// Create a new encrypted session using the given auth key and password
+impl Session {
+    /// Create a new encrypted session using the given connector, auth key, and
+    /// static identity keys
     pub fn new(
-        connector: &'a Connector,
+        connector: Connector,
         host_challenge: &Challenge,
         auth_key_id: ObjectId,
-        static_keys: &StaticKeys,
+        static_keys: StaticKeys,
+        reconnect: bool,
     ) -> Result<Self, Error> {
         let response_message = connector.send_command(
             CreateSessionCommand {
@@ -72,7 +84,7 @@ impl<'a> Session<'a> {
 
         let channel = Channel::new(
             session_id,
-            static_keys,
+            &static_keys,
             host_challenge,
             &response.card_challenge,
         );
@@ -82,10 +94,13 @@ impl<'a> Session<'a> {
             fail!(SessionError::AuthFailed, "card cryptogram mismatch!");
         }
 
+        let static_keys_option = if reconnect { Some(static_keys) } else { None };
+
         let mut session = Self {
             id: session_id,
             channel,
             connector,
+            static_keys: static_keys_option,
         };
 
         session.authenticate()?;
