@@ -1,23 +1,17 @@
-//! Software simulation of the `YubiHSM2` for integration testing,
-//! implemented as a `yubihsm::Connector` (skipping HTTP transport)
-//!
-//! To enable, make sure to build yubihsm.rs with the "mockhsm" feature
+//! `MockHSM` presents a thread-safe API by locking interior mutable state,
+//! contained in the `State` struct defined in this module.
 
+use failure::Error;
+use sha2::Sha512;
 use std::collections::HashMap;
 
-use ed25519_dalek::Keypair as Ed25519Keypair;
-use failure::Error;
-use rand::OsRng;
-use sha2::Sha512;
-
-use {Algorithm, Capabilities, Domains, ObjectId, ObjectLabel, ObjectOrigin, ObjectType,
-     SequenceId, SessionId};
+use {Algorithm, ObjectId, ObjectType, SessionId};
 use commands::*;
-use connector::{Connector, Status};
 use session::{PBKDF2_ITERATIONS, PBKDF2_SALT};
 use responses::*;
 use securechannel::{Challenge, Channel, CommandMessage, CommandType, ResponseMessage, StaticKeys};
 use serializers::deserialize;
+use super::objects::{Object, Objects};
 
 /// Default auth key ID slot
 const DEFAULT_AUTH_KEY_ID: ObjectId = 1;
@@ -25,66 +19,17 @@ const DEFAULT_AUTH_KEY_ID: ObjectId = 1;
 /// Default password
 const DEFAULT_PASSWORD: &str = "password";
 
-/// Software simulation of a `YubiHSM2` intended for testing
-pub struct MockHSM {
+/// Mutable interior state of the `MockHSM`
+pub(crate) struct State {
     static_keys: StaticKeys,
     sessions: HashMap<SessionId, Channel>,
     objects: Objects,
 }
 
-/// Objects stored in the `MockHSM`
-#[derive(Default)]
-pub struct Objects {
-    // TODO: other object types besides Ed25519 keys
-    ed25519_keys: HashMap<ObjectId, Object<Ed25519Keypair>>,
-}
-
-impl Objects {
-    /// Create a new MockHSM object store
+impl State {
+    /// Create a new instance of the server's mutable interior state
     pub fn new() -> Self {
-        Objects {
-            ed25519_keys: HashMap::new(),
-        }
-    }
-}
-
-/// An individual object in the `MockHSM`, specialized for a given object type
-struct Object<T> {
-    value: T,
-    object_type: ObjectType,
-    algorithm: Algorithm,
-    capabilities: Capabilities,
-    delegated_capabilities: Capabilities,
-    domains: Domains,
-    length: u16,
-    sequence: SequenceId,
-    origin: ObjectOrigin,
-    label: ObjectLabel,
-}
-
-impl Object<Ed25519Keypair> {
-    pub fn new(label: ObjectLabel, capabilities: Capabilities, domains: Domains) -> Self {
-        let mut cspring = OsRng::new().unwrap();
-
         Self {
-            value: Ed25519Keypair::generate::<Sha512>(&mut cspring),
-            object_type: ObjectType::Asymmetric,
-            algorithm: Algorithm::EC_ED25519,
-            capabilities,
-            delegated_capabilities: Capabilities::default(),
-            domains,
-            length: 24,
-            sequence: 1,
-            origin: ObjectOrigin::Generated,
-            label,
-        }
-    }
-}
-
-impl Connector for MockHSM {
-    /// Open a connection to a yubihsm-connector
-    fn open(_url: &str) -> Result<Self, Error> {
-        Ok(Self {
             static_keys: StaticKeys::derive_from_password(
                 DEFAULT_PASSWORD.as_bytes(),
                 PBKDF2_SALT,
@@ -92,35 +37,11 @@ impl Connector for MockHSM {
             ),
             sessions: HashMap::new(),
             objects: Objects::new(),
-        })
-    }
-
-    /// GET /connector/status returning the result as connector::Status
-    fn status(&mut self) -> Result<Status, Error> {
-        Ok(Status {
-            message: "OK".to_owned(),
-            serial: None,
-            version: "1.0.1".to_owned(),
-            pid: 12_345,
-        })
-    }
-
-    /// POST /connector/api with a given command message and return the response message
-    fn send_command(&mut self, body: Vec<u8>) -> Result<Vec<u8>, Error> {
-        let command = CommandMessage::parse(body).unwrap();
-
-        match command.command_type {
-            CommandType::CreateSession => self.create_session(&command),
-            CommandType::AuthSession => self.authenticate_session(&command),
-            CommandType::SessionMessage => self.session_message(command),
-            unsupported => panic!("unsupported command type: {:?}", unsupported),
         }
     }
-}
 
-impl MockHSM {
     /// Create a new HSM session
-    fn create_session(&mut self, cmd_message: &CommandMessage) -> Result<Vec<u8>, Error> {
+    pub fn create_session(&mut self, cmd_message: &CommandMessage) -> Result<Vec<u8>, Error> {
         let cmd: CreateSessionCommand = deserialize(cmd_message.data.as_ref())
             .unwrap_or_else(|e| panic!("error parsing CreateSession command data: {:?}", e));
 
@@ -159,7 +80,7 @@ impl MockHSM {
     }
 
     /// Authenticate an HSM session
-    fn authenticate_session(&mut self, command: &CommandMessage) -> Result<Vec<u8>, Error> {
+    pub fn authenticate_session(&mut self, command: &CommandMessage) -> Result<Vec<u8>, Error> {
         let session_id = command
             .session_id
             .unwrap_or_else(|| panic!("no session ID in command: {:?}", command.command_type));
@@ -171,7 +92,7 @@ impl MockHSM {
     }
 
     /// Encrypted session messages
-    fn session_message(&mut self, encrypted_command: CommandMessage) -> Result<Vec<u8>, Error> {
+    pub fn session_message(&mut self, encrypted_command: CommandMessage) -> Result<Vec<u8>, Error> {
         let session_id = encrypted_command.session_id.unwrap_or_else(|| {
             panic!(
                 "no session ID in command: {:?}",
