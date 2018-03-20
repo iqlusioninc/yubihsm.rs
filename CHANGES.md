@@ -1,3 +1,13 @@
+## [0.6.0] (2018-03-20)
+
+[0.6.0]: https://github.com/tendermint/yubihsm-rs/compare/v0.5.0...v0.6.0
+
+* [#30](https://github.com/tendermint/yubihsm-rs/pull/30)
+  Make MockHSM (and therefore all Connectors) Send-safe.
+
+* [#29](https://github.com/tendermint/yubihsm-rs/pull/29)
+  Expose connector status as an (Abstract)Session method.
+
 ## [0.5.0] (2018-03-20)
 
 [0.5.0]: https://github.com/tendermint/yubihsm-rs/compare/v0.4.0...v0.5.0

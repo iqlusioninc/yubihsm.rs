@@ -13,8 +13,8 @@
 [build-link]: https://circleci.com/gh/tendermint/yubihsm-rs
 [license-image]: https://img.shields.io/badge/license-MIT/Apache2.0-blue.svg
 
-An experimental pure Rust reimplementation of [libyubihsm] providing an
-interface to [YubiHSM2] devices from [Yubico].
+Pure Rust reimplementation of [libyubihsm] providing an end-to-end encrypted
+connection and command interface to [YubiHSM2] devices from [Yubico].
 
 [Documentation][docs-link]
 
@@ -24,7 +24,7 @@ interface to [YubiHSM2] devices from [Yubico].
 
 ## About
 
-This is a pure-Rust client which supports interfacing with YubiHSM2 devices
+This is a pure-Rust client which supports interfacing with [YubiHSM2] devices
 over an encrypted channel.
 
 It presently reimplements a small subset of the of the functionality of
@@ -34,9 +34,11 @@ an HTTP(S) server which sends the commands to the YubiHSM2 hardware device over
 USB.
 
 Note that this is **NOT** an official Yubico project and is in no way supported
-or endorsed by Yubico.
+or endorsed by Yubico (well, whoever runs their Twitter account
+[thinks it's awesome])
 
 [yubihsm-connector]: https://developers.yubico.com/YubiHSM2/Component_Reference/yubihsm-connector/
+[thinks it's awesome]: https://twitter.com/Yubico/status/971186516796915712
 
 ## Status
 
