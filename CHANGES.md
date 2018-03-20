@@ -1,16 +1,23 @@
+## [0.5.0] (2018-03-20)
+
+[0.5.0]: https://github.com/tendermint/yubihsm-rs/compare/v0.4.0...v0.5.0
+
+* [#28](https://github.com/tendermint/yubihsm-rs/pull/28)
+  Convert `MockHSM` into a `yubihsm::Connector`.
+
 ## [0.4.0] (2018-03-20)
 
 [0.4.0]: https://github.com/tendermint/yubihsm-rs/compare/v0.3.0...v0.4.0
 
 * [#25](https://github.com/tendermint/yubihsm-rs/pull/25)
-  Refactor Session and Connector.
+  Refactor `Session` and `Connector`.
 
 ## [0.3.0] (2018-03-20)
 
 [0.3.0]: https://github.com/tendermint/yubihsm-rs/compare/v0.2.0...v0.3.0
 
 * [#24](https://github.com/tendermint/yubihsm-rs/pull/24)
-  Have sessions own connectors.
+  Have `Session`s own `Connector`s.
 
 ## [0.2.0] (2018-03-12)
 
