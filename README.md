@@ -122,7 +122,7 @@ Here's a list of steps necessary to implement a new command type:
 3. Add an additional struct which matches the response structure to [responses.rs]
 4. Add a wrapper function to [session.rs] which constructs the command message,
    performs the command, and returns the corresponding response struct.
-5. (Optional) Implement the command in [mockhsm.rs] and write an
+5. (Optional) Implement the command in [mockhsm/mod.rs]] and write an
    [integration test]
 
 Here is an [example PR that implements Ed25519 signing] you can study to see
@@ -133,7 +133,7 @@ what the above steps look like in practice.
 [commands.rs]: https://github.com/tendermint/yubihsm-rs/blob/master/src/commands.rs
 [responses.rs]: https://github.com/tendermint/yubihsm-rs/blob/master/src/responses.rs
 [session.rs]: https://github.com/tendermint/yubihsm-rs/blob/master/src/session.rs
-[mockhsm.rs]: https://github.com/tendermint/yubihsm-rs/blob/master/src/mockhsm.rs
+[mockhsm/mod.rs]: https://github.com/tendermint/yubihsm-rs/blob/master/src/mockhsm/mod.rs
 [integration test]:  https://github.com/tendermint/yubihsm-rs/blob/master/tests/integration.rs
 [example PR that implements Ed25519 signing]: https://github.com/tendermint/yubihsm-rs/pull/11/files
 
