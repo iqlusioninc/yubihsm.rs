@@ -61,8 +61,9 @@ pub struct Status {
     /// Status message for yubihsm-connector e.g. "OK"
     pub status: String,
 
-    /// Serial number of `YubiHSM2` device(?)
-    pub serial: String,
+    /// Serial number of `YubiHSM2` device. Only available if yubihsm-connector
+    /// has been started with the --serial option
+    pub serial: Option<String>,
 
     /// `YubiHSM2` SDK version for yubihsm-connector
     pub version: String,
@@ -103,10 +104,10 @@ impl Connector {
     pub fn status(&self) -> Result<Status, Error> {
         let response = String::from_utf8(self.get("/connector/status")?)?;
 
-        let mut status: Option<&str> = None;
-        let mut serial: Option<&str> = None;
-        let mut version: Option<&str> = None;
-        let mut pid: Option<u32> = None;
+        let mut response_status: Option<&str> = None;
+        let mut response_serial: Option<&str> = None;
+        let mut response_version: Option<&str> = None;
+        let mut response_pid: Option<&str> = None;
 
         for line in response.split('\n') {
             if line.is_empty() {
@@ -132,51 +133,69 @@ impl Connector {
             }
 
             match key {
-                "status" => status = Some(value),
-                "serial" => serial = Some(value),
-                "version" => version = Some(value),
-                "pid" => {
-                    pid = Some(value.parse().map_err(|_| {
-                        err!(ConnectorError::ResponseError, "invalid PID: {}", value)
-                    })?)
-                }
+                "status" => response_status = Some(value),
+                "serial" => response_serial = Some(value),
+                "version" => response_version = Some(value),
+                "pid" => response_pid = Some(value),
                 _ => (),
             }
         }
 
+        let status = response_status
+            .ok_or_else(|| err!(ConnectorError::ResponseError, "missing status"))?
+            .to_owned();
+
+        let serial = match response_serial {
+            Some("*") => None,
+            Some(s) => Some(s.to_owned()),
+            None => fail!(ConnectorError::ResponseError, "missing status"),
+        };
+
+        let version = response_version
+            .ok_or_else(|| err!(ConnectorError::ResponseError, "missing version"))?
+            .to_owned();
+
+        let pid = response_pid
+            .ok_or_else(|| err!(ConnectorError::ResponseError, "missing PID"))?
+            .parse()
+            .map_err(|_| {
+                err!(
+                    ConnectorError::ResponseError,
+                    "invalid PID: {}",
+                    response_pid.unwrap()
+                )
+            })?;
+
         Ok(Status {
-            status: status
-                .ok_or_else(|| err!(ConnectorError::ResponseError, "missing status"))?
-                .to_owned(),
-            serial: serial
-                .ok_or_else(|| err!(ConnectorError::ResponseError, "missing serial"))?
-                .to_owned(),
-            version: version
-                .ok_or_else(|| err!(ConnectorError::ResponseError, "missing version"))?
-                .to_owned(),
-            pid: pid.ok_or_else(|| err!(ConnectorError::ResponseError, "missing PID"))?,
+            status,
+            serial,
+            version,
+            pid,
         })
     }
 
     /// Open a new session to the HSM, authenticating with the given keypair
     pub fn create_session(
-        &self,
+        self,
         auth_key_id: ObjectId,
-        static_keys: &StaticKeys,
+        static_keys: StaticKeys,
+        reconnect: bool,
     ) -> Result<Session, Error> {
         let host_challenge = Challenge::random();
-        Session::new(self, &host_challenge, auth_key_id, static_keys)
+        Session::new(self, &host_challenge, auth_key_id, static_keys, reconnect)
     }
 
     /// Open a new session to the HSM, authenticating with a given password
     pub fn create_session_from_password(
-        &self,
+        self,
         auth_key_id: ObjectId,
         password: &str,
+        reconnect: bool,
     ) -> Result<Session, Error> {
         self.create_session(
             auth_key_id,
-            &StaticKeys::derive_from_password(password.as_bytes(), PBKDF2_SALT, PBKDF2_ITERATIONS),
+            StaticKeys::derive_from_password(password.as_bytes(), PBKDF2_SALT, PBKDF2_ITERATIONS),
+            reconnect,
         )
     }
 
