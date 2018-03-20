@@ -1,6 +1,6 @@
 use test::Bencher;
 
-use {Algorithm, Capabilities, Connector, Domains, ObjectId, ObjectType};
+use {Algorithm, Capabilities, Domains, ObjectId, ObjectType, Session};
 
 const YUBIHSM_ADDR: &str = "http://127.0.0.1:12345";
 const DEFAULT_AUTH_KEY_ID: ObjectId = 1;
@@ -13,9 +13,9 @@ const TEST_DOMAINS: Domains = Domains::DOMAIN_1;
 
 #[bench]
 fn ed25519_benchmark(b: &mut Bencher) {
-    let conn = Connector::open(YUBIHSM_ADDR).unwrap();
-    let mut session = conn.create_session_from_password(DEFAULT_AUTH_KEY_ID, DEFAULT_PASSWORD)
-        .unwrap();
+    let mut session =
+        Session::create_from_password(YUBIHSM_ADDR, DEFAULT_AUTH_KEY_ID, DEFAULT_PASSWORD, false)
+            .unwrap();
 
     // Delete the key in TEST_KEY_ID slot it exists
     let _ = session.delete_object(TEST_KEY_ID, ObjectType::Asymmetric);
