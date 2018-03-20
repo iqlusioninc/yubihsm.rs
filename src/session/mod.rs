@@ -2,16 +2,37 @@
 //!
 //! See <https://developers.yubico.com/YubiHSM2/Concepts/Session.html>
 
+mod error;
+
+use failure::Error;
+
 use commands::*;
 use connector::Connector;
-use failure::Error;
+#[cfg(feature = "reqwest-connector")]
+use connector::ReqwestConnector;
 use responses::*;
-use securechannel::{Challenge, Channel, ResponseCode, StaticKeys};
+use securechannel::{Challenge, Channel, CommandMessage, ResponseCode, ResponseMessage, StaticKeys};
 use serializers::deserialize;
 use super::{Algorithm, Capabilities, Domains, ObjectId, ObjectLabel, ObjectType, SessionId};
+pub use self::error::SessionError;
+
+/// Salt value to use with PBKDF2 when deriving static keys from a password
+pub const PBKDF2_SALT: &[u8] = b"Yubico";
+
+/// Number of PBKDF2 iterations to perform when deriving static keys
+pub const PBKDF2_ITERATIONS: usize = 10_000;
+
+/// Status message returned from healthy connectors
+const CONNECTOR_STATUS_OK: &str = "OK";
+
+/// Type alias for a session with the default connector type
+#[cfg(feature = "reqwest-connector")]
+pub type Session = AbstractSession<ReqwestConnector>;
 
 /// Encrypted session with the `YubiHSM2`
-pub struct Session {
+///
+/// Generic over connector types in case a different one needs to be swapped in
+pub struct AbstractSession<C: Connector> {
     /// ID of this session
     id: SessionId,
 
@@ -19,7 +40,7 @@ pub struct Session {
     channel: Channel,
 
     /// Connector to send messages through
-    connector: Connector,
+    connector: C,
 
     /// Optional cached static keys for reconnecting lost sessions
     // TODO: session reconnect support
@@ -27,54 +48,85 @@ pub struct Session {
     static_keys: Option<StaticKeys>,
 }
 
-/// Session-related errors
-#[derive(Debug, Fail)]
-pub enum SessionError {
-    /// Couldn't create session
-    #[fail(display = "couldn't create session: {}", description)]
-    CreateFailed {
-        /// Description of why we couldn't create the session
-        description: String,
-    },
+impl<C: Connector> AbstractSession<C> {
+    /// Open a new session to the HSM, authenticating with the given keypair
+    pub fn create(
+        connector_url: &str,
+        auth_key_id: ObjectId,
+        static_keys: StaticKeys,
+        reconnect: bool,
+    ) -> Result<Self, Error> {
+        let connector = C::open(connector_url)?;
+        let status = connector.status()?;
 
-    /// Couldn't authenticate session
-    #[fail(display = "authentication failed: {}", description)]
-    AuthFailed {
-        /// Details about the authentication failure
-        description: String,
-    },
+        if status.message != CONNECTOR_STATUS_OK {
+            fail!(
+                SessionError::CreateFailed,
+                "bad status response from {}: {}",
+                connector_url,
+                status.message
+            );
+        }
 
-    /// Protocol error occurred
-    #[fail(display = "protocol error: {}", description)]
-    ProtocolError {
-        /// Details about the protocol error
-        description: String,
-    },
+        let host_challenge = Challenge::random();
 
-    /// HSM returned an error response
-    #[fail(display = "error response from HSM: {}", description)]
-    ResponseError {
-        /// Description of the bad response we received
-        description: String,
-    },
-}
+        Self::new(
+            connector,
+            &host_challenge,
+            auth_key_id,
+            static_keys,
+            reconnect,
+        )
+    }
 
-impl Session {
-    /// Create a new encrypted session using the given connector, auth key, and
+    /// Open a new session to the HSM, authenticating with a given password
+    pub fn create_from_password(
+        connector_url: &str,
+        auth_key_id: ObjectId,
+        password: &str,
+        reconnect: bool,
+    ) -> Result<Self, Error> {
+        Self::create(
+            connector_url,
+            auth_key_id,
+            StaticKeys::derive_from_password(password.as_bytes(), PBKDF2_SALT, PBKDF2_ITERATIONS),
+            reconnect,
+        )
+    }
+
+    /// Create a new encrypted session using the given connector, YubiHSM2 auth key ID, and
     /// static identity keys
     pub fn new(
-        connector: Connector,
+        connector: C,
         host_challenge: &Challenge,
         auth_key_id: ObjectId,
         static_keys: StaticKeys,
         reconnect: bool,
     ) -> Result<Self, Error> {
-        let response_message = connector.send_command(
-            CreateSessionCommand {
-                auth_key_id,
-                host_challenge: *host_challenge,
-            }.into(),
-        )?;
+        let command_message: CommandMessage = CreateSessionCommand {
+            auth_key_id,
+            host_challenge: *host_challenge,
+        }.into();
+
+        let response_message =
+            ResponseMessage::parse(connector.send_command(command_message.into())?)?;
+
+        if response_message.is_err() {
+            fail!(
+                SessionError::ResponseError,
+                "HSM error: {:?}",
+                response_message.code
+            );
+        }
+
+        if response_message.command().unwrap() != CommandType::CreateSession {
+            fail!(
+                SessionError::ProtocolError,
+                "command type mismatch: expected {:?}, got {:?}",
+                CommandType::CreateSession,
+                response_message.command().unwrap()
+            );
+        }
 
         let session_id = response_message
             .session_id
@@ -200,16 +252,46 @@ impl Session {
     /// Authenticate the current session with the `YubiHSM2`
     fn authenticate(&mut self) -> Result<(), Error> {
         let command = self.channel.authenticate_session()?;
-        let response = self.connector.send_command(command)?;
+        let response = self.send_command(command)?;
         self.channel.finish_authenticate_session(&response)
+    }
+
+    /// Send a command message to the YubiHSM2 and parse the response
+    /// POST /connector/api with a given command message
+    fn send_command(&self, cmd: CommandMessage) -> Result<ResponseMessage, Error> {
+        let cmd_type = cmd.command_type;
+
+        // TODO: handle reconnecting when sessions are lost
+        let response_bytes = self.connector.send_command(cmd.into())?;
+        let response = ResponseMessage::parse(response_bytes)?;
+
+        if response.is_err() {
+            fail!(
+                SessionError::ResponseError,
+                "HSM error: {:?}",
+                response.code
+            );
+        }
+
+        if response.command().unwrap() != cmd_type {
+            fail!(
+                SessionError::ProtocolError,
+                "command type mismatch: expected {:?}, got {:?}",
+                cmd_type,
+                response.command().unwrap()
+            );
+        }
+
+        Ok(response)
     }
 
     /// Encrypt a command and send it to the card, then authenticate and
     /// decrypt the response
-    fn send_encrypted_command<C: Command>(&mut self, command: C) -> Result<C::ResponseType, Error> {
+    fn send_encrypted_command<T: Command>(&mut self, command: T) -> Result<T::ResponseType, Error> {
         let plaintext_cmd = command.into();
         let encrypted_cmd = self.channel.encrypt_command(plaintext_cmd)?;
-        let encrypted_response = self.connector.send_command(encrypted_cmd)?;
+
+        let encrypted_response = self.send_command(encrypted_cmd)?;
         let response = self.channel.decrypt_response(encrypted_response)?;
 
         if response.is_err() {
@@ -222,11 +304,11 @@ impl Session {
             fail!(SessionError::ResponseError, description);
         }
 
-        if response.command().unwrap() != C::COMMAND_TYPE {
+        if response.command().unwrap() != T::COMMAND_TYPE {
             fail!(
                 SessionError::ResponseError,
                 "command type mismatch: expected {:?}, got {:?}",
-                C::COMMAND_TYPE,
+                T::COMMAND_TYPE,
                 response.command().unwrap()
             );
         }

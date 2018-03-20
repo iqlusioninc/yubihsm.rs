@@ -11,8 +11,7 @@ use sha2::Sha512;
 #[cfg(feature = "mockhsm")]
 use std::thread;
 
-use yubihsm::{Algorithm, Capabilities, Connector, Domains, ObjectId, ObjectOrigin, ObjectType,
-              Session};
+use yubihsm::{Algorithm, Capabilities, Domains, ObjectId, ObjectOrigin, ObjectType, Session};
 #[cfg(feature = "mockhsm")]
 use yubihsm::mockhsm::MockHSM;
 
@@ -44,12 +43,12 @@ const NUM_HTTP_REQUESTS: usize = 12;
 #[cfg(not(feature = "mockhsm"))]
 #[test]
 fn yubihsm_integration_test() {
-    let conn = Connector::open(&format!("http://{}", YUBIHSM_ADDR))
-        .unwrap_or_else(|err| panic!("cannot open connection to yubihsm-connector: {:?}", err));
-
-    let mut session =
-        conn.create_session_from_password(DEFAULT_AUTH_KEY_ID, DEFAULT_PASSWORD, true)
-            .unwrap_or_else(|err| panic!("error creating session: {:?}", err));
+    let mut session = Session::create_from_password(
+        &format!("http://{}", YUBIHSM_ADDR),
+        DEFAULT_AUTH_KEY_ID,
+        DEFAULT_PASSWORD,
+        true,
+    ).unwrap_or_else(|err| panic!("error creating session: {:?}", err));
 
     // Delete the key in TEST_KEY_ID slot it exists (we use it for testing)
     // Ignore errors since the object may not exist yet
@@ -71,12 +70,12 @@ fn start_mockhsm() -> thread::JoinHandle<()> {
 fn mockhsm_integration_test() {
     let mockhsm_thread = start_mockhsm();
 
-    let conn = Connector::open(&format!("http://{}", MOCKHSM_ADDR))
-        .unwrap_or_else(|err| panic!("cannot open connection to mockhsm: {:?}", err));
-
-    let mut session =
-        conn.create_session_from_password(DEFAULT_AUTH_KEY_ID, DEFAULT_PASSWORD, true)
-            .unwrap_or_else(|err| panic!("error creating session: {:?}", err));
+    let mut session = Session::create_from_password(
+        &format!("http://{}", MOCKHSM_ADDR),
+        DEFAULT_AUTH_KEY_ID,
+        DEFAULT_PASSWORD,
+        true,
+    ).unwrap_or_else(|err| panic!("error creating session: {:?}", err));
 
     integration_tests(&mut session);
     mockhsm_thread.join().unwrap();

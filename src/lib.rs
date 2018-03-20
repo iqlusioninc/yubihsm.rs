@@ -16,6 +16,30 @@
 //! [build]
 //! rustflags = ["-Ctarget-feature=+aes"]
 //! ```
+//!
+//! # Getting Started
+//!
+//! The main type you'll want to check out is `Session`. Here is an example of
+//! how to connect to [yubihsm-connector] and perform an Ed25519 signature:
+//!
+//! [yubihsm-connector]: https://developers.yubico.com/YubiHSM2/Component_Reference/yubihsm-connector/
+//!
+//! ```no_run
+//! use yubihsm::Session;
+//!
+//! // Default host, port, auth key ID, and password for yubihsm-connector
+//! let mut session = Session::create_from_password(
+//!     "http://127.0.0.1:12345",
+//!     1,
+//!     "password",
+//!     true
+//! ).unwrap();
+//!
+//! // Note: You'll need to create this key first. Run the following from yubihsm-shell:
+//! // `generate asymmetric 0 100 ed25519_test_key 1 asymmetric_sign_eddsa ed25519`
+//! let response = session.sign_data_eddsa(100, "Hello, world!").unwrap();
+//! println!("Ed25519 signature: {:?}", response.signature);
+//! ```
 
 #![crate_name = "yubihsm"]
 #![crate_type = "rlib"]
@@ -41,6 +65,7 @@ extern crate failure_derive;
 extern crate hmac;
 extern crate pbkdf2;
 extern crate rand;
+#[cfg(feature = "reqwest-connector")]
 extern crate reqwest;
 extern crate serde;
 #[macro_use]
@@ -70,6 +95,8 @@ pub mod session;
 pub use algorithm::Algorithm;
 pub use capabilities::Capabilities;
 pub use connector::Connector;
+#[cfg(feature = "reqwest-connector")]
+pub use connector::ReqwestConnector;
 pub use domains::Domains;
 pub use object::Id as ObjectId;
 pub use object::Label as ObjectLabel;

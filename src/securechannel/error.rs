@@ -1,4 +1,4 @@
-//! Secure Channel error types
+//! Error types for Secure Channel communications
 
 /// Secure Channel errors
 #[derive(Debug, Fail)]
