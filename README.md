@@ -122,7 +122,7 @@ Here's a list of steps necessary to implement a new command type:
 3. Add an additional struct which matches the response structure to [responses.rs]
 4. Add a wrapper function to [session.rs] which constructs the command message,
    performs the command, and returns the corresponding response struct.
-5. (Optional) Implement the command in [mockhsm/mod.rs]] and write an
+5. (Optional) Implement the command in [mockhsm/mod.rs] and write an
    [integration test]
 
 Here is an [example PR that implements Ed25519 signing] you can study to see
