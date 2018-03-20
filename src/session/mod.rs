@@ -8,6 +8,7 @@ use failure::Error;
 
 use commands::*;
 use connector::Connector;
+use connector::Status as ConnectorStatus;
 #[cfg(feature = "reqwest-connector")]
 use connector::ReqwestConnector;
 use responses::*;
@@ -157,6 +158,12 @@ impl<C: Connector> AbstractSession<C> {
 
         session.authenticate()?;
         Ok(session)
+    }
+
+    /// Request current yubihsm-connector status
+    #[inline]
+    pub fn connector_status(&mut self) -> Result<ConnectorStatus, Error> {
+        self.connector.status()
     }
 
     /// Blink the YubiHSM2's LEDs (to identify it) for the given number of seconds
