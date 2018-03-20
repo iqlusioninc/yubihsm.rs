@@ -56,7 +56,7 @@ impl<C: Connector> AbstractSession<C> {
         static_keys: StaticKeys,
         reconnect: bool,
     ) -> Result<Self, Error> {
-        let connector = C::open(connector_url)?;
+        let mut connector = C::open(connector_url)?;
         let status = connector.status()?;
 
         if status.message != CONNECTOR_STATUS_OK {
@@ -97,7 +97,7 @@ impl<C: Connector> AbstractSession<C> {
     /// Create a new encrypted session using the given connector, YubiHSM2 auth key ID, and
     /// static identity keys
     pub fn new(
-        connector: C,
+        mut connector: C,
         host_challenge: &Challenge,
         auth_key_id: ObjectId,
         static_keys: StaticKeys,
@@ -258,7 +258,7 @@ impl<C: Connector> AbstractSession<C> {
 
     /// Send a command message to the YubiHSM2 and parse the response
     /// POST /connector/api with a given command message
-    fn send_command(&self, cmd: CommandMessage) -> Result<ResponseMessage, Error> {
+    fn send_command(&mut self, cmd: CommandMessage) -> Result<ResponseMessage, Error> {
         let cmd_type = cmd.command_type;
 
         // TODO: handle reconnecting when sessions are lost

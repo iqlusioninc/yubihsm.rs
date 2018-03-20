@@ -8,20 +8,15 @@ extern crate sha2;
 #[cfg(feature = "dalek")]
 use sha2::Sha512;
 
-#[cfg(feature = "mockhsm")]
-use std::thread;
-
-use yubihsm::{Algorithm, Capabilities, Domains, ObjectId, ObjectOrigin, ObjectType, Session};
+use yubihsm::{AbstractSession, Algorithm, Capabilities, Connector, Domains, ObjectId,
+              ObjectOrigin, ObjectType};
+#[cfg(not(feature = "mockhsm"))]
+use yubihsm::session::Session;
 #[cfg(feature = "mockhsm")]
 use yubihsm::mockhsm::MockHSM;
 
-/// Test against the real yubihsm-connector
-#[cfg(not(feature = "mockhsm"))]
-const YUBIHSM_ADDR: &str = "127.0.0.1:12345";
-
-// TODO: pick an open port automatically
-#[cfg(feature = "mockhsm")]
-const MOCKHSM_ADDR: &str = "127.0.0.1:54321";
+/// Default host/port of yubihsm-connector
+const DEFAULT_YUBIHSM_ADDR: &str = "http://127.0.0.1:12345";
 
 /// Default auth key ID slot
 const DEFAULT_AUTH_KEY_ID: ObjectId = 1;
@@ -32,19 +27,12 @@ const DEFAULT_PASSWORD: &str = "password";
 /// Key ID to use for testing keygen/signing
 const TEST_KEY_ID: ObjectId = 100;
 
-/// Number of HTTP requests issued by the test suite
-///
-/// NOTE: This will need to be increased whenever adding additional tests
-/// to the suite.
-#[cfg(feature = "mockhsm")]
-const NUM_HTTP_REQUESTS: usize = 12;
-
-/// Perform a live integration test against yubihsm-connector and a real YubiHSM2
+/// Perform a live integration test against yubihsm-connector and a real `YubiHSM2`
 #[cfg(not(feature = "mockhsm"))]
 #[test]
 fn yubihsm_integration_test() {
     let mut session = Session::create_from_password(
-        &format!("http://{}", YUBIHSM_ADDR),
+        DEFAULT_YUBIHSM_ADDR,
         DEFAULT_AUTH_KEY_ID,
         DEFAULT_PASSWORD,
         true,
@@ -61,28 +49,20 @@ fn yubihsm_integration_test() {
 }
 
 #[cfg(feature = "mockhsm")]
-fn start_mockhsm() -> thread::JoinHandle<()> {
-    thread::spawn(move || MockHSM::new(MOCKHSM_ADDR).unwrap().run(NUM_HTTP_REQUESTS))
-}
-
-#[cfg(feature = "mockhsm")]
 #[test]
 fn mockhsm_integration_test() {
-    let mockhsm_thread = start_mockhsm();
-
-    let mut session = Session::create_from_password(
-        &format!("http://{}", MOCKHSM_ADDR),
+    let mut session = AbstractSession::<MockHSM>::create_from_password(
+        DEFAULT_YUBIHSM_ADDR,
         DEFAULT_AUTH_KEY_ID,
         DEFAULT_PASSWORD,
         true,
     ).unwrap_or_else(|err| panic!("error creating session: {:?}", err));
 
     integration_tests(&mut session);
-    mockhsm_thread.join().unwrap();
 }
 
 // Tests to be performed as part of our integration testing process
-fn integration_tests(session: &mut Session) {
+fn integration_tests<C: Connector>(session: &mut AbstractSession<C>) {
     // NOTE: if you are adding a new test, you may need to bump NUM_HTTP_TESTS
     // as described at the top of this file
     echo_test(session);
@@ -94,7 +74,7 @@ fn integration_tests(session: &mut Session) {
 }
 
 // Send a simple echo request
-fn echo_test(session: &mut Session) {
+fn echo_test<C: Connector>(session: &mut AbstractSession<C>) {
     let message = b"Hello, world!";
     let response = session
         .echo(message.as_ref())
@@ -104,7 +84,7 @@ fn echo_test(session: &mut Session) {
 }
 
 // Generate an Ed25519 key
-fn generate_asymmetric_key_test(session: &mut Session) {
+fn generate_asymmetric_key_test<C: Connector>(session: &mut AbstractSession<C>) {
     // Ensure the object does not already exist
     assert!(
         session
@@ -137,7 +117,7 @@ fn generate_asymmetric_key_test(session: &mut Session) {
 
 // Compute a signature using the Ed25519 key generated in the last test
 #[cfg(feature = "dalek")]
-fn sign_ed25519_test(session: &mut Session) {
+fn sign_ed25519_test<C: Connector>(session: &mut AbstractSession<C>) {
     let pubkey_response = session
         .get_pubkey(TEST_KEY_ID)
         .unwrap_or_else(|err| panic!("error getting public key: {:?}", err));
@@ -164,7 +144,7 @@ fn sign_ed25519_test(session: &mut Session) {
 }
 
 // List the objects in the YubiHSM2
-fn list_objects_test(session: &mut Session) {
+fn list_objects_test<C: Connector>(session: &mut AbstractSession<C>) {
     let response = session
         .list_objects()
         .unwrap_or_else(|err| panic!("error listing objects: {:?}", err));
@@ -175,7 +155,7 @@ fn list_objects_test(session: &mut Session) {
 }
 
 // Delete an object in the YubiHSM2
-fn delete_object_test(session: &mut Session) {
+fn delete_object_test<C: Connector>(session: &mut AbstractSession<C>) {
     // The first request to delete should succeed because the object exists
     assert!(
         session

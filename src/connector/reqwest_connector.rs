@@ -34,14 +34,14 @@ impl Connector for ReqwestConnector {
     }
 
     /// GET /connector/status returning the result as connector::Status
-    fn status(&self) -> Result<Status, Error> {
+    fn status(&mut self) -> Result<Status, Error> {
         let http_response = self.get("/connector/status")?;
         let status = String::from_utf8(http_response)?;
         Status::parse(&status)
     }
 
     /// POST /connector/api with a given command message
-    fn send_command(&self, cmd: Vec<u8>) -> Result<Vec<u8>, Error> {
+    fn send_command(&mut self, cmd: Vec<u8>) -> Result<Vec<u8>, Error> {
         self.post("/connector/api", cmd)
     }
 }
