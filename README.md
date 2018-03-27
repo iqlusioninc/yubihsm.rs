@@ -5,7 +5,7 @@
 [![Build Status][build-image]][build-link]
 ![MIT/Apache2 licensed][license-image]
 
-[crate-image]: https://img.shields.io/crates/v/yubihsm.svg
+[crate-image]: https://img.shields.io/crates/v/yubihsm.svg?maxAge=2592000
 [crate-link]: https://crates.io/crates/yubihsm
 [docs-image]: https://docs.rs/yubihsm/badge.svg
 [docs-link]: https://docs.rs/yubihsm/
