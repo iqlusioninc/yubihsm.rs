@@ -1,3 +1,10 @@
+## [0.7.1] (2018-03-27)
+
+[0.7.1]: https://github.com/tendermint/yubihsm-rs/compare/v0.7.0...v0.7.1
+
+* [#32](https://github.com/tendermint/yubihsm-rs/pull/32)
+  Improve DefaultConnector handling.
+
 ## [0.7.0] (2018-03-27)
 
 [0.7.0]: https://github.com/tendermint/yubihsm-rs/compare/v0.6.0...v0.7.0
