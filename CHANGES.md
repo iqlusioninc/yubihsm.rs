@@ -1,3 +1,10 @@
+## [0.7.0] (2018-03-27)
+
+[0.7.0]: https://github.com/tendermint/yubihsm-rs/compare/v0.6.0...v0.7.0
+
+* [#31](https://github.com/tendermint/yubihsm-rs/pull/31)
+  Rename AbstractSession -> Session (by using default generic arg).
+
 ## [0.6.0] (2018-03-20)
 
 [0.6.0]: https://github.com/tendermint/yubihsm-rs/compare/v0.5.0...v0.6.0
