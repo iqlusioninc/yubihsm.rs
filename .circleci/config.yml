@@ -22,17 +22,23 @@ jobs:
           name: clippy
           command: |
             rustup run $RUST_NIGHTLY_VERSION cargo clippy --version
-            rustup run $RUST_NIGHTLY_VERSION cargo clippy --verbose --features=mockhsm
+            rustup run $RUST_NIGHTLY_VERSION cargo clippy --features=mockhsm
+      - run:
+          name: build --no-default-features (nightly-2018-03-05)
+          command: |
+            rustup run $RUST_NIGHTLY_VERSION rustc --version
+            rustup run $RUST_NIGHTLY_VERSION cargo --version
+            rustup run $RUST_NIGHTLY_VERSION cargo build --no-default-features
       - run:
           name: build (nightly-2018-03-05)
           command: |
-            rustup run $RUST_NIGHTLY_VERSION rustc --version --verbose
-            rustup run $RUST_NIGHTLY_VERSION cargo --version --verbose
-            rustup run $RUST_NIGHTLY_VERSION cargo build --verbose
+            rustup run $RUST_NIGHTLY_VERSION rustc --version
+            rustup run $RUST_NIGHTLY_VERSION cargo --version
+            rustup run $RUST_NIGHTLY_VERSION cargo build
       - run:
           name: test (nightly-2018-03-05)
           command: |
-            rustup run $RUST_NIGHTLY_VERSION cargo test --verbose --features=mockhsm
+            rustup run $RUST_NIGHTLY_VERSION cargo test --features=mockhsm
       - save_cache:
           # Bump this (and above) whenever the Docker image is updated
           key: cache-20180312

@@ -94,9 +94,7 @@ pub mod session;
 
 pub use algorithm::Algorithm;
 pub use capabilities::Capabilities;
-pub use connector::Connector;
-#[cfg(feature = "reqwest-connector")]
-pub use connector::ReqwestConnector;
+pub use connector::{Connector, DefaultConnector};
 pub use domains::Domains;
 pub use object::Id as ObjectId;
 pub use object::Label as ObjectLabel;

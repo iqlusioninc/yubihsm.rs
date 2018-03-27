@@ -1,6 +1,8 @@
 //! Client for yubihsm-connector
 
 mod error;
+#[cfg(not(feature = "reqwest-connector"))]
+mod null_connector;
 #[cfg(feature = "reqwest-connector")]
 mod reqwest_connector;
 mod status;
@@ -8,9 +10,19 @@ mod status;
 use failure::Error;
 
 pub use self::error::ConnectorError;
+#[cfg(not(feature = "reqwest-connector"))]
+pub use self::null_connector::NullConnector;
 #[cfg(feature = "reqwest-connector")]
 pub use self::reqwest_connector::ReqwestConnector;
 pub use self::status::Status;
+
+/// Use `ReqwestConnector` as the default connector if available
+#[cfg(feature = "reqwest-connector")]
+pub type DefaultConnector = ReqwestConnector;
+
+/// Use NullConnector if the default connector isn't available
+#[cfg(not(feature = "reqwest-connector"))]
+pub type DefaultConnector = NullConnector;
 
 /// User-Agent string to supply
 pub const USER_AGENT: &str = concat!("yubihsm.rs ", env!("CARGO_PKG_VERSION"));
