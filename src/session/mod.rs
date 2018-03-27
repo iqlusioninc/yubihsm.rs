@@ -7,10 +7,8 @@ mod error;
 use failure::Error;
 
 use commands::*;
-use connector::Connector;
+use connector::{Connector, DefaultConnector};
 use connector::Status as ConnectorStatus;
-#[cfg(feature = "reqwest-connector")]
-use connector::ReqwestConnector;
 use responses::*;
 use securechannel::{Challenge, Channel, CommandMessage, ResponseCode, ResponseMessage, StaticKeys};
 use serializers::deserialize;
@@ -25,9 +23,6 @@ pub const PBKDF2_ITERATIONS: usize = 10_000;
 
 /// Status message returned from healthy connectors
 const CONNECTOR_STATUS_OK: &str = "OK";
-
-#[cfg(feature = "reqwest-connector")]
-type DefaultConnector = ReqwestConnector;
 
 /// Encrypted session with the `YubiHSM2`
 ///
