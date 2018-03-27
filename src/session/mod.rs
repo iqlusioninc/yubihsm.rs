@@ -26,14 +26,13 @@ pub const PBKDF2_ITERATIONS: usize = 10_000;
 /// Status message returned from healthy connectors
 const CONNECTOR_STATUS_OK: &str = "OK";
 
-/// Type alias for a session with the default connector type
 #[cfg(feature = "reqwest-connector")]
-pub type Session = AbstractSession<ReqwestConnector>;
+type DefaultConnector = ReqwestConnector;
 
 /// Encrypted session with the `YubiHSM2`
 ///
 /// Generic over connector types in case a different one needs to be swapped in
-pub struct AbstractSession<C: Connector> {
+pub struct Session<C = DefaultConnector> {
     /// ID of this session
     id: SessionId,
 
@@ -49,7 +48,8 @@ pub struct AbstractSession<C: Connector> {
     static_keys: Option<StaticKeys>,
 }
 
-impl<C: Connector> AbstractSession<C> {
+/// Methods which are only available on the default connector
+impl Session<DefaultConnector> {
     /// Open a new session to the HSM, authenticating with the given keypair
     pub fn create(
         connector_url: &str,
@@ -57,7 +57,7 @@ impl<C: Connector> AbstractSession<C> {
         static_keys: StaticKeys,
         reconnect: bool,
     ) -> Result<Self, Error> {
-        let connector = C::open(connector_url)?;
+        let connector = DefaultConnector::open(connector_url)?;
         let status = connector.status()?;
 
         if status.message != CONNECTOR_STATUS_OK {
@@ -69,15 +69,7 @@ impl<C: Connector> AbstractSession<C> {
             );
         }
 
-        let host_challenge = Challenge::random();
-
-        Self::new(
-            connector,
-            &host_challenge,
-            auth_key_id,
-            static_keys,
-            reconnect,
-        )
+        Self::new(connector, auth_key_id, static_keys, reconnect)
     }
 
     /// Open a new session to the HSM, authenticating with a given password
@@ -94,19 +86,22 @@ impl<C: Connector> AbstractSession<C> {
             reconnect,
         )
     }
+}
 
+impl<C: Connector> Session<C> {
     /// Create a new encrypted session using the given connector, YubiHSM2 auth key ID, and
     /// static identity keys
     pub fn new(
         connector: C,
-        host_challenge: &Challenge,
         auth_key_id: ObjectId,
         static_keys: StaticKeys,
         reconnect: bool,
     ) -> Result<Self, Error> {
+        let host_challenge = Challenge::random();
+
         let command_message: CommandMessage = CreateSessionCommand {
             auth_key_id,
-            host_challenge: *host_challenge,
+            host_challenge,
         }.into();
 
         let response_message =
@@ -138,7 +133,7 @@ impl<C: Connector> AbstractSession<C> {
         let channel = Channel::new(
             session_id,
             &static_keys,
-            host_challenge,
+            &host_challenge,
             &response.card_challenge,
         );
 
