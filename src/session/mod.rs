@@ -32,7 +32,10 @@ type DefaultConnector = ReqwestConnector;
 /// Encrypted session with the `YubiHSM2`
 ///
 /// Generic over connector types in case a different one needs to be swapped in
-pub struct Session<C = DefaultConnector> {
+pub struct Session<C = DefaultConnector>
+where
+    C: Connector,
+{
     /// ID of this session
     id: SessionId,
 
