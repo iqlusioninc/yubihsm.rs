@@ -1,3 +1,10 @@
+## [0.7.2] (2018-03-31)
+
+[0.7.2]: https://github.com/tendermint/yubihsm-rs/compare/v0.7.1...v0.7.2
+
+* [#33](https://github.com/tendermint/yubihsm-rs/pull/33)
+  Upgrade ed25519-dalek, sha2, and pbkdf2 crates.
+
 ## [0.7.1] (2018-03-27)
 
 [0.7.1]: https://github.com/tendermint/yubihsm-rs/compare/v0.7.0...v0.7.1
