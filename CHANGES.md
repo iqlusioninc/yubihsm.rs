@@ -1,3 +1,10 @@
+## [0.7.3] (2018-04-05)
+
+[0.7.3]: https://github.com/tendermint/yubihsm-rs/compare/v0.7.2...v0.7.3
+
+* [#34](https://github.com/tendermint/yubihsm-rs/pull/34)
+  Mark Connector as Sync-safe.
+
 ## [0.7.2] (2018-03-31)
 
 [0.7.2]: https://github.com/tendermint/yubihsm-rs/compare/v0.7.1...v0.7.2

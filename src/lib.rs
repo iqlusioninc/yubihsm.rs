@@ -46,7 +46,7 @@
 #![cfg_attr(feature = "bench", feature(test))]
 #![deny(warnings, missing_docs, trivial_casts, trivial_numeric_casts)]
 #![deny(unsafe_code, unused_import_braces, unused_qualifications)]
-#![doc(html_root_url = "https://docs.rs/yubihsm/0.7.2")]
+#![doc(html_root_url = "https://docs.rs/yubihsm/0.7.3")]
 
 extern crate aesni;
 #[macro_use]
