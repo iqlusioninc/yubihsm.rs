@@ -28,7 +28,7 @@ pub type DefaultConnector = NullConnector;
 pub const USER_AGENT: &str = concat!("yubihsm.rs ", env!("CARGO_PKG_VERSION"));
 
 /// API for communicating with a yubihsm-connector
-pub trait Connector: Sized + Send {
+pub trait Connector: Sized + Send + Sync {
     /// Open a connection to a yubihsm-connector
     fn open(connector_url: &str) -> Result<Self, Error>;
 
