@@ -127,14 +127,6 @@ impl ResponseMessage {
         Self::new(ResponseCode::Success(command_type), response_data)
     }
 
-    /// Was this command successful?
-    pub fn is_ok(&self) -> bool {
-        match self.code {
-            ResponseCode::Success(_) => true,
-            _ => false,
-        }
-    }
-
     /// Create an error response
     #[cfg(feature = "mockhsm")]
     pub fn error(message: &str) -> ResponseMessage {
@@ -143,7 +135,10 @@ impl ResponseMessage {
 
     /// Did an error occur?
     pub fn is_err(&self) -> bool {
-        !self.is_ok()
+        match self.code {
+            ResponseCode::Success(_) => false,
+            _ => true,
+        }
     }
 
     /// Get the command being responded to
