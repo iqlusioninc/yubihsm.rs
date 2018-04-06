@@ -3,7 +3,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: tarcieri/rust-yubihsm-sdk:20180312
+      - image: iqlusion/rust-ci:201804050 # bump cache keys when modifying this
     environment:
       # NOTE: RUST_NIGHTLY_VERSION is set in the Dockerfile
       - RUSTFLAGS=-C target-feature=+aes
@@ -11,8 +11,7 @@ jobs:
     steps:
       - checkout
       - restore_cache:
-          # Bump this (and below) whenever the Docker image is updated
-          key: cache-20180312
+          key: cache-201804050 # bump save_cache key below too
       - run:
           name: rustfmt
           command: |
@@ -24,24 +23,23 @@ jobs:
             rustup run $RUST_NIGHTLY_VERSION cargo clippy --version
             rustup run $RUST_NIGHTLY_VERSION cargo clippy --features=mockhsm
       - run:
-          name: build --no-default-features (nightly-2018-03-05)
+          name: build --no-default-features (nightly-2018-04-05)
           command: |
             rustup run $RUST_NIGHTLY_VERSION rustc --version
             rustup run $RUST_NIGHTLY_VERSION cargo --version
             rustup run $RUST_NIGHTLY_VERSION cargo build --no-default-features
       - run:
-          name: build (nightly-2018-03-05)
+          name: build (nightly-2018-04-05)
           command: |
             rustup run $RUST_NIGHTLY_VERSION rustc --version
             rustup run $RUST_NIGHTLY_VERSION cargo --version
             rustup run $RUST_NIGHTLY_VERSION cargo build
       - run:
-          name: test (nightly-2018-03-05)
+          name: test (nightly-2018-04-05)
           command: |
             rustup run $RUST_NIGHTLY_VERSION cargo test --features=mockhsm
       - save_cache:
-          # Bump this (and above) whenever the Docker image is updated
-          key: cache-20180312
+          key: cache-201804050 # bump restore_cache key above too
           paths:
             - "~/.cargo"
             - "./target"
