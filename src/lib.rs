@@ -28,12 +28,8 @@
 //! use yubihsm::Session;
 //!
 //! // Default host, port, auth key ID, and password for yubihsm-connector
-//! let mut session = Session::create_from_password(
-//!     "http://127.0.0.1:12345",
-//!     1,
-//!     "password",
-//!     true
-//! ).unwrap();
+//! let mut session =
+//!     Session::create_from_password(Default::default(), 1, "password", true).unwrap();
 //!
 //! // Note: You'll need to create this key first. Run the following from yubihsm-shell:
 //! // `generate asymmetric 0 100 ed25519_test_key 1 asymmetric_sign_eddsa ed25519`
@@ -65,14 +61,13 @@ extern crate failure_derive;
 extern crate hmac;
 extern crate pbkdf2;
 extern crate rand;
-#[cfg(feature = "reqwest-connector")]
-extern crate reqwest;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 extern crate sha2;
 #[cfg(feature = "bench")]
 extern crate test;
+extern crate uuid;
 
 #[macro_use]
 mod macros;
@@ -94,7 +89,7 @@ pub mod session;
 
 pub use algorithm::Algorithm;
 pub use capabilities::Capabilities;
-pub use connector::{Connector, DefaultConnector};
+pub use connector::{Connector, HttpConnector};
 pub use domains::Domains;
 pub use object::Id as ObjectId;
 pub use object::Label as ObjectLabel;

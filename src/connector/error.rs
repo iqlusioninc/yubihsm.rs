@@ -5,7 +5,10 @@
 pub enum ConnectorError {
     /// URL provided for yubihsm-connector is not valid
     #[fail(display = "invalid URL")]
-    InvalidURL,
+    InvalidURL {
+        /// Description of why the connection failed
+        description: String,
+    },
 
     /// Connection to yubihsm-connector failed
     #[fail(display = "connection failed: {}", description)]

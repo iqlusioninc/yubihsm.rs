@@ -4,7 +4,9 @@
 //! To enable, make sure to build yubihsm.rs with the "mockhsm" feature
 
 use failure::Error;
+use std::fmt;
 use std::sync::{Arc, Mutex};
+use uuid::Uuid;
 
 mod objects;
 mod state;
@@ -44,9 +46,21 @@ impl Default for MockHSM {
     }
 }
 
+/// Fake config
+#[derive(Debug, Default)]
+pub struct MockConfig;
+
+impl fmt::Display for MockConfig {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "(nothing to see here)")
+    }
+}
+
 impl Connector for MockHSM {
+    type Config = MockConfig;
+
     /// We don't bother to implement this
-    fn open(_url: &str) -> Result<Self, Error> {
+    fn open(_config: MockConfig) -> Result<Self, Error> {
         panic!("use MockHSM::create_session() to open a MockHSM session");
     }
 
@@ -61,7 +75,7 @@ impl Connector for MockHSM {
     }
 
     /// POST /connector/api with a given command message and return the response message
-    fn send_command(&self, body: Vec<u8>) -> Result<Vec<u8>, Error> {
+    fn send_command(&self, _uuid: Uuid, body: Vec<u8>) -> Result<Vec<u8>, Error> {
         let command = CommandMessage::parse(body).unwrap();
         let mut state = self.state.lock().unwrap();
 
