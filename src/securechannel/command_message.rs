@@ -10,12 +10,17 @@ use byteorder::{BigEndian, WriteBytesExt};
 #[cfg(feature = "mockhsm")]
 use byteorder::ByteOrder;
 use failure::Error;
+use uuid::Uuid;
+
 use super::{Mac, SecureChannelError, SessionId, MAC_SIZE, MAX_MSG_SIZE};
 
 /// A command sent from the host to the `YubiHSM2`. May or may not be
 /// authenticated using SCP03's chained/evolving MAC protocol.
 #[derive(Debug)]
 pub(crate) struct CommandMessage {
+    /// UUID which uniquely identifies this command
+    pub uuid: Uuid,
+
     /// Type of command to be invoked
     pub command_type: CommandType,
 
@@ -44,6 +49,7 @@ impl CommandMessage {
         );
 
         Ok(Self {
+            uuid: Uuid::new_v4(),
             command_type,
             session_id: None,
             data: command_data_vec,
@@ -71,6 +77,7 @@ impl CommandMessage {
         );
 
         Ok(Self {
+            uuid: Uuid::new_v4(),
             command_type,
             session_id: Some(session_id),
             data: command_data_vec,
@@ -133,6 +140,7 @@ impl CommandMessage {
         };
 
         Ok(Self {
+            uuid: Uuid::new_v4(),
             command_type,
             session_id,
             data: bytes,

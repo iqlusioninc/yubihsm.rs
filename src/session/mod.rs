@@ -7,8 +7,7 @@ mod error;
 use failure::Error;
 
 use commands::*;
-use connector::{Connector, DefaultConnector};
-use connector::Status as ConnectorStatus;
+use connector::{Connector, HttpConfig, HttpConnector, Status as ConnectorStatus};
 use responses::*;
 use securechannel::{Challenge, Channel, CommandMessage, ResponseCode, ResponseMessage, StaticKeys};
 use serializers::deserialize;
@@ -26,8 +25,9 @@ const CONNECTOR_STATUS_OK: &str = "OK";
 
 /// Encrypted session with the `YubiHSM2`
 ///
-/// Generic over connector types in case a different one needs to be swapped in
-pub struct Session<C = DefaultConnector>
+/// Generic over connector types in case a different one needs to be swapped
+/// in, which is primarily useful for substituting the `MockHSM`.
+pub struct Session<C = HttpConnector>
 where
     C: Connector,
 {
@@ -46,23 +46,29 @@ where
     static_keys: Option<StaticKeys>,
 }
 
-/// Methods which are only available on the default connector
-impl Session<DefaultConnector> {
+// Special casing these for HttpConnector is a bit of a hack in that default
+// generics and static methods do not play well together, e.g.
+//
+// error[E0283]: type annotations required: cannot resolve `yubihsm::Connector`
+//
+// So we special case these for HttpConnector to make the API more ergonomic
+impl Session<HttpConnector> {
     /// Open a new session to the HSM, authenticating with the given keypair
     pub fn create(
-        connector_url: &str,
+        connector_config: HttpConfig,
         auth_key_id: ObjectId,
         static_keys: StaticKeys,
         reconnect: bool,
     ) -> Result<Self, Error> {
-        let connector = DefaultConnector::open(connector_url)?;
+        let connector_info = connector_config.to_string();
+        let connector = HttpConnector::open(connector_config)?;
         let status = connector.status()?;
 
         if status.message != CONNECTOR_STATUS_OK {
             fail!(
                 SessionError::CreateFailed,
                 "bad status response from {}: {}",
-                connector_url,
+                connector_info,
                 status.message
             );
         }
@@ -72,13 +78,13 @@ impl Session<DefaultConnector> {
 
     /// Open a new session to the HSM, authenticating with a given password
     pub fn create_from_password(
-        connector_url: &str,
+        connector_config: HttpConfig,
         auth_key_id: ObjectId,
         password: &str,
         reconnect: bool,
     ) -> Result<Self, Error> {
         Self::create(
-            connector_url,
+            connector_config,
             auth_key_id,
             StaticKeys::derive_from_password(password.as_bytes(), PBKDF2_SALT, PBKDF2_ITERATIONS),
             reconnect,
@@ -102,8 +108,9 @@ impl<C: Connector> Session<C> {
             host_challenge,
         }.into();
 
-        let response_message =
-            ResponseMessage::parse(connector.send_command(command_message.into())?)?;
+        let uuid = command_message.uuid;
+        let response_body = connector.send_command(uuid, command_message.into())?;
+        let response_message = ResponseMessage::parse(response_body)?;
 
         if response_message.is_err() {
             fail!(
@@ -260,9 +267,10 @@ impl<C: Connector> Session<C> {
     /// POST /connector/api with a given command message
     fn send_command(&mut self, cmd: CommandMessage) -> Result<ResponseMessage, Error> {
         let cmd_type = cmd.command_type;
+        let uuid = cmd.uuid;
 
         // TODO: handle reconnecting when sessions are lost
-        let response_bytes = self.connector.send_command(cmd.into())?;
+        let response_bytes = self.connector.send_command(uuid, cmd.into())?;
         let response = ResponseMessage::parse(response_bytes)?;
 
         if response.is_err() {
