@@ -1,3 +1,10 @@
+## [0.8.0] (2018-04-12)
+
+[0.8.0]: https://github.com/tendermint/yubihsm-rs/compare/v0.7.3...v0.8.0
+
+* [#36](https://github.com/tendermint/yubihsm-rs/pull/36)
+  Integrated HttpConnector.
+
 ## [0.7.3] (2018-04-05)
 
 [0.7.3]: https://github.com/tendermint/yubihsm-rs/compare/v0.7.2...v0.7.3
