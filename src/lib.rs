@@ -89,7 +89,7 @@ pub mod session;
 
 pub use algorithm::Algorithm;
 pub use capabilities::Capabilities;
-pub use connector::{Connector, HttpConnector};
+pub use connector::{Connector, HttpConfig, HttpConnector};
 pub use domains::Domains;
 pub use object::Id as ObjectId;
 pub use object::Label as ObjectLabel;
