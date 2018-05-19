@@ -1,7 +1,5 @@
 //! Status responses from yubihsm-connector
 
-use failure::Error;
-
 use super::ConnectorError;
 
 /// Status response from yubihsm-connector containing information about its
@@ -24,7 +22,7 @@ pub struct Status {
 
 impl Status {
     /// Parse the yubihsm-connector status response into a status struct
-    pub fn parse(response_body: &str) -> Result<Self, Error> {
+    pub fn parse(response_body: &str) -> Result<Self, ConnectorError> {
         let mut response_message: Option<&str> = None;
         let mut response_serial: Option<&str> = None;
         let mut response_version: Option<&str> = None;
@@ -39,18 +37,14 @@ impl Status {
 
             let key = fields
                 .next()
-                .ok_or_else(|| err!(ConnectorError::ResponseError, "couldn't parse key"))?;
+                .ok_or_else(|| connector_err!(ResponseError, "couldn't parse key"))?;
 
             let value = fields
                 .next()
-                .ok_or_else(|| err!(ConnectorError::ResponseError, "couldn't parse value"))?;
+                .ok_or_else(|| connector_err!(ResponseError, "couldn't parse value"))?;
 
             if let Some(remaining) = fields.next() {
-                fail!(
-                    ConnectorError::ResponseError,
-                    "unexpected additional data: {}",
-                    remaining
-                )
+                connector_fail!(ResponseError, "unexpected additional data: {}", remaining)
             }
 
             match key {
@@ -63,29 +57,23 @@ impl Status {
         }
 
         let message = response_message
-            .ok_or_else(|| err!(ConnectorError::ResponseError, "missing status"))?
+            .ok_or_else(|| connector_err!(ResponseError, "missing status"))?
             .to_owned();
 
         let serial = match response_serial {
             Some("*") => None,
             Some(s) => Some(s.to_owned()),
-            None => fail!(ConnectorError::ResponseError, "missing serial"),
+            None => connector_fail!(ResponseError, "missing serial"),
         };
 
         let version = response_version
-            .ok_or_else(|| err!(ConnectorError::ResponseError, "missing version"))?
+            .ok_or_else(|| connector_err!(ResponseError, "missing version"))?
             .to_owned();
 
         let pid = response_pid
-            .ok_or_else(|| err!(ConnectorError::ResponseError, "missing PID"))?
+            .ok_or_else(|| connector_err!(ResponseError, "missing PID"))?
             .parse()
-            .map_err(|_| {
-                err!(
-                    ConnectorError::ResponseError,
-                    "invalid PID: {}",
-                    response_pid.unwrap()
-                )
-            })?;
+            .map_err(|_| connector_err!(ResponseError, "invalid PID: {}", response_pid.unwrap()))?;
 
         Ok(Self {
             message,

@@ -1,8 +1,3 @@
-//! Objects stored in the `YubiHSM2`
-//!
-//! For more information, see:
-//! <https://developers.yubico.com/YubiHSM2/Concepts/Object.html>
-
 use std::{fmt, str};
 use std::ops::{Deref, DerefMut};
 

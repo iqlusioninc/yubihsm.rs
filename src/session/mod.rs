@@ -1,10 +1,5 @@
-//! `YubiHSM2` sessions: primary API for performing HSM operations
-//!
-//! See <https://developers.yubico.com/YubiHSM2/Concepts/Session.html>
-
+#[macro_use]
 mod error;
-
-use failure::Error;
 
 use commands::*;
 use connector::{Connector, HttpConfig, HttpConnector, Status as ConnectorStatus};
@@ -12,7 +7,7 @@ use responses::*;
 use securechannel::{Challenge, Channel, CommandMessage, ResponseCode, ResponseMessage, StaticKeys};
 use serializers::deserialize;
 use super::{Algorithm, Capabilities, Domains, ObjectId, ObjectLabel, ObjectType, SessionId};
-pub use self::error::SessionError;
+pub use self::error::{SessionError, SessionErrorKind};
 
 /// Salt value to use with PBKDF2 when deriving static keys from a password
 pub const PBKDF2_SALT: &[u8] = b"Yubico";
@@ -59,14 +54,14 @@ impl Session<HttpConnector> {
         auth_key_id: ObjectId,
         static_keys: StaticKeys,
         reconnect: bool,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self, SessionError> {
         let connector_info = connector_config.to_string();
         let connector = HttpConnector::open(connector_config)?;
         let status = connector.status()?;
 
         if status.message != CONNECTOR_STATUS_OK {
-            fail!(
-                SessionError::CreateFailed,
+            session_fail!(
+                CreateFailed,
                 "bad status response from {}: {}",
                 connector_info,
                 status.message
@@ -82,7 +77,7 @@ impl Session<HttpConnector> {
         auth_key_id: ObjectId,
         password: &str,
         reconnect: bool,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self, SessionError> {
         Self::create(
             connector_config,
             auth_key_id,
@@ -100,7 +95,7 @@ impl<C: Connector> Session<C> {
         auth_key_id: ObjectId,
         static_keys: StaticKeys,
         reconnect: bool,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self, SessionError> {
         let host_challenge = Challenge::random();
 
         let command_message: CommandMessage = CreateSessionCommand {
@@ -113,16 +108,12 @@ impl<C: Connector> Session<C> {
         let response_message = ResponseMessage::parse(response_body)?;
 
         if response_message.is_err() {
-            fail!(
-                SessionError::ResponseError,
-                "HSM error: {:?}",
-                response_message.code
-            );
+            session_fail!(ResponseError, "HSM error: {:?}", response_message.code);
         }
 
         if response_message.command().unwrap() != CommandType::CreateSession {
-            fail!(
-                SessionError::ProtocolError,
+            session_fail!(
+                ProtocolError,
                 "command type mismatch: expected {:?}, got {:?}",
                 CommandType::CreateSession,
                 response_message.command().unwrap()
@@ -131,7 +122,7 @@ impl<C: Connector> Session<C> {
 
         let session_id = response_message
             .session_id
-            .ok_or_else(|| err!(SessionError::CreateFailed, "no session ID in response"))?;
+            .ok_or_else(|| session_err!(CreateFailed, "no session ID in response"))?;
 
         let response: CreateSessionResponse = deserialize(response_message.data.as_ref())?;
 
@@ -144,7 +135,7 @@ impl<C: Connector> Session<C> {
 
         // NOTE: Cryptogram implements constant-time equality comparison
         if channel.card_cryptogram() != response.card_cryptogram {
-            fail!(SessionError::AuthFailed, "card cryptogram mismatch!");
+            session_fail!(AuthFailed, "card cryptogram mismatch!");
         }
 
         let static_keys_option = if reconnect { Some(static_keys) } else { None };
@@ -162,12 +153,12 @@ impl<C: Connector> Session<C> {
 
     /// Request current yubihsm-connector status
     #[inline]
-    pub fn connector_status(&mut self) -> Result<ConnectorStatus, Error> {
-        self.connector.status()
+    pub fn connector_status(&mut self) -> Result<ConnectorStatus, SessionError> {
+        self.connector.status().map_err(|e| e.into())
     }
 
     /// Blink the YubiHSM2's LEDs (to identify it) for the given number of seconds
-    pub fn blink(&mut self, num_seconds: u8) -> Result<BlinkResponse, Error> {
+    pub fn blink(&mut self, num_seconds: u8) -> Result<BlinkResponse, SessionError> {
         self.send_encrypted_command(BlinkCommand { num_seconds })
     }
 
@@ -176,7 +167,7 @@ impl<C: Connector> Session<C> {
         &mut self,
         object_id: ObjectId,
         object_type: ObjectType,
-    ) -> Result<DeleteObjectResponse, Error> {
+    ) -> Result<DeleteObjectResponse, SessionError> {
         self.send_encrypted_command(DeleteObjectCommand {
             object_id,
             object_type,
@@ -184,7 +175,7 @@ impl<C: Connector> Session<C> {
     }
 
     /// Have the card echo an input message
-    pub fn echo<T>(&mut self, message: T) -> Result<EchoResponse, Error>
+    pub fn echo<T>(&mut self, message: T) -> Result<EchoResponse, SessionError>
     where
         T: Into<Vec<u8>>,
     {
@@ -201,7 +192,7 @@ impl<C: Connector> Session<C> {
         domains: Domains,
         capabilities: Capabilities,
         algorithm: Algorithm,
-    ) -> Result<GenAsymmetricKeyResponse, Error> {
+    ) -> Result<GenAsymmetricKeyResponse, SessionError> {
         self.send_encrypted_command(GenAsymmetricKeyCommand {
             key_id,
             label,
@@ -216,7 +207,7 @@ impl<C: Connector> Session<C> {
         &mut self,
         object_id: ObjectId,
         object_type: ObjectType,
-    ) -> Result<GetObjectInfoResponse, Error> {
+    ) -> Result<GetObjectInfoResponse, SessionError> {
         self.send_encrypted_command(GetObjectInfoCommand {
             object_id,
             object_type,
@@ -226,7 +217,7 @@ impl<C: Connector> Session<C> {
     /// Get the public key for an asymmetric key stored on the device
     ///
     /// See `GetPubKeyResponse` for more information about public key formats
-    pub fn get_pubkey(&mut self, key_id: ObjectId) -> Result<GetPubKeyResponse, Error> {
+    pub fn get_pubkey(&mut self, key_id: ObjectId) -> Result<GetPubKeyResponse, SessionError> {
         self.send_encrypted_command(GetPubKeyCommand { key_id })
     }
 
@@ -236,7 +227,7 @@ impl<C: Connector> Session<C> {
     }
 
     /// List objects visible from the current session
-    pub fn list_objects(&mut self) -> Result<ListObjectsResponse, Error> {
+    pub fn list_objects(&mut self) -> Result<ListObjectsResponse, SessionError> {
         // TODO: support for filtering objects
         self.send_encrypted_command(ListObjectsCommand {})
     }
@@ -246,7 +237,7 @@ impl<C: Connector> Session<C> {
         &mut self,
         key_id: ObjectId,
         data: T,
-    ) -> Result<SignDataEdDSAResponse, Error>
+    ) -> Result<SignDataEdDSAResponse, SessionError>
     where
         T: Into<Vec<u8>>,
     {
@@ -257,15 +248,17 @@ impl<C: Connector> Session<C> {
     }
 
     /// Authenticate the current session with the `YubiHSM2`
-    fn authenticate(&mut self) -> Result<(), Error> {
+    fn authenticate(&mut self) -> Result<(), SessionError> {
         let command = self.channel.authenticate_session()?;
         let response = self.send_command(command)?;
-        self.channel.finish_authenticate_session(&response)
+        self.channel
+            .finish_authenticate_session(&response)
+            .map_err(|e| e.into())
     }
 
     /// Send a command message to the YubiHSM2 and parse the response
     /// POST /connector/api with a given command message
-    fn send_command(&mut self, cmd: CommandMessage) -> Result<ResponseMessage, Error> {
+    fn send_command(&mut self, cmd: CommandMessage) -> Result<ResponseMessage, SessionError> {
         let cmd_type = cmd.command_type;
         let uuid = cmd.uuid;
 
@@ -274,16 +267,12 @@ impl<C: Connector> Session<C> {
         let response = ResponseMessage::parse(response_bytes)?;
 
         if response.is_err() {
-            fail!(
-                SessionError::ResponseError,
-                "HSM error: {:?}",
-                response.code
-            );
+            session_fail!(ResponseError, "HSM error: {:?}", response.code);
         }
 
         if response.command().unwrap() != cmd_type {
-            fail!(
-                SessionError::ProtocolError,
+            session_fail!(
+                ProtocolError,
                 "command type mismatch: expected {:?}, got {:?}",
                 cmd_type,
                 response.command().unwrap()
@@ -295,7 +284,10 @@ impl<C: Connector> Session<C> {
 
     /// Encrypt a command and send it to the card, then authenticate and
     /// decrypt the response
-    fn send_encrypted_command<T: Command>(&mut self, command: T) -> Result<T::ResponseType, Error> {
+    fn send_encrypted_command<T: Command>(
+        &mut self,
+        command: T,
+    ) -> Result<T::ResponseType, SessionError> {
         let plaintext_cmd = command.into();
         let encrypted_cmd = self.channel.encrypt_command(plaintext_cmd)?;
 
@@ -309,18 +301,18 @@ impl<C: Connector> Session<C> {
                 other => format!("{:?}", other),
             };
 
-            fail!(SessionError::ResponseError, description);
+            session_fail!(ResponseError, description);
         }
 
         if response.command().unwrap() != T::COMMAND_TYPE {
-            fail!(
-                SessionError::ResponseError,
+            session_fail!(
+                ResponseError,
                 "command type mismatch: expected {:?}, got {:?}",
                 T::COMMAND_TYPE,
                 response.command().unwrap()
             );
         }
 
-        deserialize(response.data.as_ref())
+        deserialize(response.data.as_ref()).map_err(|e| e.into())
     }
 }

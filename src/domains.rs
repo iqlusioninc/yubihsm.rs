@@ -1,6 +1,3 @@
-//! Logical partitions within the `YubiHSM2`, allowing several applications to
-//! share the device concurrently
-
 // Apparently bitflags isn't clippy-safe
 #![allow(unknown_lints, redundant_field_names, suspicious_arithmetic_impl, missing_docs)]
 

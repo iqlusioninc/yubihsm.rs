@@ -1,9 +1,3 @@
-//! Software simulation of the `YubiHSM2` for integration testing,
-//! implemented as a `yubihsm::Connector` (skipping HTTP transport)
-//!
-//! To enable, make sure to build yubihsm.rs with the "mockhsm" feature
-
-use failure::Error;
 use std::fmt;
 use std::sync::{Arc, Mutex};
 use uuid::Uuid;
@@ -11,13 +5,16 @@ use uuid::Uuid;
 mod objects;
 mod state;
 
-use connector::{Connector, Status};
+use connector::{Connector, ConnectorError, Status};
 use securechannel::{CommandMessage, CommandType};
-use session::{PBKDF2_ITERATIONS, PBKDF2_SALT, Session};
+use session::{PBKDF2_ITERATIONS, PBKDF2_SALT, Session, SessionError};
 use super::{ObjectId, StaticKeys};
 use self::state::State;
 
 /// Software simulation of a `YubiHSM2` intended for testing
+/// implemented as a `yubihsm::Connector` (skipping HTTP transport)
+///
+/// To enable, make sure to build yubihsm.rs with the "mockhsm" feature
 pub struct MockHSM {
     state: Arc<Mutex<State>>,
 }
@@ -31,7 +28,10 @@ impl MockHSM {
     }
 
     /// Create a simulated session with a MockHSM
-    pub fn create_session(auth_key_id: ObjectId, password: &str) -> Result<Session<Self>, Error> {
+    pub fn create_session(
+        auth_key_id: ObjectId,
+        password: &str,
+    ) -> Result<Session<Self>, SessionError> {
         let mockhsm = Self::default();
         let static_keys =
             StaticKeys::derive_from_password(password.as_bytes(), PBKDF2_SALT, PBKDF2_ITERATIONS);
@@ -60,12 +60,12 @@ impl Connector for MockHSM {
     type Config = MockConfig;
 
     /// We don't bother to implement this
-    fn open(_config: MockConfig) -> Result<Self, Error> {
+    fn open(_config: MockConfig) -> Result<Self, ConnectorError> {
         panic!("use MockHSM::create_session() to open a MockHSM session");
     }
 
     /// GET /connector/status returning the result as connector::Status
-    fn status(&self) -> Result<Status, Error> {
+    fn status(&self) -> Result<Status, ConnectorError> {
         Ok(Status {
             message: "OK".to_owned(),
             serial: None,
@@ -75,7 +75,7 @@ impl Connector for MockHSM {
     }
 
     /// POST /connector/api with a given command message and return the response message
-    fn send_command(&self, _uuid: Uuid, body: Vec<u8>) -> Result<Vec<u8>, Error> {
+    fn send_command(&self, _uuid: Uuid, body: Vec<u8>) -> Result<Vec<u8>, ConnectorError> {
         let command = CommandMessage::parse(body).unwrap();
         let mut state = self.state.lock().unwrap();
 

@@ -3,7 +3,6 @@
 use byteorder::{BigEndian, ByteOrder};
 #[cfg(feature = "mockhsm")]
 use byteorder::WriteBytesExt;
-use failure::Error;
 use super::{CommandType, Mac, SecureChannelError, SessionId, MAC_SIZE};
 
 /// Command responses
@@ -24,10 +23,10 @@ pub struct ResponseMessage {
 
 impl ResponseMessage {
     /// Parse a response into a Response struct
-    pub fn parse(mut bytes: Vec<u8>) -> Result<Self, Error> {
+    pub fn parse(mut bytes: Vec<u8>) -> Result<Self, SecureChannelError> {
         if bytes.len() < 3 {
-            fail!(
-                SecureChannelError::ProtocolError,
+            secure_channel_fail!(
+                ProtocolError,
                 "response too short: {} (expected at least 3-bytes)",
                 bytes.len()
             );
@@ -37,8 +36,8 @@ impl ResponseMessage {
         let length = BigEndian::read_u16(&bytes[1..3]) as usize;
 
         if length + 3 != bytes.len() {
-            fail!(
-                SecureChannelError::ProtocolError,
+            secure_channel_fail!(
+                ProtocolError,
                 "unexpected response length {} (expecting {})",
                 bytes.len() - 3,
                 length
@@ -49,8 +48,8 @@ impl ResponseMessage {
 
         let session_id = if code.has_session_id() {
             if bytes.is_empty() {
-                fail!(
-                    SecureChannelError::ProtocolError,
+                secure_channel_fail!(
+                    ProtocolError,
                     "expected session ID but response data is empty"
                 );
             }
@@ -62,8 +61,8 @@ impl ResponseMessage {
 
         let mac = if code.has_rmac() {
             if bytes.len() < MAC_SIZE {
-                fail!(
-                    SecureChannelError::ProtocolError,
+                secure_channel_fail!(
+                    ProtocolError,
                     "expected R-MAC for {:?} but response data is too short: {}",
                     code,
                     bytes.len(),
@@ -224,7 +223,7 @@ pub enum ResponseCode {
 
 impl ResponseCode {
     /// Convert an unsigned byte into a ResponseCode (if valid)
-    pub fn from_u8(byte: u8) -> Result<Self, Error> {
+    pub fn from_u8(byte: u8) -> Result<Self, SecureChannelError> {
         let code = (i16::from(byte) - 0x80) as i8;
 
         if code >= 0 {
@@ -262,11 +261,7 @@ impl ResponseCode {
             -27 => ResponseCode::GenericError,
             -28 => ResponseCode::DeviceObjectExists,
             -29 => ResponseCode::ConnectorError,
-            _ => fail!(
-                SecureChannelError::ProtocolError,
-                "invalid response code: {}",
-                code
-            ),
+            _ => secure_channel_fail!(ProtocolError, "invalid response code: {}", code),
         })
     }
 

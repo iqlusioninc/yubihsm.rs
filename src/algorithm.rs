@@ -1,5 +1,3 @@
-//! Cryptographic algorithms supported by the `YubiHSM2`
-
 use std::fmt;
 
 use failure::Error;

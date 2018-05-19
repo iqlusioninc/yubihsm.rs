@@ -72,19 +72,50 @@ extern crate uuid;
 #[macro_use]
 mod macros;
 
+/// Error types
+pub mod error;
+
+/// Cryptographic algorithms supported by the `YubiHSM2`
 pub mod algorithm;
+
+/// Benchmarks
 #[cfg(feature = "bench")]
 mod bench;
+
+/// Object attributes specifying which operations are allowed to be performed
 pub mod capabilities;
+
+/// Command (i.e. request) structs for `YubiHSM` commands
 mod commands;
+
+/// Client for the `yubihsm-connector` service
 pub mod connector;
+
+/// Logical partitions within the `YubiHSM`, allowing several applications to share the device
 pub mod domains;
 #[cfg(feature = "mockhsm")]
+
+/// Software simulation of the `YubiHSM2` for integration testing,
 pub mod mockhsm;
+
+/// Objects stored in the `YubiHSM2`
+///
+/// For more information, see:
+/// <https://developers.yubico.com/YubiHSM2/Concepts/Object.html>
 pub mod object;
+
+/// Responses to commands sent from the HSM
 pub mod responses;
+
+/// Encrypted communication channel to the YubiHSM hardware
 mod securechannel;
+
+/// Serde-powered serializers for the `YubiHSM` wire format
 mod serializers;
+
+/// `YubiHSM2` sessions: primary API for performing HSM operations
+///
+/// See <https://developers.yubico.com/YubiHSM2/Concepts/Session.html>
 pub mod session;
 
 pub use algorithm::Algorithm;
