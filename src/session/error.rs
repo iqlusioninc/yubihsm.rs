@@ -1,33 +1,73 @@
 //! Errors that occur during sessions
 
-/// Session-related errors
-#[derive(Debug, Fail)]
-pub enum SessionError {
+use error::Error;
+use connector::ConnectorError;
+use securechannel::SecureChannelError;
+use serializers::SerializationError;
+
+/// Session errors
+pub type SessionError = Error<SessionErrorKind>;
+
+/// Session error kinds
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
+pub enum SessionErrorKind {
     /// Couldn't create session
-    #[fail(display = "couldn't create session: {}", description)]
-    CreateFailed {
-        /// Description of why we couldn't create the session
-        description: String,
-    },
+    #[fail(display = "couldn't create session")]
+    CreateFailed,
 
     /// Couldn't authenticate session
-    #[fail(display = "authentication failed: {}", description)]
-    AuthFailed {
-        /// Details about the authentication failure
-        description: String,
-    },
+    #[fail(display = "authentication failed")]
+    AuthFailed,
 
     /// Protocol error occurred
-    #[fail(display = "protocol error: {}", description)]
-    ProtocolError {
-        /// Details about the protocol error
-        description: String,
-    },
+    #[fail(display = "protocol error")]
+    ProtocolError,
 
     /// HSM returned an error response
-    #[fail(display = "error response from HSM: {}", description)]
-    ResponseError {
-        /// Description of the bad response we received
-        description: String,
-    },
+    #[fail(display = "bad HSM response")]
+    ResponseError,
+}
+
+/// Create a new Session error with a formatted message
+macro_rules! session_err {
+    ($kind:ident, $msg:expr) => {
+        ::session::SessionError::new(
+            ::session::SessionErrorKind::$kind,
+            Some($msg.to_owned())
+        )
+    };
+    ($kind:ident, $fmt:expr, $($arg:tt)+) => {
+        ::session::SessionError::new(
+            SessionErrorKind::$kind,
+            Some(format!($fmt, $($arg)+))
+        )
+    };
+}
+
+/// Create and return a Session error with a formatted message
+macro_rules! session_fail {
+    ($kind:ident, $msg:expr) => {
+        return Err(session_err!($kind, $msg).into());
+    };
+    ($kind:ident, $fmt:expr, $($arg:tt)+) => {
+        return Err(session_err!($kind, $fmt, $($arg)+).into());
+    };
+}
+
+impl From<ConnectorError> for SessionError {
+    fn from(err: ConnectorError) -> Self {
+        session_err!(ResponseError, err.to_string())
+    }
+}
+
+impl From<SecureChannelError> for SessionError {
+    fn from(err: SecureChannelError) -> Self {
+        session_err!(ProtocolError, err.to_string())
+    }
+}
+
+impl From<SerializationError> for SessionError {
+    fn from(err: SerializationError) -> Self {
+        session_err!(ProtocolError, err.to_string())
+    }
 }

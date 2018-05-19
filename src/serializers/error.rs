@@ -1,68 +1,57 @@
-use std::error::Error as StdError;
+use serde;
 use std::{fmt, io};
 
-use serde;
+use error::Error;
 
 /// Serialization errors
-// TODO: use failure and the Fail trait (presently having trait bounds issues)
-#[derive(Debug)]
-pub enum SerializationError {
+pub type SerializationError = Error<SerializationErrorKind>;
+
+/// Serialization errors
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
+pub enum SerializationErrorKind {
     /// Input/output errors
-    Io { cause: io::Error },
+    #[fail(display = "I/O error")]
+    Io,
 
     /// Errors that occurred during Serde parsing
-    Parse {
-        /// Description of the parse error
-        description: String,
-    },
+    #[fail(display = "parse error")]
+    Parse,
 
-    /// Unexpected end-of-file
-    UnexpectedEof {
-        /// Description of the error
-        description: String,
-    },
+    /// Unexpected end-of-buffer/file
+    #[fail(display = "unexpected end of buffer")]
+    UnexpectedEof,
 }
 
-impl fmt::Display for SerializationError {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            SerializationError::Io { ref cause } => write!(fmt, "{:?}", cause),
-            SerializationError::Parse { ref description }
-            | SerializationError::UnexpectedEof { ref description } => {
-                write!(fmt, "{}", description)
-            }
-        }
-    }
-}
-
-impl StdError for SerializationError {
-    fn description(&self) -> &str {
-        match *self {
-            SerializationError::Io { .. } => "I/O error",
-            SerializationError::Parse { .. } => "parse error",
-            SerializationError::UnexpectedEof { .. } => "unexpected end-of-buffer",
-        }
-    }
-
-    fn cause(&self) -> Option<&StdError> {
-        None
-    }
-}
-
-impl From<io::Error> for SerializationError {
-    fn from(ioerror: io::Error) -> Self {
-        SerializationError::Io { cause: ioerror }
-    }
+/// Create a new serialization error with a formatted message
+macro_rules! serialization_err {
+    ($kind:ident, $msg:expr) => {
+        SerializationError::new(
+            ::serializers::SerializationErrorKind::$kind,
+            Some($msg.to_owned())
+        )
+    };
+    ($kind:ident, $fmt:expr, $($arg:tt)+) => {
+        SerializationError::new(
+            ::serializers::SerializationErrorKind::$kind,
+            Some(format!($fmt, $($arg)+))
+        )
+    };
 }
 
 impl serde::ser::Error for SerializationError {
     fn custom<T: fmt::Display>(msg: T) -> Self {
-        err!(SerializationError::Parse, msg.to_string())
+        serialization_err!(Parse, msg.to_string())
     }
 }
 
 impl serde::de::Error for SerializationError {
     fn custom<T: fmt::Display>(msg: T) -> Self {
-        err!(SerializationError::Parse, msg.to_string())
+        serialization_err!(Parse, msg.to_string())
+    }
+}
+
+impl From<io::Error> for SerializationError {
+    fn from(err: io::Error) -> Self {
+        serialization_err!(Io, err.to_string())
     }
 }

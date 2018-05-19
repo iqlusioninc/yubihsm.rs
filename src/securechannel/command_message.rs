@@ -9,7 +9,6 @@
 use byteorder::{BigEndian, WriteBytesExt};
 #[cfg(feature = "mockhsm")]
 use byteorder::ByteOrder;
-use failure::Error;
 use uuid::Uuid;
 
 use super::{Mac, SecureChannelError, SessionId, MAC_SIZE, MAX_MSG_SIZE};
@@ -36,13 +35,15 @@ pub(crate) struct CommandMessage {
 
 impl CommandMessage {
     /// Create a new command message without a MAC
-    pub fn new<T>(command_type: CommandType, command_data: T) -> Result<Self, Error>
+    pub fn new<T>(command_type: CommandType, command_data: T) -> Result<Self, SecureChannelError>
     where
         T: Into<Vec<u8>>,
     {
         let command_data_vec: Vec<u8> = command_data.into();
-        ensure!(
+
+        secure_channel_ensure!(
             command_data_vec.len() <= MAX_MSG_SIZE,
+            ProtocolError,
             "command data too long: {} bytes (max {})",
             command_data_vec.len(),
             MAX_MSG_SIZE
@@ -63,14 +64,16 @@ impl CommandMessage {
         session_id: SessionId,
         command_data: D,
         mac: M,
-    ) -> Result<Self, Error>
+    ) -> Result<Self, SecureChannelError>
     where
         D: Into<Vec<u8>>,
         M: Into<Mac>,
     {
         let command_data_vec: Vec<u8> = command_data.into();
-        ensure!(
+
+        secure_channel_ensure!(
             command_data_vec.len() <= MAX_MSG_SIZE,
+            ProtocolError,
             "command data too long: {} bytes (max {})",
             command_data_vec.len(),
             MAX_MSG_SIZE
@@ -87,10 +90,10 @@ impl CommandMessage {
 
     /// Parse a command structure from a vector, taking ownership of the vector
     #[cfg(feature = "mockhsm")]
-    pub fn parse(mut bytes: Vec<u8>) -> Result<Self, Error> {
+    pub fn parse(mut bytes: Vec<u8>) -> Result<Self, SecureChannelError> {
         if bytes.len() < 3 {
-            fail!(
-                SecureChannelError::ProtocolError,
+            secure_channel_fail!(
+                ProtocolError,
                 "command too short: {} (expected at least 3-bytes)",
                 bytes.len()
             );
@@ -100,8 +103,8 @@ impl CommandMessage {
         let length = BigEndian::read_u16(&bytes[1..3]) as usize;
 
         if length + 3 != bytes.len() {
-            fail!(
-                SecureChannelError::ProtocolError,
+            secure_channel_fail!(
+                ProtocolError,
                 "unexpected command length {} (expecting {})",
                 bytes.len() - 3,
                 length
@@ -112,8 +115,8 @@ impl CommandMessage {
 
         let session_id = if command_type.has_session_id() {
             if bytes.is_empty() {
-                fail!(
-                    SecureChannelError::ProtocolError,
+                secure_channel_fail!(
+                    ProtocolError,
                     "expected session ID but command data is empty"
                 );
             }
@@ -125,8 +128,8 @@ impl CommandMessage {
 
         let mac = if command_type.has_mac() {
             if bytes.len() < MAC_SIZE {
-                fail!(
-                    SecureChannelError::ProtocolError,
+                secure_channel_fail!(
+                    ProtocolError,
                     "expected MAC for {:?} but command data is too short: {}",
                     command_type,
                     bytes.len(),
@@ -245,7 +248,7 @@ pub enum CommandType {
 
 impl CommandType {
     /// Convert an unsigned byte into a CommandType (if valid)
-    pub fn from_u8(byte: u8) -> Result<Self, Error> {
+    pub fn from_u8(byte: u8) -> Result<Self, SecureChannelError> {
         Ok(match byte {
             0x00 => CommandType::Unknown,
             0x01 => CommandType::Echo,
@@ -300,11 +303,7 @@ impl CommandType {
             0x6a => CommandType::SignDataEdDSA,
             0x6b => CommandType::Blink,
             0x7f => CommandType::Error,
-            _ => fail!(
-                SecureChannelError::ProtocolError,
-                "invalid command type: {}",
-                byte
-            ),
+            _ => secure_channel_fail!(ProtocolError, "invalid command type: {}", byte),
         })
     }
 

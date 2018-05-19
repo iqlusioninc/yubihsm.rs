@@ -10,7 +10,6 @@ use clear_on_drop::clear::Clear;
 use cmac::crypto_mac::generic_array::GenericArray;
 use cmac::crypto_mac::generic_array::typenum::U16;
 use constant_time_eq::constant_time_eq;
-use failure::Error;
 use std::fmt;
 
 use super::SecureChannelError;
@@ -40,14 +39,14 @@ impl Mac {
     }
 
     /// Verify a 16-byte GenericArray against this MAC tag
-    pub fn verify<M>(&self, other: M) -> Result<(), Error>
+    pub fn verify<M>(&self, other: M) -> Result<(), SecureChannelError>
     where
         M: Into<Mac>,
     {
         let other_mac: Mac = other.into();
 
         if *self != other_mac {
-            fail!(SecureChannelError::VerifyFailed, "MAC mismatch!");
+            secure_channel_fail!(VerifyFailed, "MAC mismatch!");
         }
 
         Ok(())

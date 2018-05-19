@@ -1,12 +1,12 @@
 //! `MockHSM` presents a thread-safe API by locking interior mutable state,
 //! contained in the `State` struct defined in this module.
 
-use failure::Error;
 use sha2::Sha512;
 use std::collections::HashMap;
 
 use {Algorithm, ObjectId, ObjectType, SessionId};
 use commands::*;
+use connector::ConnectorError;
 use session::{PBKDF2_ITERATIONS, PBKDF2_SALT};
 use responses::*;
 use securechannel::{Challenge, Channel, CommandMessage, CommandType, ResponseMessage, StaticKeys};
@@ -41,7 +41,10 @@ impl State {
     }
 
     /// Create a new HSM session
-    pub fn create_session(&mut self, cmd_message: &CommandMessage) -> Result<Vec<u8>, Error> {
+    pub fn create_session(
+        &mut self,
+        cmd_message: &CommandMessage,
+    ) -> Result<Vec<u8>, ConnectorError> {
         let cmd: CreateSessionCommand = deserialize(cmd_message.data.as_ref())
             .unwrap_or_else(|e| panic!("error parsing CreateSession command data: {:?}", e));
 
@@ -80,7 +83,10 @@ impl State {
     }
 
     /// Authenticate an HSM session
-    pub fn authenticate_session(&mut self, command: &CommandMessage) -> Result<Vec<u8>, Error> {
+    pub fn authenticate_session(
+        &mut self,
+        command: &CommandMessage,
+    ) -> Result<Vec<u8>, ConnectorError> {
         let session_id = command
             .session_id
             .unwrap_or_else(|| panic!("no session ID in command: {:?}", command.command_type));
@@ -92,7 +98,10 @@ impl State {
     }
 
     /// Encrypted session messages
-    pub fn session_message(&mut self, encrypted_command: CommandMessage) -> Result<Vec<u8>, Error> {
+    pub fn session_message(
+        &mut self,
+        encrypted_command: CommandMessage,
+    ) -> Result<Vec<u8>, ConnectorError> {
         let session_id = encrypted_command.session_id.unwrap_or_else(|| {
             panic!(
                 "no session ID in command: {:?}",

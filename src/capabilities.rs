@@ -1,5 +1,3 @@
-//! Object attributes specifying which operations are allowed to be performed
-
 // Apparently bitflags isn't clippy-safe
 #![allow(unknown_lints, redundant_field_names, suspicious_arithmetic_impl)]
 

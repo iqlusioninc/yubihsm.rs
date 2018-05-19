@@ -1,7 +1,3 @@
-//! Command (i.e. request) structs for `YubiHSM2` commands
-//!
-//! <https://developers.yubico.com/YubiHSM2/Commands>
-
 use responses::Response;
 use securechannel::{CommandMessage, CommandType};
 use serde::ser::Serialize;
@@ -14,6 +10,8 @@ use responses::*;
 
 /// Structured commands (i.e. requests) which are encrypted and then sent to
 /// the HSM. Every command has a corresponding `ResponseType`.
+///
+/// See <https://developers.yubico.com/YubiHSM2/Commands>
 pub(crate) trait Command: Serialize + DeserializeOwned + Sized {
     /// Response type for this command
     type ResponseType: Response;

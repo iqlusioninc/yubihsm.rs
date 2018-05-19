@@ -1,14 +1,12 @@
-//! Client for yubihsm-connector
-
+#[macro_use]
 mod error;
 mod http_connector;
 mod status;
 
-use failure::Error;
 use std::fmt::{Debug, Display};
 use uuid::Uuid;
 
-pub use self::error::ConnectorError;
+pub use self::error::{ConnectorError, ConnectorErrorKind};
 pub use self::http_connector::{HttpConfig, HttpConnector};
 pub use self::status::Status;
 
@@ -21,11 +19,11 @@ pub trait Connector: Sized + Send + Sync {
     type Config: Debug + Default + Display;
 
     /// Open a connection to a yubihsm-connector
-    fn open(config: Self::Config) -> Result<Self, Error>;
+    fn open(config: Self::Config) -> Result<Self, ConnectorError>;
 
     /// GET /connector/status returning the result as connector::Status
-    fn status(&self) -> Result<Status, Error>;
+    fn status(&self) -> Result<Status, ConnectorError>;
 
     /// POST /connector/api with a given command message and return the response message
-    fn send_command(&self, uuid: Uuid, cmd: Vec<u8>) -> Result<Vec<u8>, Error>;
+    fn send_command(&self, uuid: Uuid, cmd: Vec<u8>) -> Result<Vec<u8>, ConnectorError>;
 }

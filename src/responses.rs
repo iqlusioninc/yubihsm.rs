@@ -1,6 +1,3 @@
-//! Responses to commands sent from the HSM, intended as part of the public
-//! API of this crate.
-
 pub use failure::Error;
 pub(crate) use securechannel::CommandType;
 #[cfg(feature = "mockhsm")]

@@ -20,12 +20,14 @@
 
 #![allow(unknown_lints, doc_markdown)]
 
+#[macro_use]
+mod error;
+
 mod challenge;
 mod channel;
 mod command_message;
 mod context;
 mod cryptogram;
-mod error;
 mod kdf;
 mod mac;
 mod response_message;
@@ -46,7 +48,7 @@ pub(crate) use self::command_message::CommandMessage;
 pub use self::command_message::CommandType;
 pub use self::context::{Context, CONTEXT_SIZE};
 pub use self::cryptogram::{Cryptogram, CRYPTOGRAM_SIZE};
-pub use self::error::SecureChannelError;
+pub use self::error::{SecureChannelError, SecureChannelErrorKind};
 pub(crate) use self::mac::{Mac, MAC_SIZE};
 pub(crate) use self::response_message::{ResponseCode, ResponseMessage};
 pub use self::static_keys::StaticKeys;
