@@ -1,12 +1,12 @@
 use responses::Response;
 use securechannel::{CommandMessage, CommandType};
-use serde::ser::Serialize;
 use serde::de::DeserializeOwned;
+use serde::ser::Serialize;
 use serializers::serialize;
 
-use {Algorithm, Capabilities, Domains, ObjectId, ObjectLabel, ObjectType};
-use securechannel::Challenge;
 use responses::*;
+use securechannel::Challenge;
+use {Algorithm, Capabilities, Domains, ObjectId, ObjectLabel, ObjectType};
 
 /// Structured commands (i.e. requests) which are encrypted and then sent to
 /// the HSM. Every command has a corresponding `ResponseType`.

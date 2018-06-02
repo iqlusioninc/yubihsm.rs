@@ -1,9 +1,9 @@
 //! Responses sent back from the YubiHSM2
 
-use byteorder::{BigEndian, ByteOrder};
+use super::{CommandType, Mac, SecureChannelError, SessionId, MAC_SIZE};
 #[cfg(feature = "mockhsm")]
 use byteorder::WriteBytesExt;
-use super::{CommandType, Mac, SecureChannelError, SessionId, MAC_SIZE};
+use byteorder::{BigEndian, ByteOrder};
 
 /// Command responses
 #[derive(Debug, Eq, PartialEq)]

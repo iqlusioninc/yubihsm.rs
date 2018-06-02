@@ -1,8 +1,8 @@
 //! Error types for yubihsm-connector
 
-use std::{fmt, io};
 use std::num::ParseIntError;
 use std::str::Utf8Error;
+use std::{fmt, io};
 
 use error::Error;
 

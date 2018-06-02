@@ -1,8 +1,8 @@
 use std::fmt;
 
 use failure::Error;
-use serde::ser::{Serialize, Serializer};
 use serde::de::{self, Deserialize, Deserializer, Visitor};
+use serde::ser::{Serialize, Serializer};
 
 /// Cryptographic algorithm types supported by the `YubiHSM2`
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]

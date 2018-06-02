@@ -4,14 +4,14 @@
 use sha2::Sha512;
 use std::collections::HashMap;
 
-use {Algorithm, ObjectId, ObjectType, SessionId};
+use super::objects::{Object, Objects};
 use commands::*;
 use connector::ConnectorError;
-use session::{PBKDF2_ITERATIONS, PBKDF2_SALT};
 use responses::*;
 use securechannel::{Challenge, Channel, CommandMessage, CommandType, ResponseMessage, StaticKeys};
 use serializers::deserialize;
-use super::objects::{Object, Objects};
+use session::{PBKDF2_ITERATIONS, PBKDF2_SALT};
+use {Algorithm, ObjectId, ObjectType, SessionId};
 
 /// Default auth key ID slot
 const DEFAULT_AUTH_KEY_ID: ObjectId = 1;
@@ -57,7 +57,8 @@ impl State {
         // Generate a random card challenge to send back to the client
         let card_challenge = Challenge::random();
 
-        let session_id = self.sessions
+        let session_id = self
+            .sessions
             .keys()
             .max()
             .map(|id| id.succ().expect("session count exceeded"))
@@ -91,7 +92,8 @@ impl State {
             .session_id
             .unwrap_or_else(|| panic!("no session ID in command: {:?}", command.command_type));
 
-        Ok(self.channel(&session_id)
+        Ok(self
+            .channel(&session_id)
             .verify_authenticate_session(command)
             .unwrap()
             .into())
@@ -109,7 +111,8 @@ impl State {
             )
         });
 
-        let command = self.channel(&session_id)
+        let command = self
+            .channel(&session_id)
             .decrypt_command(encrypted_command)
             .unwrap();
 
@@ -124,7 +127,8 @@ impl State {
             unsupported => panic!("unsupported command type: {:?}", unsupported),
         };
 
-        Ok(self.channel(&session_id)
+        Ok(self
+            .channel(&session_id)
             .encrypt_response(response)
             .unwrap()
             .into())
@@ -226,7 +230,8 @@ impl State {
             .unwrap_or_else(|e| panic!("error parsing CommandType::ListObjects: {:?}", e));
 
         // TODO: support other asymmetric keys besides Ed25519 keys
-        let list_entries = self.objects
+        let list_entries = self
+            .objects
             .ed25519_keys
             .iter()
             .map(|(object_id, object)| ListObjectsEntry {

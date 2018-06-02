@@ -2,13 +2,15 @@ pub use failure::Error;
 pub(crate) use securechannel::CommandType;
 #[cfg(feature = "mockhsm")]
 use securechannel::ResponseMessage;
-use serde::ser::Serialize;
 use serde::de::DeserializeOwned;
+use serde::ser::Serialize;
 
-use {Algorithm, Capabilities, Domains, ObjectId, ObjectLabel, ObjectOrigin, ObjectType, SequenceId};
 use securechannel::{Challenge, Cryptogram};
 #[cfg(feature = "mockhsm")]
 use serializers::serialize;
+use {
+    Algorithm, Capabilities, Domains, ObjectId, ObjectLabel, ObjectOrigin, ObjectType, SequenceId,
+};
 
 /// Structured responses to `Command` messages sent from the HSM
 pub(crate) trait Response: Serialize + DeserializeOwned + Sized {

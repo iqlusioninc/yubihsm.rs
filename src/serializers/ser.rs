@@ -5,8 +5,10 @@ use std::u32;
 
 use byteorder::{BigEndian, WriteBytesExt};
 use serde;
-use serde::ser::{SerializeMap, SerializeSeq, SerializeStruct, SerializeStructVariant,
-                 SerializeTuple, SerializeTupleStruct, SerializeTupleVariant};
+use serde::ser::{
+    SerializeMap, SerializeSeq, SerializeStruct, SerializeStructVariant, SerializeTuple,
+    SerializeTupleStruct, SerializeTupleVariant,
+};
 
 use super::error::SerializationError;
 

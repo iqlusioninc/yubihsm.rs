@@ -1,13 +1,15 @@
 #[macro_use]
 mod error;
 
+pub use self::error::{SessionError, SessionErrorKind};
+use super::{Algorithm, Capabilities, Domains, ObjectId, ObjectLabel, ObjectType, SessionId};
 use commands::*;
 use connector::{Connector, HttpConfig, HttpConnector, Status as ConnectorStatus};
 use responses::*;
-use securechannel::{Challenge, Channel, CommandMessage, ResponseCode, ResponseMessage, StaticKeys};
+use securechannel::{
+    Challenge, Channel, CommandMessage, ResponseCode, ResponseMessage, StaticKeys,
+};
 use serializers::deserialize;
-use super::{Algorithm, Capabilities, Domains, ObjectId, ObjectLabel, ObjectType, SessionId};
-pub use self::error::{SessionError, SessionErrorKind};
 
 /// Salt value to use with PBKDF2 when deriving static keys from a password
 pub const PBKDF2_SALT: &[u8] = b"Yubico";

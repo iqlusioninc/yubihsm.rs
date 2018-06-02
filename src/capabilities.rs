@@ -3,8 +3,8 @@
 
 use std::fmt;
 
-use serde::ser::{Serialize, Serializer};
 use serde::de::{self, Deserialize, Deserializer, Visitor};
+use serde::ser::{Serialize, Serializer};
 
 bitflags! {
     /// Object attributes specifying which operations are allowed to be performed

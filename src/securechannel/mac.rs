@@ -7,8 +7,8 @@
 //! lower (~2^32 messages).
 
 use clear_on_drop::clear::Clear;
-use cmac::crypto_mac::generic_array::GenericArray;
 use cmac::crypto_mac::generic_array::typenum::U16;
+use cmac::crypto_mac::generic_array::GenericArray;
 use constant_time_eq::constant_time_eq;
 use std::fmt;
 

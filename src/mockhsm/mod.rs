@@ -5,11 +5,11 @@ use uuid::Uuid;
 mod objects;
 mod state;
 
+use self::state::State;
+use super::{ObjectId, StaticKeys};
 use connector::{Connector, ConnectorError, Status};
 use securechannel::{CommandMessage, CommandType};
 use session::{PBKDF2_ITERATIONS, PBKDF2_SALT, Session, SessionError};
-use super::{ObjectId, StaticKeys};
-use self::state::State;
 
 /// Software simulation of a `YubiHSM2` intended for testing
 /// implemented as a `yubihsm::Connector` (skipping HTTP transport)

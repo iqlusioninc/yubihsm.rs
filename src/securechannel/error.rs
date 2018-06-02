@@ -1,7 +1,7 @@
 //! Error types for Secure Channel communications
 
-use error::Error;
 use connector::ConnectorError;
+use error::Error;
 
 /// Secure Channel errors
 pub type SecureChannelError = Error<SecureChannelErrorKind>;

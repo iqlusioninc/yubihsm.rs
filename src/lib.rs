@@ -125,7 +125,7 @@ pub use domains::Domains;
 pub use object::Id as ObjectId;
 pub use object::Label as ObjectLabel;
 pub use object::Origin as ObjectOrigin;
-pub use object::Type as ObjectType;
 pub use object::SequenceId;
+pub use object::Type as ObjectType;
 pub use securechannel::{SessionId, StaticKeys};
 pub use session::{Session, SessionError};
