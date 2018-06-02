@@ -1,7 +1,7 @@
 //! Errors that occur during sessions
 
-use error::Error;
 use connector::ConnectorError;
+use error::Error;
 use securechannel::SecureChannelError;
 use serializers::SerializationError;
 

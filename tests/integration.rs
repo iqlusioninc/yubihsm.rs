@@ -8,8 +8,9 @@ extern crate sha2;
 #[cfg(feature = "dalek")]
 use sha2::Sha512;
 
-use yubihsm::{Algorithm, Capabilities, Connector, Domains, ObjectId, ObjectOrigin, ObjectType,
-              Session};
+use yubihsm::{
+    Algorithm, Capabilities, Connector, Domains, ObjectId, ObjectOrigin, ObjectType, Session,
+};
 
 #[cfg(feature = "mockhsm")]
 use yubihsm::mockhsm::MockHSM;

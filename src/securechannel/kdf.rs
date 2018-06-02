@@ -4,8 +4,8 @@
 
 use aesni::Aes128;
 use byteorder::{BigEndian, ByteOrder};
-use cmac::Cmac;
 use cmac::crypto_mac::Mac;
+use cmac::Cmac;
 
 use super::{Context, KEY_SIZE};
 

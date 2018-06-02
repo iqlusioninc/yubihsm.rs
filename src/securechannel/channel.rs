@@ -1,20 +1,22 @@
 //! Secure Channels using the SCP03 encrypted channel protocol
 
-use aesni::{Aes128, BlockCipher};
-use aesni::block_cipher_trait::generic_array::GenericArray;
 use aesni::block_cipher_trait::generic_array::typenum::U16;
-use block_modes::{BlockMode, BlockModeIv, Cbc};
+use aesni::block_cipher_trait::generic_array::GenericArray;
+use aesni::{Aes128, BlockCipher};
 use block_modes::block_padding::Iso7816;
+use block_modes::{BlockMode, BlockModeIv, Cbc};
 use byteorder::{BigEndian, ByteOrder};
 use clear_on_drop::clear::Clear;
-use cmac::Cmac;
 use cmac::crypto_mac::Mac as CryptoMac;
+use cmac::Cmac;
 
 use super::kdf;
-use super::{Challenge, CommandMessage, CommandType, Context, Cryptogram, ResponseMessage,
-            SecureChannelError, StaticKeys, CRYPTOGRAM_SIZE, KEY_SIZE, MAC_SIZE};
 #[cfg(feature = "mockhsm")]
 use super::ResponseCode;
+use super::{
+    Challenge, CommandMessage, CommandType, Context, Cryptogram, ResponseMessage,
+    SecureChannelError, StaticKeys, CRYPTOGRAM_SIZE, KEY_SIZE, MAC_SIZE,
+};
 
 // Size of an AES block
 const AES_BLOCK_SIZE: usize = 16;
@@ -525,8 +527,9 @@ fn compute_icv(cipher: &Aes128, counter: u32) -> GenericArray<u8, U16> {
 
 #[cfg(all(test, feature = "mockhsm"))]
 mod tests {
-    use securechannel::{Challenge, Channel, CommandMessage, CommandType, ResponseMessage,
-                        SessionId, StaticKeys};
+    use securechannel::{
+        Challenge, Channel, CommandMessage, CommandType, ResponseMessage, SessionId, StaticKeys,
+    };
 
     const PASSWORD: &[u8] = b"password";
     const SALT: &[u8] = b"Yubico";

@@ -6,8 +6,10 @@
 //!
 //! We include this client rather than using a standard crate to minimize
 //! dependencies/code surface as well as permit potential usage of this crate
-//! in environments where it might be difficult to use a full-fledged HTTP
-//! crate, such as Intel SGX.
+//! in environments (e.g. Intel SGX) where it might be difficult to use a
+//! full-fledged HTTP crate (e.g. hyper).
+
+#![allow(unknown_lints, write_with_newline)]
 
 use std::fmt::{self, Write as FmtWrite};
 use std::io::{Read, Write as IoWrite};
@@ -274,10 +276,12 @@ impl ResponseReader {
 
     /// Read the response body into the internal buffer
     fn read_body(&mut self, socket: &mut TcpStream) -> Result<(), ConnectorError> {
-        let body_starts_at = self.body_starts_at
+        let body_starts_at = self
+            .body_starts_at
             .expect("we should've already read the body");
 
-        let content_length = self.content_length
+        let content_length = self
+            .content_length
             .expect("we should already know the content length");
 
         while self.pos < body_starts_at + content_length {
@@ -290,7 +294,8 @@ impl ResponseReader {
 
 impl Into<Vec<u8>> for ResponseReader {
     fn into(self) -> Vec<u8> {
-        let body_starts_at = self.body_starts_at
+        let body_starts_at = self
+            .body_starts_at
             .expect("we should've already read the body");
 
         Vec::from(&self.buffer[body_starts_at..self.pos])

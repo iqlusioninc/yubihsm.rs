@@ -6,9 +6,9 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/>
 
-use byteorder::{BigEndian, WriteBytesExt};
 #[cfg(feature = "mockhsm")]
 use byteorder::ByteOrder;
+use byteorder::{BigEndian, WriteBytesExt};
 use uuid::Uuid;
 
 use super::{Mac, SecureChannelError, SessionId, MAC_SIZE, MAX_MSG_SIZE};

@@ -1,9 +1,9 @@
-use std::{fmt, str};
 use std::ops::{Deref, DerefMut};
+use std::{fmt, str};
 
 use failure::Error;
-use serde::ser::{Serialize, Serializer};
 use serde::de::{self, Deserialize, Deserializer, SeqAccess, Visitor};
+use serde::ser::{Serialize, Serializer};
 
 /// Number of bytes in a label on an object (fixed-size)
 pub const LABEL_SIZE: usize = 40;
@@ -61,7 +61,8 @@ impl Clone for Label {
 
 impl fmt::Debug for Label {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let string = self.to_string()
+        let string = self
+            .to_string()
             .unwrap_or_else(|_| "[INVALID UTF-8 CHARACTER IN LABEL]".to_owned());
 
         write!(f, "{:?}", string)

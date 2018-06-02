@@ -1,12 +1,14 @@
 //! Objects stored inside of the `MockHSM`
 
-use std::collections::HashMap;
 use rand::OsRng;
 use sha2::Sha512;
+use std::collections::HashMap;
 
 use ed25519_dalek::Keypair as Ed25519Keypair;
 
-use {Algorithm, Capabilities, Domains, ObjectId, ObjectLabel, ObjectOrigin, ObjectType, SequenceId};
+use {
+    Algorithm, Capabilities, Domains, ObjectId, ObjectLabel, ObjectOrigin, ObjectType, SequenceId,
+};
 
 /// Objects stored in the `MockHSM`
 #[derive(Default)]
