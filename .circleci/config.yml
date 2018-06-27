@@ -3,12 +3,12 @@ version: 2
 jobs:
   build:
     docker:
-      - image: iqlusion/rust-ci:20180602.1 # bump cache keys when modifying this
+      - image: iqlusion/rust-ci:20180626.0 # bump cache keys when modifying this
 
     steps:
       - checkout
       - restore_cache:
-          key: cache-20180602.1 # bump save_cache key below too
+          key: cache-20180626.0 # bump save_cache key below too
       - run:
           name: rustfmt
           command: |
@@ -20,23 +20,25 @@ jobs:
             cargo +$RUST_NIGHTLY_VERSION clippy --version
             cargo +$RUST_NIGHTLY_VERSION clippy --features=mockhsm
       - run:
-          name: build --no-default-features (nightly-2018-06-02)
+          name: build --no-default-features
           command: |
-            rustup run $RUST_NIGHTLY_VERSION rustc --version
-            cargo +$RUST_NIGHTLY_VERSION --version
-            cargo +$RUST_NIGHTLY_VERSION build --no-default-features
+            rustc --version
+            cargo --version
+            cargo build --no-default-features
       - run:
-          name: build (nightly-2018-06-02)
+          name: build
           command: |
-            rustup run $RUST_NIGHTLY_VERSION rustc --version
-            cargo +$RUST_NIGHTLY_VERSION --version
-            cargo +$RUST_NIGHTLY_VERSION build
+            rustc --version
+            cargo --version
+            cargo build
       - run:
-          name: test (nightly-2018-06-02)
+          name: test
           command: |
-            cargo +$RUST_NIGHTLY_VERSION test --features=mockhsm
+            rustc --version
+            cargo --version
+            cargo test --features=mockhsm
       - save_cache:
-          key: cache-20180602.1 # bump restore_cache key above too
+          key: cache-20180626.0 # bump restore_cache key above too
           paths:
             - "~/.cargo"
             - "./target"
