@@ -1,8 +1,8 @@
 //! Secure Channels using the SCP03 encrypted channel protocol
 
-use aesni::block_cipher_trait::generic_array::typenum::U16;
-use aesni::block_cipher_trait::generic_array::GenericArray;
-use aesni::{Aes128, BlockCipher};
+use aes::block_cipher_trait::generic_array::typenum::U16;
+use aes::block_cipher_trait::generic_array::GenericArray;
+use aes::{Aes128, BlockCipher};
 use block_modes::block_padding::Iso7816;
 use block_modes::{BlockMode, BlockModeIv, Cbc};
 use byteorder::{BigEndian, ByteOrder};

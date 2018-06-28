@@ -2,7 +2,7 @@
 //! counter mode KDF as described in NIST SP 800-108 (NIST 800-108)
 //! with "fixed input data" specific to the SCP03 protocol
 
-use aesni::Aes128;
+use aes::Aes128;
 use byteorder::{BigEndian, ByteOrder};
 use cmac::crypto_mac::Mac;
 use cmac::Cmac;
