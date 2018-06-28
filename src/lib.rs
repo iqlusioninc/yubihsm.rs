@@ -41,7 +41,7 @@
 #![deny(unsafe_code, unused_import_braces, unused_qualifications)]
 #![doc(html_root_url = "https://docs.rs/yubihsm/0.9.0")]
 
-extern crate aesni;
+extern crate aes;
 #[macro_use]
 extern crate bitflags;
 extern crate block_modes;
