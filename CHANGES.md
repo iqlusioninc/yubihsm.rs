@@ -1,3 +1,13 @@
+## [0.10.0] (2018-06-28)
+
+[0.10.0]: https://github.com/tendermint/yubihsm-rs/compare/v0.9.0...v0.10.0
+
+* [#42](https://github.com/tendermint/yubihsm-rs/pull/42)
+  Use the `aes` crate.
+
+* [#41](https://github.com/tendermint/yubihsm-rs/pull/41)
+  Support Rust stable (1.27+).
+
 ## [0.9.0] (2018-05-19)
 
 [0.9.0]: https://github.com/tendermint/yubihsm-rs/compare/v0.8.0...v0.9.0
