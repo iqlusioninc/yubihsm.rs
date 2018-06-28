@@ -34,11 +34,27 @@ an HTTP(S) server which sends the commands to the YubiHSM2 hardware device over
 USB.
 
 Note that this is **NOT** an official Yubico project and is in no way supported
-or endorsed by Yubico (well, whoever runs their Twitter account
-[thinks it's awesome])
+or endorsed by Yubico (although whoever runs their Twitter account
+[thinks it's awesome]).
 
 [yubihsm-connector]: https://developers.yubico.com/YubiHSM2/Component_Reference/yubihsm-connector/
 [thinks it's awesome]: https://twitter.com/Yubico/status/971186516796915712
+
+## Prerequisites
+
+This crate builds on Rust 1.27+ and by default uses SIMD features
+which require the following RUSTFLAGS:
+
+```
+RUSTFLAGS=-Ctarget-feature=+aes`
+```
+
+You can configure your `~/.cargo/config` to always pass these flags:
+
+```toml
+[build]
+rustflags = ["-Ctarget-feature=+aes"]
+```
 
 ## Status
 
@@ -81,26 +97,6 @@ let mut session = Session::create_from_password(
 // `generate asymmetric 0 100 ed25519_test_key 1 asymmetric_sign_eddsa ed25519`
 let response = session.sign_data_eddsa(100, "Hello, world!").unwrap();
 println!("Ed25519 signature: {:?}", response.signature);
-```
-
-## Build Notes
-
-This crate depends on the `aesni` crate, which uses the new "stdsimd" API
-(which recently landed in nightly) to invoke hardware AES instructions via
-`core::arch`.
-
-To access these features, you will need both a relatively recent
-Rust nightly and to pass the following as RUSTFLAGS:
-
-```
-RUSTFLAGS=-Ctarget-feature=+aes`
-```
-
-You can configure your `~/.cargo/config` to always pass these flags:
-
-```toml
-[build]
-rustflags = ["-Ctarget-feature=+aes"]
 ```
 
 ## Contributing

@@ -266,8 +266,8 @@ impl ResponseCode {
     }
 
     /// Convert a ResponseCode back into its original byte form
-    pub fn to_u8(&self) -> u8 {
-        let code: i8 = match *self {
+    pub fn to_u8(self) -> u8 {
+        let code: i8 = match self {
             ResponseCode::Success(cmd_type) => cmd_type as i8,
             ResponseCode::MemoryError => -1,
             ResponseCode::InitError => -2,
@@ -304,8 +304,8 @@ impl ResponseCode {
     }
 
     /// Does this response include a session ID?
-    pub fn has_session_id(&self) -> bool {
-        match *self {
+    pub fn has_session_id(self) -> bool {
+        match self {
             ResponseCode::Success(cmd_type) => match cmd_type {
                 CommandType::CreateSession | CommandType::SessionMessage => true,
                 _ => false,
@@ -314,9 +314,9 @@ impl ResponseCode {
         }
     }
 
-    /// Does this response have a Response-MAC (C-MAC) value on the end?
-    pub fn has_rmac(&self) -> bool {
-        match *self {
+    /// Does this response have a Response-MAC (R-MAC) value on the end?
+    pub fn has_rmac(self) -> bool {
+        match self {
             ResponseCode::Success(cmd_type) => match cmd_type {
                 CommandType::SessionMessage => true,
                 _ => false,

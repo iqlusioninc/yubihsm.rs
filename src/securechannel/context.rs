@@ -10,7 +10,7 @@ pub struct Context([u8; CONTEXT_SIZE]);
 
 impl Context {
     /// Create a derivation context from host and card challenges
-    pub fn from_challenges(host_challenge: &Challenge, card_challenge: &Challenge) -> Self {
+    pub fn from_challenges(host_challenge: Challenge, card_challenge: Challenge) -> Self {
         let mut context = [0u8; CONTEXT_SIZE];
         context[..CHALLENGE_SIZE].copy_from_slice(host_challenge.as_slice());
         context[CHALLENGE_SIZE..].copy_from_slice(card_challenge.as_slice());
