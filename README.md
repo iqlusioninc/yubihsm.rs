@@ -52,13 +52,7 @@ You can configure your `~/.cargo/config` to always pass these flags:
 rustflags = ["-Ctarget-feature=+aes"]
 ```
 
-## Status
-
-Initial support for creating encrypted channels to a YubiHSM2 via
-**yubihsm-connector** is complete, along with authenticating to the
-YubiHSM2 via a password/authentication key.
-
-The following commands are presently supported:
+## Supported Commands
 
 * [Authenticate Session](https://developers.yubico.com/YubiHSM2/Commands/Authenticate_Session.html)
 * [Blink](https://developers.yubico.com/YubiHSM2/Commands/Blink.html)
@@ -71,6 +65,8 @@ The following commands are presently supported:
 * [List Objects](https://developers.yubico.com/YubiHSM2/Commands/List_Objects.html)
 * [Session Message](https://developers.yubico.com/YubiHSM2/Commands/Session_Message.html)
 * [Sign Data EdDSA](https://developers.yubico.com/YubiHSM2/Commands/Sign_Data_Eddsa.html) i.e. Ed25519 signatures
+
+Adding support for additional commands is easy! See the `Contributing` section.
 
 ## Getting Started
 
