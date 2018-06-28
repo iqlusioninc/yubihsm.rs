@@ -308,14 +308,14 @@ impl CommandType {
     }
 
     /// Serialize a command as a byte
-    pub fn to_u8(&self) -> u8 {
-        *self as u8
+    pub fn to_u8(self) -> u8 {
+        self as u8
     }
 
     /// Does this command include a session ID?
     #[cfg(feature = "mockhsm")]
-    pub fn has_session_id(&self) -> bool {
-        match *self {
+    pub fn has_session_id(self) -> bool {
+        match self {
             CommandType::AuthSession | CommandType::SessionMessage => true,
             _ => false,
         }
@@ -323,8 +323,8 @@ impl CommandType {
 
     /// Does this command have a Command-MAC (C-MAC) value on the end?
     #[cfg(feature = "mockhsm")]
-    pub fn has_mac(&self) -> bool {
-        match *self {
+    pub fn has_mac(self) -> bool {
+        match self {
             CommandType::AuthSession | CommandType::SessionMessage => true,
             _ => false,
         }

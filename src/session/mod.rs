@@ -131,8 +131,8 @@ impl<C: Connector> Session<C> {
         let channel = Channel::new(
             session_id,
             &static_keys,
-            &host_challenge,
-            &response.card_challenge,
+            host_challenge,
+            response.card_challenge,
         );
 
         // NOTE: Cryptogram implements constant-time equality comparison

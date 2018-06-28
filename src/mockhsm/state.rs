@@ -67,8 +67,8 @@ impl State {
         let channel = Channel::new(
             session_id,
             &self.static_keys,
-            &cmd.host_challenge,
-            &card_challenge,
+            cmd.host_challenge,
+            card_challenge,
         );
 
         let card_cryptogram = channel.card_cryptogram();
@@ -93,7 +93,7 @@ impl State {
             .unwrap_or_else(|| panic!("no session ID in command: {:?}", command.command_type));
 
         Ok(self
-            .channel(&session_id)
+            .channel(session_id)
             .verify_authenticate_session(command)
             .unwrap()
             .into())
@@ -112,7 +112,7 @@ impl State {
         });
 
         let command = self
-            .channel(&session_id)
+            .channel(session_id)
             .decrypt_command(encrypted_command)
             .unwrap();
 
@@ -128,7 +128,7 @@ impl State {
         };
 
         Ok(self
-            .channel(&session_id)
+            .channel(session_id)
             .encrypt_response(response)
             .unwrap()
             .into())
@@ -264,9 +264,9 @@ impl State {
     }
 
     /// Obtain the channel for a session by its ID
-    fn channel(&mut self, id: &SessionId) -> &mut Channel {
+    fn channel(&mut self, id: SessionId) -> &mut Channel {
         self.sessions
-            .get_mut(id)
+            .get_mut(&id)
             .unwrap_or_else(|| panic!("invalid session ID: {:?}", id))
     }
 }

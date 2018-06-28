@@ -44,12 +44,12 @@ impl Id {
     }
 
     /// Obtain the next session ID
-    pub fn succ(&self) -> Result<Self, SecureChannelError> {
+    pub fn succ(self) -> Result<Self, SecureChannelError> {
         Self::new(self.0 + 1)
     }
 
     /// Obtain session ID as a u8
-    pub fn to_u8(&self) -> u8 {
+    pub fn to_u8(self) -> u8 {
         self.0
     }
 }
@@ -110,8 +110,8 @@ impl Channel {
     pub fn new(
         id: Id,
         static_keys: &StaticKeys,
-        host_challenge: &Challenge,
-        card_challenge: &Challenge,
+        host_challenge: Challenge,
+        card_challenge: Challenge,
     ) -> Self {
         let context = Context::from_challenges(host_challenge, card_challenge);
         let enc_key = derive_key(&static_keys.enc_key, 0b100, &context);
@@ -550,10 +550,10 @@ mod tests {
 
         // Create channels
         let mut host_channel =
-            Channel::new(session_id, &static_keys, &host_challenge, &card_challenge);
+            Channel::new(session_id, &static_keys, host_challenge, card_challenge);
 
         let mut card_channel =
-            Channel::new(session_id, &static_keys, &host_challenge, &card_challenge);
+            Channel::new(session_id, &static_keys, host_challenge, card_challenge);
 
         // Auth host to card
         let auth_command = host_channel.authenticate_session().unwrap();

@@ -168,8 +168,8 @@ impl Origin {
     }
 
     /// Serialize this object origin as a byte
-    pub fn to_u8(&self) -> u8 {
-        *self as u8
+    pub fn to_u8(self) -> u8 {
+        self as u8
     }
 }
 
@@ -249,8 +249,8 @@ impl Type {
     }
 
     /// Serialize this object type as a byte
-    pub fn to_u8(&self) -> u8 {
-        *self as u8
+    pub fn to_u8(self) -> u8 {
+        self as u8
     }
 }
 
