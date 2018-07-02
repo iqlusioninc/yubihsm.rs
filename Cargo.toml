@@ -39,6 +39,7 @@ bench = []
 default = []
 dalek = ["ed25519-dalek"]
 mockhsm = ["dalek"]
+nightly = ["clear_on_drop/nightly"]
 
 [package.metadata.docs.rs]
 features = ["mockhsm"]
