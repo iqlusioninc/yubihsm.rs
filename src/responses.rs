@@ -9,7 +9,7 @@ use securechannel::{Challenge, Cryptogram};
 #[cfg(feature = "mockhsm")]
 use serializers::serialize;
 use {
-    Algorithm, Capabilities, Domains, ObjectId, ObjectLabel, ObjectOrigin, ObjectType, SequenceId,
+    Algorithm, Capabilities, Domain, ObjectId, ObjectLabel, ObjectOrigin, ObjectType, SequenceId,
 };
 
 /// Structured responses to `Command` messages sent from the HSM
@@ -101,7 +101,7 @@ pub struct GetObjectInfoResponse {
     pub length: u16,
 
     /// Domains from which object is accessible
-    pub domains: Domains,
+    pub domains: Domain,
 
     /// Object type
     pub object_type: ObjectType,

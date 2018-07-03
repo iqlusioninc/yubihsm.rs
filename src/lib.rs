@@ -88,7 +88,7 @@ mod commands;
 pub mod connector;
 
 /// Logical partitions within the `YubiHSM`, allowing several applications to share the device
-pub mod domains;
+pub mod domain;
 #[cfg(feature = "mockhsm")]
 
 /// Software simulation of the `YubiHSM2` for integration testing,
@@ -117,7 +117,7 @@ pub mod session;
 pub use algorithm::Algorithm;
 pub use capabilities::Capabilities;
 pub use connector::{Connector, HttpConfig, HttpConnector};
-pub use domains::Domains;
+pub use domain::Domain;
 pub use object::Id as ObjectId;
 pub use object::Label as ObjectLabel;
 pub use object::Origin as ObjectOrigin;

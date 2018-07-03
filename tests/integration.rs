@@ -5,7 +5,7 @@
 extern crate lazy_static;
 extern crate yubihsm;
 
-use yubihsm::{Algorithm, Capabilities, Domains, ObjectId, ObjectOrigin, ObjectType, Session};
+use yubihsm::{Algorithm, Capabilities, Domain, ObjectId, ObjectOrigin, ObjectType, Session};
 
 #[cfg(not(feature = "mockhsm"))]
 use yubihsm::HttpConnector;
@@ -31,7 +31,7 @@ const TEST_KEY_ID: ObjectId = 100;
 const TEST_KEY_LABEL: &str = "yubihsm.rs test key";
 
 /// Domain to use for all tests
-const TEST_DOMAINS: Domains = Domains::DOMAIN_1;
+const TEST_DOMAINS: Domain = Domain::DOM1;
 
 /// Message to sign when performing tests
 const TEST_MESSAGE: &[u8] = b"The Edwards-curve Digital Signature Algorithm (EdDSA) is a \

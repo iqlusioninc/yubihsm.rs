@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use untrusted;
 
 use {
-    Algorithm, Capabilities, Domains, ObjectId, ObjectLabel, ObjectOrigin, ObjectType, SequenceId,
+    Algorithm, Capabilities, Domain, ObjectId, ObjectLabel, ObjectOrigin, ObjectType, SequenceId,
 };
 
 /// Objects stored in the `MockHSM`
@@ -32,7 +32,7 @@ pub struct Object<T> {
     pub algorithm: Algorithm,
     pub capabilities: Capabilities,
     pub delegated_capabilities: Capabilities,
-    pub domains: Domains,
+    pub domains: Domain,
     pub length: u16,
     pub sequence: SequenceId,
     pub origin: ObjectOrigin,
@@ -40,7 +40,7 @@ pub struct Object<T> {
 }
 
 impl Object<Ed25519KeyPair> {
-    pub fn new(label: ObjectLabel, capabilities: Capabilities, domains: Domains) -> Self {
+    pub fn new(label: ObjectLabel, capabilities: Capabilities, domains: Domain) -> Self {
         let mut csprng = OsRng::new().unwrap();
 
         let mut seed_bytes = [0u8; 32];

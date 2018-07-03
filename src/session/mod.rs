@@ -2,7 +2,7 @@
 mod error;
 
 pub use self::error::{SessionError, SessionErrorKind};
-use super::{Algorithm, Capabilities, Domains, ObjectId, ObjectLabel, ObjectType, SessionId};
+use super::{Algorithm, Capabilities, Domain, ObjectId, ObjectLabel, ObjectType, SessionId};
 use commands::*;
 use connector::{Connector, HttpConfig, HttpConnector, Status as ConnectorStatus};
 use responses::*;
@@ -191,7 +191,7 @@ impl<C: Connector> Session<C> {
         &mut self,
         key_id: ObjectId,
         label: ObjectLabel,
-        domains: Domains,
+        domains: Domain,
         capabilities: Capabilities,
         algorithm: Algorithm,
     ) -> Result<GenAsymmetricKeyResponse, SessionError> {

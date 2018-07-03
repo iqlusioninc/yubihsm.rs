@@ -1,6 +1,6 @@
 use test::Bencher;
 
-use {Algorithm, Capabilities, Domains, ObjectId, ObjectType, Session};
+use {Algorithm, Capabilities, Domain, ObjectId, ObjectType, Session};
 
 const YUBIHSM_ADDR: &str = "http://127.0.0.1:12345";
 const DEFAULT_AUTH_KEY_ID: ObjectId = 1;
@@ -9,7 +9,7 @@ const EXAMPLE_MESSAGE: &[u8] = b"";
 const TEST_KEY_ID: ObjectId = 100;
 const TEST_KEY_LABEL: &str = "yubihsm.rs benchmarking key";
 const TEST_CAPABILITIES: Capabilities = Capabilities::ASYMMETRIC_SIGN_EDDSA;
-const TEST_DOMAINS: Domains = Domains::DOMAIN_1;
+const TEST_DOMAINS: Domain = Domain::DOM1;
 
 #[bench]
 fn ed25519_benchmark(b: &mut Bencher) {
