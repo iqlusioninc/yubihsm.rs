@@ -9,7 +9,7 @@ use constant_time_eq::constant_time_eq;
 pub const CRYPTOGRAM_SIZE: usize = 8;
 
 /// Authentication cryptograms used to verify sessions
-#[derive(Serialize, Deserialize, Eq)]
+#[derive(Clone, Serialize, Deserialize, Eq)]
 pub struct Cryptogram([u8; CRYPTOGRAM_SIZE]);
 
 impl Cryptogram {

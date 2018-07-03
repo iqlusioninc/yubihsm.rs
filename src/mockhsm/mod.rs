@@ -2,7 +2,9 @@ use std::fmt;
 use std::sync::{Arc, Mutex};
 use uuid::Uuid;
 
+mod commands;
 mod objects;
+mod session;
 mod state;
 
 use self::state::State;
@@ -80,9 +82,9 @@ impl Connector for MockHSM {
         let mut state = self.state.lock().unwrap();
 
         match command.command_type {
-            CommandType::CreateSession => state.create_session(&command),
-            CommandType::AuthSession => state.authenticate_session(&command),
-            CommandType::SessionMessage => state.session_message(command),
+            CommandType::CreateSession => commands::create_session(&mut state, &command),
+            CommandType::AuthSession => commands::authenticate_session(&mut state, &command),
+            CommandType::SessionMessage => commands::session_message(&mut state, command),
             unsupported => panic!("unsupported command type: {:?}", unsupported),
         }
     }

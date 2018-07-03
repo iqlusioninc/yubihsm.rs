@@ -49,8 +49,8 @@ extern crate byteorder;
 extern crate clear_on_drop;
 extern crate cmac;
 extern crate constant_time_eq;
-#[cfg(feature = "dalek")]
-extern crate ed25519_dalek;
+#[cfg(feature = "mockhsm")]
+extern crate ring;
 #[macro_use]
 extern crate failure;
 #[macro_use]
@@ -64,6 +64,8 @@ extern crate serde_derive;
 extern crate sha2;
 #[cfg(feature = "bench")]
 extern crate test;
+#[cfg(feature = "mockhsm")]
+extern crate untrusted;
 extern crate uuid;
 
 #[macro_use]

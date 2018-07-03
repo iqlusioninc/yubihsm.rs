@@ -1,19 +1,16 @@
 extern crate yubihsm;
 
-#[cfg(feature = "dalek")]
-extern crate ed25519_dalek;
-#[cfg(feature = "dalek")]
-extern crate sha2;
-
-#[cfg(feature = "dalek")]
-use sha2::Sha512;
-
 use yubihsm::{
     Algorithm, Capabilities, Connector, Domains, ObjectId, ObjectOrigin, ObjectType, Session,
 };
 
 #[cfg(feature = "mockhsm")]
 use yubihsm::mockhsm::MockHSM;
+
+#[cfg(feature = "ring")]
+extern crate ring;
+#[cfg(feature = "ring")]
+extern crate untrusted;
 
 /// Default auth key ID slot
 const DEFAULT_AUTH_KEY_ID: ObjectId = 1;
@@ -23,6 +20,13 @@ const DEFAULT_PASSWORD: &str = "password";
 
 /// Key ID to use for testing keygen/signing
 const TEST_KEY_ID: ObjectId = 100;
+
+/// Domain to use for all tests
+const TEST_DOMAINS: Domains = Domains::DOMAIN_1;
+
+/// Message to sign when performing tests
+const TEST_MESSAGE: &[u8] = b"The Edwards-curve Digital Signature Algorithm (EdDSA) is a \
+        variant of Schnorr's signature system with (possibly twisted) Edwards curves.";
 
 /// Perform a live integration test against yubihsm-connector and a real `YubiHSM2`
 #[cfg(not(feature = "mockhsm"))]
@@ -60,7 +64,7 @@ fn integration_tests<C: Connector>(session: &mut Session<C>) {
     // as described at the top of this file
     echo_test(session);
     generate_asymmetric_key_test(session);
-    #[cfg(feature = "dalek")]
+    #[cfg(feature = "ring")]
     sign_ed25519_test(session);
     list_objects_test(session);
     delete_object_test(session);
@@ -86,12 +90,17 @@ fn generate_asymmetric_key_test<C: Connector>(session: &mut Session<C>) {
     );
 
     let label = "yubihsm.rs test key";
-    let domains = Domains::DOMAIN_1;
     let capabilities = Capabilities::ASYMMETRIC_SIGN_EDDSA;
     let algorithm = Algorithm::EC_ED25519;
 
     let response = session
-        .generate_asymmetric_key(TEST_KEY_ID, label.into(), domains, capabilities, algorithm)
+        .generate_asymmetric_key(
+            TEST_KEY_ID,
+            label.into(),
+            TEST_DOMAINS,
+            capabilities,
+            algorithm,
+        )
         .unwrap_or_else(|err| panic!("error generating asymmetric key: {}", err));
 
     assert_eq!(response.key_id, TEST_KEY_ID);
@@ -101,7 +110,7 @@ fn generate_asymmetric_key_test<C: Connector>(session: &mut Session<C>) {
 
     assert_eq!(object_info.capabilities, capabilities);
     assert_eq!(object_info.id, TEST_KEY_ID);
-    assert_eq!(object_info.domains, domains);
+    assert_eq!(object_info.domains, TEST_DOMAINS);
     assert_eq!(object_info.object_type, ObjectType::Asymmetric);
     assert_eq!(object_info.algorithm, algorithm);
     assert_eq!(object_info.origin, ObjectOrigin::Generated);
@@ -109,7 +118,7 @@ fn generate_asymmetric_key_test<C: Connector>(session: &mut Session<C>) {
 }
 
 // Compute a signature using the Ed25519 key generated in the last test
-#[cfg(feature = "dalek")]
+#[cfg(feature = "ring")]
 fn sign_ed25519_test<C: Connector>(session: &mut Session<C>) {
     let pubkey_response = session
         .get_pubkey(TEST_KEY_ID)
@@ -117,23 +126,16 @@ fn sign_ed25519_test<C: Connector>(session: &mut Session<C>) {
 
     assert_eq!(pubkey_response.algorithm, Algorithm::EC_ED25519);
 
-    let public_key = ::ed25519_dalek::PublicKey::from_bytes(&pubkey_response.data)
-        .unwrap_or_else(|err| panic!("error decoding Ed25519 public key: {}", err));
-
-    let test_message = b"The Edwards-curve Digital Signature Algorithm (EdDSA) is a \
-        variant of Schnorr's signature system with (possibly twisted) Edwards curves.";
-
     let signature_response = session
-        .sign_data_eddsa(TEST_KEY_ID, test_message.as_ref())
+        .sign_data_eddsa(TEST_KEY_ID, TEST_MESSAGE)
         .unwrap_or_else(|err| panic!("error performing Ed25519 signature: {}", err));
 
-    let signature = ::ed25519_dalek::Signature::from_bytes(&signature_response.signature)
-        .unwrap_or_else(|err| panic!("error decoding Ed25519 signature: {}", err));
-
-    assert!(
-        public_key.verify::<Sha512>(test_message.as_ref(), &signature),
-        "Ed25519 signature verification failed!"
-    );
+    ring::signature::verify(
+        &ring::signature::ED25519,
+        untrusted::Input::from(&pubkey_response.data),
+        untrusted::Input::from(TEST_MESSAGE),
+        untrusted::Input::from(&signature_response.signature),
+    ).unwrap();
 }
 
 // List the objects in the YubiHSM2

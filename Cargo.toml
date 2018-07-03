@@ -22,7 +22,6 @@ byteorder = "1.2"
 clear_on_drop = "0.2"
 cmac = "0.1"
 constant_time_eq = "0.1"
-ed25519-dalek = { version = "0.6.2", optional = true, features = ["sha2"] }
 failure = "0.1"
 failure_derive = "0.1"
 hmac = "0.6"
@@ -30,15 +29,17 @@ pbkdf2 = "0.2"
 rand = "0.4"
 serde = "1.0"
 serde_derive = "1.0"
+ring = { version = "0.13.0-alpha5", optional = true }
 sha2 = "0.7"
+untrusted = { version = "0.6", optional = true }
 uuid = { version = "0.6", features = ["v4"] }
 
 [features]
 aes-soft = ["aes/force_soft"]
 bench = []
 default = []
-dalek = ["ed25519-dalek"]
-mockhsm = ["dalek"]
+integration = ["ring", "untrusted"]
+mockhsm = ["integration"]
 nightly = ["clear_on_drop/nightly"]
 
 [package.metadata.docs.rs]

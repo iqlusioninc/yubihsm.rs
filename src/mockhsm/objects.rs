@@ -1,10 +1,9 @@
 //! Objects stored inside of the `MockHSM`
 
-use rand::OsRng;
-use sha2::Sha512;
+use rand::{OsRng, Rng};
+use ring::signature::Ed25519KeyPair;
 use std::collections::HashMap;
-
-use ed25519_dalek::Keypair as Ed25519Keypair;
+use untrusted;
 
 use {
     Algorithm, Capabilities, Domains, ObjectId, ObjectLabel, ObjectOrigin, ObjectType, SequenceId,
@@ -14,7 +13,7 @@ use {
 #[derive(Default)]
 pub struct Objects {
     // TODO: other object types besides Ed25519 keys
-    pub ed25519_keys: HashMap<ObjectId, Object<Ed25519Keypair>>,
+    pub ed25519_keys: HashMap<ObjectId, Object<Ed25519KeyPair>>,
 }
 
 impl Objects {
@@ -40,12 +39,17 @@ pub struct Object<T> {
     pub label: ObjectLabel,
 }
 
-impl Object<Ed25519Keypair> {
+impl Object<Ed25519KeyPair> {
     pub fn new(label: ObjectLabel, capabilities: Capabilities, domains: Domains) -> Self {
-        let mut cspring = OsRng::new().unwrap();
+        let mut csprng = OsRng::new().unwrap();
+
+        let mut seed_bytes = [0u8; 32];
+        csprng.fill_bytes(&mut seed_bytes);
+
+        let seed = untrusted::Input::from(&seed_bytes);
 
         Self {
-            value: Ed25519Keypair::generate::<Sha512>(&mut cspring),
+            value: Ed25519KeyPair::from_seed_unchecked(seed).unwrap(),
             object_type: ObjectType::Asymmetric,
             algorithm: Algorithm::EC_ED25519,
             capabilities,

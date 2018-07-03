@@ -6,6 +6,26 @@ use std::fmt;
 use serde::de::{self, Deserialize, Deserializer, Visitor};
 use serde::ser::{Serialize, Serializer};
 
+/// All domains as an array of bitflag types
+pub const ALL_DOMAINS: [Domains; 16] = [
+    Domains::DOMAIN_1,
+    Domains::DOMAIN_2,
+    Domains::DOMAIN_3,
+    Domains::DOMAIN_4,
+    Domains::DOMAIN_5,
+    Domains::DOMAIN_6,
+    Domains::DOMAIN_7,
+    Domains::DOMAIN_8,
+    Domains::DOMAIN_9,
+    Domains::DOMAIN_10,
+    Domains::DOMAIN_11,
+    Domains::DOMAIN_12,
+    Domains::DOMAIN_13,
+    Domains::DOMAIN_14,
+    Domains::DOMAIN_15,
+    Domains::DOMAIN_16,
+];
+
 bitflags! {
     /// Logical partition within the `YubiHSM2`, allowing several clients
     /// to access the same device but access controlled on a domain-by-domain
