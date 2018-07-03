@@ -1,8 +1,14 @@
+/// Integration tests (using live YubiHSM2 or MockHSM)
+
+#[cfg(not(feature = "mockhsm"))]
+#[macro_use]
+extern crate lazy_static;
 extern crate yubihsm;
 
-use yubihsm::{
-    Algorithm, Capabilities, Connector, Domains, ObjectId, ObjectOrigin, ObjectType, Session,
-};
+use yubihsm::{Algorithm, Capabilities, Domains, ObjectId, ObjectOrigin, ObjectType, Session};
+
+#[cfg(not(feature = "mockhsm"))]
+use yubihsm::HttpConnector;
 
 #[cfg(feature = "mockhsm")]
 use yubihsm::mockhsm::MockHSM;
@@ -21,6 +27,9 @@ const DEFAULT_PASSWORD: &str = "password";
 /// Key ID to use for testing keygen/signing
 const TEST_KEY_ID: ObjectId = 100;
 
+/// Label to use for the test key
+const TEST_KEY_LABEL: &str = "yubihsm.rs test key";
+
 /// Domain to use for all tests
 const TEST_DOMAINS: Domains = Domains::DOMAIN_1;
 
@@ -28,60 +37,53 @@ const TEST_DOMAINS: Domains = Domains::DOMAIN_1;
 const TEST_MESSAGE: &[u8] = b"The Edwards-curve Digital Signature Algorithm (EdDSA) is a \
         variant of Schnorr's signature system with (possibly twisted) Edwards curves.";
 
+#[cfg(not(feature = "mockhsm"))]
+type TestSession = Session<HttpConnector>;
+
+#[cfg(feature = "mockhsm")]
+type TestSession = Session<MockHSM>;
+
+#[cfg(not(feature = "mockhsm"))]
+lazy_static! {
+    static ref SESSION: ::std::sync::Mutex<TestSession> = {
+        let session = Session::create_from_password(
+            Default::default(),
+            DEFAULT_AUTH_KEY_ID,
+            DEFAULT_PASSWORD,
+            true,
+        ).unwrap_or_else(|err| panic!("error creating session: {}", err));
+
+        ::std::sync::Mutex::new(session)
+    };
+}
+
 /// Perform a live integration test against yubihsm-connector and a real `YubiHSM2`
 #[cfg(not(feature = "mockhsm"))]
-#[test]
-fn yubihsm_integration_test() {
-    let mut session: Session = Session::create_from_password(
-        Default::default(),
-        DEFAULT_AUTH_KEY_ID,
-        DEFAULT_PASSWORD,
-        true,
-    ).unwrap_or_else(|err| panic!("error creating session: {}", err));
+macro_rules! create_session {
+    () => {
+        SESSION.lock().unwrap()
+    };
+}
 
+/// Perform an integration test against the MockHSM (useful for CI)
+#[cfg(feature = "mockhsm")]
+macro_rules! create_session {
+    () => {
+        MockHSM::create_session(DEFAULT_AUTH_KEY_ID, DEFAULT_PASSWORD)
+            .unwrap_or_else(|err| panic!("error creating MockHSM session: {}", err))
+    };
+}
+
+/// Create a public key for use in a test
+fn create_asymmetric_key(
+    session: &mut TestSession,
+    algorithm: Algorithm,
+    capabilities: Capabilities,
+) {
     // Delete the key in TEST_KEY_ID slot it exists (we use it for testing)
     // Ignore errors since the object may not exist yet
     let _ = session.delete_object(TEST_KEY_ID, ObjectType::Asymmetric);
 
-    // Blink the YubiHSM2 for 2 seconds to identify it
-    session.blink(2).unwrap();
-
-    integration_tests(&mut session);
-}
-
-#[cfg(feature = "mockhsm")]
-#[test]
-fn mockhsm_integration_test() {
-    let mut session = MockHSM::create_session(DEFAULT_AUTH_KEY_ID, DEFAULT_PASSWORD)
-        .unwrap_or_else(|err| panic!("error creating MockHSM session: {}", err));
-
-    integration_tests(&mut session);
-}
-
-// Tests to be performed as part of our integration testing process
-fn integration_tests<C: Connector>(session: &mut Session<C>) {
-    // NOTE: if you are adding a new test, you may need to bump NUM_HTTP_TESTS
-    // as described at the top of this file
-    echo_test(session);
-    generate_asymmetric_key_test(session);
-    #[cfg(feature = "ring")]
-    sign_ed25519_test(session);
-    list_objects_test(session);
-    delete_object_test(session);
-}
-
-// Send a simple echo request
-fn echo_test<C: Connector>(session: &mut Session<C>) {
-    let message = b"Hello, world!";
-    let response = session
-        .echo(message.as_ref())
-        .unwrap_or_else(|err| panic!("error sending echo: {}", err));
-
-    assert_eq!(&message[..], &response.message[..]);
-}
-
-// Generate an Ed25519 key
-fn generate_asymmetric_key_test<C: Connector>(session: &mut Session<C>) {
     // Ensure the object does not already exist
     assert!(
         session
@@ -89,14 +91,10 @@ fn generate_asymmetric_key_test<C: Connector>(session: &mut Session<C>) {
             .is_err()
     );
 
-    let label = "yubihsm.rs test key";
-    let capabilities = Capabilities::ASYMMETRIC_SIGN_EDDSA;
-    let algorithm = Algorithm::EC_ED25519;
-
     let response = session
         .generate_asymmetric_key(
             TEST_KEY_ID,
-            label.into(),
+            TEST_KEY_LABEL.into(),
             TEST_DOMAINS,
             capabilities,
             algorithm,
@@ -104,6 +102,61 @@ fn generate_asymmetric_key_test<C: Connector>(session: &mut Session<C>) {
         .unwrap_or_else(|err| panic!("error generating asymmetric key: {}", err));
 
     assert_eq!(response.key_id, TEST_KEY_ID);
+}
+
+/// Blink the LED on the YubiHSM for 2 seconds
+#[test]
+fn blink_test() {
+    create_session!().blink(2).unwrap();
+}
+
+/// Delete an object in the YubiHSM2
+#[test]
+fn delete_object_test() {
+    let mut session = create_session!();
+
+    create_asymmetric_key(
+        &mut session,
+        Algorithm::EC_ED25519,
+        Capabilities::ASYMMETRIC_SIGN_EDDSA,
+    );
+
+    // The first request to delete should succeed because the object exists
+    assert!(
+        session
+            .delete_object(TEST_KEY_ID, ObjectType::Asymmetric)
+            .is_ok()
+    );
+
+    // The second request to delete should fail because it's already deleted
+    assert!(
+        session
+            .delete_object(TEST_KEY_ID, ObjectType::Asymmetric)
+            .is_err()
+    );
+}
+
+/// Send a simple echo request
+#[test]
+fn echo_test() {
+    let mut session = create_session!();
+
+    let response = session
+        .echo(TEST_MESSAGE)
+        .unwrap_or_else(|err| panic!("error sending echo: {}", err));
+
+    assert_eq!(TEST_MESSAGE, &response.message[..]);
+}
+
+/// Generate an Ed25519 key
+#[test]
+fn generate_asymmetric_key_test() {
+    let mut session = create_session!();
+    let algorithm = Algorithm::EC_ED25519;
+    let capabilities = Capabilities::ASYMMETRIC_SIGN_EDDSA;
+
+    create_asymmetric_key(&mut session, algorithm, capabilities);
+
     let object_info = session
         .get_object_info(TEST_KEY_ID, ObjectType::Asymmetric)
         .unwrap_or_else(|err| panic!("error getting object info: {}", err));
@@ -114,12 +167,45 @@ fn generate_asymmetric_key_test<C: Connector>(session: &mut Session<C>) {
     assert_eq!(object_info.object_type, ObjectType::Asymmetric);
     assert_eq!(object_info.algorithm, algorithm);
     assert_eq!(object_info.origin, ObjectOrigin::Generated);
-    assert_eq!(&object_info.label.to_string().unwrap(), label);
+    assert_eq!(&object_info.label.to_string().unwrap(), TEST_KEY_LABEL);
 }
 
-// Compute a signature using the Ed25519 key generated in the last test
+/// List the objects in the YubiHSM2
+#[test]
+fn list_objects_test() {
+    let mut session = create_session!();
+
+    create_asymmetric_key(
+        &mut session,
+        Algorithm::EC_ED25519,
+        Capabilities::ASYMMETRIC_SIGN_EDDSA,
+    );
+
+    let response = session
+        .list_objects()
+        .unwrap_or_else(|err| panic!("error listing objects: {}", err));
+
+    // Check type of the Ed25519 we created in generate_asymmetric_key_test()
+    let object = response
+        .objects
+        .iter()
+        .find(|i| i.id == TEST_KEY_ID)
+        .unwrap();
+    assert_eq!(object.object_type, ObjectType::Asymmetric)
+}
+
+/// Compute a signature using the Ed25519 key generated in the last test
 #[cfg(feature = "ring")]
-fn sign_ed25519_test<C: Connector>(session: &mut Session<C>) {
+#[test]
+fn sign_ed25519_test() {
+    let mut session = create_session!();
+
+    create_asymmetric_key(
+        &mut session,
+        Algorithm::EC_ED25519,
+        Capabilities::ASYMMETRIC_SIGN_EDDSA,
+    );
+
     let pubkey_response = session
         .get_pubkey(TEST_KEY_ID)
         .unwrap_or_else(|err| panic!("error getting public key: {}", err));
@@ -136,32 +222,4 @@ fn sign_ed25519_test<C: Connector>(session: &mut Session<C>) {
         untrusted::Input::from(TEST_MESSAGE),
         untrusted::Input::from(&signature_response.signature),
     ).unwrap();
-}
-
-// List the objects in the YubiHSM2
-fn list_objects_test<C: Connector>(session: &mut Session<C>) {
-    let response = session
-        .list_objects()
-        .unwrap_or_else(|err| panic!("error listing objects: {}", err));
-
-    // Check type of the Ed25519 we created in generate_asymmetric_key_test()
-    let object = response.objects.iter().find(|i| i.id == 100).unwrap();
-    assert_eq!(object.object_type, ObjectType::Asymmetric)
-}
-
-// Delete an object in the YubiHSM2
-fn delete_object_test<C: Connector>(session: &mut Session<C>) {
-    // The first request to delete should succeed because the object exists
-    assert!(
-        session
-            .delete_object(TEST_KEY_ID, ObjectType::Asymmetric)
-            .is_ok()
-    );
-
-    // The second request to delete should fail because it's already deleted
-    assert!(
-        session
-            .delete_object(TEST_KEY_ID, ObjectType::Asymmetric)
-            .is_err()
-    );
 }

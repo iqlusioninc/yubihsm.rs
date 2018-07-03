@@ -72,6 +72,7 @@ pub(crate) fn session_message(
         .decrypt_command(encrypted_command);
 
     let response = match command.command_type {
+        CommandType::Blink => BlinkResponse {}.serialize(),
         CommandType::DeleteObject => delete_object(state, &command.data),
         CommandType::Echo => echo(&command.data),
         CommandType::GenAsymmetricKey => gen_asymmetric_key(state, &command.data),

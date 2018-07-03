@@ -68,9 +68,6 @@ extern crate test;
 extern crate untrusted;
 extern crate uuid;
 
-#[macro_use]
-mod macros;
-
 /// Error types
 pub mod error;
 

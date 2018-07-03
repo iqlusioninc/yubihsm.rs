@@ -131,7 +131,7 @@ This crate allows you to run the integration test suite in two different ways:
 live testing against a real YubiHSM2 device, and simulated testing using
 a MockHSM service which reimplements some YubiHSM2 functionality in software.
 
-### `cargo test`: test live against a YubiHSM2 device
+### `cargo test --features=integration`: test live against a YubiHSM2 device
 
 This mode assumes you have a YubiHSM2 hardware device, have downloaded the
 [YubiHSM2 SDK] for your platform, and are running a **yubihsm-connector**
