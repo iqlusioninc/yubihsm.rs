@@ -1,6 +1,6 @@
 //! Objects stored inside of the `MockHSM`
 
-use rand::{OsRng, Rng};
+use rand::{OsRng, RngCore};
 use ring::signature::Ed25519KeyPair;
 use std::collections::HashMap;
 use untrusted;
