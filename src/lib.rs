@@ -18,7 +18,7 @@
 //!
 //! The following documentation describes the most important parts of this crate's API:
 //!
-//! * [Session] type: end-to-end encrypted connection with the YubiHSM. You'll need an active one to do anything.
+//! * [Session]: end-to-end encrypted connection with the YubiHSM. You'll need an active one to do anything.
 //! * [commands]: commands supported by the YubiHSM2 (i.e. main functionality)
 //!
 //! [Session]: https://docs.rs/yubihsm/latest/yubihsm/session/struct.Session.html
@@ -89,7 +89,13 @@ pub mod algorithm;
 /// Object attributes specifying which operations are allowed to be performed
 pub mod capability;
 
-/// Command (i.e. request) structs for `YubiHSM` commands
+/// Commands supported by the `YubiHSM`.
+///
+/// Functions defined in the `yubihsm::commands` module are reimported
+/// and available from the toplevel `yubihsm` module as well.
+///
+/// For more information, see:
+/// <https://developers.yubico.com/YubiHSM2/Commands/>
 pub mod commands;
 
 /// Client for the `yubihsm-connector` service
