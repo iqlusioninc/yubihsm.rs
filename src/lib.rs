@@ -1,4 +1,4 @@
-//! yubihsm.rs: client for `YubiHSM2` hardware security modules
+//! yubihsm.rs: pure Rust client for `YubiHSM2` hardware security modules
 //!
 //! ## Prerequisites
 //!
@@ -16,12 +16,21 @@
 //!
 //! # Getting Started
 //!
-//! The main type you'll want to check out is `Session`. Here is an example of
-//! how to connect to [yubihsm-connector] and perform an Ed25519 signature:
+//! The following documentation describes the most important parts of this crate's API:
+//!
+//! * [Session] type: end-to-end encrypted connection with the YubiHSM. You'll need an active one to do anything.
+//! * [commands]: commands supported by the YubiHSM2 (i.e. main functionality)
+//!
+//! [Session]: https://docs.rs/yubihsm/latest/yubihsm/session/struct.Session.html
+//! [commands]: https://docs.rs/yubihsm/latest/yubihsm/commands/index.html
+//!
+//! The following is an example of how to create a `Session` by connecting to a
+//! [yubihsm-connector] process, and then performing an Ed25519 signature:
 //!
 //! [yubihsm-connector]: https://developers.yubico.com/YubiHSM2/Component_Reference/yubihsm-connector/
 //!
 //! ```no_run
+//! extern crate yubihsm;
 //! use yubihsm::Session;
 //!
 //! // Default host, port, auth key ID, and password for yubihsm-connector
@@ -30,7 +39,7 @@
 //!
 //! // Note: You'll need to create this key first. Run the following from yubihsm-shell:
 //! // `generate asymmetric 0 100 ed25519_test_key 1 asymmetric_sign_eddsa ed25519`
-//! let response = session.sign_ed25519(100, "Hello, world!").unwrap();
+//! let response = yubihsm::sign_ed25519(&mut session, 100, "Hello, world!").unwrap();
 //! println!("Ed25519 signature: {:?}", response.signature);
 //! ```
 
@@ -81,7 +90,7 @@ pub mod algorithm;
 pub mod capability;
 
 /// Command (i.e. request) structs for `YubiHSM` commands
-mod commands;
+pub mod commands;
 
 /// Client for the `yubihsm-connector` service
 pub mod connector;
@@ -115,6 +124,7 @@ pub mod session;
 
 pub use algorithm::Algorithm;
 pub use capability::Capability;
+pub use commands::*;
 pub use connector::{Connector, HttpConfig, HttpConnector};
 pub use domain::Domain;
 pub use object::Id as ObjectId;
