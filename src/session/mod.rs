@@ -1,3 +1,5 @@
+use subtle::ConstantTimeEq;
+
 #[macro_use]
 mod error;
 
@@ -136,8 +138,11 @@ impl<C: Connector> Session<C> {
             response.card_challenge,
         );
 
-        // NOTE: Cryptogram implements constant-time equality comparison
-        if channel.card_cryptogram() != response.card_cryptogram {
+        if channel
+            .card_cryptogram()
+            .ct_eq(&response.card_cryptogram)
+            .unwrap_u8() != 1
+        {
             session_fail!(AuthFailed, "card cryptogram mismatch!");
         }
 

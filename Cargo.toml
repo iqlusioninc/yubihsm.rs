@@ -21,7 +21,6 @@ block-modes = "0.1"
 byteorder = "1.2"
 clear_on_drop = "0.2"
 cmac = "0.1"
-constant_time_eq = "0.1"
 failure = "0.1"
 failure_derive = "0.1"
 hmac = { version = "0.6", optional = true }
@@ -31,6 +30,7 @@ serde = "1.0"
 serde_derive = "1.0"
 ring = { version = "0.13.0-alpha5", optional = true }
 sha2 = { version = "0.7", optional = true }
+subtle = "0.7"
 untrusted = { version = "0.6", optional = true }
 uuid = { version = "0.6", features = ["v4"] }
 
@@ -42,7 +42,7 @@ aes-soft = ["aes/force_soft"]
 default = ["passwords"]
 integration = ["ring", "untrusted"]
 mockhsm = ["integration"]
-nightly = ["clear_on_drop/nightly"]
+nightly = ["clear_on_drop/nightly", "subtle/nightly"]
 passwords = ["hmac", "pbkdf2", "sha2"]
 
 [package.metadata.docs.rs]

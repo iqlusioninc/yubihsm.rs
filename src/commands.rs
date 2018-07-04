@@ -12,6 +12,8 @@ use session::{Session, SessionError};
 use {Algorithm, Capability, Connector, Domain, ObjectId, ObjectLabel, ObjectType};
 
 /// Blink the YubiHSM2's LEDs (to identify it) for the given number of seconds
+///
+/// <https://developers.yubico.com/YubiHSM2/Commands/Blink.html>
 pub fn blink<C: Connector>(
     session: &mut Session<C>,
     num_seconds: u8,
@@ -20,6 +22,8 @@ pub fn blink<C: Connector>(
 }
 
 /// Delete an object of the given ID and type
+///
+/// <https://developers.yubico.com/YubiHSM2/Commands/Blink.html>
 pub fn delete_object<C: Connector>(
     session: &mut Session<C>,
     object_id: ObjectId,
@@ -32,6 +36,8 @@ pub fn delete_object<C: Connector>(
 }
 
 /// Have the card echo an input message
+///
+/// <https://developers.yubico.com/YubiHSM2/Commands/Echo.html>
 pub fn echo<C, T>(session: &mut Session<C>, message: T) -> Result<EchoResponse, SessionError>
 where
     C: Connector,
@@ -43,6 +49,8 @@ where
 }
 
 /// Generate a new asymmetric key within the `YubiHSM2`
+///
+/// <https://developers.yubico.com/YubiHSM2/Commands/Generate_Asymmetric_Key.html>
 pub fn generate_asymmetric_key<C: Connector>(
     session: &mut Session<C>,
     key_id: ObjectId,
@@ -61,6 +69,8 @@ pub fn generate_asymmetric_key<C: Connector>(
 }
 
 /// Get information about an object
+///
+/// <https://developers.yubico.com/YubiHSM2/Commands/Get_Object_Info.html>
 pub fn get_object_info<C: Connector>(
     session: &mut Session<C>,
     object_id: ObjectId,
@@ -75,6 +85,8 @@ pub fn get_object_info<C: Connector>(
 /// Get the public key for an asymmetric key stored on the device
 ///
 /// See `GetPubKeyResponse` for more information about public key formats
+///
+/// <https://developers.yubico.com/YubiHSM2/Commands/Get_Pubkey.html>
 pub fn get_pubkey<C: Connector>(
     session: &mut Session<C>,
     key_id: ObjectId,
@@ -83,6 +95,8 @@ pub fn get_pubkey<C: Connector>(
 }
 
 /// List objects visible from the current session
+///
+/// <https://developers.yubico.com/YubiHSM2/Commands/List_Objects.html>
 pub fn list_objects<C: Connector>(
     session: &mut Session<C>,
 ) -> Result<ListObjectsResponse, SessionError> {
@@ -91,6 +105,8 @@ pub fn list_objects<C: Connector>(
 }
 
 /// Compute an ECDSA signature of the SHA-256 hash of the given data with the given key ID
+///
+/// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Data_Ecdsa.html>
 #[cfg(feature = "sha2")]
 pub fn sign_ecdsa_sha2<C: Connector>(
     session: &mut Session<C>,
@@ -101,6 +117,8 @@ pub fn sign_ecdsa_sha2<C: Connector>(
 }
 
 /// Compute an ECDSA signature of the given fixed-sized data (i.e. digest) with the given key ID
+///
+/// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Data_Ecdsa.html>
 pub fn sign_ecdsa_fixed<C, T>(
     session: &mut Session<C>,
     key_id: ObjectId,
@@ -117,6 +135,8 @@ where
 }
 
 /// Compute an Ed25519 signature with the given key ID
+///
+/// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Data_Eddsa.html>
 pub fn sign_ed25519<C, T>(
     session: &mut Session<C>,
     key_id: ObjectId,
