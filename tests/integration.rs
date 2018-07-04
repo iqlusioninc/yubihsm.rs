@@ -83,24 +83,19 @@ fn create_asymmetric_key(
 ) {
     // Delete the key in TEST_KEY_ID slot it exists (we use it for testing)
     // Ignore errors since the object may not exist yet
-    let _ = session.delete_object(TEST_KEY_ID, ObjectType::Asymmetric);
+    let _ = yubihsm::delete_object(session, TEST_KEY_ID, ObjectType::Asymmetric);
 
     // Ensure the object does not already exist
-    assert!(
-        session
-            .get_object_info(TEST_KEY_ID, ObjectType::Asymmetric)
-            .is_err()
-    );
+    assert!(yubihsm::get_object_info(session, TEST_KEY_ID, ObjectType::Asymmetric).is_err());
 
-    let response = session
-        .generate_asymmetric_key(
-            TEST_KEY_ID,
-            TEST_KEY_LABEL.into(),
-            TEST_DOMAINS,
-            capabilities,
-            algorithm,
-        )
-        .unwrap_or_else(|err| panic!("error generating asymmetric key: {}", err));
+    let response = yubihsm::generate_asymmetric_key(
+        session,
+        TEST_KEY_ID,
+        TEST_KEY_LABEL.into(),
+        TEST_DOMAINS,
+        capabilities,
+        algorithm,
+    ).unwrap_or_else(|err| panic!("error generating asymmetric key: {}", err));
 
     assert_eq!(response.key_id, TEST_KEY_ID);
 }
@@ -108,7 +103,8 @@ fn create_asymmetric_key(
 /// Blink the LED on the YubiHSM for 2 seconds
 #[test]
 fn blink_test() {
-    create_session!().blink(2).unwrap();
+    let mut session = create_session!();
+    yubihsm::blink(&mut session, 2).unwrap();
 }
 
 /// Delete an object in the YubiHSM2
@@ -123,18 +119,10 @@ fn delete_object_test() {
     );
 
     // The first request to delete should succeed because the object exists
-    assert!(
-        session
-            .delete_object(TEST_KEY_ID, ObjectType::Asymmetric)
-            .is_ok()
-    );
+    assert!(yubihsm::delete_object(&mut session, TEST_KEY_ID, ObjectType::Asymmetric).is_ok());
 
     // The second request to delete should fail because it's already deleted
-    assert!(
-        session
-            .delete_object(TEST_KEY_ID, ObjectType::Asymmetric)
-            .is_err()
-    );
+    assert!(yubihsm::delete_object(&mut session, TEST_KEY_ID, ObjectType::Asymmetric).is_err());
 }
 
 /// Send a simple echo request
@@ -142,8 +130,7 @@ fn delete_object_test() {
 fn echo_test() {
     let mut session = create_session!();
 
-    let response = session
-        .echo(TEST_MESSAGE)
+    let response = yubihsm::echo(&mut session, TEST_MESSAGE)
         .unwrap_or_else(|err| panic!("error sending echo: {}", err));
 
     assert_eq!(TEST_MESSAGE, &response.message[..]);
@@ -158,8 +145,7 @@ fn generate_asymmetric_key_test() {
 
     create_asymmetric_key(&mut session, algorithm, capabilities);
 
-    let object_info = session
-        .get_object_info(TEST_KEY_ID, ObjectType::Asymmetric)
+    let object_info = yubihsm::get_object_info(&mut session, TEST_KEY_ID, ObjectType::Asymmetric)
         .unwrap_or_else(|err| panic!("error getting object info: {}", err));
 
     assert_eq!(object_info.capabilities, capabilities);
@@ -182,8 +168,7 @@ fn list_objects_test() {
         Capability::ASYMMETRIC_SIGN_EDDSA,
     );
 
-    let response = session
-        .list_objects()
+    let response = yubihsm::list_objects(&mut session)
         .unwrap_or_else(|err| panic!("error listing objects: {}", err));
 
     // Check type of the Ed25519 we created in generate_asymmetric_key_test()
@@ -192,6 +177,7 @@ fn list_objects_test() {
         .iter()
         .find(|i| i.id == TEST_KEY_ID)
         .unwrap();
+
     assert_eq!(object.object_type, ObjectType::Asymmetric)
 }
 
@@ -208,8 +194,7 @@ fn sign_ecdsa_test() {
         Capability::ASYMMETRIC_SIGN_ECDSA,
     );
 
-    let pubkey_response = session
-        .get_pubkey(TEST_KEY_ID)
+    let pubkey_response = yubihsm::get_pubkey(&mut session, TEST_KEY_ID)
         .unwrap_or_else(|err| panic!("error getting public key: {}", err));
 
     assert_eq!(pubkey_response.algorithm, Algorithm::EC_P256);
@@ -219,8 +204,7 @@ fn sign_ecdsa_test() {
     pubkey[0] = 0x04; // DER OCTET STRING tag
     pubkey[1..].copy_from_slice(pubkey_response.data.as_slice());
 
-    let signature_response = session
-        .sign_ecdsa_sha2(TEST_KEY_ID, TEST_MESSAGE)
+    let signature_response = yubihsm::sign_ecdsa_sha2(&mut session, TEST_KEY_ID, TEST_MESSAGE)
         .unwrap_or_else(|err| panic!("error performing ECDSA signature: {}", err));
 
     println!("pubkey: {:?}", &pubkey_response.data);
@@ -246,14 +230,12 @@ fn sign_ed25519_test() {
         Capability::ASYMMETRIC_SIGN_EDDSA,
     );
 
-    let pubkey_response = session
-        .get_pubkey(TEST_KEY_ID)
+    let pubkey_response = yubihsm::get_pubkey(&mut session, TEST_KEY_ID)
         .unwrap_or_else(|err| panic!("error getting public key: {}", err));
 
     assert_eq!(pubkey_response.algorithm, Algorithm::EC_ED25519);
 
-    let signature_response = session
-        .sign_ed25519(TEST_KEY_ID, TEST_MESSAGE)
+    let signature_response = yubihsm::sign_ed25519(&mut session, TEST_KEY_ID, TEST_MESSAGE)
         .unwrap_or_else(|err| panic!("error performing Ed25519 signature: {}", err));
 
     ring::signature::verify(

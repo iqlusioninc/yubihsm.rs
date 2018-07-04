@@ -71,8 +71,16 @@ Adding support for additional commands is easy! See the `Contributing` section.
 
 ## Getting Started
 
-The main type you'll want to check out is `Session`. Here is an example of
-how to connect to [yubihsm-connector] and perform an Ed25519 signature:
+The following documentation describes the most important parts of this crate's API:
+
+* [Session] type: end-to-end encrypted connection with the YubiHSM. You'll need an active one to do anything.
+* [commands]: commands supported by the YubiHSM2 (i.e. main functionality)
+
+[Session]: https://docs.rs/yubihsm/latest/yubihsm/session/struct.Session.html
+[commands]: https://docs.rs/yubihsm/latest/yubihsm/commands/index.html
+
+Here is an example of how to create a `Session` by connecting to a [yubihsm-connector]
+process, and then performing an Ed25519 signature:
 
 ```rust
 extern crate yubihsm;
@@ -88,7 +96,7 @@ let mut session = Session::create_from_password(
 
 // Note: You'll need to create this key first. Run the following from yubihsm-shell:
 // `generate asymmetric 0 100 ed25519_test_key 1 asymmetric_sign_eddsa ed25519`
-let response = session.sign_ed25519(100, "Hello, world!").unwrap();
+let response = yubihsm::sign_ed25519(&session, 100, "Hello, world!").unwrap();
 println!("Ed25519 signature: {:?}", response.signature);
 ```
 
@@ -107,11 +115,10 @@ Here's a list of steps necessary to implement a new command type:
 
 1. Find the command you wish to implement on the [YubiHSM2 commands] page, and
    study the structure of the command (i.e. request) and response
-2. Add a struct which matches the structure of the command to [commands.rs]
+2. Add a `pub(crate)` struct which matches the structure of the command to [commands.rs]
+   and a wrapper function for constructing it and sending it to the YubiHSM.
 3. Add an additional struct which matches the response structure to [responses.rs]
-4. Add a wrapper function to [session.rs] which constructs the command message,
-   performs the command, and returns the corresponding response struct.
-5. (Optional) Implement the command in [mockhsm/mod.rs] and write an
+4. (Optional) Implement the command in [mockhsm/commands.rs] and write an
    [integration test]
 
 Here is an [example PR that implements Ed25519 signing] you can study to see

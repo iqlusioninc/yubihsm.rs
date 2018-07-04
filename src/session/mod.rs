@@ -2,7 +2,7 @@
 mod error;
 
 pub use self::error::{SessionError, SessionErrorKind};
-use super::{Algorithm, Capability, Domain, ObjectId, ObjectLabel, ObjectType, SessionId};
+use super::{ObjectId, SessionId};
 use commands::*;
 use connector::{Connector, HttpConfig, HttpConnector, Status as ConnectorStatus};
 use responses::*;
@@ -10,8 +10,6 @@ use securechannel::{
     Challenge, Channel, CommandMessage, ResponseCode, ResponseMessage, StaticKeys,
 };
 use serializers::deserialize;
-#[cfg(feature = "sha2")]
-use sha2::{Digest, Sha256};
 
 /// Salt value to use with PBKDF2 when deriving static keys from a password
 pub const PBKDF2_SALT: &[u8] = b"Yubico";
@@ -156,125 +154,15 @@ impl<C: Connector> Session<C> {
         Ok(session)
     }
 
-    /// Request current yubihsm-connector status
-    #[inline]
-    pub fn connector_status(&mut self) -> Result<ConnectorStatus, SessionError> {
-        self.connector.status().map_err(|e| e.into())
-    }
-
-    /// Blink the YubiHSM2's LEDs (to identify it) for the given number of seconds
-    pub fn blink(&mut self, num_seconds: u8) -> Result<BlinkResponse, SessionError> {
-        self.send_encrypted_command(BlinkCommand { num_seconds })
-    }
-
-    /// Delete an object of the given ID and type
-    pub fn delete_object(
-        &mut self,
-        object_id: ObjectId,
-        object_type: ObjectType,
-    ) -> Result<DeleteObjectResponse, SessionError> {
-        self.send_encrypted_command(DeleteObjectCommand {
-            object_id,
-            object_type,
-        })
-    }
-
-    /// Have the card echo an input message
-    pub fn echo<T>(&mut self, message: T) -> Result<EchoResponse, SessionError>
-    where
-        T: Into<Vec<u8>>,
-    {
-        self.send_encrypted_command(EchoCommand {
-            message: message.into(),
-        })
-    }
-
-    /// Generate a new asymmetric key within the `YubiHSM2`
-    pub fn generate_asymmetric_key(
-        &mut self,
-        key_id: ObjectId,
-        label: ObjectLabel,
-        domains: Domain,
-        capabilities: Capability,
-        algorithm: Algorithm,
-    ) -> Result<GenAsymmetricKeyResponse, SessionError> {
-        self.send_encrypted_command(GenAsymmetricKeyCommand {
-            key_id,
-            label,
-            domains,
-            capabilities,
-            algorithm,
-        })
-    }
-
-    /// Get information about an object
-    pub fn get_object_info(
-        &mut self,
-        object_id: ObjectId,
-        object_type: ObjectType,
-    ) -> Result<GetObjectInfoResponse, SessionError> {
-        self.send_encrypted_command(GetObjectInfoCommand {
-            object_id,
-            object_type,
-        })
-    }
-
-    /// Get the public key for an asymmetric key stored on the device
-    ///
-    /// See `GetPubKeyResponse` for more information about public key formats
-    pub fn get_pubkey(&mut self, key_id: ObjectId) -> Result<GetPubKeyResponse, SessionError> {
-        self.send_encrypted_command(GetPubKeyCommand { key_id })
-    }
-
     /// Get the current session ID
+    #[inline]
     pub fn id(&self) -> SessionId {
         self.id
     }
 
-    /// List objects visible from the current session
-    pub fn list_objects(&mut self) -> Result<ListObjectsResponse, SessionError> {
-        // TODO: support for filtering objects
-        self.send_encrypted_command(ListObjectsCommand {})
-    }
-
-    /// Compute an ECDSA signature of the SHA-256 hash of the given data with the given key ID
-    #[cfg(feature = "sha2")]
-    pub fn sign_ecdsa_sha2(
-        &mut self,
-        key_id: ObjectId,
-        data: &[u8],
-    ) -> Result<SignDataECDSAResponse, SessionError> {
-        self.sign_ecdsa_fixed(key_id, Sha256::digest(data).as_slice())
-    }
-
-    /// Compute an ECDSA signature of the given fixed-sized data (i.e. digest) with the given key ID
-    pub fn sign_ecdsa_fixed<T>(
-        &mut self,
-        key_id: ObjectId,
-        digest: T,
-    ) -> Result<SignDataECDSAResponse, SessionError>
-    where
-        T: Into<Vec<u8>>,
-    {
-        self.send_encrypted_command(SignDataECDSACommand {
-            key_id,
-            digest: digest.into(),
-        })
-    }
-
-    /// Compute an Ed25519 signature with the given key ID
-    pub fn sign_ed25519<T>(
-        &mut self,
-        key_id: ObjectId,
-        data: T,
-    ) -> Result<SignDataEdDSAResponse, SessionError>
-    where
-        T: Into<Vec<u8>>,
-    {
-        self.send_encrypted_command(SignDataEdDSACommand {
-            key_id,
-            data: data.into(),
-        })
+    /// Request current yubihsm-connector status
+    pub fn connector_status(&mut self) -> Result<ConnectorStatus, SessionError> {
+        self.connector.status().map_err(|e| e.into())
     }
 
     /// Authenticate the current session with the `YubiHSM2`
@@ -314,7 +202,7 @@ impl<C: Connector> Session<C> {
 
     /// Encrypt a command and send it to the card, then authenticate and
     /// decrypt the response
-    fn send_encrypted_command<T: Command>(
+    pub(crate) fn send_encrypted_command<T: Command>(
         &mut self,
         command: T,
     ) -> Result<T::ResponseType, SessionError> {

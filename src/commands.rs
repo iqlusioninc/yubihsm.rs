@@ -2,11 +2,135 @@ use responses::Response;
 use securechannel::{CommandMessage, CommandType};
 use serde::de::DeserializeOwned;
 use serde::ser::Serialize;
-use serializers::serialize;
+#[cfg(feature = "sha2")]
+use sha2::{Digest, Sha256};
 
 use responses::*;
 use securechannel::Challenge;
-use {Algorithm, Capability, Domain, ObjectId, ObjectLabel, ObjectType};
+use serializers::serialize;
+use session::{Session, SessionError};
+use {Algorithm, Capability, Connector, Domain, ObjectId, ObjectLabel, ObjectType};
+
+/// Blink the YubiHSM2's LEDs (to identify it) for the given number of seconds
+pub fn blink<C: Connector>(
+    session: &mut Session<C>,
+    num_seconds: u8,
+) -> Result<BlinkResponse, SessionError> {
+    session.send_encrypted_command(BlinkCommand { num_seconds })
+}
+
+/// Delete an object of the given ID and type
+pub fn delete_object<C: Connector>(
+    session: &mut Session<C>,
+    object_id: ObjectId,
+    object_type: ObjectType,
+) -> Result<DeleteObjectResponse, SessionError> {
+    session.send_encrypted_command(DeleteObjectCommand {
+        object_id,
+        object_type,
+    })
+}
+
+/// Have the card echo an input message
+pub fn echo<C, T>(session: &mut Session<C>, message: T) -> Result<EchoResponse, SessionError>
+where
+    C: Connector,
+    T: Into<Vec<u8>>,
+{
+    session.send_encrypted_command(EchoCommand {
+        message: message.into(),
+    })
+}
+
+/// Generate a new asymmetric key within the `YubiHSM2`
+pub fn generate_asymmetric_key<C: Connector>(
+    session: &mut Session<C>,
+    key_id: ObjectId,
+    label: ObjectLabel,
+    domains: Domain,
+    capabilities: Capability,
+    algorithm: Algorithm,
+) -> Result<GenAsymmetricKeyResponse, SessionError> {
+    session.send_encrypted_command(GenAsymmetricKeyCommand {
+        key_id,
+        label,
+        domains,
+        capabilities,
+        algorithm,
+    })
+}
+
+/// Get information about an object
+pub fn get_object_info<C: Connector>(
+    session: &mut Session<C>,
+    object_id: ObjectId,
+    object_type: ObjectType,
+) -> Result<GetObjectInfoResponse, SessionError> {
+    session.send_encrypted_command(GetObjectInfoCommand {
+        object_id,
+        object_type,
+    })
+}
+
+/// Get the public key for an asymmetric key stored on the device
+///
+/// See `GetPubKeyResponse` for more information about public key formats
+pub fn get_pubkey<C: Connector>(
+    session: &mut Session<C>,
+    key_id: ObjectId,
+) -> Result<GetPubKeyResponse, SessionError> {
+    session.send_encrypted_command(GetPubKeyCommand { key_id })
+}
+
+/// List objects visible from the current session
+pub fn list_objects<C: Connector>(
+    session: &mut Session<C>,
+) -> Result<ListObjectsResponse, SessionError> {
+    // TODO: support for filtering objects
+    session.send_encrypted_command(ListObjectsCommand {})
+}
+
+/// Compute an ECDSA signature of the SHA-256 hash of the given data with the given key ID
+#[cfg(feature = "sha2")]
+pub fn sign_ecdsa_sha2<C: Connector>(
+    session: &mut Session<C>,
+    key_id: ObjectId,
+    data: &[u8],
+) -> Result<SignDataECDSAResponse, SessionError> {
+    sign_ecdsa_fixed(session, key_id, Sha256::digest(data).as_slice())
+}
+
+/// Compute an ECDSA signature of the given fixed-sized data (i.e. digest) with the given key ID
+pub fn sign_ecdsa_fixed<C, T>(
+    session: &mut Session<C>,
+    key_id: ObjectId,
+    digest: T,
+) -> Result<SignDataECDSAResponse, SessionError>
+where
+    C: Connector,
+    T: Into<Vec<u8>>,
+{
+    session.send_encrypted_command(SignDataECDSACommand {
+        key_id,
+        digest: digest.into(),
+    })
+}
+
+/// Compute an Ed25519 signature with the given key ID
+pub fn sign_ed25519<C, T>(
+    session: &mut Session<C>,
+    key_id: ObjectId,
+    data: T,
+) -> Result<SignDataEdDSAResponse, SessionError>
+where
+    C: Connector,
+    T: Into<Vec<u8>>,
+{
+    session.send_encrypted_command(SignDataEdDSACommand {
+        key_id,
+        data: data.into(),
+    })
+}
 
 /// Structured commands (i.e. requests) which are encrypted and then sent to
 /// the HSM. Every command has a corresponding `ResponseType`.
@@ -30,7 +154,7 @@ impl<C: Command> From<C> for CommandMessage {
 ///
 /// <https://developers.yubico.com/YubiHSM2/Commands/Blink.html>
 #[derive(Serialize, Deserialize, Debug)]
-pub struct BlinkCommand {
+pub(crate) struct BlinkCommand {
     /// Number of seconds to blink for
     pub num_seconds: u8,
 }
@@ -43,7 +167,7 @@ impl Command for BlinkCommand {
 ///
 /// <https://developers.yubico.com/YubiHSM2/Commands/Create_Session.html>
 #[derive(Serialize, Deserialize, Debug)]
-pub struct CreateSessionCommand {
+pub(crate) struct CreateSessionCommand {
     /// Authentication key ID to use
     pub auth_key_id: ObjectId,
 
@@ -59,7 +183,7 @@ impl Command for CreateSessionCommand {
 ///
 /// <https://developers.yubico.com/YubiHSM2/Commands/Delete_Object.html>
 #[derive(Serialize, Deserialize, Debug)]
-pub struct DeleteObjectCommand {
+pub(crate) struct DeleteObjectCommand {
     /// Object ID to delete
     pub object_id: ObjectId,
 
@@ -75,7 +199,7 @@ impl Command for DeleteObjectCommand {
 ///
 /// <https://developers.yubico.com/YubiHSM2/Commands/Echo.html>
 #[derive(Serialize, Deserialize, Debug)]
-pub struct EchoCommand {
+pub(crate) struct EchoCommand {
     /// Message to echo
     pub message: Vec<u8>,
 }
@@ -88,7 +212,7 @@ impl Command for EchoCommand {
 ///
 /// <https://developers.yubico.com/YubiHSM2/Commands/Generate_Asymmetric_Key.html>
 #[derive(Serialize, Deserialize, Debug)]
-pub struct GenAsymmetricKeyCommand {
+pub(crate) struct GenAsymmetricKeyCommand {
     /// ID of the key
     pub key_id: ObjectId,
 
@@ -113,7 +237,7 @@ impl Command for GenAsymmetricKeyCommand {
 ///
 /// <https://developers.yubico.com/YubiHSM2/Commands/Get_Pubkey.html>
 #[derive(Serialize, Deserialize, Debug)]
-pub struct GetPubKeyCommand {
+pub(crate) struct GetPubKeyCommand {
     /// Object ID of the key to obtain the corresponding pubkey for
     pub key_id: ObjectId,
 }
@@ -126,7 +250,7 @@ impl Command for GetPubKeyCommand {
 ///
 /// <https://developers.yubico.com/YubiHSM2/Commands/Delete_Object.html>
 #[derive(Serialize, Deserialize, Debug)]
-pub struct GetObjectInfoCommand {
+pub(crate) struct GetObjectInfoCommand {
     /// Object ID to obtain information about
     pub object_id: ObjectId,
 
@@ -142,7 +266,7 @@ impl Command for GetObjectInfoCommand {
 ///
 /// <https://developers.yubico.com/YubiHSM2/Commands/List_Objects.html>
 #[derive(Serialize, Deserialize, Debug)]
-pub struct ListObjectsCommand {}
+pub(crate) struct ListObjectsCommand {}
 
 impl Command for ListObjectsCommand {
     type ResponseType = ListObjectsResponse;
@@ -150,7 +274,7 @@ impl Command for ListObjectsCommand {
 
 /// Request parameters for `CommandType::SignDataECDSA`
 #[derive(Serialize, Deserialize, Debug)]
-pub struct SignDataECDSACommand {
+pub(crate) struct SignDataECDSACommand {
     /// ID of the key to perform the signature with
     pub key_id: ObjectId,
 
@@ -164,7 +288,7 @@ impl Command for SignDataECDSACommand {
 
 /// Request parameters for `CommandType::SignDataEdDSA`
 #[derive(Serialize, Deserialize, Debug)]
-pub struct SignDataEdDSACommand {
+pub(crate) struct SignDataEdDSACommand {
     /// ID of the key to perform the signature with
     pub key_id: ObjectId,
 
