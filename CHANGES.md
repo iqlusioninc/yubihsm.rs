@@ -1,3 +1,10 @@
+## [0.11.1] (2018-07-04)
+
+[0.11.1]: https://github.com/tendermint/yubihsm-rs/compare/v0.11.0...v0.11.1
+
+* [#46](https://github.com/tendermint/yubihsm-rs/pull/46)
+  Upgrade to rand 0.5.
+
 ## [0.11.0] (2018-07-04)
 
 [0.11.0]: https://github.com/tendermint/yubihsm-rs/compare/v0.10.1...v0.11.0
