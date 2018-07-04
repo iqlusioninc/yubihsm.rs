@@ -54,18 +54,25 @@ rustflags = ["-Ctarget-feature=+aes"]
 
 ## Supported Commands
 
-* [Authenticate Session](https://developers.yubico.com/YubiHSM2/Commands/Authenticate_Session.html)
-* [Blink](https://developers.yubico.com/YubiHSM2/Commands/Blink.html)
-* [Create Session](https://developers.yubico.com/YubiHSM2/Commands/Create_Session.html)
-* [Delete Object](https://developers.yubico.com/YubiHSM2/Commands/Delete_Object.html)
-* [Echo](https://developers.yubico.com/YubiHSM2/Commands/Echo.html)
-* [Generate Asymmetric Key](https://developers.yubico.com/YubiHSM2/Commands/Generate_Asymmetric_Key.html)
-* [Get Object Info](https://developers.yubico.com/YubiHSM2/Commands/Get_Object_Info.html)
-* [Get Pubkey](https://developers.yubico.com/YubiHSM2/Commands/Get_Pubkey.html)
-* [List Objects](https://developers.yubico.com/YubiHSM2/Commands/List_Objects.html)
-* [Session Message](https://developers.yubico.com/YubiHSM2/Commands/Session_Message.html)
-* [Sign Data ECDSA](https://developers.yubico.com/YubiHSM2/Commands/Sign_Data_Ecdsa.html)
-* [Sign Data EdDSA](https://developers.yubico.com/YubiHSM2/Commands/Sign_Data_Eddsa.html) i.e. Ed25519 signatures
+* [Blink]: Blink the YubiHSM2's LEDs (to identify it)
+* [Delete Object]: Delete an object of the given ID and type
+* [Echo]: Have the card echo an input message
+* [Generate Asymmetric Key]: Generate a new asymmetric key within the `YubiHSM2`
+* [Get Object Info]: Get information about an object
+* [Get Pubkey]: Get the public key for an asymmetric private key stored on the device
+* [List Objects]: List objects visible from the current session
+* [Sign Data ECDSA]: Compute an ECDSA signature using an HSM-backed private key
+* [Sign Data EdDSA]: Compute an Ed25519 signature using an HSM-backed private key
+
+[Blink]: https://docs.rs/yubihsm/latest/yubihsm/commands/fn.blink.html
+[Delete Object]: https://docs.rs/yubihsm/latest/yubihsm/commands/fn.delete_object.html
+[Echo]: https://docs.rs/yubihsm/latest/yubihsm/commands/fn.echo.html
+[Generate Asymmetric Key]: https://docs.rs/yubihsm/latest/yubihsm/commands/fn.echo.html
+[Get Object Info]: https://docs.rs/yubihsm/latest/yubihsm/commands/fn.get_object_info.html
+[Get Pubkey]: https://docs.rs/yubihsm/latest/yubihsm/commands/fn.get_pubkey.html
+[List Objects]: https://docs.rs/yubihsm/latest/yubihsm/commands/fn.list_objects.html
+[Sign Data ECDSA]: https://docs.rs/yubihsm/latest/yubihsm/commands/fn.sign_ecdsa_sha2.html
+[Sign Data EdDSA]: https://docs.rs/yubihsm/latest/yubihsm/commands/fn.sign_ed25519.html
 
 Adding support for additional commands is easy! See the `Contributing` section.
 
