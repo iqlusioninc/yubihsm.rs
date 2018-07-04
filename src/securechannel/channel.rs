@@ -338,7 +338,10 @@ impl Channel {
         let expected_host_cryptogram = self.host_cryptogram();
         let actual_host_cryptogram = Cryptogram::from_slice(&command.data);
 
-        if expected_host_cryptogram.ct_eq(&actual_host_cryptogram).unwrap_u8() != 1 {
+        if expected_host_cryptogram
+            .ct_eq(&actual_host_cryptogram)
+            .unwrap_u8() != 1
+        {
             self.terminate();
             secure_channel_fail!(VerifyFailed, "host cryptogram mismatch!");
         }

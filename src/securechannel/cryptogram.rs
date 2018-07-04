@@ -1,8 +1,8 @@
 //! Authentication cryptograms (8-byte MACs) used for session verification
 
 use clear_on_drop::clear::Clear;
-use subtle::{Choice, ConstantTimeEq};
 use std::fmt;
+use subtle::{Choice, ConstantTimeEq};
 
 /// Size of a cryptogram (i.e. truncated MAC)
 pub const CRYPTOGRAM_SIZE: usize = 8;

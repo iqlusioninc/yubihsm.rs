@@ -9,8 +9,8 @@
 use clear_on_drop::clear::Clear;
 use cmac::crypto_mac::generic_array::typenum::U16;
 use cmac::crypto_mac::generic_array::GenericArray;
-use subtle::{Choice, ConstantTimeEq};
 use std::fmt;
+use subtle::{Choice, ConstantTimeEq};
 
 use super::SecureChannelError;
 
