@@ -73,7 +73,7 @@ Adding support for additional commands is easy! See the `Contributing` section.
 
 The following documentation describes the most important parts of this crate's API:
 
-* [Session] type: end-to-end encrypted connection with the YubiHSM. You'll need an active one to do anything.
+* [Session]: end-to-end encrypted connection with the YubiHSM. You'll need an active one to do anything.
 * [commands]: commands supported by the YubiHSM2 (i.e. main functionality)
 
 [Session]: https://docs.rs/yubihsm/latest/yubihsm/session/struct.Session.html

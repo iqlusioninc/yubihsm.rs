@@ -1,4 +1,4 @@
-use rand::{OsRng, Rng};
+use rand::{CryptoRng, OsRng, RngCore};
 
 /// Size of a challenge message
 pub const CHALLENGE_SIZE: usize = 8;
@@ -14,7 +14,7 @@ impl Challenge {
     }
 
     /// Create a new Challenge using the given RNG
-    pub fn new(rng: &mut Rng) -> Self {
+    pub fn new<R: CryptoRng + RngCore>(rng: &mut R) -> Self {
         let mut challenge = [0u8; CHALLENGE_SIZE];
         rng.fill_bytes(&mut challenge);
         Challenge(challenge)
