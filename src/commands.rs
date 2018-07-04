@@ -6,7 +6,7 @@ use serializers::serialize;
 
 use responses::*;
 use securechannel::Challenge;
-use {Algorithm, Capabilities, Domains, ObjectId, ObjectLabel, ObjectType};
+use {Algorithm, Capability, Domain, ObjectId, ObjectLabel, ObjectType};
 
 /// Structured commands (i.e. requests) which are encrypted and then sent to
 /// the HSM. Every command has a corresponding `ResponseType`.
@@ -95,11 +95,11 @@ pub struct GenAsymmetricKeyCommand {
     /// Label for the key (40-bytes)
     pub label: ObjectLabel,
 
-    /// Domains in which the key will be accessible
-    pub domains: Domains,
+    /// Domain in which the key will be accessible
+    pub domains: Domain,
 
-    /// Capabilities of the key
-    pub capabilities: Capabilities,
+    /// Capability of the key
+    pub capabilities: Capability,
 
     /// Key algorithm
     pub algorithm: Algorithm,
@@ -148,7 +148,21 @@ impl Command for ListObjectsCommand {
     type ResponseType = ListObjectsResponse;
 }
 
-/// Request parameters `CommandType::SignDataEdDSA`
+/// Request parameters for `CommandType::SignDataECDSA`
+#[derive(Serialize, Deserialize, Debug)]
+pub struct SignDataECDSACommand {
+    /// ID of the key to perform the signature with
+    pub key_id: ObjectId,
+
+    /// Digest of data to be signed
+    pub digest: Vec<u8>,
+}
+
+impl Command for SignDataECDSACommand {
+    type ResponseType = SignDataECDSAResponse;
+}
+
+/// Request parameters for `CommandType::SignDataEdDSA`
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SignDataEdDSACommand {
     /// ID of the key to perform the signature with

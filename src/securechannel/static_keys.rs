@@ -1,8 +1,11 @@
 //! Static Secure Channel keys from which session keys are derived
 
 use clear_on_drop::clear::Clear;
+#[cfg(feature = "hmac")]
 use hmac::Hmac;
+#[cfg(feature = "pbkdf2")]
 use pbkdf2::pbkdf2;
+#[cfg(feature = "sha2")]
 use sha2::Sha256;
 
 use super::KEY_SIZE;
@@ -18,6 +21,7 @@ pub struct StaticKeys {
 
 impl StaticKeys {
     /// Derive static_keys keys from a password
+    #[cfg(feature = "passwords")]
     pub fn derive_from_password(password: &[u8], salt: &[u8], iterations: usize) -> Self {
         let mut kdf_output = [0u8; KEY_SIZE * 2];
         pbkdf2::<Hmac<Sha256>>(password, salt, iterations, &mut kdf_output);

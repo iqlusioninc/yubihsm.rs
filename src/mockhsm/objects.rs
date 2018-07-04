@@ -1,20 +1,17 @@
 //! Objects stored inside of the `MockHSM`
 
-use rand::OsRng;
-use sha2::Sha512;
+use rand::{OsRng, Rng};
+use ring::signature::Ed25519KeyPair;
 use std::collections::HashMap;
+use untrusted;
 
-use ed25519_dalek::Keypair as Ed25519Keypair;
-
-use {
-    Algorithm, Capabilities, Domains, ObjectId, ObjectLabel, ObjectOrigin, ObjectType, SequenceId,
-};
+use {Algorithm, Capability, Domain, ObjectId, ObjectLabel, ObjectOrigin, ObjectType, SequenceId};
 
 /// Objects stored in the `MockHSM`
 #[derive(Default)]
 pub struct Objects {
     // TODO: other object types besides Ed25519 keys
-    pub ed25519_keys: HashMap<ObjectId, Object<Ed25519Keypair>>,
+    pub ed25519_keys: HashMap<ObjectId, Object<Ed25519KeyPair>>,
 }
 
 impl Objects {
@@ -31,25 +28,30 @@ pub struct Object<T> {
     pub value: T,
     pub object_type: ObjectType,
     pub algorithm: Algorithm,
-    pub capabilities: Capabilities,
-    pub delegated_capabilities: Capabilities,
-    pub domains: Domains,
+    pub capabilities: Capability,
+    pub delegated_capabilities: Capability,
+    pub domains: Domain,
     pub length: u16,
     pub sequence: SequenceId,
     pub origin: ObjectOrigin,
     pub label: ObjectLabel,
 }
 
-impl Object<Ed25519Keypair> {
-    pub fn new(label: ObjectLabel, capabilities: Capabilities, domains: Domains) -> Self {
-        let mut cspring = OsRng::new().unwrap();
+impl Object<Ed25519KeyPair> {
+    pub fn new(label: ObjectLabel, capabilities: Capability, domains: Domain) -> Self {
+        let mut csprng = OsRng::new().unwrap();
+
+        let mut seed_bytes = [0u8; 32];
+        csprng.fill_bytes(&mut seed_bytes);
+
+        let seed = untrusted::Input::from(&seed_bytes);
 
         Self {
-            value: Ed25519Keypair::generate::<Sha512>(&mut cspring),
+            value: Ed25519KeyPair::from_seed_unchecked(seed).unwrap(),
             object_type: ObjectType::Asymmetric,
             algorithm: Algorithm::EC_ED25519,
             capabilities,
-            delegated_capabilities: Capabilities::default(),
+            delegated_capabilities: Capability::default(),
             domains,
             length: 24,
             sequence: 1,

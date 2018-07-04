@@ -8,9 +8,7 @@ use serde::ser::Serialize;
 use securechannel::{Challenge, Cryptogram};
 #[cfg(feature = "mockhsm")]
 use serializers::serialize;
-use {
-    Algorithm, Capabilities, Domains, ObjectId, ObjectLabel, ObjectOrigin, ObjectType, SequenceId,
-};
+use {Algorithm, Capability, Domain, ObjectId, ObjectLabel, ObjectOrigin, ObjectType, SequenceId};
 
 /// Structured responses to `Command` messages sent from the HSM
 pub(crate) trait Response: Serialize + DeserializeOwned + Sized {
@@ -91,8 +89,8 @@ impl Response for GenAsymmetricKeyResponse {
 /// <https://developers.yubico.com/YubiHSM2/Commands/Get_Object_Info.html>
 #[derive(Serialize, Deserialize, Debug)]
 pub struct GetObjectInfoResponse {
-    /// Capabilities
-    pub capabilities: Capabilities,
+    /// Capability
+    pub capabilities: Capability,
 
     /// Object identifier
     pub id: u16,
@@ -101,7 +99,7 @@ pub struct GetObjectInfoResponse {
     pub length: u16,
 
     /// Domains from which object is accessible
-    pub domains: Domains,
+    pub domains: Domain,
 
     /// Object type
     pub object_type: ObjectType,
@@ -119,8 +117,8 @@ pub struct GetObjectInfoResponse {
     /// Label of object
     pub label: ObjectLabel,
 
-    /// Delegated Capabilities
-    pub delegated_capabilities: Capabilities,
+    /// Delegated Capability
+    pub delegated_capabilities: Capability,
 }
 
 impl Response for GetObjectInfoResponse {
@@ -142,6 +140,11 @@ pub struct GetPubKeyResponse {
     ///   - Public point X (0x20 | 0x30 | 0x40 | 0x42 bytes)
     ///   - Public point Y (0x20 | 0x30 | 0x40 | 0x42 bytes)
     /// - Ed25519: Public point A, compressed (0x20 bytes)
+    ///
+    /// In particular note that in the case of e.g. ECDSA public keys, many
+    /// libraries will expect a 0x04 (DER OCTET STRING) tag byte at the
+    /// beginning of the key. The YubiHSM does not return this, so you may
+    /// need to add it depending on your particular application.
     pub data: Vec<u8>,
 }
 
@@ -174,6 +177,17 @@ pub struct ListObjectsEntry {
 
 impl Response for ListObjectsResponse {
     const COMMAND_TYPE: CommandType = CommandType::ListObjects;
+}
+
+/// Response from `CommandType::SignDataECDSA`
+#[derive(Serialize, Deserialize, Debug)]
+pub struct SignDataECDSAResponse {
+    /// ECDSA signature (ASN.1 DER encoded)
+    pub signature: Vec<u8>,
+}
+
+impl Response for SignDataECDSAResponse {
+    const COMMAND_TYPE: CommandType = CommandType::SignDataECDSA;
 }
 
 /// Response from `CommandType::SignDataEdDSA`

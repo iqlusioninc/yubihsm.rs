@@ -1,19 +1,22 @@
-extern crate yubihsm;
+/// Integration tests (using live YubiHSM2 or MockHSM)
 
-#[cfg(feature = "dalek")]
-extern crate ed25519_dalek;
-#[cfg(feature = "dalek")]
+#[cfg(not(feature = "mockhsm"))]
+#[macro_use]
+extern crate lazy_static;
 extern crate sha2;
+extern crate yubihsm;
+use yubihsm::{Algorithm, Capability, Domain, ObjectId, ObjectOrigin, ObjectType, Session};
 
-#[cfg(feature = "dalek")]
-use sha2::Sha512;
-
-use yubihsm::{
-    Algorithm, Capabilities, Connector, Domains, ObjectId, ObjectOrigin, ObjectType, Session,
-};
+#[cfg(not(feature = "mockhsm"))]
+use yubihsm::HttpConnector;
 
 #[cfg(feature = "mockhsm")]
 use yubihsm::mockhsm::MockHSM;
+
+#[cfg(feature = "ring")]
+extern crate ring;
+#[cfg(feature = "ring")]
+extern crate untrusted;
 
 /// Default auth key ID slot
 const DEFAULT_AUTH_KEY_ID: ObjectId = 1;
@@ -24,60 +27,64 @@ const DEFAULT_PASSWORD: &str = "password";
 /// Key ID to use for testing keygen/signing
 const TEST_KEY_ID: ObjectId = 100;
 
+/// Label to use for the test key
+const TEST_KEY_LABEL: &str = "yubihsm.rs test key";
+
+/// Domain to use for all tests
+const TEST_DOMAINS: Domain = Domain::DOM1;
+
+/// Message to sign when performing tests
+const TEST_MESSAGE: &[u8] =
+    b"The Edwards-curve Digital Signature Algorithm (EdDSA) is a variant of \
+      Schnorr's signature system with (possibly twisted) Edwards curves.";
+
+#[cfg(not(feature = "mockhsm"))]
+type TestSession = Session<HttpConnector>;
+
+#[cfg(feature = "mockhsm")]
+type TestSession = Session<MockHSM>;
+
+#[cfg(not(feature = "mockhsm"))]
+lazy_static! {
+    static ref SESSION: ::std::sync::Mutex<TestSession> = {
+        let session = Session::create_from_password(
+            Default::default(),
+            DEFAULT_AUTH_KEY_ID,
+            DEFAULT_PASSWORD,
+            true,
+        ).unwrap_or_else(|err| panic!("error creating session: {}", err));
+
+        ::std::sync::Mutex::new(session)
+    };
+}
+
 /// Perform a live integration test against yubihsm-connector and a real `YubiHSM2`
 #[cfg(not(feature = "mockhsm"))]
-#[test]
-fn yubihsm_integration_test() {
-    let mut session: Session = Session::create_from_password(
-        Default::default(),
-        DEFAULT_AUTH_KEY_ID,
-        DEFAULT_PASSWORD,
-        true,
-    ).unwrap_or_else(|err| panic!("error creating session: {}", err));
+macro_rules! create_session {
+    () => {
+        SESSION.lock().unwrap()
+    };
+}
 
+/// Perform an integration test against the MockHSM (useful for CI)
+#[cfg(feature = "mockhsm")]
+macro_rules! create_session {
+    () => {
+        MockHSM::create_session(DEFAULT_AUTH_KEY_ID, DEFAULT_PASSWORD)
+            .unwrap_or_else(|err| panic!("error creating MockHSM session: {}", err))
+    };
+}
+
+/// Create a public key for use in a test
+fn create_asymmetric_key(
+    session: &mut TestSession,
+    algorithm: Algorithm,
+    capabilities: Capability,
+) {
     // Delete the key in TEST_KEY_ID slot it exists (we use it for testing)
     // Ignore errors since the object may not exist yet
     let _ = session.delete_object(TEST_KEY_ID, ObjectType::Asymmetric);
 
-    // Blink the YubiHSM2 for 2 seconds to identify it
-    session.blink(2).unwrap();
-
-    integration_tests(&mut session);
-}
-
-#[cfg(feature = "mockhsm")]
-#[test]
-fn mockhsm_integration_test() {
-    let mut session = MockHSM::create_session(DEFAULT_AUTH_KEY_ID, DEFAULT_PASSWORD)
-        .unwrap_or_else(|err| panic!("error creating MockHSM session: {}", err));
-
-    integration_tests(&mut session);
-}
-
-// Tests to be performed as part of our integration testing process
-fn integration_tests<C: Connector>(session: &mut Session<C>) {
-    // NOTE: if you are adding a new test, you may need to bump NUM_HTTP_TESTS
-    // as described at the top of this file
-    echo_test(session);
-    generate_asymmetric_key_test(session);
-    #[cfg(feature = "dalek")]
-    sign_ed25519_test(session);
-    list_objects_test(session);
-    delete_object_test(session);
-}
-
-// Send a simple echo request
-fn echo_test<C: Connector>(session: &mut Session<C>) {
-    let message = b"Hello, world!";
-    let response = session
-        .echo(message.as_ref())
-        .unwrap_or_else(|err| panic!("error sending echo: {}", err));
-
-    assert_eq!(&message[..], &response.message[..]);
-}
-
-// Generate an Ed25519 key
-fn generate_asymmetric_key_test<C: Connector>(session: &mut Session<C>) {
     // Ensure the object does not already exist
     assert!(
         session
@@ -85,70 +92,36 @@ fn generate_asymmetric_key_test<C: Connector>(session: &mut Session<C>) {
             .is_err()
     );
 
-    let label = "yubihsm.rs test key";
-    let domains = Domains::DOMAIN_1;
-    let capabilities = Capabilities::ASYMMETRIC_SIGN_EDDSA;
-    let algorithm = Algorithm::EC_ED25519;
-
     let response = session
-        .generate_asymmetric_key(TEST_KEY_ID, label.into(), domains, capabilities, algorithm)
+        .generate_asymmetric_key(
+            TEST_KEY_ID,
+            TEST_KEY_LABEL.into(),
+            TEST_DOMAINS,
+            capabilities,
+            algorithm,
+        )
         .unwrap_or_else(|err| panic!("error generating asymmetric key: {}", err));
 
     assert_eq!(response.key_id, TEST_KEY_ID);
-    let object_info = session
-        .get_object_info(TEST_KEY_ID, ObjectType::Asymmetric)
-        .unwrap_or_else(|err| panic!("error getting object info: {}", err));
-
-    assert_eq!(object_info.capabilities, capabilities);
-    assert_eq!(object_info.id, TEST_KEY_ID);
-    assert_eq!(object_info.domains, domains);
-    assert_eq!(object_info.object_type, ObjectType::Asymmetric);
-    assert_eq!(object_info.algorithm, algorithm);
-    assert_eq!(object_info.origin, ObjectOrigin::Generated);
-    assert_eq!(&object_info.label.to_string().unwrap(), label);
 }
 
-// Compute a signature using the Ed25519 key generated in the last test
-#[cfg(feature = "dalek")]
-fn sign_ed25519_test<C: Connector>(session: &mut Session<C>) {
-    let pubkey_response = session
-        .get_pubkey(TEST_KEY_ID)
-        .unwrap_or_else(|err| panic!("error getting public key: {}", err));
+/// Blink the LED on the YubiHSM for 2 seconds
+#[test]
+fn blink_test() {
+    create_session!().blink(2).unwrap();
+}
 
-    assert_eq!(pubkey_response.algorithm, Algorithm::EC_ED25519);
+/// Delete an object in the YubiHSM2
+#[test]
+fn delete_object_test() {
+    let mut session = create_session!();
 
-    let public_key = ::ed25519_dalek::PublicKey::from_bytes(&pubkey_response.data)
-        .unwrap_or_else(|err| panic!("error decoding Ed25519 public key: {}", err));
-
-    let test_message = b"The Edwards-curve Digital Signature Algorithm (EdDSA) is a \
-        variant of Schnorr's signature system with (possibly twisted) Edwards curves.";
-
-    let signature_response = session
-        .sign_data_eddsa(TEST_KEY_ID, test_message.as_ref())
-        .unwrap_or_else(|err| panic!("error performing Ed25519 signature: {}", err));
-
-    let signature = ::ed25519_dalek::Signature::from_bytes(&signature_response.signature)
-        .unwrap_or_else(|err| panic!("error decoding Ed25519 signature: {}", err));
-
-    assert!(
-        public_key.verify::<Sha512>(test_message.as_ref(), &signature),
-        "Ed25519 signature verification failed!"
+    create_asymmetric_key(
+        &mut session,
+        Algorithm::EC_ED25519,
+        Capability::ASYMMETRIC_SIGN_EDDSA,
     );
-}
 
-// List the objects in the YubiHSM2
-fn list_objects_test<C: Connector>(session: &mut Session<C>) {
-    let response = session
-        .list_objects()
-        .unwrap_or_else(|err| panic!("error listing objects: {}", err));
-
-    // Check type of the Ed25519 we created in generate_asymmetric_key_test()
-    let object = response.objects.iter().find(|i| i.id == 100).unwrap();
-    assert_eq!(object.object_type, ObjectType::Asymmetric)
-}
-
-// Delete an object in the YubiHSM2
-fn delete_object_test<C: Connector>(session: &mut Session<C>) {
     // The first request to delete should succeed because the object exists
     assert!(
         session
@@ -162,4 +135,131 @@ fn delete_object_test<C: Connector>(session: &mut Session<C>) {
             .delete_object(TEST_KEY_ID, ObjectType::Asymmetric)
             .is_err()
     );
+}
+
+/// Send a simple echo request
+#[test]
+fn echo_test() {
+    let mut session = create_session!();
+
+    let response = session
+        .echo(TEST_MESSAGE)
+        .unwrap_or_else(|err| panic!("error sending echo: {}", err));
+
+    assert_eq!(TEST_MESSAGE, &response.message[..]);
+}
+
+/// Generate an Ed25519 key
+#[test]
+fn generate_asymmetric_key_test() {
+    let mut session = create_session!();
+    let algorithm = Algorithm::EC_ED25519;
+    let capabilities = Capability::ASYMMETRIC_SIGN_EDDSA;
+
+    create_asymmetric_key(&mut session, algorithm, capabilities);
+
+    let object_info = session
+        .get_object_info(TEST_KEY_ID, ObjectType::Asymmetric)
+        .unwrap_or_else(|err| panic!("error getting object info: {}", err));
+
+    assert_eq!(object_info.capabilities, capabilities);
+    assert_eq!(object_info.id, TEST_KEY_ID);
+    assert_eq!(object_info.domains, TEST_DOMAINS);
+    assert_eq!(object_info.object_type, ObjectType::Asymmetric);
+    assert_eq!(object_info.algorithm, algorithm);
+    assert_eq!(object_info.origin, ObjectOrigin::Generated);
+    assert_eq!(&object_info.label.to_string().unwrap(), TEST_KEY_LABEL);
+}
+
+/// List the objects in the YubiHSM2
+#[test]
+fn list_objects_test() {
+    let mut session = create_session!();
+
+    create_asymmetric_key(
+        &mut session,
+        Algorithm::EC_ED25519,
+        Capability::ASYMMETRIC_SIGN_EDDSA,
+    );
+
+    let response = session
+        .list_objects()
+        .unwrap_or_else(|err| panic!("error listing objects: {}", err));
+
+    // Check type of the Ed25519 we created in generate_asymmetric_key_test()
+    let object = response
+        .objects
+        .iter()
+        .find(|i| i.id == TEST_KEY_ID)
+        .unwrap();
+    assert_eq!(object.object_type, ObjectType::Asymmetric)
+}
+
+/// Test ECDSA signatures (using NIST P-256)
+// TODO: figure out a way to integration test this with *ring*
+#[cfg(all(feature = "ring", not(feature = "mockhsm")))]
+#[test]
+fn sign_ecdsa_test() {
+    let mut session = create_session!();
+
+    create_asymmetric_key(
+        &mut session,
+        Algorithm::EC_P256,
+        Capability::ASYMMETRIC_SIGN_ECDSA,
+    );
+
+    let pubkey_response = session
+        .get_pubkey(TEST_KEY_ID)
+        .unwrap_or_else(|err| panic!("error getting public key: {}", err));
+
+    assert_eq!(pubkey_response.algorithm, Algorithm::EC_P256);
+    assert_eq!(pubkey_response.data.len(), 64);
+
+    let mut pubkey = [0u8; 65];
+    pubkey[0] = 0x04; // DER OCTET STRING tag
+    pubkey[1..].copy_from_slice(pubkey_response.data.as_slice());
+
+    let signature_response = session
+        .sign_ecdsa_sha2(TEST_KEY_ID, TEST_MESSAGE)
+        .unwrap_or_else(|err| panic!("error performing ECDSA signature: {}", err));
+
+    println!("pubkey: {:?}", &pubkey_response.data);
+    println!("signature: {:?}", &signature_response.signature);
+
+    ring::signature::verify(
+        &ring::signature::ECDSA_P256_SHA256_ASN1,
+        untrusted::Input::from(&pubkey),
+        untrusted::Input::from(TEST_MESSAGE),
+        untrusted::Input::from(&signature_response.signature),
+    ).unwrap();
+}
+
+/// Test Ed25519 signatures
+#[cfg(feature = "ring")]
+#[test]
+fn sign_ed25519_test() {
+    let mut session = create_session!();
+
+    create_asymmetric_key(
+        &mut session,
+        Algorithm::EC_ED25519,
+        Capability::ASYMMETRIC_SIGN_EDDSA,
+    );
+
+    let pubkey_response = session
+        .get_pubkey(TEST_KEY_ID)
+        .unwrap_or_else(|err| panic!("error getting public key: {}", err));
+
+    assert_eq!(pubkey_response.algorithm, Algorithm::EC_ED25519);
+
+    let signature_response = session
+        .sign_ed25519(TEST_KEY_ID, TEST_MESSAGE)
+        .unwrap_or_else(|err| panic!("error performing Ed25519 signature: {}", err));
+
+    ring::signature::verify(
+        &ring::signature::ED25519,
+        untrusted::Input::from(&pubkey_response.data),
+        untrusted::Input::from(TEST_MESSAGE),
+        untrusted::Input::from(&signature_response.signature),
+    ).unwrap();
 }
