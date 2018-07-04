@@ -10,7 +10,7 @@ bitflags! {
     /// Object attributes specifying which operations are allowed to be performed
     ///
     /// <https://developers.yubico.com/YubiHSM2/Concepts/Capability.html>
-    pub struct Capabilities: u64 {
+    pub struct Capability: u64 {
         /// asymmetric_decrypt_ecdh: perform ECDH operation
         const ASYMMETRIC_DECRYPT_ECDH = 0x800;
 
@@ -151,13 +151,13 @@ bitflags! {
     }
 }
 
-impl Default for Capabilities {
+impl Default for Capability {
     fn default() -> Self {
-        Capabilities::empty()
+        Capability::empty()
     }
 }
 
-impl Serialize for Capabilities {
+impl Serialize for Capability {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -166,29 +166,28 @@ impl Serialize for Capabilities {
     }
 }
 
-impl<'de> Deserialize<'de> for Capabilities {
-    fn deserialize<D>(deserializer: D) -> Result<Capabilities, D::Error>
+impl<'de> Deserialize<'de> for Capability {
+    fn deserialize<D>(deserializer: D) -> Result<Capability, D::Error>
     where
         D: Deserializer<'de>,
     {
-        struct CapabilitiesVisitor;
+        struct CapabilityVisitor;
 
-        impl<'de> Visitor<'de> for CapabilitiesVisitor {
-            type Value = Capabilities;
+        impl<'de> Visitor<'de> for CapabilityVisitor {
+            type Value = Capability;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
                 formatter.write_str("8-bytes containing capability bitflags")
             }
 
-            fn visit_u64<E>(self, value: u64) -> Result<Capabilities, E>
+            fn visit_u64<E>(self, value: u64) -> Result<Capability, E>
             where
                 E: de::Error,
             {
-                Capabilities::from_bits(value)
-                    .ok_or_else(|| E::custom("invalid capability bitflags"))
+                Capability::from_bits(value).ok_or_else(|| E::custom("invalid capability bitflags"))
             }
         }
 
-        deserializer.deserialize_u64(CapabilitiesVisitor)
+        deserializer.deserialize_u64(CapabilityVisitor)
     }
 }

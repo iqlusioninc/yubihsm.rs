@@ -3,9 +3,9 @@
 #[cfg(not(feature = "mockhsm"))]
 #[macro_use]
 extern crate lazy_static;
+extern crate sha2;
 extern crate yubihsm;
-
-use yubihsm::{Algorithm, Capabilities, Domain, ObjectId, ObjectOrigin, ObjectType, Session};
+use yubihsm::{Algorithm, Capability, Domain, ObjectId, ObjectOrigin, ObjectType, Session};
 
 #[cfg(not(feature = "mockhsm"))]
 use yubihsm::HttpConnector;
@@ -34,8 +34,9 @@ const TEST_KEY_LABEL: &str = "yubihsm.rs test key";
 const TEST_DOMAINS: Domain = Domain::DOM1;
 
 /// Message to sign when performing tests
-const TEST_MESSAGE: &[u8] = b"The Edwards-curve Digital Signature Algorithm (EdDSA) is a \
-        variant of Schnorr's signature system with (possibly twisted) Edwards curves.";
+const TEST_MESSAGE: &[u8] =
+    b"The Edwards-curve Digital Signature Algorithm (EdDSA) is a variant of \
+      Schnorr's signature system with (possibly twisted) Edwards curves.";
 
 #[cfg(not(feature = "mockhsm"))]
 type TestSession = Session<HttpConnector>;
@@ -78,7 +79,7 @@ macro_rules! create_session {
 fn create_asymmetric_key(
     session: &mut TestSession,
     algorithm: Algorithm,
-    capabilities: Capabilities,
+    capabilities: Capability,
 ) {
     // Delete the key in TEST_KEY_ID slot it exists (we use it for testing)
     // Ignore errors since the object may not exist yet
@@ -118,7 +119,7 @@ fn delete_object_test() {
     create_asymmetric_key(
         &mut session,
         Algorithm::EC_ED25519,
-        Capabilities::ASYMMETRIC_SIGN_EDDSA,
+        Capability::ASYMMETRIC_SIGN_EDDSA,
     );
 
     // The first request to delete should succeed because the object exists
@@ -153,7 +154,7 @@ fn echo_test() {
 fn generate_asymmetric_key_test() {
     let mut session = create_session!();
     let algorithm = Algorithm::EC_ED25519;
-    let capabilities = Capabilities::ASYMMETRIC_SIGN_EDDSA;
+    let capabilities = Capability::ASYMMETRIC_SIGN_EDDSA;
 
     create_asymmetric_key(&mut session, algorithm, capabilities);
 
@@ -178,7 +179,7 @@ fn list_objects_test() {
     create_asymmetric_key(
         &mut session,
         Algorithm::EC_ED25519,
-        Capabilities::ASYMMETRIC_SIGN_EDDSA,
+        Capability::ASYMMETRIC_SIGN_EDDSA,
     );
 
     let response = session
@@ -194,7 +195,46 @@ fn list_objects_test() {
     assert_eq!(object.object_type, ObjectType::Asymmetric)
 }
 
-/// Compute a signature using the Ed25519 key generated in the last test
+/// Test ECDSA signatures (using NIST P-256)
+// TODO: figure out a way to integration test this with *ring*
+#[cfg(all(feature = "ring", not(feature = "mockhsm")))]
+#[test]
+fn sign_ecdsa_test() {
+    let mut session = create_session!();
+
+    create_asymmetric_key(
+        &mut session,
+        Algorithm::EC_P256,
+        Capability::ASYMMETRIC_SIGN_ECDSA,
+    );
+
+    let pubkey_response = session
+        .get_pubkey(TEST_KEY_ID)
+        .unwrap_or_else(|err| panic!("error getting public key: {}", err));
+
+    assert_eq!(pubkey_response.algorithm, Algorithm::EC_P256);
+    assert_eq!(pubkey_response.data.len(), 64);
+
+    let mut pubkey = [0u8; 65];
+    pubkey[0] = 0x04; // DER OCTET STRING tag
+    pubkey[1..].copy_from_slice(pubkey_response.data.as_slice());
+
+    let signature_response = session
+        .sign_ecdsa_sha2(TEST_KEY_ID, TEST_MESSAGE)
+        .unwrap_or_else(|err| panic!("error performing ECDSA signature: {}", err));
+
+    println!("pubkey: {:?}", &pubkey_response.data);
+    println!("signature: {:?}", &signature_response.signature);
+
+    ring::signature::verify(
+        &ring::signature::ECDSA_P256_SHA256_ASN1,
+        untrusted::Input::from(&pubkey),
+        untrusted::Input::from(TEST_MESSAGE),
+        untrusted::Input::from(&signature_response.signature),
+    ).unwrap();
+}
+
+/// Test Ed25519 signatures
 #[cfg(feature = "ring")]
 #[test]
 fn sign_ed25519_test() {
@@ -203,7 +243,7 @@ fn sign_ed25519_test() {
     create_asymmetric_key(
         &mut session,
         Algorithm::EC_ED25519,
-        Capabilities::ASYMMETRIC_SIGN_EDDSA,
+        Capability::ASYMMETRIC_SIGN_EDDSA,
     );
 
     let pubkey_response = session
@@ -213,7 +253,7 @@ fn sign_ed25519_test() {
     assert_eq!(pubkey_response.algorithm, Algorithm::EC_ED25519);
 
     let signature_response = session
-        .sign_data_eddsa(TEST_KEY_ID, TEST_MESSAGE)
+        .sign_ed25519(TEST_KEY_ID, TEST_MESSAGE)
         .unwrap_or_else(|err| panic!("error performing Ed25519 signature: {}", err));
 
     ring::signature::verify(

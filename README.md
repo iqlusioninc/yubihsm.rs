@@ -64,6 +64,7 @@ rustflags = ["-Ctarget-feature=+aes"]
 * [Get Pubkey](https://developers.yubico.com/YubiHSM2/Commands/Get_Pubkey.html)
 * [List Objects](https://developers.yubico.com/YubiHSM2/Commands/List_Objects.html)
 * [Session Message](https://developers.yubico.com/YubiHSM2/Commands/Session_Message.html)
+* [Sign Data ECDSA](https://developers.yubico.com/YubiHSM2/Commands/Sign_Data_Ecdsa.html)
 * [Sign Data EdDSA](https://developers.yubico.com/YubiHSM2/Commands/Sign_Data_Eddsa.html) i.e. Ed25519 signatures
 
 Adding support for additional commands is easy! See the `Contributing` section.
@@ -87,7 +88,7 @@ let mut session = Session::create_from_password(
 
 // Note: You'll need to create this key first. Run the following from yubihsm-shell:
 // `generate asymmetric 0 100 ed25519_test_key 1 asymmetric_sign_eddsa ed25519`
-let response = session.sign_data_eddsa(100, "Hello, world!").unwrap();
+let response = session.sign_ed25519(100, "Hello, world!").unwrap();
 println!("Ed25519 signature: {:?}", response.signature);
 ```
 

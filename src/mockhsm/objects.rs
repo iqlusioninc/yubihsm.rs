@@ -5,9 +5,7 @@ use ring::signature::Ed25519KeyPair;
 use std::collections::HashMap;
 use untrusted;
 
-use {
-    Algorithm, Capabilities, Domain, ObjectId, ObjectLabel, ObjectOrigin, ObjectType, SequenceId,
-};
+use {Algorithm, Capability, Domain, ObjectId, ObjectLabel, ObjectOrigin, ObjectType, SequenceId};
 
 /// Objects stored in the `MockHSM`
 #[derive(Default)]
@@ -30,8 +28,8 @@ pub struct Object<T> {
     pub value: T,
     pub object_type: ObjectType,
     pub algorithm: Algorithm,
-    pub capabilities: Capabilities,
-    pub delegated_capabilities: Capabilities,
+    pub capabilities: Capability,
+    pub delegated_capabilities: Capability,
     pub domains: Domain,
     pub length: u16,
     pub sequence: SequenceId,
@@ -40,7 +38,7 @@ pub struct Object<T> {
 }
 
 impl Object<Ed25519KeyPair> {
-    pub fn new(label: ObjectLabel, capabilities: Capabilities, domains: Domain) -> Self {
+    pub fn new(label: ObjectLabel, capabilities: Capability, domains: Domain) -> Self {
         let mut csprng = OsRng::new().unwrap();
 
         let mut seed_bytes = [0u8; 32];
@@ -53,7 +51,7 @@ impl Object<Ed25519KeyPair> {
             object_type: ObjectType::Asymmetric,
             algorithm: Algorithm::EC_ED25519,
             capabilities,
-            delegated_capabilities: Capabilities::default(),
+            delegated_capabilities: Capability::default(),
             domains,
             length: 24,
             sequence: 1,

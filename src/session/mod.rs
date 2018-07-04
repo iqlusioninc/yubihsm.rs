@@ -2,7 +2,7 @@
 mod error;
 
 pub use self::error::{SessionError, SessionErrorKind};
-use super::{Algorithm, Capabilities, Domain, ObjectId, ObjectLabel, ObjectType, SessionId};
+use super::{Algorithm, Capability, Domain, ObjectId, ObjectLabel, ObjectType, SessionId};
 use commands::*;
 use connector::{Connector, HttpConfig, HttpConnector, Status as ConnectorStatus};
 use responses::*;
@@ -10,6 +10,8 @@ use securechannel::{
     Challenge, Channel, CommandMessage, ResponseCode, ResponseMessage, StaticKeys,
 };
 use serializers::deserialize;
+#[cfg(feature = "sha2")]
+use sha2::{Digest, Sha256};
 
 /// Salt value to use with PBKDF2 when deriving static keys from a password
 pub const PBKDF2_SALT: &[u8] = b"Yubico";
@@ -74,6 +76,7 @@ impl Session<HttpConnector> {
     }
 
     /// Open a new session to the HSM, authenticating with a given password
+    #[cfg(feature = "passwords")]
     pub fn create_from_password(
         connector_config: HttpConfig,
         auth_key_id: ObjectId,
@@ -192,7 +195,7 @@ impl<C: Connector> Session<C> {
         key_id: ObjectId,
         label: ObjectLabel,
         domains: Domain,
-        capabilities: Capabilities,
+        capabilities: Capability,
         algorithm: Algorithm,
     ) -> Result<GenAsymmetricKeyResponse, SessionError> {
         self.send_encrypted_command(GenAsymmetricKeyCommand {
@@ -234,8 +237,33 @@ impl<C: Connector> Session<C> {
         self.send_encrypted_command(ListObjectsCommand {})
     }
 
+    /// Compute an ECDSA signature of the SHA-256 hash of the given data with the given key ID
+    #[cfg(feature = "sha2")]
+    pub fn sign_ecdsa_sha2(
+        &mut self,
+        key_id: ObjectId,
+        data: &[u8],
+    ) -> Result<SignDataECDSAResponse, SessionError> {
+        self.sign_ecdsa_fixed(key_id, Sha256::digest(data).as_slice())
+    }
+
+    /// Compute an ECDSA signature of the given fixed-sized data (i.e. digest) with the given key ID
+    pub fn sign_ecdsa_fixed<T>(
+        &mut self,
+        key_id: ObjectId,
+        digest: T,
+    ) -> Result<SignDataECDSAResponse, SessionError>
+    where
+        T: Into<Vec<u8>>,
+    {
+        self.send_encrypted_command(SignDataECDSACommand {
+            key_id,
+            digest: digest.into(),
+        })
+    }
+
     /// Compute an Ed25519 signature with the given key ID
-    pub fn sign_data_eddsa<T>(
+    pub fn sign_ed25519<T>(
         &mut self,
         key_id: ObjectId,
         data: T,
@@ -299,7 +327,9 @@ impl<C: Connector> Session<C> {
         if response.is_err() {
             // TODO: factor this into ResponseMessage or ResponseCode?
             let description = match response.code {
-                ResponseCode::MemoryError => "HSM memory error (missing object?)".to_owned(),
+                ResponseCode::MemoryError => {
+                    "general HSM error (e.g. bad command params, missing object)".to_owned()
+                }
                 other => format!("{:?}", other),
             };
 

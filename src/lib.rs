@@ -30,7 +30,7 @@
 //!
 //! // Note: You'll need to create this key first. Run the following from yubihsm-shell:
 //! // `generate asymmetric 0 100 ed25519_test_key 1 asymmetric_sign_eddsa ed25519`
-//! let response = session.sign_data_eddsa(100, "Hello, world!").unwrap();
+//! let response = session.sign_ed25519(100, "Hello, world!").unwrap();
 //! println!("Ed25519 signature: {:?}", response.signature);
 //! ```
 
@@ -49,18 +49,21 @@ extern crate byteorder;
 extern crate clear_on_drop;
 extern crate cmac;
 extern crate constant_time_eq;
-#[cfg(feature = "mockhsm")]
-extern crate ring;
 #[macro_use]
 extern crate failure;
 #[macro_use]
 extern crate failure_derive;
+#[cfg(feature = "hmac")]
 extern crate hmac;
+#[cfg(feature = "pbkdf2")]
 extern crate pbkdf2;
 extern crate rand;
+#[cfg(feature = "ring")]
+extern crate ring;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
+#[cfg(feature = "sha2")]
 extern crate sha2;
 #[cfg(feature = "bench")]
 extern crate test;
@@ -74,12 +77,8 @@ pub mod error;
 /// Cryptographic algorithms supported by the `YubiHSM2`
 pub mod algorithm;
 
-/// Benchmarks
-#[cfg(feature = "bench")]
-mod bench;
-
 /// Object attributes specifying which operations are allowed to be performed
-pub mod capabilities;
+pub mod capability;
 
 /// Command (i.e. request) structs for `YubiHSM` commands
 mod commands;
@@ -115,7 +114,7 @@ mod serializers;
 pub mod session;
 
 pub use algorithm::Algorithm;
-pub use capabilities::Capabilities;
+pub use capability::Capability;
 pub use connector::{Connector, HttpConfig, HttpConnector};
 pub use domain::Domain;
 pub use object::Id as ObjectId;
