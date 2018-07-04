@@ -1,3 +1,10 @@
+## [0.11.2] (2018-07-04)
+
+[0.11.2]: https://github.com/tendermint/yubihsm-rs/compare/v0.11.1...v0.11.2
+
+* [#47](https://github.com/tendermint/yubihsm-rs/pull/47)
+  Use subtle crate for constant time equality.
+
 ## [0.11.1] (2018-07-04)
 
 [0.11.1]: https://github.com/tendermint/yubihsm-rs/compare/v0.11.0...v0.11.1
