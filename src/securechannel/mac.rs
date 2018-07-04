@@ -9,7 +9,7 @@
 use clear_on_drop::clear::Clear;
 use cmac::crypto_mac::generic_array::typenum::U16;
 use cmac::crypto_mac::generic_array::GenericArray;
-use constant_time_eq::constant_time_eq;
+use subtle::{Choice, ConstantTimeEq};
 use std::fmt;
 
 use super::SecureChannelError;
@@ -18,7 +18,6 @@ use super::SecureChannelError;
 pub const MAC_SIZE: usize = 8;
 
 /// Message Authentication Codes used to verify messages
-#[derive(Eq)]
 pub struct Mac([u8; MAC_SIZE]);
 
 impl Mac {
@@ -43,19 +42,17 @@ impl Mac {
     where
         M: Into<Mac>,
     {
-        let other_mac: Mac = other.into();
-
-        if *self != other_mac {
+        if self.ct_eq(&other.into()).unwrap_u8() == 1 {
+            Ok(())
+        } else {
             secure_channel_fail!(VerifyFailed, "MAC mismatch!");
         }
-
-        Ok(())
     }
 }
 
-impl PartialEq for Mac {
-    fn eq(&self, other: &Mac) -> bool {
-        constant_time_eq(self.0.as_ref(), other.0.as_ref())
+impl ConstantTimeEq for Mac {
+    fn ct_eq(&self, other: &Self) -> Choice {
+        self.0.as_ref().ct_eq(other.0.as_ref())
     }
 }
 

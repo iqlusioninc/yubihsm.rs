@@ -6,7 +6,7 @@ use byteorder::WriteBytesExt;
 use byteorder::{BigEndian, ByteOrder};
 
 /// Command responses
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug)]
 pub struct ResponseMessage {
     /// Success (for a given command type) or an error type
     pub code: ResponseCode,

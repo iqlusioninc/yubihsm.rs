@@ -1,15 +1,14 @@
 //! Authentication cryptograms (8-byte MACs) used for session verification
 
-use std::fmt;
-
 use clear_on_drop::clear::Clear;
-use constant_time_eq::constant_time_eq;
+use subtle::{Choice, ConstantTimeEq};
+use std::fmt;
 
 /// Size of a cryptogram (i.e. truncated MAC)
 pub const CRYPTOGRAM_SIZE: usize = 8;
 
 /// Authentication cryptograms used to verify sessions
-#[derive(Clone, Serialize, Deserialize, Eq)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Cryptogram([u8; CRYPTOGRAM_SIZE]);
 
 impl Cryptogram {
@@ -37,9 +36,9 @@ impl fmt::Debug for Cryptogram {
     }
 }
 
-impl PartialEq for Cryptogram {
-    fn eq(&self, other: &Cryptogram) -> bool {
-        constant_time_eq(self.0.as_ref(), other.0.as_ref())
+impl ConstantTimeEq for Cryptogram {
+    fn ct_eq(&self, other: &Self) -> Choice {
+        self.0.as_ref().ct_eq(other.0.as_ref())
     }
 }
 

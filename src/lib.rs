@@ -45,7 +45,6 @@
 
 #![crate_name = "yubihsm"]
 #![crate_type = "rlib"]
-#![cfg_attr(feature = "bench", feature(test))]
 #![deny(warnings, missing_docs, trivial_casts, trivial_numeric_casts)]
 #![deny(unsafe_code, unused_import_braces, unused_qualifications)]
 #![doc(html_root_url = "https://docs.rs/yubihsm/0.11.1")]
@@ -57,7 +56,6 @@ extern crate block_modes;
 extern crate byteorder;
 extern crate clear_on_drop;
 extern crate cmac;
-extern crate constant_time_eq;
 #[macro_use]
 extern crate failure;
 #[macro_use]
@@ -74,8 +72,7 @@ extern crate serde;
 extern crate serde_derive;
 #[cfg(feature = "sha2")]
 extern crate sha2;
-#[cfg(feature = "bench")]
-extern crate test;
+extern crate subtle;
 #[cfg(feature = "mockhsm")]
 extern crate untrusted;
 extern crate uuid;
