@@ -157,6 +157,19 @@ fn generate_asymmetric_key_test() {
     assert_eq!(&object_info.label.to_string().unwrap(), TEST_KEY_LABEL);
 }
 
+/// Get device information
+#[test]
+fn get_device_info_test() {
+    let mut session = create_session!();
+
+    let device_info = yubihsm::get_device_info(&mut session)
+        .unwrap_or_else(|err| panic!("error getting device info: {}", err));
+
+    assert_eq!(device_info.major_version, 2);
+    assert_eq!(device_info.minor_version, 0);
+    assert_eq!(device_info.build_version, 0);
+}
+
 /// List the objects in the YubiHSM2
 #[test]
 fn list_objects_test() {
