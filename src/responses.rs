@@ -1,9 +1,12 @@
+#![allow(unused_imports)]
+
 pub use failure::Error;
-pub(crate) use securechannel::CommandType;
 #[cfg(feature = "mockhsm")]
 use securechannel::ResponseMessage;
+pub(crate) use securechannel::{CommandType, ResponseCode};
 use serde::de::DeserializeOwned;
 use serde::ser::Serialize;
+use std::fmt::{self, Debug};
 
 use securechannel::{Challenge, Cryptogram};
 #[cfg(feature = "mockhsm")]
@@ -87,6 +90,7 @@ impl Response for GenAsymmetricKeyResponse {
 /// Response from `CommandType::GetDeviceInfo`
 ///
 /// <https://developers.yubico.com/YubiHSM2/Commands/Device_Info.html>
+///
 #[derive(Serialize, Deserialize, Debug)]
 pub struct GetDeviceInfoResponse {
     /// Device major version
@@ -113,6 +117,83 @@ pub struct GetDeviceInfoResponse {
 
 impl Response for GetDeviceInfoResponse {
     const COMMAND_TYPE: CommandType = CommandType::GetDeviceInfo;
+}
+
+/// Response from `CommandType::GetLogs`
+///
+/// <https://developers.yubico.com/YubiHSM2/Commands/Get_Logs.html>
+#[derive(Serialize, Deserialize, Debug)]
+pub struct GetLogsResponse {
+    /// Number of boot events which weren't logged (if buffer is full and audit enforce is set)
+    pub unlogged_boot_events: u16,
+
+    /// Number of unlogged authentication events (if buffer is full and audit enforce is set)
+    pub unlogged_auth_events: u16,
+
+    /// Number of entries in the response
+    pub num_entries: u8,
+
+    /// Entries in the log
+    pub entries: Vec<LogEntry>,
+}
+
+impl Response for GetLogsResponse {
+    const COMMAND_TYPE: CommandType = CommandType::GetLogs;
+}
+
+/// Entry in the log response
+#[derive(Serialize, Deserialize, Debug)]
+pub struct LogEntry {
+    /// Entry number
+    pub item: u16,
+
+    /// Command type
+    pub cmd: CommandType,
+
+    /// Command length
+    pub length: u16,
+
+    /// Session key ID
+    pub session_key: ObjectId,
+
+    /// Target key ID
+    pub target_key: ObjectId,
+
+    /// Second key affected
+    pub second_key: ObjectId,
+
+    /// Result of the operation
+    pub result: ResponseCode,
+
+    /// Tick count of the HSM's internal clock
+    pub tick: u32,
+
+    /// 16-byte truncated SHA-256 digest of this log entry and the digest of the previous entry
+    pub digest: LogDigest,
+}
+
+/// Size of a truncated digest in the log
+pub const LOG_DIGEST_SIZE: usize = 16;
+
+/// Truncated SHA-256 digest of a log entry and the previous log digest
+#[derive(Serialize, Deserialize)]
+pub struct LogDigest(pub [u8; LOG_DIGEST_SIZE]);
+
+impl AsRef<[u8]> for LogDigest {
+    fn as_ref(&self) -> &[u8] {
+        &self.0[..]
+    }
+}
+
+impl Debug for LogDigest {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "LogDigest(")?;
+        for (i, byte) in self.0.iter().enumerate() {
+            write!(f, "{:02x}", byte)?;
+            write!(f, "{}", if i == LOG_DIGEST_SIZE - 1 { ")" } else { ":" })?;
+        }
+        Ok(())
+    }
 }
 
 /// Response from `CommandType::GetObjectInfo`

@@ -77,6 +77,7 @@ pub(crate) fn session_message(
         CommandType::Echo => echo(&command.data),
         CommandType::GenAsymmetricKey => gen_asymmetric_key(state, &command.data),
         CommandType::GetDeviceInfo => get_device_info(),
+        CommandType::GetLogs => get_logs(),
         CommandType::GetObjectInfo => get_object_info(state, &command.data),
         CommandType::GetPubKey => get_pubkey(state, &command.data),
         CommandType::ListObjects => list_objects(state, &command.data),
@@ -194,6 +195,17 @@ fn get_device_info() -> ResponseMessage {
             Algorithm::YUBICO_OTP_AES192,
             Algorithm::YUBICO_OTP_AES256,
         ],
+    }.serialize()
+}
+
+/// Get mock log information
+fn get_logs() -> ResponseMessage {
+    // TODO: mimic the YubiHSM's actual audit log
+    GetLogsResponse {
+        unlogged_boot_events: 0,
+        unlogged_auth_events: 0,
+        num_entries: 0,
+        entries: vec![],
     }.serialize()
 }
 

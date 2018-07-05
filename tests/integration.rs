@@ -170,6 +170,17 @@ fn get_device_info_test() {
     assert_eq!(device_info.build_version, 0);
 }
 
+/// Get audit log
+#[test]
+fn get_logs_test() {
+    let mut session = create_session!();
+
+    let response =
+        yubihsm::get_logs(&mut session).unwrap_or_else(|err| panic!("error getting logs: {}", err));
+
+    assert_eq!(response.num_entries as usize, response.entries.len());
+}
+
 /// List the objects in the YubiHSM2
 #[test]
 fn list_objects_test() {
@@ -219,9 +230,6 @@ fn sign_ecdsa_test() {
 
     let signature_response = yubihsm::sign_ecdsa_sha2(&mut session, TEST_KEY_ID, TEST_MESSAGE)
         .unwrap_or_else(|err| panic!("error performing ECDSA signature: {}", err));
-
-    println!("pubkey: {:?}", &pubkey_response.data);
-    println!("signature: {:?}", &signature_response.signature);
 
     ring::signature::verify(
         &ring::signature::ECDSA_P256_SHA256_ASN1,

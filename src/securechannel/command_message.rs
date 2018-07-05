@@ -9,6 +9,9 @@
 #[cfg(feature = "mockhsm")]
 use byteorder::ByteOrder;
 use byteorder::{BigEndian, WriteBytesExt};
+use serde::de::{self, Deserialize, Deserializer, Visitor};
+use serde::ser::{Serialize, Serializer};
+use std::fmt;
 use uuid::Uuid;
 
 use super::{Mac, SecureChannelError, SessionId, MAC_SIZE, MAX_MSG_SIZE};
@@ -328,5 +331,40 @@ impl CommandType {
             CommandType::AuthSession | CommandType::SessionMessage => true,
             _ => false,
         }
+    }
+}
+
+impl Serialize for CommandType {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_u8(self.to_u8())
+    }
+}
+
+impl<'de> Deserialize<'de> for CommandType {
+    fn deserialize<D>(deserializer: D) -> Result<CommandType, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct CommandTypeVisitor;
+
+        impl<'de> Visitor<'de> for CommandTypeVisitor {
+            type Value = CommandType;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("an unsigned byte between 0x01 and 0x07")
+            }
+
+            fn visit_u8<E>(self, value: u8) -> Result<CommandType, E>
+            where
+                E: de::Error,
+            {
+                CommandType::from_u8(value).or_else(|e| Err(E::custom(format!("{}", e))))
+            }
+        }
+
+        deserializer.deserialize_u8(CommandTypeVisitor)
     }
 }
