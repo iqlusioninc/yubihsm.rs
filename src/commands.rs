@@ -77,6 +77,13 @@ pub fn get_device_info<C: Connector>(
     session.send_encrypted_command(GetDeviceInfoCommand {})
 }
 
+/// Get audit logs from the YubiHSM2 device
+///
+/// <https://developers.yubico.com/YubiHSM2/Commands/Get_Logs.html>
+pub fn get_logs<C: Connector>(session: &mut Session<C>) -> Result<GetLogsResponse, SessionError> {
+    session.send_encrypted_command(GetLogsCommand {})
+}
+
 /// Get information about an object
 ///
 /// <https://developers.yubico.com/YubiHSM2/Commands/Get_Object_Info.html>
@@ -270,6 +277,16 @@ pub(crate) struct GetDeviceInfoCommand {}
 
 impl Command for GetDeviceInfoCommand {
     type ResponseType = GetDeviceInfoResponse;
+}
+
+/// Request parameters for `CommandType::GetLogs`
+///
+/// <https://developers.yubico.com/YubiHSM2/Commands/Get_Logs.html>
+#[derive(Serialize, Deserialize, Debug)]
+pub(crate) struct GetLogsCommand {}
+
+impl Command for GetLogsCommand {
+    type ResponseType = GetLogsResponse;
 }
 
 /// Request parameters for `CommandType::GetPubKey`

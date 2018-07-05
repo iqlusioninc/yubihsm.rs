@@ -1,9 +1,13 @@
 //! Responses sent back from the YubiHSM2
 
-use super::{CommandType, Mac, SecureChannelError, SessionId, MAC_SIZE};
 #[cfg(feature = "mockhsm")]
 use byteorder::WriteBytesExt;
 use byteorder::{BigEndian, ByteOrder};
+use serde::de::{self, Deserialize, Deserializer, Visitor};
+use serde::ser::{Serialize, Serializer};
+use std::fmt;
+
+use super::{CommandType, Mac, SecureChannelError, SessionId, MAC_SIZE};
 
 /// Command responses
 #[derive(Debug)]
@@ -323,5 +327,42 @@ impl ResponseCode {
             },
             _ => false,
         }
+    }
+}
+
+impl Serialize for ResponseCode {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_u8(self.to_u8())
+    }
+}
+
+impl<'de> Deserialize<'de> for ResponseCode {
+    fn deserialize<D>(deserializer: D) -> Result<ResponseCode, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct ResponseCodeVisitor;
+
+        impl<'de> Visitor<'de> for ResponseCodeVisitor {
+            type Value = ResponseCode;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("an unsigned byte between 0x01 and 0x07")
+            }
+
+            fn visit_u8<E>(self, value: u8) -> Result<ResponseCode, E>
+            where
+                E: de::Error,
+            {
+                ResponseCode::from_u8(value)
+                    .or_else(|_| ResponseCode::from_u8(ResponseCode::DeviceOK.to_u8() - value))
+                    .or_else(|e| Err(E::custom(format!("{}", e))))
+            }
+        }
+
+        deserializer.deserialize_u8(ResponseCodeVisitor)
     }
 }
