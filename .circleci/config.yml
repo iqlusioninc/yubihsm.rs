@@ -36,7 +36,7 @@ jobs:
           command: |
             rustc --version
             cargo --version
-            cargo +$RUST_NIGHTLY_VERSION test --features=mockhsm
+            cargo test --features=mockhsm
       - save_cache:
           key: cache-20180626.0 # bump restore_cache key above too
           paths:

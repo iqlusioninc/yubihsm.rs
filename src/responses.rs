@@ -84,12 +84,43 @@ impl Response for GenAsymmetricKeyResponse {
     const COMMAND_TYPE: CommandType = CommandType::GenAsymmetricKey;
 }
 
+/// Response from `CommandType::GetDeviceInfo`
+///
+/// <https://developers.yubico.com/YubiHSM2/Commands/Device_Info.html>
+#[derive(Serialize, Deserialize, Debug)]
+pub struct GetDeviceInfoResponse {
+    /// Device major version
+    pub major_version: u8,
+
+    /// Device minor version
+    pub minor_version: u8,
+
+    /// Device build version (i.e. patchlevel)
+    pub build_version: u8,
+
+    /// Device serial number
+    pub serial_number: u32,
+
+    /// Size of the log store (in lines/entries)
+    pub log_store_capacity: u8,
+
+    /// Number of log lines used
+    pub log_store_used: u8,
+
+    /// Supported algorithms
+    pub algorithms: Vec<Algorithm>,
+}
+
+impl Response for GetDeviceInfoResponse {
+    const COMMAND_TYPE: CommandType = CommandType::GetDeviceInfo;
+}
+
 /// Response from `CommandType::GetObjectInfo`
 ///
 /// <https://developers.yubico.com/YubiHSM2/Commands/Get_Object_Info.html>
 #[derive(Serialize, Deserialize, Debug)]
 pub struct GetObjectInfoResponse {
-    /// Capability
+    /// Capabilities (bitfield)
     pub capabilities: Capability,
 
     /// Object identifier
@@ -117,7 +148,7 @@ pub struct GetObjectInfoResponse {
     /// Label of object
     pub label: ObjectLabel,
 
-    /// Delegated Capability
+    /// Delegated Capabilities (bitfield)
     pub delegated_capabilities: Capability,
 }
 

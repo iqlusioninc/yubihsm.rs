@@ -68,6 +68,15 @@ pub fn generate_asymmetric_key<C: Connector>(
     })
 }
 
+/// Get information about the YubiHSM2 device
+///
+/// <https://developers.yubico.com/YubiHSM2/Commands/Get_Object_Info.html>
+pub fn get_device_info<C: Connector>(
+    session: &mut Session<C>,
+) -> Result<GetDeviceInfoResponse, SessionError> {
+    session.send_encrypted_command(GetDeviceInfoCommand {})
+}
+
 /// Get information about an object
 ///
 /// <https://developers.yubico.com/YubiHSM2/Commands/Get_Object_Info.html>
@@ -251,6 +260,16 @@ pub(crate) struct GenAsymmetricKeyCommand {
 
 impl Command for GenAsymmetricKeyCommand {
     type ResponseType = GenAsymmetricKeyResponse;
+}
+
+/// Request parameters for `CommandType::GetDeviceInfo`
+///
+/// <https://developers.yubico.com/YubiHSM2/Commands/Device_Info.html>
+#[derive(Serialize, Deserialize, Debug)]
+pub(crate) struct GetDeviceInfoCommand {}
+
+impl Command for GetDeviceInfoCommand {
+    type ResponseType = GetDeviceInfoResponse;
 }
 
 /// Request parameters for `CommandType::GetPubKey`
