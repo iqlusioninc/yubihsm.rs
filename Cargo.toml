@@ -41,7 +41,7 @@ lazy_static = "1"
 aes-soft = ["aes/force_soft"]
 default = ["passwords"]
 integration = ["ring", "untrusted"]
-mockhsm = ["integration"]
+mockhsm = ["integration", "passwords"]
 nightly = ["clear_on_drop/nightly", "subtle/nightly"]
 passwords = ["hmac", "pbkdf2", "sha2"]
 

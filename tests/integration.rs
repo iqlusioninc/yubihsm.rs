@@ -207,7 +207,7 @@ fn list_objects_test() {
 
 /// Test ECDSA signatures (using NIST P-256)
 // TODO: figure out a way to integration test this with *ring*
-#[cfg(all(feature = "ring", not(feature = "mockhsm")))]
+#[cfg(feature = "ring")]
 #[test]
 fn sign_ecdsa_test() {
     let mut session = create_session!();
