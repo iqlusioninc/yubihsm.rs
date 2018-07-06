@@ -30,7 +30,7 @@ impl State {
                 PBKDF2_ITERATIONS,
             ),
             sessions: BTreeMap::new(),
-            objects: Objects::new(),
+            objects: Objects::default(),
         }
     }
 

@@ -7,7 +7,7 @@ use securechannel::{CommandMessage, CommandType, ResponseMessage};
 use serializers::deserialize;
 use {Algorithm, ObjectId, ObjectType};
 
-use super::objects::Object;
+use super::objects::Payload;
 use super::state::State;
 
 /// Default auth key ID slot
@@ -81,6 +81,7 @@ pub(crate) fn session_message(
         CommandType::GetObjectInfo => get_object_info(state, &command.data),
         CommandType::GetPubKey => get_pubkey(state, &command.data),
         CommandType::ListObjects => list_objects(state, &command.data),
+        CommandType::SignDataECDSA => sign_data_ecdsa(state, &command.data),
         CommandType::SignDataEdDSA => sign_data_eddsa(state, &command.data),
         unsupported => panic!("unsupported command type: {:?}", unsupported),
     };
@@ -96,13 +97,10 @@ fn delete_object(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
     let command: DeleteObjectCommand = deserialize(cmd_data)
         .unwrap_or_else(|e| panic!("error parsing CommandType::DeleteObject: {:?}", e));
 
-    match command.object_type {
-        // TODO: support other asymmetric keys besides Ed25519 keys
-        ObjectType::Asymmetric => match state.objects.ed25519_keys.remove(&command.object_id) {
-            Some(_) => DeleteObjectResponse {}.serialize(),
-            None => ResponseMessage::error(&format!("no such object ID: {:?}", command.object_id)),
-        },
-        _ => panic!("MockHSM only supports delete_object for ObjectType::Asymmetric"),
+    if state.objects.remove(command.object_id).is_some() {
+        DeleteObjectResponse {}.serialize()
+    } else {
+        ResponseMessage::error(&format!("no such object ID: {:?}", command.object_id))
     }
 }
 
@@ -118,19 +116,13 @@ fn gen_asymmetric_key(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
     let command: GenAsymmetricKeyCommand = deserialize(cmd_data)
         .unwrap_or_else(|e| panic!("error parsing CommandType::GetObjectInfo: {:?}", e));
 
-    match command.algorithm {
-        Algorithm::EC_ED25519 => {
-            let key = Object::new(command.label, command.capabilities, command.domains);
-            assert!(
-                state
-                    .objects
-                    .ed25519_keys
-                    .insert(command.key_id, key)
-                    .is_none()
-            );
-        }
-        other => panic!("unsupported algorithm: {:?}", other),
-    }
+    state.objects.generate(
+        command.key_id,
+        command.algorithm,
+        command.label,
+        command.capabilities,
+        command.domains,
+    );
 
     GenAsymmetricKeyResponse {
         key_id: command.key_id,
@@ -218,21 +210,21 @@ fn get_object_info(state: &State, cmd_data: &[u8]) -> ResponseMessage {
         panic!("MockHSM only supports ObjectType::Asymmetric for now");
     }
 
-    // TODO: support other asymmetric keys besides Ed25519 keys
-    match state.objects.ed25519_keys.get(&command.object_id) {
-        Some(key) => GetObjectInfoResponse {
-            capabilities: key.capabilities,
+    if let Some(obj) = state.objects.get(command.object_id) {
+        GetObjectInfoResponse {
+            capabilities: obj.capabilities,
             id: command.object_id,
-            length: key.length,
-            domains: key.domains,
-            object_type: key.object_type,
-            algorithm: key.algorithm,
-            sequence: key.sequence,
-            origin: key.origin,
-            label: key.label.clone(),
-            delegated_capabilities: key.delegated_capabilities,
-        }.serialize(),
-        None => ResponseMessage::error(&format!("no such object ID: {:?}", command.object_id)),
+            length: obj.length,
+            domains: obj.domains,
+            object_type: obj.object_type,
+            algorithm: obj.algorithm(),
+            sequence: obj.sequence,
+            origin: obj.origin,
+            label: obj.label.clone(),
+            delegated_capabilities: obj.delegated_capabilities,
+        }.serialize()
+    } else {
+        ResponseMessage::error(&format!("no such object ID: {:?}", command.object_id))
     }
 }
 
@@ -241,13 +233,13 @@ fn get_pubkey(state: &State, cmd_data: &[u8]) -> ResponseMessage {
     let command: GetPubKeyCommand = deserialize(cmd_data)
         .unwrap_or_else(|e| panic!("error parsing CommandType::GetPubKey: {:?}", e));
 
-    // TODO: support other asymmetric keys besides Ed25519 keys
-    match state.objects.ed25519_keys.get(&command.key_id) {
-        Some(key) => GetPubKeyResponse {
-            algorithm: Algorithm::EC_ED25519,
-            data: key.value.public_key_bytes().into(),
-        }.serialize(),
-        None => ResponseMessage::error(&format!("no such object ID: {:?}", command.key_id)),
+    if let Some(obj) = state.objects.get(command.key_id) {
+        GetPubKeyResponse {
+            algorithm: obj.algorithm(),
+            data: obj.payload.public_key_bytes().unwrap(),
+        }.serialize()
+    } else {
+        ResponseMessage::error(&format!("no such object ID: {:?}", command.key_id))
     }
 }
 
@@ -257,10 +249,8 @@ fn list_objects(state: &State, cmd_data: &[u8]) -> ResponseMessage {
     let _command: ListObjectsCommand = deserialize(cmd_data)
         .unwrap_or_else(|e| panic!("error parsing CommandType::ListObjects: {:?}", e));
 
-    // TODO: support other asymmetric keys besides Ed25519 keys
     let list_entries = state
         .objects
-        .ed25519_keys
         .iter()
         .map(|(object_id, object)| ListObjectsEntry {
             id: *object_id,
@@ -274,19 +264,38 @@ fn list_objects(state: &State, cmd_data: &[u8]) -> ResponseMessage {
     }.serialize()
 }
 
+/// Sign a message using the ECDSA signature algorithm
+fn sign_data_ecdsa(state: &State, cmd_data: &[u8]) -> ResponseMessage {
+    let command: SignDataEdDSACommand = deserialize(cmd_data)
+        .unwrap_or_else(|e| panic!("error parsing CommandType::SignDataEdDSA: {:?}", e));
+
+    if let Some(obj) = state.objects.get(command.key_id) {
+        if let Payload::ECDSAKeyPair(ref key) = obj.payload {
+            SignDataECDSAResponse {
+                signature: key.sign(command.data).as_ref().into(),
+            }.serialize()
+        } else {
+            ResponseMessage::error(&format!("not an ECDSA key: {:?}", obj.algorithm()))
+        }
+    } else {
+        ResponseMessage::error(&format!("no such object ID: {:?}", command.key_id))
+    }
+}
+
 /// Sign a message using the Ed25519 signature algorithm
 fn sign_data_eddsa(state: &State, cmd_data: &[u8]) -> ResponseMessage {
     let command: SignDataEdDSACommand = deserialize(cmd_data)
         .unwrap_or_else(|e| panic!("error parsing CommandType::SignDataEdDSA: {:?}", e));
 
-    // TODO: support other asymmetric keys besides Ed25519 keys
-    match state.objects.ed25519_keys.get(&command.key_id) {
-        Some(key) => {
-            let signature = key.value.sign(command.data.as_ref());
+    if let Some(obj) = state.objects.get(command.key_id) {
+        if let Payload::Ed25519KeyPair(ref key) = obj.payload {
             SignDataEdDSAResponse {
-                signature: signature.as_ref().into(),
+                signature: key.sign(command.data.as_ref()).as_ref().into(),
             }.serialize()
+        } else {
+            ResponseMessage::error(&format!("not an Ed25519 key: {:?}", obj.algorithm()))
         }
-        None => ResponseMessage::error(&format!("no such object ID: {:?}", command.key_id)),
+    } else {
+        ResponseMessage::error(&format!("no such object ID: {:?}", command.key_id))
     }
 }

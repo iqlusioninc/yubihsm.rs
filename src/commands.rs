@@ -2,9 +2,11 @@ use responses::Response;
 use securechannel::{CommandMessage, CommandType};
 use serde::de::DeserializeOwned;
 use serde::ser::Serialize;
-#[cfg(feature = "sha2")]
+#[cfg(all(feature = "sha2", not(feature = "mockhsm")))]
 use sha2::{Digest, Sha256};
 
+#[cfg(feature = "mockhsm")]
+use mockhsm::MockHSM;
 use responses::*;
 use securechannel::Challenge;
 use serializers::serialize;
@@ -123,30 +125,30 @@ pub fn list_objects<C: Connector>(
 /// Compute an ECDSA signature of the SHA-256 hash of the given data with the given key ID
 ///
 /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Data_Ecdsa.html>
-#[cfg(feature = "sha2")]
+#[cfg(all(feature = "sha2", not(feature = "mockhsm")))]
 pub fn sign_ecdsa_sha2<C: Connector>(
     session: &mut Session<C>,
     key_id: ObjectId,
     data: &[u8],
 ) -> Result<SignDataECDSAResponse, SessionError> {
-    sign_ecdsa_fixed(session, key_id, Sha256::digest(data).as_slice())
-}
-
-/// Compute an ECDSA signature of the given fixed-sized data (i.e. digest) with the given key ID
-///
-/// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Data_Ecdsa.html>
-pub fn sign_ecdsa_fixed<C, T>(
-    session: &mut Session<C>,
-    key_id: ObjectId,
-    digest: T,
-) -> Result<SignDataECDSAResponse, SessionError>
-where
-    C: Connector,
-    T: Into<Vec<u8>>,
-{
     session.send_encrypted_command(SignDataECDSACommand {
         key_id,
-        digest: digest.into(),
+        digest: Sha256::digest(data).as_slice().into(),
+    })
+}
+
+/// MockHSM-specific implementation of `sign_ecdsa_sha2`
+#[cfg(feature = "mockhsm")]
+pub fn sign_ecdsa_sha2(
+    session: &mut Session<MockHSM>,
+    key_id: ObjectId,
+    data: &[u8],
+) -> Result<SignDataECDSAResponse, SessionError> {
+    // When using the MockHSM, pass the unhashed raw message. This is because *ring* does not (yet)
+    // provide an API for signing a raw digest. See: https://github.com/briansmith/ring/issues/253
+    session.send_encrypted_command(SignDataECDSACommand {
+        key_id,
+        digest: data.into(),
     })
 }
 
