@@ -39,8 +39,8 @@
 //!
 //! // Note: You'll need to create this key first. Run the following from yubihsm-shell:
 //! // `generate asymmetric 0 100 ed25519_test_key 1 asymmetric_sign_eddsa ed25519`
-//! let response = yubihsm::sign_ed25519(&mut session, 100, "Hello, world!").unwrap();
-//! println!("Ed25519 signature: {:?}", response.signature);
+//! let signature = yubihsm::sign_ed25519(&mut session, 100, "Hello, world!").unwrap();
+//! println!("Ed25519 signature: {:?}", signature);
 //! ```
 
 #![crate_name = "yubihsm"]
@@ -110,9 +110,6 @@ pub mod mockhsm;
 /// For more information, see:
 /// <https://developers.yubico.com/YubiHSM2/Concepts/Object.html>
 pub mod object;
-
-/// Responses to commands sent from the HSM
-pub mod responses;
 
 /// Encrypted communication channel to the YubiHSM hardware
 mod securechannel;

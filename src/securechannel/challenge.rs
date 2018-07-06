@@ -23,6 +23,7 @@ impl Challenge {
     /// Create a new challenge from a slice
     ///
     /// Panics if the slice is not 8-bytes
+    #[cfg(all(test, feature = "mockhsm"))]
     pub fn from_slice(slice: &[u8]) -> Self {
         assert_eq!(slice.len(), 8, "challenge must be 8-bytes long");
 

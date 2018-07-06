@@ -103,8 +103,8 @@ let mut session = Session::create_from_password(
 
 // Note: You'll need to create this key first. Run the following from yubihsm-shell:
 // `generate asymmetric 0 100 ed25519_test_key 1 asymmetric_sign_eddsa ed25519`
-let response = yubihsm::sign_ed25519(&session, 100, "Hello, world!").unwrap();
-println!("Ed25519 signature: {:?}", response.signature);
+let signature = yubihsm::sign_ed25519(&session, 100, "Hello, world!").unwrap();
+println!("Ed25519 signature: {:?}", signature);
 ```
 
 ## Contributing

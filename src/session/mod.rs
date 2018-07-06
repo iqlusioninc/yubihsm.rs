@@ -5,9 +5,8 @@ mod error;
 
 pub use self::error::{SessionError, SessionErrorKind};
 use super::{ObjectId, SessionId};
-use commands::*;
+use commands::{self, Command};
 use connector::{Connector, HttpConfig, HttpConnector, Status as ConnectorStatus};
-use responses::*;
 use securechannel::{
     Challenge, Channel, CommandMessage, ResponseCode, ResponseMessage, StaticKeys,
 };
@@ -103,44 +102,19 @@ impl<C: Connector> Session<C> {
     ) -> Result<Self, SessionError> {
         let host_challenge = Challenge::random();
 
-        let command_message: CommandMessage = CreateSessionCommand {
-            auth_key_id,
-            host_challenge,
-        }.into();
-
-        let uuid = command_message.uuid;
-        let response_body = connector.send_command(uuid, command_message.into())?;
-        let response_message = ResponseMessage::parse(response_body)?;
-
-        if response_message.is_err() {
-            session_fail!(ResponseError, "HSM error: {:?}", response_message.code);
-        }
-
-        if response_message.command().unwrap() != CommandType::CreateSession {
-            session_fail!(
-                ProtocolError,
-                "command type mismatch: expected {:?}, got {:?}",
-                CommandType::CreateSession,
-                response_message.command().unwrap()
-            );
-        }
-
-        let session_id = response_message
-            .session_id
-            .ok_or_else(|| session_err!(CreateFailed, "no session ID in response"))?;
-
-        let response: CreateSessionResponse = deserialize(response_message.data.as_ref())?;
+        let (session_id, session_response) =
+            commands::create_session(&connector, auth_key_id, host_challenge)?;
 
         let channel = Channel::new(
             session_id,
             &static_keys,
             host_challenge,
-            response.card_challenge,
+            session_response.card_challenge,
         );
 
         if channel
             .card_cryptogram()
-            .ct_eq(&response.card_cryptogram)
+            .ct_eq(&session_response.card_cryptogram)
             .unwrap_u8() != 1
         {
             session_fail!(AuthFailed, "card cryptogram mismatch!");

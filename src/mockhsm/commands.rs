@@ -2,7 +2,6 @@
 
 use commands::*;
 use connector::ConnectorError;
-use responses::*;
 use securechannel::{CommandMessage, CommandType, ResponseMessage};
 use serializers::deserialize;
 use {Algorithm, ObjectId, ObjectType};
@@ -106,9 +105,7 @@ fn delete_object(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
 
 /// Echo a message back to the host
 fn echo(cmd_data: &[u8]) -> ResponseMessage {
-    EchoResponse {
-        message: cmd_data.into(),
-    }.serialize()
+    EchoResponse(cmd_data.into()).serialize()
 }
 
 /// Generate a new random asymmetric key
@@ -234,9 +231,9 @@ fn get_pubkey(state: &State, cmd_data: &[u8]) -> ResponseMessage {
         .unwrap_or_else(|e| panic!("error parsing CommandType::GetPubKey: {:?}", e));
 
     if let Some(obj) = state.objects.get(command.key_id) {
-        GetPubKeyResponse {
+        PublicKey {
             algorithm: obj.algorithm(),
-            data: obj.payload.public_key_bytes().unwrap(),
+            bytes: obj.payload.public_key_bytes().unwrap(),
         }.serialize()
     } else {
         ResponseMessage::error(&format!("no such object ID: {:?}", command.key_id))
@@ -259,9 +256,7 @@ fn list_objects(state: &State, cmd_data: &[u8]) -> ResponseMessage {
         })
         .collect();
 
-    ListObjectsResponse {
-        objects: list_entries,
-    }.serialize()
+    ListObjectsResponse(list_entries).serialize()
 }
 
 /// Sign a message using the ECDSA signature algorithm
@@ -271,9 +266,7 @@ fn sign_data_ecdsa(state: &State, cmd_data: &[u8]) -> ResponseMessage {
 
     if let Some(obj) = state.objects.get(command.key_id) {
         if let Payload::ECDSAKeyPair(ref key) = obj.payload {
-            SignDataECDSAResponse {
-                signature: key.sign(command.data).as_ref().into(),
-            }.serialize()
+            ECDSASignature(key.sign(command.data).as_ref().into()).serialize()
         } else {
             ResponseMessage::error(&format!("not an ECDSA key: {:?}", obj.algorithm()))
         }
@@ -289,9 +282,9 @@ fn sign_data_eddsa(state: &State, cmd_data: &[u8]) -> ResponseMessage {
 
     if let Some(obj) = state.objects.get(command.key_id) {
         if let Payload::Ed25519KeyPair(ref key) = obj.payload {
-            SignDataEdDSAResponse {
-                signature: key.sign(command.data.as_ref()).as_ref().into(),
-            }.serialize()
+            let mut signature_bytes = [0u8; ED25519_SIGNATURE_SIZE];
+            signature_bytes.copy_from_slice(key.sign(command.data.as_ref()).as_ref());
+            Ed25519Signature(signature_bytes).serialize()
         } else {
             ResponseMessage::error(&format!("not an Ed25519 key: {:?}", obj.algorithm()))
         }
