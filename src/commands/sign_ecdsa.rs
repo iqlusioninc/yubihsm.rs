@@ -26,7 +26,8 @@ pub fn sign_ecdsa_sha2<C: Connector>(
     })
 }
 
-/// MockHSM-specific implementation of `sign_ecdsa_sha2`
+/// Compute an ECDSA signature of the SHA-256 hash of the given data with the given key ID
+// NOTE: this version is enabled when we compile with MockHSM support
 #[cfg(feature = "mockhsm")]
 pub fn sign_ecdsa_sha2(
     session: &mut Session<MockHSM>,

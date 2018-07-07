@@ -58,21 +58,25 @@ rustflags = ["-Ctarget-feature=+aes"]
 * [Delete Object]: Delete an object of the given ID and type
 * [Echo]: Have the card echo an input message
 * [Generate Asymmetric Key]: Generate a new asymmetric key within the `YubiHSM2`
+* [Get Device Info]: Get information about the `YubiHSM2` like software versions and algorithms
+* [Get Logs]: Obtain the audit log for the `YubiHSM2`
 * [Get Object Info]: Get information about an object
 * [Get Pubkey]: Get the public key for an asymmetric private key stored on the device
 * [List Objects]: List objects visible from the current session
 * [Sign Data ECDSA]: Compute an ECDSA signature using an HSM-backed private key
 * [Sign Data EdDSA]: Compute an Ed25519 signature using an HSM-backed private key
 
-[Blink]: https://docs.rs/yubihsm/latest/yubihsm/commands/fn.blink.html
-[Delete Object]: https://docs.rs/yubihsm/latest/yubihsm/commands/fn.delete_object.html
-[Echo]: https://docs.rs/yubihsm/latest/yubihsm/commands/fn.echo.html
-[Generate Asymmetric Key]: https://docs.rs/yubihsm/latest/yubihsm/commands/fn.echo.html
-[Get Object Info]: https://docs.rs/yubihsm/latest/yubihsm/commands/fn.get_object_info.html
-[Get Pubkey]: https://docs.rs/yubihsm/latest/yubihsm/commands/fn.get_pubkey.html
-[List Objects]: https://docs.rs/yubihsm/latest/yubihsm/commands/fn.list_objects.html
-[Sign Data ECDSA]: https://docs.rs/yubihsm/latest/yubihsm/commands/fn.sign_ecdsa_sha2.html
-[Sign Data EdDSA]: https://docs.rs/yubihsm/latest/yubihsm/commands/fn.sign_ed25519.html
+[Blink]: https://docs.rs/yubihsm/latest/yubihsm/commands/blink/fn.blink.html
+[Delete Object]: https://docs.rs/yubihsm/latest/yubihsm/commands/delete_object/fn.delete_object.html
+[Echo]: https://docs.rs/yubihsm/latest/yubihsm/commands/echo/fn.echo.html
+[Generate Asymmetric Key]: https://docs.rs/yubihsm/latest/yubihsm/commands/generate_asymmetric_key/fn.generate_asymmetric_key.html
+[Get Device Info]: https://docs.rs/yubihsm/latest/yubihsm/commands/get_device_info/fn.get_device_info.html
+[Get Logs]: https://docs.rs/yubihsm/latest/yubihsm/commands/get_logs/fn.get_logs.html
+[Get Object Info]: https://docs.rs/yubihsm/latest/yubihsm/commands/get_object_info/fn.get_object_info.html
+[Get Pubkey]: https://docs.rs/yubihsm/latest/yubihsm/commands/get_pubkey/fn.get_pubkey.html
+[List Objects]: https://docs.rs/yubihsm/latest/yubihsm/commands/list_objects/fn.list_objects.html
+[Sign Data ECDSA]: https://docs.rs/yubihsm/latest/yubihsm/commands/sign_ecdsa/fn.sign_ecdsa_sha2.html
+[Sign Data EdDSA]: https://docs.rs/yubihsm/latest/yubihsm/commands/sign_eddsa/fn.sign_ed25519.html
 
 Adding support for additional commands is easy! See the `Contributing` section.
 
@@ -122,23 +126,16 @@ Here's a list of steps necessary to implement a new command type:
 
 1. Find the command you wish to implement on the [YubiHSM2 commands] page, and
    study the structure of the command (i.e. request) and response
-2. Add a `pub(crate)` struct which matches the structure of the command to [commands.rs]
-   and a wrapper function for constructing it and sending it to the YubiHSM.
-3. Add an additional struct which matches the response structure to [responses.rs]
-4. (Optional) Implement the command in [mockhsm/commands.rs] and write an
+2. Create a new module under the [commands] module which matches the name
+   of the command and implements the `Command` and `Response` traits.
+3. (Optional) Implement the command in [mockhsm/commands.rs] and write an
    [integration test]
-
-Here is an [example PR that implements Ed25519 signing] you can study to see
-what the above steps look like in practice.
 
 [YubiHSM2 commands]: https://developers.yubico.com/YubiHSM2/Commands/
 [Serde-based message parser]: https://github.com/tendermint/yubihsm-rs/tree/master/src/serializers
-[commands.rs]: https://github.com/tendermint/yubihsm-rs/blob/master/src/commands.rs
-[responses.rs]: https://github.com/tendermint/yubihsm-rs/blob/master/src/responses.rs
-[session.rs]: https://github.com/tendermint/yubihsm-rs/blob/master/src/session.rs
+[commands]: https://github.com/tendermint/yubihsm-rs/tree/master/src/commands
 [mockhsm/mod.rs]: https://github.com/tendermint/yubihsm-rs/blob/master/src/mockhsm/mod.rs
 [integration test]:  https://github.com/tendermint/yubihsm-rs/blob/master/tests/integration.rs
-[example PR that implements Ed25519 signing]: https://github.com/tendermint/yubihsm-rs/pull/11/files
 
 ## Testing
 

@@ -13,7 +13,7 @@ pub fn get_object_info<C: Connector>(
     session: &mut Session<C>,
     object_id: ObjectId,
     object_type: ObjectType,
-) -> Result<GetObjectInfoResponse, SessionError> {
+) -> Result<ObjectInfo, SessionError> {
     session.send_encrypted_command(GetObjectInfoCommand {
         object_id,
         object_type,
@@ -31,12 +31,12 @@ pub(crate) struct GetObjectInfoCommand {
 }
 
 impl Command for GetObjectInfoCommand {
-    type ResponseType = GetObjectInfoResponse;
+    type ResponseType = ObjectInfo;
 }
 
 /// Response from `commands::get_object_info`
 #[derive(Serialize, Deserialize, Debug)]
-pub struct GetObjectInfoResponse {
+pub struct ObjectInfo {
     /// Capabilities (bitfield)
     pub capabilities: Capability,
 
@@ -69,6 +69,6 @@ pub struct GetObjectInfoResponse {
     pub delegated_capabilities: Capability,
 }
 
-impl Response for GetObjectInfoResponse {
+impl Response for ObjectInfo {
     const COMMAND_TYPE: CommandType = CommandType::GetObjectInfo;
 }

@@ -208,7 +208,7 @@ fn get_object_info(state: &State, cmd_data: &[u8]) -> ResponseMessage {
     }
 
     if let Some(obj) = state.objects.get(command.object_id) {
-        GetObjectInfoResponse {
+        ObjectInfo {
             capabilities: obj.capabilities,
             id: command.object_id,
             length: obj.length,
