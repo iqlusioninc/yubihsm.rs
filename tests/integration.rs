@@ -130,10 +130,10 @@ fn delete_object_test() {
 fn echo_test() {
     let mut session = create_session!();
 
-    let response = yubihsm::echo(&mut session, TEST_MESSAGE)
+    let echo_response = yubihsm::echo(&mut session, TEST_MESSAGE)
         .unwrap_or_else(|err| panic!("error sending echo: {}", err));
 
-    assert_eq!(TEST_MESSAGE, &response.message[..]);
+    assert_eq!(TEST_MESSAGE, echo_response.as_ref());
 }
 
 /// Generate an Ed25519 key
@@ -192,15 +192,11 @@ fn list_objects_test() {
         Capability::ASYMMETRIC_SIGN_EDDSA,
     );
 
-    let response = yubihsm::list_objects(&mut session)
+    let objects = yubihsm::list_objects(&mut session)
         .unwrap_or_else(|err| panic!("error listing objects: {}", err));
 
     // Check type of the Ed25519 we created in generate_asymmetric_key_test()
-    let object = response
-        .objects
-        .iter()
-        .find(|i| i.id == TEST_KEY_ID)
-        .unwrap();
+    let object = objects.iter().find(|i| i.id == TEST_KEY_ID).unwrap();
 
     assert_eq!(object.object_type, ObjectType::Asymmetric)
 }
@@ -222,20 +218,20 @@ fn sign_ecdsa_test() {
         .unwrap_or_else(|err| panic!("error getting public key: {}", err));
 
     assert_eq!(pubkey_response.algorithm, Algorithm::EC_P256);
-    assert_eq!(pubkey_response.data.len(), 64);
+    assert_eq!(pubkey_response.bytes.len(), 64);
 
     let mut pubkey = [0u8; 65];
     pubkey[0] = 0x04; // DER OCTET STRING tag
-    pubkey[1..].copy_from_slice(pubkey_response.data.as_slice());
+    pubkey[1..].copy_from_slice(pubkey_response.bytes.as_slice());
 
-    let signature_response = yubihsm::sign_ecdsa_sha2(&mut session, TEST_KEY_ID, TEST_MESSAGE)
+    let signature = yubihsm::sign_ecdsa_sha2(&mut session, TEST_KEY_ID, TEST_MESSAGE)
         .unwrap_or_else(|err| panic!("error performing ECDSA signature: {}", err));
 
     ring::signature::verify(
         &ring::signature::ECDSA_P256_SHA256_ASN1,
         untrusted::Input::from(&pubkey),
         untrusted::Input::from(TEST_MESSAGE),
-        untrusted::Input::from(&signature_response.signature),
+        untrusted::Input::from(signature.as_ref()),
     ).unwrap();
 }
 
@@ -256,13 +252,13 @@ fn sign_ed25519_test() {
 
     assert_eq!(pubkey_response.algorithm, Algorithm::EC_ED25519);
 
-    let signature_response = yubihsm::sign_ed25519(&mut session, TEST_KEY_ID, TEST_MESSAGE)
+    let signature = yubihsm::sign_ed25519(&mut session, TEST_KEY_ID, TEST_MESSAGE)
         .unwrap_or_else(|err| panic!("error performing Ed25519 signature: {}", err));
 
     ring::signature::verify(
         &ring::signature::ED25519,
-        untrusted::Input::from(&pubkey_response.data),
+        untrusted::Input::from(pubkey_response.bytes.as_ref()),
         untrusted::Input::from(TEST_MESSAGE),
-        untrusted::Input::from(&signature_response.signature),
+        untrusted::Input::from(signature.as_ref()),
     ).unwrap();
 }
