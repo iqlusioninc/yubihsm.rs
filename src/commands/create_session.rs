@@ -5,7 +5,7 @@
 use super::{Command, Response};
 use securechannel::{Challenge, CommandMessage, Cryptogram, ResponseMessage};
 use serializers::deserialize;
-use session::{SessionError, SessionErrorKind};
+use session::SessionError;
 use {CommandType, Connector, ObjectId, SessionId};
 
 /// Create a new encrypted session with the YubiHSM2 using the given connector
@@ -24,29 +24,21 @@ pub(crate) fn create_session<C: Connector>(
     let response_message = ResponseMessage::parse(response_body)?;
 
     if response_message.is_err() {
-        return Err(SessionError::new(
-            SessionErrorKind::ResponseError,
-            Some(format!("HSM error: {:?}", response_message.code)),
-        ));
+        command_fail!(ResponseError, "HSM error: {:?}", response_message.code);
     }
 
     if response_message.command().unwrap() != CommandType::CreateSession {
-        return Err(SessionError::new(
-            SessionErrorKind::ProtocolError,
-            Some(format!(
-                "command type mismatch: expected {:?}, got {:?}",
-                CommandType::CreateSession,
-                response_message.command().unwrap()
-            )),
-        ));
+        command_fail!(
+            ProtocolError,
+            "command type mismatch: expected {:?}, got {:?}",
+            CommandType::CreateSession,
+            response_message.command().unwrap()
+        );
     }
 
-    let session_id = response_message.session_id.ok_or_else(|| {
-        SessionError::new(
-            SessionErrorKind::CreateFailed,
-            Some("no session ID in response".to_owned()),
-        )
-    })?;
+    let session_id = response_message
+        .session_id
+        .ok_or_else(|| command_err!(CreateFailed, "no session ID in response"))?;
 
     let session_response = deserialize(response_message.data.as_ref())?;
 

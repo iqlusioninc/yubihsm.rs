@@ -54,9 +54,11 @@ bitflags! {
 }
 
 impl Domain {
-    pub fn from_u8(index: u8) -> Result<Self, Error> {
+    /// Get the `Domain` object corresponding to the given-numbered domain
+    /// e.g. `Domain::at(1)` returns `Domain::DOM1`.
+    pub fn at(index: usize) -> Result<Self, Error> {
         match index {
-            1...16 => Ok(DOMAINS[index as usize - 1]),
+            1...16 => Ok(DOMAINS[index - 1]),
             _ => bail!("invalid domain: {} (valid domains are 1-16)", index),
         }
     }

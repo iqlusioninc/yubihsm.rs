@@ -54,6 +54,34 @@ impl Objects {
         self.0.get(&id)
     }
 
+    /// Put a new object in the MockHSM
+    pub fn put(
+        &mut self,
+        id: ObjectId,
+        algorithm: Algorithm,
+        label: ObjectLabel,
+        capabilities: Capability,
+        domains: Domain,
+        data: &[u8],
+    ) {
+        let payload = Payload::new(algorithm, data);
+        let length = payload.len();
+
+        let object = Object {
+            payload,
+            object_type: ObjectType::Asymmetric, // TODO: other object types
+            capabilities,
+            delegated_capabilities: Capability::default(),
+            domains,
+            length,
+            sequence: 1,
+            origin: ObjectOrigin::Imported,
+            label,
+        };
+
+        assert!(self.0.insert(id, object).is_none());
+    }
+
     /// Remove an object
     pub fn remove(&mut self, id: ObjectId) -> Option<Object> {
         self.0.remove(&id)

@@ -4,8 +4,8 @@
 
 use super::{Command, Response};
 use {
-    Algorithm, Capability, CommandType, Connector, Domain, ObjectId, ObjectLabel, Session,
-    SessionError,
+    AsymmetricAlgorithm, Capability, CommandType, Connector, Domain, ObjectId, ObjectLabel,
+    Session, SessionError,
 };
 
 /// Generate a new asymmetric key within the `YubiHSM2`
@@ -15,7 +15,7 @@ pub fn generate_asymmetric_key<C: Connector>(
     label: ObjectLabel,
     domains: Domain,
     capabilities: Capability,
-    algorithm: Algorithm,
+    algorithm: AsymmetricAlgorithm,
 ) -> Result<GenAsymmetricKeyResponse, SessionError> {
     session.send_encrypted_command(GenAsymmetricKeyCommand {
         key_id,
@@ -42,7 +42,7 @@ pub(crate) struct GenAsymmetricKeyCommand {
     pub capabilities: Capability,
 
     /// Key algorithm
-    pub algorithm: Algorithm,
+    pub algorithm: AsymmetricAlgorithm,
 }
 
 impl Command for GenAsymmetricKeyCommand {

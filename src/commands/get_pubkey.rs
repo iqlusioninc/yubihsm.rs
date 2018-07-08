@@ -3,7 +3,7 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/Get_Pubkey.html>
 
 use super::{Command, Response};
-use {Algorithm, CommandType, Connector, ObjectId, Session, SessionError};
+use {AsymmetricAlgorithm, CommandType, Connector, ObjectId, Session, SessionError};
 
 /// Get the public key for an asymmetric key stored on the device
 pub fn get_pubkey<C: Connector>(
@@ -28,7 +28,7 @@ impl Command for GetPubKeyCommand {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PublicKey {
     /// Algorithm of the public key
-    pub algorithm: Algorithm,
+    pub algorithm: AsymmetricAlgorithm,
 
     /// The public key in raw bytes. Keys have the following structure:
     ///

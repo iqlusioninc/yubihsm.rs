@@ -4,7 +4,7 @@ use commands::*;
 use connector::ConnectorError;
 use securechannel::{CommandMessage, CommandType, ResponseMessage};
 use serializers::deserialize;
-use {Algorithm, ObjectId, ObjectType};
+use {Algorithm, AsymmetricAlgorithm, ObjectId, ObjectType};
 
 use super::objects::Payload;
 use super::state::State;
@@ -73,13 +73,14 @@ pub(crate) fn session_message(
     let response = match command.command_type {
         CommandType::Blink => BlinkResponse {}.serialize(),
         CommandType::DeleteObject => delete_object(state, &command.data),
+        CommandType::DeviceInfo => device_info(),
         CommandType::Echo => echo(&command.data),
         CommandType::GenAsymmetricKey => gen_asymmetric_key(state, &command.data),
-        CommandType::GetDeviceInfo => get_device_info(),
         CommandType::GetLogs => get_logs(),
         CommandType::GetObjectInfo => get_object_info(state, &command.data),
         CommandType::GetPubKey => get_pubkey(state, &command.data),
         CommandType::ListObjects => list_objects(state, &command.data),
+        CommandType::PutAsymmetricKey => put_asymmetric_key(state, &command.data),
         CommandType::SignDataECDSA => sign_data_ecdsa(state, &command.data),
         CommandType::SignDataEdDSA => sign_data_eddsa(state, &command.data),
         unsupported => panic!("unsupported command type: {:?}", unsupported),
@@ -103,32 +104,9 @@ fn delete_object(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
     }
 }
 
-/// Echo a message back to the host
-fn echo(cmd_data: &[u8]) -> ResponseMessage {
-    EchoResponse(cmd_data.into()).serialize()
-}
-
-/// Generate a new random asymmetric key
-fn gen_asymmetric_key(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
-    let command: GenAsymmetricKeyCommand = deserialize(cmd_data)
-        .unwrap_or_else(|e| panic!("error parsing CommandType::GetObjectInfo: {:?}", e));
-
-    state.objects.generate(
-        command.key_id,
-        command.algorithm,
-        command.label,
-        command.capabilities,
-        command.domains,
-    );
-
-    GenAsymmetricKeyResponse {
-        key_id: command.key_id,
-    }.serialize()
-}
-
 /// Generate a mock device information report
-fn get_device_info() -> ResponseMessage {
-    GetDeviceInfoResponse {
+fn device_info() -> ResponseMessage {
+    DeviceInfoResponse {
         major_version: 2,
         minor_version: 0,
         build_version: 0,
@@ -187,6 +165,29 @@ fn get_device_info() -> ResponseMessage {
     }.serialize()
 }
 
+/// Echo a message back to the host
+fn echo(cmd_data: &[u8]) -> ResponseMessage {
+    EchoResponse(cmd_data.into()).serialize()
+}
+
+/// Generate a new random asymmetric key
+fn gen_asymmetric_key(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
+    let command: GenAsymmetricKeyCommand = deserialize(cmd_data)
+        .unwrap_or_else(|e| panic!("error parsing CommandType::GenAsymmetricKey: {:?}", e));
+
+    state.objects.generate(
+        command.key_id,
+        command.algorithm.into(),
+        command.label,
+        command.capabilities,
+        command.domains,
+    );
+
+    GenAsymmetricKeyResponse {
+        key_id: command.key_id,
+    }.serialize()
+}
+
 /// Get mock log information
 fn get_logs() -> ResponseMessage {
     // TODO: mimic the YubiHSM's actual audit log
@@ -232,7 +233,7 @@ fn get_pubkey(state: &State, cmd_data: &[u8]) -> ResponseMessage {
 
     if let Some(obj) = state.objects.get(command.key_id) {
         PublicKey {
-            algorithm: obj.algorithm(),
+            algorithm: AsymmetricAlgorithm::from_algorithm(obj.algorithm()).unwrap(),
             bytes: obj.payload.public_key_bytes().unwrap(),
         }.serialize()
     } else {
@@ -257,6 +258,23 @@ fn list_objects(state: &State, cmd_data: &[u8]) -> ResponseMessage {
         .collect();
 
     ListObjectsResponse(list_entries).serialize()
+}
+
+/// Generate a new random asymmetric key
+fn put_asymmetric_key(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
+    let PutAsymmetricKeyCommand(command) = deserialize(cmd_data)
+        .unwrap_or_else(|e| panic!("error parsing CommandType::PutAsymmetricKey: {:?}", e));
+
+    state.objects.put(
+        command.id,
+        command.algorithm,
+        command.label,
+        command.capabilities,
+        command.domains,
+        &command.data,
+    );
+
+    PutAsymmetricKeyResponse { key_id: command.id }.serialize()
 }
 
 /// Sign a message using the ECDSA signature algorithm
