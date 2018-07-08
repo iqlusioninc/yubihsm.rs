@@ -21,6 +21,18 @@ pub(crate) enum Payload {
 pub(crate) const ED25519_KEY_PAIR_SIZE: u16 = 24;
 
 impl Payload {
+    /// Create a new payload from the given algorithm and data
+    pub fn new(algorithm: Algorithm, data: &[u8]) -> Self {
+        match algorithm {
+            Algorithm::EC_ED25519 => {
+                let keypair =
+                    Ed25519KeyPair::from_seed_unchecked(untrusted::Input::from(data)).unwrap();
+                Payload::Ed25519KeyPair(keypair)
+            }
+            _ => panic!("MockHSM does not support putting {:?} objects", algorithm),
+        }
+    }
+
     /// Generate a new key with the given algorithm
     pub fn generate(algorithm: Algorithm) -> Self {
         let csprng = SystemRandom::new();
@@ -36,7 +48,10 @@ impl Payload {
                     Ed25519KeyPair::from_pkcs8(untrusted::Input::from(&pkcs8_key)).unwrap();
                 Payload::Ed25519KeyPair(keypair)
             }
-            _ => panic!("MockHSM does not support this algorithm: {:?}", algorithm),
+            _ => panic!(
+                "MockHSM does not support generating {:?} objects",
+                algorithm
+            ),
         }
     }
 

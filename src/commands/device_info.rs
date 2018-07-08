@@ -1,28 +1,28 @@
 //! Get information about the YubiHSM2 device
 //!
-//! <https://developers.yubico.com/YubiHSM2/Commands/Get_Object_Info.html>
+//! <https://developers.yubico.com/YubiHSM2/Commands/Device_Info.html>
 
 use super::{Command, Response};
 use {Algorithm, CommandType, Connector, Session, SessionError};
 
 /// Get information about the YubiHSM2 device
-pub fn get_device_info<C: Connector>(
+pub fn device_info<C: Connector>(
     session: &mut Session<C>,
-) -> Result<GetDeviceInfoResponse, SessionError> {
-    session.send_encrypted_command(GetDeviceInfoCommand {})
+) -> Result<DeviceInfoResponse, SessionError> {
+    session.send_encrypted_command(DeviceInfoCommand {})
 }
 
-/// Request parameters for `commands::get_device_info`
+/// Request parameters for `commands::device_info`
 #[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct GetDeviceInfoCommand {}
+pub(crate) struct DeviceInfoCommand {}
 
-impl Command for GetDeviceInfoCommand {
-    type ResponseType = GetDeviceInfoResponse;
+impl Command for DeviceInfoCommand {
+    type ResponseType = DeviceInfoResponse;
 }
 
-/// Response from `commands::get_device_info`
+/// Response from `commands::device_info`
 #[derive(Serialize, Deserialize, Debug)]
-pub struct GetDeviceInfoResponse {
+pub struct DeviceInfoResponse {
     /// Device major version
     pub major_version: u8,
 
@@ -45,6 +45,6 @@ pub struct GetDeviceInfoResponse {
     pub algorithms: Vec<Algorithm>,
 }
 
-impl Response for GetDeviceInfoResponse {
-    const COMMAND_TYPE: CommandType = CommandType::GetDeviceInfo;
+impl Response for DeviceInfoResponse {
+    const COMMAND_TYPE: CommandType = CommandType::DeviceInfo;
 }

@@ -4,8 +4,46 @@ use failure::Error;
 use serde::de::{self, Deserialize, Deserializer, Visitor};
 use serde::ser::{Serialize, Serializer};
 
+macro_rules! impl_algorithm {
+    ($alg:ident) => {
+        impl From<$alg> for Algorithm {
+            fn from(algorithm: $alg) -> Algorithm {
+                Algorithm::from_u8(algorithm as u8).unwrap()
+            }
+        }
+
+        impl Serialize for $alg {
+            fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+                Algorithm::from(*self).serialize(serializer)
+            }
+        }
+
+        impl<'de> Deserialize<'de> for $alg {
+            fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<$alg, D::Error> {
+                $alg::from_algorithm(Algorithm::deserialize(deserializer)?)
+                    .map_err(|e| D::Error::custom(format!("{}", e)))
+            }
+        }
+    };
+}
+
+mod asymmetric_algorithm;
+mod auth_algorithm;
+mod hmac_algorithm;
+mod opaque_algorithm;
+mod otp_algorithm;
+mod wrap_algorithm;
+
+pub use self::asymmetric_algorithm::AsymmetricAlgorithm;
+pub use self::auth_algorithm::AuthAlgorithm;
+pub use self::hmac_algorithm::HMACAlgorithm;
+pub use self::opaque_algorithm::OpaqueAlgorithm;
+pub use self::otp_algorithm::OTPAlgorithm;
+pub use self::wrap_algorithm::WrapAlgorithm;
+
 /// Cryptographic algorithm types supported by the `YubiHSM2`
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[repr(u8)]
 #[allow(non_camel_case_types)]
 pub enum Algorithm {
     /// rsa-pkcs1-sha1

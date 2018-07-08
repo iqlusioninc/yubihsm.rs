@@ -100,8 +100,8 @@ pub mod connector;
 
 /// Logical partitions within the `YubiHSM`, allowing several applications to share the device
 pub mod domain;
-#[cfg(feature = "mockhsm")]
 
+#[cfg(feature = "mockhsm")]
 /// Software simulation of the `YubiHSM2` for integration testing,
 pub mod mockhsm;
 
@@ -122,7 +122,10 @@ mod serializers;
 /// See <https://developers.yubico.com/YubiHSM2/Concepts/Session.html>
 pub mod session;
 
-pub use algorithm::Algorithm;
+pub use algorithm::{
+    Algorithm, AsymmetricAlgorithm, AuthAlgorithm, HMACAlgorithm, OTPAlgorithm, OpaqueAlgorithm,
+    WrapAlgorithm,
+};
 pub use capability::Capability;
 pub use commands::*;
 pub use connector::{Connector, HttpConfig, HttpConnector};

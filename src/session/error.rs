@@ -11,13 +11,13 @@ pub type SessionError = Error<SessionErrorKind>;
 /// Session error kinds
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
 pub enum SessionErrorKind {
-    /// Couldn't create session
-    #[fail(display = "couldn't create session")]
-    CreateFailed,
-
     /// Couldn't authenticate session
     #[fail(display = "authentication failed")]
     AuthFailed,
+
+    /// Couldn't create session
+    #[fail(display = "couldn't create session")]
+    CreateFailed,
 
     /// Protocol error occurred
     #[fail(display = "protocol error")]
@@ -38,7 +38,7 @@ macro_rules! session_err {
     };
     ($kind:ident, $fmt:expr, $($arg:tt)+) => {
         ::session::SessionError::new(
-            SessionErrorKind::$kind,
+            ::session::SessionErrorKind::$kind,
             Some(format!($fmt, $($arg)+))
         )
     };
