@@ -54,7 +54,8 @@ rustflags = ["-Ctarget-feature=+aes"]
 
 ## Supported Commands
 
-No support for a command you want? [Contributing is easy! (See below)](https://github.com/tendermint/yubihsm-rs/blob/master/README.md#contributing)
+NOTE: If there's a command on this list which isn't presently supported that you'd like to use,
+[contributing is easy! (See below)](https://github.com/tendermint/yubihsm-rs/blob/master/README.md#contributing)
 
 - [ ] [Attest Asymmetric]: generate an attestation certificate for a key in the HSM
 - [x] [Authenticate Session]: authenticate to the HSM and establish an encrypted connection
@@ -151,8 +152,6 @@ No support for a command you want? [Contributing is easy! (See below)](https://g
 [Unwrap Data]: https://developers.yubico.com/YubiHSM2/Commands/Unwrap_Data.html
 [Verify HMAC]: https://developers.yubico.com/YubiHSM2/Commands/Verify_Hmac.html
 [Wrap Data]: https://developers.yubico.com/YubiHSM2/Commands/Wrap_Data.html
-
-Adding support for additional commands is easy! See the `Contributing` section below.
 
 ## Getting Started
 

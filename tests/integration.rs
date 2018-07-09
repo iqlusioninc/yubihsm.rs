@@ -320,10 +320,9 @@ fn sign_ecdsa_test() {
     ).unwrap();
 }
 
-/// Test Ed25519 signatures
-#[cfg(feature = "ring")]
+/// Test Ed25519 against RFC 8032 test vectors
 #[test]
-fn sign_ed25519_test() {
+fn sign_ed25519_test_vectors() {
     let mut session = create_session!();
 
     for vector in ED25519_TEST_VECTORS {
@@ -345,4 +344,31 @@ fn sign_ed25519_test() {
 
         assert_eq!(signature.as_ref(), vector.sig);
     }
+}
+
+/// Test Ed25519 signing using a randomly generated HSM key
+#[test]
+fn sign_ed25519_with_generated_key_test() {
+    let mut session = create_session!();
+
+    generate_asymmetric_key(
+        &mut session,
+        AsymmetricAlgorithm::EC_ED25519,
+        Capability::ASYMMETRIC_SIGN_EDDSA,
+    );
+
+    let pubkey = yubihsm::get_pubkey(&mut session, TEST_KEY_ID)
+        .unwrap_or_else(|err| panic!("error getting public key: {}", err));
+
+    assert_eq!(pubkey.algorithm, AsymmetricAlgorithm::EC_ED25519);
+
+    let signature = yubihsm::sign_ed25519(&mut session, TEST_KEY_ID, TEST_MESSAGE)
+        .unwrap_or_else(|err| panic!("error performing Ed25519 signature: {}", err));
+
+    ring::signature::verify(
+        &ring::signature::ED25519,
+        untrusted::Input::from(pubkey.bytes.as_ref()),
+        untrusted::Input::from(TEST_MESSAGE),
+        untrusted::Input::from(signature.as_ref()),
+    ).unwrap();
 }
