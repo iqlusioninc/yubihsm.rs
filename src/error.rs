@@ -6,7 +6,7 @@ use std::fmt::{self, Display};
 #[derive(Debug)]
 pub struct Error<T>
 where
-    T: Copy + Display + Fail,
+    T: Copy + Display + Fail + PartialEq + Eq,
 {
     inner: Context<T>,
     description: Option<String>,
@@ -14,7 +14,7 @@ where
 
 impl<T> Error<T>
 where
-    T: Copy + Display + Fail,
+    T: Copy + Display + Fail + PartialEq + Eq,
 {
     /// Create a new error type from its kind
     pub fn new(kind: T, description: Option<String>) -> Self {
@@ -32,7 +32,7 @@ where
 
 impl<T> Display for Error<T>
 where
-    T: Copy + Display + Fail,
+    T: Copy + Display + Fail + PartialEq + Eq,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.description {
@@ -44,7 +44,7 @@ where
 
 impl<T> StdError for Error<T>
 where
-    T: Copy + Display + Fail,
+    T: Copy + Display + Fail + PartialEq + Eq,
 {
     /// Obtain the error's description
     fn description(&self) -> &str {

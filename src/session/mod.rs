@@ -5,7 +5,7 @@ mod error;
 
 pub use self::error::{SessionError, SessionErrorKind};
 use super::{ObjectId, SessionId};
-use commands::{self, Command};
+use commands::{self, CloseSessionCommand, Command};
 use connector::{Connector, HttpConfig, HttpConnector, Status as ConnectorStatus};
 use securechannel::{
     Challenge, Channel, CommandMessage, ResponseCode, ResponseMessage, StaticKeys,
@@ -21,10 +21,14 @@ pub const PBKDF2_ITERATIONS: usize = 10_000;
 /// Status message returned from healthy connectors
 const CONNECTOR_STATUS_OK: &str = "OK";
 
-/// Encrypted session with the `YubiHSM2`
+/// Encrypted session with the `YubiHSM2`.
+/// A session is needed to perform any commands.
 ///
-/// Generic over connector types in case a different one needs to be swapped
-/// in, which is primarily useful for substituting the `MockHSM`.
+/// Sessions are eneric over `Connector` types in case a different one needs to
+/// be swapped in, which is primarily useful for substituting the `MockHSM`.
+///
+/// Sessions are automatically closed on `Drop`, releasing `YubiHSM2` session
+/// resources and wiping the ephemeral keys used to encrypt the session.
 pub struct Session<C = HttpConnector>
 where
     C: Connector,
@@ -213,5 +217,13 @@ impl<C: Connector> Session<C> {
         }
 
         deserialize(response.data.as_ref()).map_err(|e| e.into())
+    }
+}
+
+/// Close session automatically on drop
+impl<C: Connector> Drop for Session<C> {
+    fn drop(&mut self) {
+        let err = self.send_encrypted_command(CloseSessionCommand {}).err();
+        debug_assert_eq!(err.map(|e| e.kind()), None);
     }
 }

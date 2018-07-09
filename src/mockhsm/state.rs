@@ -65,4 +65,9 @@ impl State {
             .get_mut(&id)
             .unwrap_or_else(|| panic!("invalid session ID: {:?}", id))
     }
+
+    /// Close an active session
+    pub fn close_session(&mut self, id: SessionId) {
+        assert!(self.sessions.remove(&id).is_some());
+    }
 }

@@ -4,7 +4,7 @@ use commands::*;
 use connector::ConnectorError;
 use securechannel::{CommandMessage, ResponseMessage};
 use serializers::deserialize;
-use {Algorithm, AsymmetricAlgorithm, ObjectId, ObjectType};
+use {Algorithm, AsymmetricAlgorithm, ObjectId, ObjectType, SessionId};
 
 use super::objects::Payload;
 use super::state::State;
@@ -72,6 +72,7 @@ pub(crate) fn session_message(
 
     let response = match command.command_type {
         CommandType::Blink => BlinkResponse {}.serialize(),
+        CommandType::CloseSession => return Ok(close_session(state, session_id)),
         CommandType::DeleteObject => delete_object(state, &command.data),
         CommandType::DeviceInfo => device_info(),
         CommandType::Echo => echo(&command.data),
@@ -90,6 +91,16 @@ pub(crate) fn session_message(
         .get_session(session_id)
         .encrypt_response(response)
         .into())
+}
+
+/// Close an active session
+fn close_session(state: &mut State, session_id: SessionId) -> Vec<u8> {
+    let response = state
+        .get_session(session_id)
+        .encrypt_response(CloseSessionResponse {}.serialize());
+
+    state.close_session(session_id);
+    response.into()
 }
 
 /// Delete an object
