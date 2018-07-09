@@ -54,7 +54,7 @@ rustflags = ["-Ctarget-feature=+aes"]
 
 ## Supported Commands
 
-NOTE: If there's a command on this list which isn't presently supported that you'd like to use,
+NOTE: If there's a command on this list which isn't presently supported,
 [contributing is easy! (See below)](https://github.com/tendermint/yubihsm-rs/blob/master/README.md#contributing)
 
 - [x] [Attest Asymmetric]: generate an attestation certificate for a key in the HSM
