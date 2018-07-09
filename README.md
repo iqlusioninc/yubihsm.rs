@@ -60,7 +60,7 @@ NOTE: If there's a command on this list which isn't presently supported,
 - [x] [Attest Asymmetric]: generate an attestation certificate for a key in the HSM
 - [x] [Authenticate Session]: authenticate to the HSM and establish an encrypted connection
 - [x] [Blink]: Blink the HSM's LEDs (to identify it)
-- [ ] [Close Session]: Terminate an encrypted session with the HSM
+- [x] [Close Session]: Terminate an encrypted session with the HSM
 - [x] [Create Session]: Initiate a new encrypted session with the HSM
 - [ ] [Decrypt ECDH]: Compute Elliptic Curve Diffie-Hellman using an HSM-backed key
 - [ ] [Decrypt OAEP]: Decrypt data encrypted with RSA-OAEP

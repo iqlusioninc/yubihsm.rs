@@ -36,6 +36,7 @@ macro_rules! command_fail {
 
 pub mod attest_asymmetric;
 pub mod blink;
+pub(crate) mod close_session;
 pub(crate) mod create_session;
 pub mod delete_object;
 pub mod device_info;
@@ -58,6 +59,7 @@ pub mod sign_eddsa;
 // Import command functions from all submodules
 pub use self::attest_asymmetric::*;
 pub use self::blink::*;
+pub(crate) use self::close_session::*;
 pub(crate) use self::create_session::*;
 pub use self::delete_object::*;
 pub use self::device_info::*;
