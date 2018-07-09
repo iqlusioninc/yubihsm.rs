@@ -57,7 +57,7 @@ rustflags = ["-Ctarget-feature=+aes"]
 NOTE: If there's a command on this list which isn't presently supported that you'd like to use,
 [contributing is easy! (See below)](https://github.com/tendermint/yubihsm-rs/blob/master/README.md#contributing)
 
-- [ ] [Attest Asymmetric]: generate an attestation certificate for a key in the HSM
+- [x] [Attest Asymmetric]: generate an attestation certificate for a key in the HSM
 - [x] [Authenticate Session]: authenticate to the HSM and establish an encrypted connection
 - [x] [Blink]: Blink the HSM's LEDs (to identify it)
 - [ ] [Close Session]: Terminate an encrypted session with the HSM
@@ -105,7 +105,7 @@ NOTE: If there's a command on this list which isn't presently supported that you
 - [ ] [Verify HMAC]: Verify that an HMAC tag for given data is valid
 - [ ] [Wrap Data]: Encrypt data using a wrap key
 
-[Attest Asymmetric]: https://developers.yubico.com/YubiHSM2/Commands/Attest_Asymmetric.html
+[Attest Asymmetric]: https://docs.rs/yubihsm/latest/yubihsm/commands/attest_asymmetric/fn.attest_asymmetric.html
 [Authenticate Session]: https://developers.yubico.com/YubiHSM2/Commands/Authenticate_Session.html
 [Blink]: https://docs.rs/yubihsm/latest/yubihsm/commands/blink/fn.blink.html
 [Close Session]: https://developers.yubico.com/YubiHSM2/Commands/Close_Session.html
