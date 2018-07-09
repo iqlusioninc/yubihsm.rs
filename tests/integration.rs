@@ -38,6 +38,9 @@ const TEST_DOMAINS: Domain = Domain::DOM1;
 /// Message to sign when performing tests
 const TEST_MESSAGE: &[u8] = b"The YubiHSM2 is a simple, affordable, and secure HSM solution";
 
+/// Size of a NIST P-256 public key
+pub const EC_P256_PUBLIC_KEY_SIZE: usize = 64;
+
 /// Signature test vector
 struct SignatureTestVector {
     /// Secret key (i.e. seed)
@@ -162,6 +165,25 @@ fn put_asymmetric_key<T: Into<Vec<u8>>>(
     ).unwrap_or_else(|err| panic!("error putting asymmetric key: {}", err));
 
     assert_eq!(response.key_id, TEST_KEY_ID);
+}
+
+/// Generate an attestation about a key in the HSM
+#[cfg(not(feature = "mockhsm"))]
+#[test]
+fn attest_asymmetric_test() {
+    let mut session = create_session!();
+
+    generate_asymmetric_key(
+        &mut session,
+        AsymmetricAlgorithm::EC_P256,
+        Capability::ASYMMETRIC_SIGN_ECDSA,
+    );
+
+    let certificate = yubihsm::attest_asymmetric(&mut session, TEST_KEY_ID, None)
+        .unwrap_or_else(|err| panic!("error getting attestation certificate: {}", err));
+
+    // TODO: more tests, e.g. test that the certificate validates
+    assert!(certificate.len() > EC_P256_PUBLIC_KEY_SIZE);
 }
 
 /// Blink the LED on the YubiHSM for 2 seconds
@@ -347,6 +369,7 @@ fn sign_ed25519_test_vectors() {
 }
 
 /// Test Ed25519 signing using a randomly generated HSM key
+#[cfg(feature = "ring")]
 #[test]
 fn sign_ed25519_with_generated_key_test() {
     let mut session = create_session!();
