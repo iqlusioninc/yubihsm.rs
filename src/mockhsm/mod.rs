@@ -9,8 +9,9 @@ mod state;
 
 use self::state::State;
 use super::{ObjectId, StaticKeys};
+use commands::CommandType;
 use connector::{Connector, ConnectorError, Status};
-use securechannel::{CommandMessage, CommandType};
+use securechannel::CommandMessage;
 use session::{PBKDF2_ITERATIONS, PBKDF2_SALT, Session, SessionError};
 
 /// Software simulation of a `YubiHSM2` intended for testing

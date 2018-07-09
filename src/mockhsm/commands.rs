@@ -2,7 +2,7 @@
 
 use commands::*;
 use connector::ConnectorError;
-use securechannel::{CommandMessage, CommandType, ResponseMessage};
+use securechannel::{CommandMessage, ResponseMessage};
 use serializers::deserialize;
 use {Algorithm, AsymmetricAlgorithm, ObjectId, ObjectType};
 

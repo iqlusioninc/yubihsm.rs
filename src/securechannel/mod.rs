@@ -45,7 +45,6 @@ pub use self::challenge::{Challenge, CHALLENGE_SIZE};
 pub(crate) use self::channel::Channel;
 pub use self::channel::Id as SessionId;
 pub(crate) use self::command_message::CommandMessage;
-pub use self::command_message::CommandType;
 pub use self::context::{Context, CONTEXT_SIZE};
 pub use self::cryptogram::{Cryptogram, CRYPTOGRAM_SIZE};
 pub use self::error::{SecureChannelError, SecureChannelErrorKind};

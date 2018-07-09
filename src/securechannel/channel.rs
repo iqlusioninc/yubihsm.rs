@@ -16,9 +16,10 @@ use super::kdf;
 #[cfg(feature = "mockhsm")]
 use super::ResponseCode;
 use super::{
-    Challenge, CommandMessage, CommandType, Context, Cryptogram, ResponseMessage,
-    SecureChannelError, StaticKeys, CRYPTOGRAM_SIZE, KEY_SIZE, MAC_SIZE,
+    Challenge, CommandMessage, Context, Cryptogram, ResponseMessage, SecureChannelError,
+    StaticKeys, CRYPTOGRAM_SIZE, KEY_SIZE, MAC_SIZE,
 };
+use commands::CommandType;
 
 // Size of an AES block
 const AES_BLOCK_SIZE: usize = 16;
@@ -532,8 +533,9 @@ fn compute_icv(cipher: &Aes128, counter: u32) -> GenericArray<u8, U16> {
 
 #[cfg(all(test, feature = "mockhsm"))]
 mod tests {
+    use commands::CommandType;
     use securechannel::{
-        Challenge, Channel, CommandMessage, CommandType, ResponseMessage, SessionId, StaticKeys,
+        Challenge, Channel, CommandMessage, ResponseMessage, SessionId, StaticKeys,
     };
 
     const PASSWORD: &[u8] = b"password";

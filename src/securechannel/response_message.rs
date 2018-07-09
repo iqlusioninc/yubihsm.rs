@@ -7,11 +7,12 @@ use serde::de::{self, Deserialize, Deserializer, Visitor};
 use serde::ser::{Serialize, Serializer};
 use std::fmt;
 
-use super::{CommandType, Mac, SecureChannelError, SessionId, MAC_SIZE};
+use super::{Mac, SecureChannelError, SessionId, MAC_SIZE};
+use commands::CommandType;
 
 /// Command responses
 #[derive(Debug)]
-pub struct ResponseMessage {
+pub(crate) struct ResponseMessage {
     /// Success (for a given command type) or an error type
     pub code: ResponseCode,
 
@@ -231,7 +232,9 @@ impl ResponseCode {
         let code = (i16::from(byte) - 0x80) as i8;
 
         if code >= 0 {
-            let command_type = CommandType::from_u8(code as u8)?;
+            let command_type = CommandType::from_u8(code as u8)
+                .map_err(|e| secure_channel_err!(ProtocolError, "{}", e))?;
+
             return Ok(ResponseCode::Success(command_type));
         }
 
