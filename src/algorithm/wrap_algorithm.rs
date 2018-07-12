@@ -1,9 +1,6 @@
 use failure::Error;
 #[cfg(feature = "mockhsm")]
 use rand::{OsRng, RngCore};
-use serde::de::Error as DeError;
-use serde::de::{self, Deserialize, Deserializer, SeqAccess, Visitor};
-use serde::ser::{Serialize, Serializer};
 use std::fmt;
 
 use super::Algorithm;

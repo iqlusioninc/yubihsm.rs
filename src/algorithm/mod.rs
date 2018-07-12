@@ -12,14 +12,17 @@ macro_rules! impl_algorithm {
             }
         }
 
-        impl Serialize for $alg {
-            fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        impl ::serde::Serialize for $alg {
+            fn serialize<S: ::serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
                 Algorithm::from(*self).serialize(serializer)
             }
         }
 
-        impl<'de> Deserialize<'de> for $alg {
-            fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<$alg, D::Error> {
+        impl<'de> ::serde::Deserialize<'de> for $alg {
+            fn deserialize<D: ::serde::Deserializer<'de>>(
+                deserializer: D,
+            ) -> Result<$alg, D::Error> {
+                use serde::de::Error;
                 $alg::from_algorithm(Algorithm::deserialize(deserializer)?)
                     .map_err(|e| D::Error::custom(format!("{}", e)))
             }
@@ -249,19 +252,13 @@ impl Algorithm {
 }
 
 impl Serialize for Algorithm {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         serializer.serialize_u8(self.to_u8())
     }
 }
 
 impl<'de> Deserialize<'de> for Algorithm {
-    fn deserialize<D>(deserializer: D) -> Result<Algorithm, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Algorithm, D::Error> {
         struct AlgorithmVisitor;
 
         impl<'de> Visitor<'de> for AlgorithmVisitor {
@@ -271,10 +268,7 @@ impl<'de> Deserialize<'de> for Algorithm {
                 formatter.write_str("an unsigned byte between 0x01 and 0x07")
             }
 
-            fn visit_u8<E>(self, value: u8) -> Result<Algorithm, E>
-            where
-                E: de::Error,
-            {
+            fn visit_u8<E: de::Error>(self, value: u8) -> Result<Algorithm, E> {
                 Algorithm::from_u8(value).or_else(|e| Err(E::custom(format!("{}", e))))
             }
         }

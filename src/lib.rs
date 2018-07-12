@@ -88,7 +88,7 @@ mod serializers;
 pub mod algorithm;
 
 /// Object attributes specifying which operations are allowed to be performed
-pub mod capability;
+pub mod capabilities;
 
 /// Commands supported by the `YubiHSM`.
 ///
@@ -103,7 +103,7 @@ pub mod commands;
 pub mod connector;
 
 /// Logical partitions within the `YubiHSM`, allowing several applications to share the device
-pub mod domain;
+pub mod domains;
 
 #[cfg(feature = "mockhsm")]
 /// Software simulation of the `YubiHSM2` for integration testing,
@@ -124,7 +124,7 @@ mod securechannel;
 pub mod session;
 
 pub use algorithm::*;
-pub use capability::Capability;
+pub use capabilities::Capability;
 // Import command functions from all submodules
 pub use commands::{
     attest_asymmetric::*, blink::*, delete_object::*, device_info::*, echo::*, export_wrapped::*,
@@ -134,11 +134,7 @@ pub use commands::{
     put_wrap_key::*, sign_ecdsa::*, sign_eddsa::*, unwrap_data::*, wrap_data::*, CommandType,
 };
 pub use connector::{Connector, HttpConfig, HttpConnector};
-pub use domain::Domain;
-pub use object::Id as ObjectId;
-pub use object::Label as ObjectLabel;
-pub use object::Origin as ObjectOrigin;
-pub use object::SequenceId;
-pub use object::Type as ObjectType;
+pub use domains::Domain;
+pub use object::*;
 pub use securechannel::{SessionId, StaticKeys};
 pub use session::{Session, SessionError};
