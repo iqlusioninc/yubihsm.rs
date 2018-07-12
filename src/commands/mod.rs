@@ -59,6 +59,7 @@ pub mod put_otp_aead_key;
 pub mod put_wrap_key;
 pub mod sign_ecdsa;
 pub mod sign_eddsa;
+pub mod storage_status;
 pub mod unwrap_data;
 pub mod wrap_data;
 
@@ -105,7 +106,7 @@ pub enum CommandType {
     BSL = 0x07,
     Reset = 0x08,
     CloseSession = 0x40,
-    Stats = 0x41,
+    StorageStatus = 0x41,
     PutOpaqueObject = 0x42,
     GetOpaqueObject = 0x43,
     PutAuthKey = 0x44,
@@ -164,7 +165,7 @@ impl CommandType {
             0x07 => CommandType::BSL,
             0x08 => CommandType::Reset,
             0x40 => CommandType::CloseSession,
-            0x41 => CommandType::Stats,
+            0x41 => CommandType::StorageStatus,
             0x42 => CommandType::PutOpaqueObject,
             0x43 => CommandType::GetOpaqueObject,
             0x44 => CommandType::PutAuthKey,

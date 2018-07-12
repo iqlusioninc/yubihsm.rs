@@ -22,6 +22,7 @@ use commands::{
     put_wrap_key::{PutWrapKeyCommand, PutWrapKeyResponse},
     sign_ecdsa::{ECDSASignature, SignDataECDSACommand},
     sign_eddsa::{ED25519_SIGNATURE_SIZE, Ed25519Signature, SignDataEdDSACommand},
+    storage_status::StorageStatusResponse,
     CommandType, Response,
 };
 use connector::ConnectorError;
@@ -111,6 +112,7 @@ pub(crate) fn session_message(
         CommandType::PutWrapKey => put_wrap_key(state, &command.data),
         CommandType::SignDataECDSA => sign_data_ecdsa(state, &command.data),
         CommandType::SignDataEdDSA => sign_data_eddsa(state, &command.data),
+        CommandType::StorageStatus => storage_status(),
         unsupported => panic!("unsupported command type: {:?}", unsupported),
     };
 
@@ -428,4 +430,16 @@ fn sign_data_eddsa(state: &State, cmd_data: &[u8]) -> ResponseMessage {
     } else {
         ResponseMessage::error(&format!("no such object ID: {:?}", command.key_id))
     }
+}
+
+/// Generate a mock storage status report
+fn storage_status() -> ResponseMessage {
+    // TODO: model actual free storage
+    StorageStatusResponse {
+        total_records: 256,
+        free_records: 256,
+        total_pages: 1024,
+        free_pages: 1024,
+        page_size: 126,
+    }.serialize()
 }
