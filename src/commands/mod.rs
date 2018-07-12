@@ -57,6 +57,7 @@ mod put_object;
 pub mod put_opaque;
 pub mod put_otp_aead_key;
 pub mod put_wrap_key;
+pub mod reset;
 pub mod sign_ecdsa;
 pub mod sign_eddsa;
 pub mod storage_status;

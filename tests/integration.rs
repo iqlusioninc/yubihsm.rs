@@ -297,10 +297,8 @@ fn generate_wrap_key_test() {
 fn get_logs_test() {
     let mut session = create_session!();
 
-    let response =
-        yubihsm::get_logs(&mut session).unwrap_or_else(|err| panic!("error getting logs: {}", err));
-
-    assert_eq!(response.num_entries as usize, response.entries.len());
+    // TODO: test audit logging functionality
+    yubihsm::get_logs(&mut session).unwrap_or_else(|err| panic!("error getting logs: {}", err));
 }
 
 /// List the objects in the YubiHSM2
@@ -347,6 +345,13 @@ fn put_asymmetric_key_test() {
     assert_eq!(object_info.algorithm, algorithm.into());
     assert_eq!(object_info.origin, ObjectOrigin::Imported);
     assert_eq!(&object_info.label.to_string().unwrap(), TEST_KEY_LABEL);
+}
+
+/// Reset the YubiHSM2 to a factory default state
+#[cfg(feature = "mockhsm")]
+#[test]
+fn reset_test() {
+    yubihsm::reset(create_session!());
 }
 
 /// Test ECDSA signatures (using NIST P-256)

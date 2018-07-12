@@ -36,6 +36,9 @@ const HTTP_SUCCESS_STATUS: &str = "HTTP/1.1 200 OK";
 /// The Content-Length Header
 const CONTENT_LENGTH_HEADER: &str = "Content-Length: ";
 
+/// The Transfer-Encoding Header
+const TRANSFER_ENCODING_HEADER: &str = "Transfer-Encoding: ";
+
 /// Configuration options for this connector
 #[derive(Debug)]
 pub struct HttpConfig {
@@ -168,10 +171,10 @@ struct ResponseReader {
     pos: usize,
 
     /// Position at which the body begins
-    body_starts_at: Option<usize>,
+    body_offset: Option<usize>,
 
     /// Length of the body (if we're received it)
-    content_length: Option<usize>,
+    content_length: usize,
 }
 
 impl ResponseReader {
@@ -180,8 +183,8 @@ impl ResponseReader {
         let mut buffer = Self {
             buffer: [0u8; MAX_RESPONSE_SIZE],
             pos: 0,
-            body_starts_at: None,
-            content_length: None,
+            body_offset: None,
+            content_length: 0,
         };
 
         buffer.read_headers(socket)?;
@@ -199,7 +202,7 @@ impl ResponseReader {
 
     /// Read the HTTP response headers
     fn read_headers(&mut self, socket: &mut TcpStream) -> Result<(), ConnectorError> {
-        assert!(self.body_starts_at.is_none(), "already read headers!");
+        assert!(self.body_offset.is_none(), "already read headers!");
 
         loop {
             self.fill_buffer(socket)?;
@@ -209,14 +212,14 @@ impl ResponseReader {
             let mut offset = 0;
             while self.buffer[offset..].len() > HEADER_DELIMITER.len() {
                 if self.buffer[offset..].starts_with(HEADER_DELIMITER) {
-                    self.body_starts_at = Some(offset + HEADER_DELIMITER.len());
+                    self.body_offset = Some(offset + HEADER_DELIMITER.len());
                     break;
                 } else {
                     offset += 1;
                 }
             }
 
-            if self.body_starts_at.is_some() {
+            if self.body_offset.is_some() {
                 break;
             } else if self.pos + 1 >= MAX_RESPONSE_SIZE {
                 connector_fail!(
@@ -232,8 +235,8 @@ impl ResponseReader {
 
     /// Parse the HTTP headers, extracting the Content-Length
     fn parse_headers(&mut self) -> Result<(), ConnectorError> {
-        let body_starts_at = self.body_starts_at.unwrap();
-        let header_str = str::from_utf8(&self.buffer[..body_starts_at])?;
+        let body_offset = self.body_offset.unwrap();
+        let header_str = str::from_utf8(&self.buffer[..body_offset])?;
 
         let mut header_iter = header_str.split("\r\n");
 
@@ -249,42 +252,37 @@ impl ResponseReader {
         }
 
         for header in header_iter {
-            // The only header we care about is "Content-Length"
-            if !header.starts_with(CONTENT_LENGTH_HEADER) {
-                continue;
-            }
+            if header.starts_with(CONTENT_LENGTH_HEADER) {
+                let content_length: usize = header[CONTENT_LENGTH_HEADER.len()..].parse()?;
 
-            let content_length: usize = header[CONTENT_LENGTH_HEADER.len()..].parse()?;
+                if MAX_RESPONSE_SIZE - body_offset < content_length {
+                    connector_fail!(
+                        ResponseError,
+                        "response body length too large for buffer ({} bytes)",
+                        content_length
+                    );
+                }
 
-            if MAX_RESPONSE_SIZE - body_starts_at < content_length {
+                self.content_length = content_length;
+            } else if header.starts_with(TRANSFER_ENCODING_HEADER) {
+                let transfer_encoding = &header[TRANSFER_ENCODING_HEADER.len()..];
                 connector_fail!(
                     ResponseError,
-                    "response body length too large for buffer ({} bytes)",
-                    content_length
+                    "connector sent unsupported transfer encoding: {}",
+                    transfer_encoding
                 );
             }
-
-            self.content_length = Some(content_length);
-            return Ok(());
         }
 
-        Err(connector_err!(
-            ResponseError,
-            "no Content-Length in response!"
-        ))
+        Ok(())
     }
 
     /// Read the response body into the internal buffer
     fn read_body(&mut self, socket: &mut TcpStream) -> Result<(), ConnectorError> {
-        let body_starts_at = self
-            .body_starts_at
-            .expect("we should've already read the body");
+        let body_end =
+            self.content_length + self.body_offset.expect("not ready to read the body yet");
 
-        let content_length = self
-            .content_length
-            .expect("we should already know the content length");
-
-        while self.pos < body_starts_at + content_length {
+        while self.pos < body_end {
             self.fill_buffer(socket)?;
         }
 
@@ -294,10 +292,10 @@ impl ResponseReader {
 
 impl Into<Vec<u8>> for ResponseReader {
     fn into(self) -> Vec<u8> {
-        let body_starts_at = self
-            .body_starts_at
+        let body_offset = self
+            .body_offset
             .expect("we should've already read the body");
 
-        Vec::from(&self.buffer[body_starts_at..self.pos])
+        Vec::from(&self.buffer[body_offset..self.pos])
     }
 }
