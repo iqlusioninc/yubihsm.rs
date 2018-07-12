@@ -95,7 +95,7 @@ NOTE: If there's a command on this list which isn't presently supported,
 | [Put Option]              | ⛔     | ⛔        | Change HSM settings |
 | [Put OTP AEAD Key]        | ✅     | ⛔        | Put a Yubico OTP key into the HSM |
 | [Put Wrap Key]            | ✅     | ✅        | Put an AES keywrapping key into the HSM |
-| [Reset]                   | ⛔     | ⛔        | Reset the HSM back to factory default settings |
+| [Reset]                   | ✅     | ✅        | Reset the HSM back to factory default settings |
 | [Session Message]         | ✅     | ✅        | Send an encrypted message to the HSM |
 | [Set Log Index]           | ⛔     | ⛔        | Mark log messages in the HSM as consumed so they can be overwritten |
 | [Sign Data ECDSA]         | ✅     | ✅        | Compute an ECDSA signature using an HSM-backed private key |
@@ -143,7 +143,7 @@ NOTE: If there's a command on this list which isn't presently supported,
 [Put Option]: https://developers.yubico.com/YubiHSM2/Commands/Put_Option.html
 [Put OTP AEAD Key]: https://docs.rs/yubihsm/latest/yubihsm/commands/put_otp_aead_key/fn.put_otp_aead_key.html
 [Put Wrap Key]: https://docs.rs/yubihsm/latest/yubihsm/commands/put_wrap_key/fn.put_wrap_key.html
-[Reset]: https://developers.yubico.com/YubiHSM2/Commands/Reset.html
+[Reset]: https://docs.rs/yubihsm/latest/yubihsm/commands/reset/fn.reset.html
 [Session Message]: https://developers.yubico.com/YubiHSM2/Commands/Session_Message.html
 [Set Log Index]: https://developers.yubico.com/YubiHSM2/Commands/Set_Log_Index.html
 [Sign Data ECDSA]: https://docs.rs/yubihsm/latest/yubihsm/commands/sign_ecdsa/fn.sign_ecdsa_sha2.html
