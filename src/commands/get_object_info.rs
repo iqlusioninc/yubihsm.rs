@@ -35,13 +35,13 @@ impl Command for GetObjectInfoCommand {
 }
 
 /// Response from `commands::get_object_info`
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ObjectInfo {
     /// Capabilities (bitfield)
     pub capabilities: Capability,
 
     /// Object identifier
-    pub id: u16,
+    pub object_id: u16,
 
     /// Length of object in bytes
     pub length: u16,

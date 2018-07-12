@@ -41,10 +41,14 @@ pub(crate) mod create_session;
 pub mod delete_object;
 pub mod device_info;
 pub mod echo;
+pub mod export_wrapped;
 pub mod generate_asymmetric_key;
+pub mod generate_key;
+pub mod generate_wrap_key;
 pub mod get_logs;
 pub mod get_object_info;
 pub mod get_pubkey;
+pub mod import_wrapped;
 pub mod list_objects;
 pub mod put_asymmetric_key;
 pub mod put_auth_key;
@@ -55,29 +59,8 @@ pub mod put_otp_aead_key;
 pub mod put_wrap_key;
 pub mod sign_ecdsa;
 pub mod sign_eddsa;
-
-// Import command functions from all submodules
-pub use self::attest_asymmetric::*;
-pub use self::blink::*;
-pub(crate) use self::close_session::*;
-pub(crate) use self::create_session::*;
-pub use self::delete_object::*;
-pub use self::device_info::*;
-pub use self::echo::*;
-pub use self::generate_asymmetric_key::*;
-pub use self::get_logs::*;
-pub use self::get_object_info::*;
-pub use self::get_pubkey::*;
-pub use self::list_objects::*;
-pub use self::put_asymmetric_key::*;
-pub use self::put_auth_key::*;
-pub use self::put_hmac_key::*;
-pub(crate) use self::put_object::*;
-pub use self::put_opaque::*;
-pub use self::put_otp_aead_key::*;
-pub use self::put_wrap_key::*;
-pub use self::sign_ecdsa::*;
-pub use self::sign_eddsa::*;
+pub mod unwrap_data;
+pub mod wrap_data;
 
 /// Structured commands (i.e. requests) which are encrypted and then sent to
 /// the HSM. Every command has a corresponding `ResponseType`.
@@ -127,7 +110,7 @@ pub enum CommandType {
     GetOpaqueObject = 0x43,
     PutAuthKey = 0x44,
     PutAsymmetricKey = 0x45,
-    GenAsymmetricKey = 0x46,
+    GenerateAsymmetricKey = 0x46,
     SignDataPKCS1 = 0x47,
     ListObjects = 0x48,
     DecryptPKCS1 = 0x49,
@@ -186,7 +169,7 @@ impl CommandType {
             0x43 => CommandType::GetOpaqueObject,
             0x44 => CommandType::PutAuthKey,
             0x45 => CommandType::PutAsymmetricKey,
-            0x46 => CommandType::GenAsymmetricKey,
+            0x46 => CommandType::GenerateAsymmetricKey,
             0x47 => CommandType::SignDataPKCS1,
             0x48 => CommandType::ListObjects,
             0x49 => CommandType::DecryptPKCS1,

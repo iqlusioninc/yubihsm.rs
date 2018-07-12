@@ -95,49 +95,7 @@ impl DerefMut for Label {
     }
 }
 
-impl Serialize for Label {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        self.0.serialize(serializer)
-    }
-}
-
-impl<'de> Deserialize<'de> for Label {
-    fn deserialize<D>(deserializer: D) -> Result<Label, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        struct LabelVisitor;
-
-        impl<'de> Visitor<'de> for LabelVisitor {
-            type Value = Label;
-
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                formatter.write_str("40-byte string of arbitrary bytes")
-            }
-
-            fn visit_seq<S>(self, mut seq: S) -> Result<Label, S::Error>
-            where
-                S: SeqAccess<'de>,
-            {
-                let mut label = [0; LABEL_SIZE];
-
-                for elem in label.iter_mut().take(LABEL_SIZE) {
-                    match seq.next_element()? {
-                        Some(val) => *elem = val,
-                        None => return Err(de::Error::custom("end of stream")),
-                    };
-                }
-
-                Ok(Label(label))
-            }
-        }
-
-        deserializer.deserialize_seq(LabelVisitor)
-    }
-}
+impl_array_serializers!(Label, LABEL_SIZE);
 
 /// Information about how a key was originally generated
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -209,7 +167,7 @@ impl<'de> Deserialize<'de> for Origin {
 }
 
 /// Types of objects
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum Type {
     /// Raw data
     Opaque = 0x01,
@@ -218,7 +176,7 @@ pub enum Type {
     AuthKey = 0x02,
 
     /// Asymmetric private keys
-    Asymmetric = 0x03,
+    AsymmetricKey = 0x03,
 
     /// Key-wrapping key for exporting/importing keys
     WrapKey = 0x04,
@@ -239,7 +197,7 @@ impl Type {
         Ok(match byte {
             0x01 => Type::Opaque,
             0x02 => Type::AuthKey,
-            0x03 => Type::Asymmetric,
+            0x03 => Type::AsymmetricKey,
             0x04 => Type::WrapKey,
             0x05 => Type::HMACKey,
             0x06 => Type::Template,

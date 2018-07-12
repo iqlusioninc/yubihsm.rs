@@ -1,12 +1,15 @@
 //! Object "payloads" in the MockHSM are instances of software implementations
 //! of supported cryptographic primitives, already initialized with a private key
 
-use ring::rand::SystemRandom;
+use ring::rand::{SecureRandom, SystemRandom};
 use ring::signature::Ed25519KeyPair;
 use untrusted;
 
 use super::ecdsa::{ECDSAKeyPair, ECDSA_KEY_PAIR_SIZE};
-use Algorithm;
+use {Algorithm, AsymmetricAlgorithm, WrapAlgorithm};
+
+/// Size of an Ed25519 seed
+pub(crate) const ED25519_SEED_SIZE: usize = 32;
 
 /// Loaded instances of a cryptographic primitives in the MockHSM
 pub(crate) enum Payload {
@@ -14,20 +17,27 @@ pub(crate) enum Payload {
     ECDSAKeyPair(ECDSAKeyPair),
 
     /// Ed25519 signing keys
-    Ed25519KeyPair(Ed25519KeyPair),
-}
+    Ed25519KeyPair([u8; ED25519_SEED_SIZE]),
 
-/// Size of an Ed25519 key pair (in a YubiHSM)
-pub(crate) const ED25519_KEY_PAIR_SIZE: u16 = 24;
+    /// Wrapping (i.e. symmetric encryption keys)
+    // TODO: actually simulate AES-CCM. Instead we use GCM because *ring* has it
+    WrapKey(WrapAlgorithm, Vec<u8>),
+}
 
 impl Payload {
     /// Create a new payload from the given algorithm and data
     pub fn new(algorithm: Algorithm, data: &[u8]) -> Self {
         match algorithm {
+            Algorithm::AES128_CCM_WRAP | Algorithm::AES256_CCM_WRAP => Payload::WrapKey(
+                WrapAlgorithm::from_algorithm(algorithm).unwrap(),
+                data.into(),
+            ),
+            Algorithm::AES192_CCM_WRAP => panic!("friends don't let friends use AES-192"),
             Algorithm::EC_ED25519 => {
-                let keypair =
-                    Ed25519KeyPair::from_seed_unchecked(untrusted::Input::from(data)).unwrap();
-                Payload::Ed25519KeyPair(keypair)
+                assert_eq!(data.len(), ED25519_SEED_SIZE);
+                let mut bytes = [0u8; ED25519_SEED_SIZE];
+                bytes.copy_from_slice(data);
+                Payload::Ed25519KeyPair(bytes)
             }
             _ => panic!("MockHSM does not support putting {:?} objects", algorithm),
         }
@@ -38,15 +48,23 @@ impl Payload {
         let csprng = SystemRandom::new();
 
         match algorithm {
+            Algorithm::AES128_CCM_WRAP | Algorithm::AES256_CCM_WRAP => {
+                let wrap_alg = WrapAlgorithm::from_algorithm(algorithm).unwrap();
+                let mut bytes = vec![0u8; wrap_alg.key_len()];
+                csprng.fill(&mut bytes).unwrap();
+                Payload::WrapKey(wrap_alg, bytes)
+            }
             Algorithm::EC_P256 => {
-                let keypair = ECDSAKeyPair::generate(algorithm, &csprng);
+                let keypair = ECDSAKeyPair::generate(
+                    AsymmetricAlgorithm::from_algorithm(algorithm).unwrap(),
+                    &csprng,
+                );
                 Payload::ECDSAKeyPair(keypair)
             }
             Algorithm::EC_ED25519 => {
-                let pkcs8_key = Ed25519KeyPair::generate_pkcs8(&csprng).unwrap();
-                let keypair =
-                    Ed25519KeyPair::from_pkcs8(untrusted::Input::from(&pkcs8_key)).unwrap();
-                Payload::Ed25519KeyPair(keypair)
+                let mut bytes = [0u8; ED25519_SEED_SIZE];
+                csprng.fill(&mut bytes).unwrap();
+                Payload::Ed25519KeyPair(bytes)
             }
             _ => panic!(
                 "MockHSM does not support generating {:?} objects",
@@ -60,22 +78,40 @@ impl Payload {
         match *self {
             Payload::ECDSAKeyPair(_) => Algorithm::EC_P256,
             Payload::Ed25519KeyPair(_) => Algorithm::EC_ED25519,
+            Payload::WrapKey(alg, _) => alg.into(),
         }
     }
 
     /// Get the length of the object
     pub fn len(&self) -> u16 {
-        match *self {
+        let l = match *self {
             Payload::ECDSAKeyPair(_) => ECDSA_KEY_PAIR_SIZE,
-            Payload::Ed25519KeyPair(_) => ED25519_KEY_PAIR_SIZE,
-        }
+            Payload::Ed25519KeyPair(_) => ED25519_SEED_SIZE,
+            Payload::WrapKey(_, ref data) => data.len(),
+        };
+        l as u16
     }
 
     /// If this object is a public key, return its byte serialization
     pub fn public_key_bytes(&self) -> Option<Vec<u8>> {
         match *self {
-            Payload::ECDSAKeyPair(ref k) => Some(k.public_key_bytes().into()),
-            Payload::Ed25519KeyPair(ref k) => Some(k.public_key_bytes().into()),
+            Payload::ECDSAKeyPair(ref k) => Some(k.public_key_bytes.clone()),
+            Payload::Ed25519KeyPair(ref k) => Some(
+                Ed25519KeyPair::from_seed_unchecked(untrusted::Input::from(k))
+                    .unwrap()
+                    .public_key_bytes()
+                    .into(),
+            ),
+            Payload::WrapKey(_, _) => None,
+        }
+    }
+
+    /// Return the private key bytes of this object
+    pub fn private_key_bytes(&self) -> Vec<u8> {
+        match *self {
+            Payload::ECDSAKeyPair(ref k) => k.private_key_bytes.clone(),
+            Payload::Ed25519KeyPair(ref k) => k.as_ref().into(),
+            Payload::WrapKey(_, ref data) => data.clone(),
         }
     }
 }

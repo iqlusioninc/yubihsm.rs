@@ -1,9 +1,12 @@
-use super::Algorithm;
-
 use failure::Error;
+#[cfg(feature = "mockhsm")]
+use rand::{OsRng, RngCore};
 use serde::de::Error as DeError;
-use serde::de::{Deserialize, Deserializer};
+use serde::de::{self, Deserialize, Deserializer, SeqAccess, Visitor};
 use serde::ser::{Serialize, Serializer};
+use std::fmt;
+
+use super::Algorithm;
 
 /// Valid algorithms for "wrap" (symmetric encryption/key wrapping) keys
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -42,3 +45,64 @@ impl WrapAlgorithm {
 }
 
 impl_algorithm!(WrapAlgorithm);
+
+pub const WRAP_NONCE_SIZE: usize = 13;
+
+/// Nonces for AES-CCM keywrapping
+#[derive(Debug)]
+pub struct WrapNonce(pub [u8; WRAP_NONCE_SIZE]);
+
+impl WrapNonce {
+    /// Generate a random `WrapNonce`
+    #[cfg(feature = "mockhsm")]
+    pub fn generate() -> Self {
+        let mut rand = OsRng::new().unwrap();
+        let mut bytes = [0u8; WRAP_NONCE_SIZE];
+        rand.fill_bytes(&mut bytes);
+        WrapNonce(bytes)
+    }
+}
+
+impl AsRef<[u8]> for WrapNonce {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
+impl_array_serializers!(WrapNonce, WRAP_NONCE_SIZE);
+
+/// Data encrypted (i.e. with AES-CCM) under a wrap key
+#[derive(Serialize, Deserialize, Debug)]
+pub struct WrappedData(pub Vec<u8>);
+
+#[allow(unknown_lints, len_without_is_empty)]
+impl WrappedData {
+    /// Unwrap inner byte vector
+    pub fn into_vec(self) -> Vec<u8> {
+        self.into()
+    }
+
+    /// Get length of the signature
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    /// Get slice of the inner byte vector
+    #[inline]
+    pub fn as_slice(&self) -> &[u8] {
+        self.as_ref()
+    }
+}
+
+impl AsRef<[u8]> for WrappedData {
+    fn as_ref(&self) -> &[u8] {
+        self.0.as_ref()
+    }
+}
+
+impl Into<Vec<u8>> for WrappedData {
+    fn into(self) -> Vec<u8> {
+        self.0
+    }
+}

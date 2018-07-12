@@ -2,6 +2,7 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Generate_Asymmetric_Key.html>
 
+use super::generate_key::GenerateKeyParams;
 use super::{Command, Response};
 use {
     AsymmetricAlgorithm, Capability, CommandType, Connector, Domain, ObjectId, ObjectLabel,
@@ -17,39 +18,24 @@ pub fn generate_asymmetric_key<C: Connector>(
     capabilities: Capability,
     algorithm: AsymmetricAlgorithm,
 ) -> Result<GenAsymmetricKeyResponse, SessionError> {
-    session.send_encrypted_command(GenAsymmetricKeyCommand {
+    session.send_encrypted_command(GenAsymmetricKeyCommand(GenerateKeyParams {
         key_id,
         label,
         domains,
         capabilities,
-        algorithm,
-    })
+        algorithm: algorithm.into(),
+    }))
 }
 
 /// Request parameters for `commands::generate_asymmetric_key`
 #[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct GenAsymmetricKeyCommand {
-    /// ID of the key
-    pub key_id: ObjectId,
-
-    /// Label for the key (40-bytes)
-    pub label: ObjectLabel,
-
-    /// Domain in which the key will be accessible
-    pub domains: Domain,
-
-    /// Capability of the key
-    pub capabilities: Capability,
-
-    /// Key algorithm
-    pub algorithm: AsymmetricAlgorithm,
-}
+pub(crate) struct GenAsymmetricKeyCommand(pub(crate) GenerateKeyParams);
 
 impl Command for GenAsymmetricKeyCommand {
     type ResponseType = GenAsymmetricKeyResponse;
 }
 
-/// Response from `commands::generate_assymetric_key`
+/// Response from `commands::generate_asymmetric_key`
 #[derive(Serialize, Deserialize, Debug)]
 pub struct GenAsymmetricKeyResponse {
     /// ID of the key
@@ -57,5 +43,5 @@ pub struct GenAsymmetricKeyResponse {
 }
 
 impl Response for GenAsymmetricKeyResponse {
-    const COMMAND_TYPE: CommandType = CommandType::GenAsymmetricKey;
+    const COMMAND_TYPE: CommandType = CommandType::GenerateAsymmetricKey;
 }

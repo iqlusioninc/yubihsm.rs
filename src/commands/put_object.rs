@@ -5,7 +5,7 @@ use {Algorithm, Capability, Domain, ObjectId, ObjectLabel};
 
 /// Common parameters to all put object commands
 #[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct PutObjectCommand {
+pub(crate) struct PutObjectParams {
     /// ID of the object
     pub id: ObjectId,
 
@@ -20,7 +20,4 @@ pub(crate) struct PutObjectCommand {
 
     /// Object algorithm
     pub algorithm: Algorithm,
-
-    /// Serialized object
-    pub data: Vec<u8>,
 }

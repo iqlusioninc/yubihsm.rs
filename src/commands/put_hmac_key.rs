@@ -2,7 +2,8 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Put_Hmac_Key.html>
 
-use super::{Command, PutObjectCommand, Response};
+use super::put_object::PutObjectParams;
+use super::{Command, Response};
 use {
     Capability, CommandType, Connector, Domain, HMACAlgorithm, ObjectId, ObjectLabel, Session,
     SessionError,
@@ -34,19 +35,27 @@ pub fn put_hmac_key<C: Connector, T: Into<Vec<u8>>>(
         );
     }
 
-    session.send_encrypted_command(PutHMACKeyCommand(PutObjectCommand {
-        id: key_id,
-        label,
-        domains,
-        capabilities,
-        algorithm: algorithm.into(),
+    session.send_encrypted_command(PutHMACKeyCommand {
+        params: PutObjectParams {
+            id: key_id,
+            label,
+            domains,
+            capabilities,
+            algorithm: algorithm.into(),
+        },
         data,
-    }))
+    })
 }
 
 /// Request parameters for `commands::put_hmac_key`
 #[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct PutHMACKeyCommand(pub(crate) PutObjectCommand);
+pub(crate) struct PutHMACKeyCommand {
+    /// Common parameters to all put object commands
+    pub params: PutObjectParams,
+
+    /// Serialized object
+    pub data: Vec<u8>,
+}
 
 impl Command for PutHMACKeyCommand {
     type ResponseType = PutHMACKeyResponse;

@@ -21,3 +21,43 @@ pub fn deserialize<T: serde::de::DeserializeOwned>(bytes: &[u8]) -> Result<T, Se
     let mut deserializer = de::Deserializer::new(Cursor::new(bytes));
     Ok(serde::Deserialize::deserialize(&mut deserializer)?)
 }
+
+/// Implement serde serializers/deserializers for array newtypes
+macro_rules! impl_array_serializers {
+    ($ty:ident, $size:expr) => {
+        impl Serialize for $ty {
+            fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+                self.0.serialize(serializer)
+            }
+        }
+
+        impl<'de> Deserialize<'de> for $ty {
+            fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<$ty, D::Error> {
+                struct ArrayVisitor;
+
+                impl<'de> Visitor<'de> for ArrayVisitor {
+                    type Value = $ty;
+
+                    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                        write!(formatter, "{}-byte string of arbitrary bytes", $size)
+                    }
+
+                    fn visit_seq<S: SeqAccess<'de>>(self, mut seq: S) -> Result<$ty, S::Error> {
+                        let mut result = [0; $size];
+
+                        for elem in result.iter_mut().take($size) {
+                            match seq.next_element()? {
+                                Some(val) => *elem = val,
+                                None => return Err(de::Error::custom("end of stream")),
+                            };
+                        }
+
+                        Ok($ty(result))
+                    }
+                }
+
+                deserializer.deserialize_seq(ArrayVisitor)
+            }
+        }
+    };
+}

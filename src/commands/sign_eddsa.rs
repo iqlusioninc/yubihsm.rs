@@ -74,46 +74,4 @@ impl Debug for Ed25519Signature {
     }
 }
 
-impl Serialize for Ed25519Signature {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        self.0.serialize(serializer)
-    }
-}
-
-impl<'de> Deserialize<'de> for Ed25519Signature {
-    fn deserialize<D>(deserializer: D) -> Result<Ed25519Signature, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        struct Ed25519SignatureVisitor;
-
-        impl<'de> Visitor<'de> for Ed25519SignatureVisitor {
-            type Value = Ed25519Signature;
-
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                formatter.write_str("Ed25519 signature (64-bytes)")
-            }
-
-            fn visit_seq<S>(self, mut seq: S) -> Result<Ed25519Signature, S::Error>
-            where
-                S: SeqAccess<'de>,
-            {
-                let mut label = [0; ED25519_SIGNATURE_SIZE];
-
-                for elem in label.iter_mut().take(ED25519_SIGNATURE_SIZE) {
-                    match seq.next_element()? {
-                        Some(val) => *elem = val,
-                        None => return Err(de::Error::custom("end of stream")),
-                    };
-                }
-
-                Ok(Ed25519Signature(label))
-            }
-        }
-
-        deserializer.deserialize_seq(Ed25519SignatureVisitor)
-    }
-}
+impl_array_serializers!(Ed25519Signature, ED25519_SIGNATURE_SIZE);

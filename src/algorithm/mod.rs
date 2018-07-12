@@ -39,7 +39,7 @@ pub use self::auth_algorithm::AuthAlgorithm;
 pub use self::hmac_algorithm::HMACAlgorithm;
 pub use self::opaque_algorithm::OpaqueAlgorithm;
 pub use self::otp_algorithm::OTPAlgorithm;
-pub use self::wrap_algorithm::WrapAlgorithm;
+pub use self::wrap_algorithm::{WrapAlgorithm, WrapNonce, WrappedData};
 
 /// Cryptographic algorithm types supported by the `YubiHSM2`
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
