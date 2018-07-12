@@ -15,6 +15,7 @@ use commands::{
     generate_wrap_key::{GenWrapKeyCommand, GenWrapKeyResponse},
     get_logs::GetLogsResponse,
     get_object_info::{GetObjectInfoCommand, GetObjectInfoResponse},
+    get_pseudo_random::{GetPseudoRandomCommand, GetPseudoRandomResponse},
     get_pubkey::{GetPubKeyCommand, PublicKey},
     import_wrapped::{ImportWrappedCommand, ImportWrappedResponse},
     list_objects::{ListObjectsCommand, ListObjectsEntry, ListObjectsResponse},
@@ -106,6 +107,7 @@ pub(crate) fn session_message(
         CommandType::GenerateWrapKey => gen_wrap_key(state, &command.data),
         CommandType::GetLogs => get_logs(),
         CommandType::GetObjectInfo => get_object_info(state, &command.data),
+        CommandType::GetPseudoRandom => get_pseudo_random(state, &command.data),
         CommandType::GetPubKey => get_pubkey(state, &command.data),
         CommandType::ImportWrapped => import_wrapped(state, &command.data),
         CommandType::ListObjects => list_objects(state, &command.data),
@@ -303,6 +305,20 @@ fn get_object_info(state: &State, cmd_data: &[u8]) -> ResponseMessage {
     } else {
         ResponseMessage::error(&format!("no such object ID: {:?}", command.0.object_id))
     }
+}
+
+/// Get bytes of random data
+fn get_pseudo_random(_state: &State, cmd_data: &[u8]) -> ResponseMessage {
+    use rand::prelude::*;
+
+    let command: GetPseudoRandomCommand = deserialize(cmd_data)
+        .unwrap_or_else(|e| panic!("error parsing CommandType::GetPseudoRandom: {:?}", e));
+
+    let mut rng = thread_rng();
+    let mut bytes = vec![0u8; command.bytes as usize];
+    rng.fill(&mut bytes[..]); // Generate the requested bytes
+
+    GetPseudoRandomResponse { bytes }.serialize()
 }
 
 /// Get the public key associated with a key in the HSM

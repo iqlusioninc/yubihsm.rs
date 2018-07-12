@@ -531,3 +531,14 @@ fn wrap_key_test() {
         TEST_EXPORTED_KEY_LABEL
     );
 }
+
+/// Get random bytes
+#[test]
+fn get_pseudo_random() {
+    let mut session = create_session!();
+
+    let bytes = yubihsm::commands::get_pseudo_random::get_pseudo_random(&mut session, 32)
+        .unwrap_or_else(|err| panic!("error getting random data: {}", err));
+
+    assert_eq!(32, bytes.len());
+}
