@@ -18,17 +18,19 @@ pub fn put_opaque<C: Connector, T: Into<Vec<u8>>>(
     capabilities: Capability,
     algorithm: OpaqueAlgorithm,
     bytes: T,
-) -> Result<PutOpaqueResponse, SessionError> {
-    session.send_encrypted_command(PutOpaqueCommand {
-        params: PutObjectParams {
-            id: object_id,
-            label,
-            domains,
-            capabilities,
-            algorithm: algorithm.into(),
-        },
-        data: bytes.into(),
-    })
+) -> Result<ObjectId, SessionError> {
+    session
+        .send_encrypted_command(PutOpaqueCommand {
+            params: PutObjectParams {
+                id: object_id,
+                label,
+                domains,
+                capabilities,
+                algorithm: algorithm.into(),
+            },
+            data: bytes.into(),
+        })
+        .map(|response| response.object_id)
 }
 
 /// Request parameters for `commands::put_opaque`
@@ -47,7 +49,7 @@ impl Command for PutOpaqueCommand {
 
 /// Response from `commands::put_opaque`
 #[derive(Serialize, Deserialize, Debug)]
-pub struct PutOpaqueResponse {
+pub(crate) struct PutOpaqueResponse {
     /// ID of the opaque data object
     pub object_id: ObjectId,
 }

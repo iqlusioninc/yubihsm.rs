@@ -21,17 +21,19 @@ pub fn generate_wrap_key<C: Connector>(
     capabilities: Capability,
     delegated_capabilities: Capability,
     algorithm: WrapAlgorithm,
-) -> Result<GenWrapKeyResponse, SessionError> {
-    session.send_encrypted_command(GenWrapKeyCommand {
-        params: GenerateKeyParams {
-            key_id,
-            label,
-            domains,
-            capabilities,
-            algorithm: algorithm.into(),
-        },
-        delegated_capabilities,
-    })
+) -> Result<ObjectId, SessionError> {
+    session
+        .send_encrypted_command(GenWrapKeyCommand {
+            params: GenerateKeyParams {
+                key_id,
+                label,
+                domains,
+                capabilities,
+                algorithm: algorithm.into(),
+            },
+            delegated_capabilities,
+        })
+        .map(|response| response.key_id)
 }
 
 /// Request parameters for `commands::generate_wrap_key`
@@ -50,7 +52,7 @@ impl Command for GenWrapKeyCommand {
 
 /// Response from `commands::generate_wrap_key`
 #[derive(Serialize, Deserialize, Debug)]
-pub struct GenWrapKeyResponse {
+pub(crate) struct GenWrapKeyResponse {
     /// ID of the key
     pub key_id: ObjectId,
 }

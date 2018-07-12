@@ -20,7 +20,7 @@ pub fn put_asymmetric_key<C: Connector, T: Into<Vec<u8>>>(
     capabilities: Capability,
     algorithm: AsymmetricAlgorithm,
     key_bytes: T,
-) -> Result<PutAsymmetricKeyResponse, SessionError> {
+) -> Result<ObjectId, SessionError> {
     let data = key_bytes.into();
 
     if data.len() != algorithm.key_len() {
@@ -33,16 +33,18 @@ pub fn put_asymmetric_key<C: Connector, T: Into<Vec<u8>>>(
         );
     }
 
-    session.send_encrypted_command(PutAsymmetricKeyCommand {
-        params: PutObjectParams {
-            id: key_id,
-            label,
-            domains,
-            capabilities,
-            algorithm: algorithm.into(),
-        },
-        data,
-    })
+    session
+        .send_encrypted_command(PutAsymmetricKeyCommand {
+            params: PutObjectParams {
+                id: key_id,
+                label,
+                domains,
+                capabilities,
+                algorithm: algorithm.into(),
+            },
+            data,
+        })
+        .map(|response| response.key_id)
 }
 
 /// Request parameters for `commands::put_asymmetric_key`
@@ -61,7 +63,7 @@ impl Command for PutAsymmetricKeyCommand {
 
 /// Response from `commands::put_asymmetric_key`
 #[derive(Serialize, Deserialize, Debug)]
-pub struct PutAsymmetricKeyResponse {
+pub(crate) struct PutAsymmetricKeyResponse {
     /// ID of the key
     pub key_id: ObjectId,
 }
