@@ -102,7 +102,7 @@ NOTE: If there's a command on this list which isn't presently supported,
 | [Sign Data EdDSA]         | ✅     | ✅        | Compute an Ed25519 signature using an HSM-backed private key |
 | [Sign Data PKCS1]         | ⛔     | ⛔        | Compute an RSASSA-PKCS#1v1.5 signature using an HSM-backed private key |
 | [Sign Data PSS]           | ⛔     | ⛔        | Compute an RSASSA-PSS signature using an HSM-backed private key |
-| [Storage Status]          | ⛔     | ⛔        | Fetch information about currently free storage |
+| [Storage Status]          | ✅     | ✅        | Fetch information about currently free storage |
 | [Unwrap Data]             | ✅     | ⛔        | Decrypt data encrypted using a wrap key |
 | [Verify HMAC]             | ⛔     | ⛔        | Verify that an HMAC tag for given data is valid |
 | [Wrap Data]               | ✅     | ⛔        | Encrypt data using a wrap key |
@@ -150,7 +150,7 @@ NOTE: If there's a command on this list which isn't presently supported,
 [Sign Data EdDSA]: https://docs.rs/yubihsm/latest/yubihsm/commands/sign_eddsa/fn.sign_ed25519.html
 [Sign Data PKCS1]: https://developers.yubico.com/YubiHSM2/Commands/Sign_Data_Pkcs1.html
 [Sign Data PSS]: https://developers.yubico.com/YubiHSM2/Commands/Sign_Data_Pss.html
-[Storage Status]: https://developers.yubico.com/YubiHSM2/Commands/Storage_Status.html
+[Storage Status]: https://docs.rs/yubihsm/latest/yubihsm/commands/storage_status/fn.storage_status.html
 [Unwrap Data]: https://docs.rs/yubihsm/latest/yubihsm/commands/unwrap_data/fn.unwrap_data.html
 [Verify HMAC]: https://developers.yubico.com/YubiHSM2/Commands/Verify_Hmac.html
 [Wrap Data]: https://docs.rs/yubihsm/latest/yubihsm/commands/wrap_data/fn.wrap_data.html
