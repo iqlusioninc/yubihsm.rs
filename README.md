@@ -119,9 +119,9 @@ NOTE: If there's a command on this list which isn't presently supported,
 [Device Info]: https://docs.rs/yubihsm/latest/yubihsm/commands/device_info/fn.device_info.html
 [Echo]: https://docs.rs/yubihsm/latest/yubihsm/commands/echo/fn.echo.html
 [Export Wrapped]: https://docs.rs/yubihsm/latest/yubihsm/commands/export_wrapped/fn.export_wrapped.html
-[Generate Asymmetric Key]: https://docs.rs/yubihsm/latest/yubihsm/commands/generate_asymmetric_key/fn.generate_asymmetric_key.html
+[Generate Asymmetric]: https://docs.rs/yubihsm/latest/yubihsm/commands/generate_asymmetric_key/fn.generate_asymmetric_key.html
 [Generate HMAC Key]: https://developers.yubico.com/YubiHSM2/Commands/Generate_Hmac_Key.html
-[Generate OTP AEAD Key]: https://developers.yubico.com/YubiHSM2/Commands/Generate_Otp_Aead_Key.html
+[Generate OTP Key]: https://developers.yubico.com/YubiHSM2/Commands/Generate_Otp_Aead_Key.html
 [Generate Wrap Key]: https://docs.rs/yubihsm/latest/yubihsm/commands/generate_wrap_key/fn.generate_wrap_key.html
 [Get Logs]: https://docs.rs/yubihsm/latest/yubihsm/commands/get_logs/fn.get_logs.html
 [Get Object Info]: https://docs.rs/yubihsm/latest/yubihsm/commands/get_object_info/fn.get_object_info.html
