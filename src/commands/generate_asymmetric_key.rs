@@ -17,14 +17,16 @@ pub fn generate_asymmetric_key<C: Connector>(
     domains: Domain,
     capabilities: Capability,
     algorithm: AsymmetricAlgorithm,
-) -> Result<GenAsymmetricKeyResponse, SessionError> {
-    session.send_encrypted_command(GenAsymmetricKeyCommand(GenerateKeyParams {
-        key_id,
-        label,
-        domains,
-        capabilities,
-        algorithm: algorithm.into(),
-    }))
+) -> Result<ObjectId, SessionError> {
+    session
+        .send_encrypted_command(GenAsymmetricKeyCommand(GenerateKeyParams {
+            key_id,
+            label,
+            domains,
+            capabilities,
+            algorithm: algorithm.into(),
+        }))
+        .map(|response| response.key_id)
 }
 
 /// Request parameters for `commands::generate_asymmetric_key`
@@ -37,7 +39,7 @@ impl Command for GenAsymmetricKeyCommand {
 
 /// Response from `commands::generate_asymmetric_key`
 #[derive(Serialize, Deserialize, Debug)]
-pub struct GenAsymmetricKeyResponse {
+pub(crate) struct GenAsymmetricKeyResponse {
     /// ID of the key
     pub key_id: ObjectId,
 }

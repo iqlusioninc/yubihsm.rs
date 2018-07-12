@@ -21,7 +21,7 @@ pub fn put_hmac_key<C: Connector, T: Into<Vec<u8>>>(
     capabilities: Capability,
     algorithm: HMACAlgorithm,
     key_bytes: T,
-) -> Result<PutHMACKeyResponse, SessionError> {
+) -> Result<ObjectId, SessionError> {
     let data = key_bytes.into();
 
     if data.len() < HMAC_MIN_KEY_SIZE || data.len() > algorithm.max_key_len() {
@@ -35,16 +35,18 @@ pub fn put_hmac_key<C: Connector, T: Into<Vec<u8>>>(
         );
     }
 
-    session.send_encrypted_command(PutHMACKeyCommand {
-        params: PutObjectParams {
-            id: key_id,
-            label,
-            domains,
-            capabilities,
-            algorithm: algorithm.into(),
-        },
-        data,
-    })
+    session
+        .send_encrypted_command(PutHMACKeyCommand {
+            params: PutObjectParams {
+                id: key_id,
+                label,
+                domains,
+                capabilities,
+                algorithm: algorithm.into(),
+            },
+            data,
+        })
+        .map(|response| response.key_id)
 }
 
 /// Request parameters for `commands::put_hmac_key`
@@ -63,7 +65,7 @@ impl Command for PutHMACKeyCommand {
 
 /// Response from `commands::put_hmac_key`
 #[derive(Serialize, Deserialize, Debug)]
-pub struct PutHMACKeyResponse {
+pub(crate) struct PutHMACKeyResponse {
     /// ID of the key
     pub key_id: ObjectId,
 }

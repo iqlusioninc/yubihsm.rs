@@ -20,7 +20,7 @@ pub fn put_wrap_key<C: Connector, T: Into<Vec<u8>>>(
     delegated_capabilities: Capability,
     algorithm: WrapAlgorithm,
     key_bytes: T,
-) -> Result<PutWrapKeyResponse, SessionError> {
+) -> Result<ObjectId, SessionError> {
     let data = key_bytes.into();
 
     if data.len() != algorithm.key_len() {
@@ -33,17 +33,19 @@ pub fn put_wrap_key<C: Connector, T: Into<Vec<u8>>>(
         );
     }
 
-    session.send_encrypted_command(PutWrapKeyCommand {
-        params: PutObjectParams {
-            id: key_id,
-            label,
-            domains,
-            capabilities,
-            algorithm: algorithm.into(),
-        },
-        delegated_capabilities,
-        data,
-    })
+    session
+        .send_encrypted_command(PutWrapKeyCommand {
+            params: PutObjectParams {
+                id: key_id,
+                label,
+                domains,
+                capabilities,
+                algorithm: algorithm.into(),
+            },
+            delegated_capabilities,
+            data,
+        })
+        .map(|response| response.key_id)
 }
 
 /// Request parameters for `commands::put_wrap_key`
@@ -65,7 +67,7 @@ impl Command for PutWrapKeyCommand {
 
 /// Response from `commands::put_wrap_key`
 #[derive(Serialize, Deserialize, Debug)]
-pub struct PutWrapKeyResponse {
+pub(crate) struct PutWrapKeyResponse {
     /// ID of the key
     pub key_id: ObjectId,
 }

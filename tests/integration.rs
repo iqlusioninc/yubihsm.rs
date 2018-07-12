@@ -107,7 +107,7 @@ fn generate_asymmetric_key(
 ) {
     clear_test_key_slot(session, ObjectType::AsymmetricKey);
 
-    let response = yubihsm::generate_asymmetric_key(
+    let key_id = yubihsm::generate_asymmetric_key(
         session,
         TEST_KEY_ID,
         TEST_KEY_LABEL.into(),
@@ -116,7 +116,7 @@ fn generate_asymmetric_key(
         algorithm,
     ).unwrap_or_else(|err| panic!("error generating asymmetric key: {}", err));
 
-    assert_eq!(response.key_id, TEST_KEY_ID);
+    assert_eq!(key_id, TEST_KEY_ID);
 }
 
 /// Put an asymmetric private key into the HSM
@@ -128,7 +128,7 @@ fn put_asymmetric_key<T: Into<Vec<u8>>>(
 ) {
     clear_test_key_slot(session, ObjectType::AsymmetricKey);
 
-    let response = yubihsm::put_asymmetric_key(
+    let key_id = yubihsm::put_asymmetric_key(
         session,
         TEST_KEY_ID,
         TEST_KEY_LABEL.into(),
@@ -138,7 +138,7 @@ fn put_asymmetric_key<T: Into<Vec<u8>>>(
         data,
     ).unwrap_or_else(|err| panic!("error putting asymmetric key: {}", err));
 
-    assert_eq!(response.key_id, TEST_KEY_ID);
+    assert_eq!(key_id, TEST_KEY_ID);
 }
 
 /// Generate an attestation about a key in the HSM
@@ -268,7 +268,7 @@ fn generate_wrap_key_test() {
 
     clear_test_key_slot(&mut session, ObjectType::WrapKey);
 
-    let response = yubihsm::generate_wrap_key(
+    let key_id = yubihsm::generate_wrap_key(
         &mut session,
         TEST_KEY_ID,
         TEST_KEY_LABEL.into(),
@@ -278,7 +278,7 @@ fn generate_wrap_key_test() {
         algorithm,
     ).unwrap_or_else(|err| panic!("error generating wrap key: {}", err));
 
-    assert_eq!(response.key_id, TEST_KEY_ID);
+    assert_eq!(key_id, TEST_KEY_ID);
 
     let object_info = yubihsm::get_object_info(&mut session, TEST_KEY_ID, ObjectType::WrapKey)
         .unwrap_or_else(|err| panic!("error getting object info: {}", err));
@@ -447,7 +447,7 @@ fn wrap_key_test() {
 
     clear_test_key_slot(&mut session, ObjectType::WrapKey);
 
-    let put_response = yubihsm::put_wrap_key(
+    let key_id = yubihsm::put_wrap_key(
         &mut session,
         TEST_KEY_ID,
         TEST_KEY_LABEL.into(),
@@ -457,7 +457,8 @@ fn wrap_key_test() {
         algorithm,
         AESCCM_TEST_VECTORS[0].key,
     ).unwrap_or_else(|err| panic!("error generating wrap key: {}", err));
-    assert_eq!(put_response.key_id, TEST_KEY_ID);
+
+    assert_eq!(key_id, TEST_KEY_ID);
 
     // Create a key to export
     let exported_key_type = ObjectType::AsymmetricKey;
