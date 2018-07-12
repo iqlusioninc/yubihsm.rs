@@ -10,7 +10,7 @@ mod state;
 use self::state::State;
 use super::{ObjectId, StaticKeys};
 use commands::CommandType;
-use connector::{Connector, ConnectorError, Status};
+use connector::{Connector, ConnectorError, ConnectorErrorKind, Status};
 use securechannel::CommandMessage;
 use session::{PBKDF2_ITERATIONS, PBKDF2_SALT, Session, SessionError};
 
@@ -79,14 +79,28 @@ impl Connector for MockHSM {
 
     /// POST /connector/api with a given command message and return the response message
     fn send_command(&self, _uuid: Uuid, body: Vec<u8>) -> Result<Vec<u8>, ConnectorError> {
-        let command = CommandMessage::parse(body).unwrap();
-        let mut state = self.state.lock().unwrap();
+        let command = CommandMessage::parse(body).map_err(|e| {
+            ConnectorError::new(
+                ConnectorErrorKind::ConnectionFailed,
+                Some(format!("error parsing command: {}", e)),
+            )
+        })?;
+
+        let mut state = self.state.lock().map_err(|e| {
+            ConnectorError::new(
+                ConnectorErrorKind::ConnectionFailed,
+                Some(format!("error obtaining state lock: {}", e)),
+            )
+        })?;
 
         match command.command_type {
             CommandType::CreateSession => commands::create_session(&mut state, &command),
             CommandType::AuthSession => commands::authenticate_session(&mut state, &command),
             CommandType::SessionMessage => commands::session_message(&mut state, command),
-            unsupported => panic!("unsupported command type: {:?}", unsupported),
+            unsupported => Err(ConnectorError::new(
+                ConnectorErrorKind::ConnectionFailed,
+                Some(format!("unsupported command: {:?}", unsupported)),
+            )),
         }
     }
 }

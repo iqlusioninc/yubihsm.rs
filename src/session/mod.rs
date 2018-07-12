@@ -5,7 +5,7 @@ mod error;
 
 pub use self::error::{SessionError, SessionErrorKind};
 use super::{ObjectId, SessionId};
-use commands::{self, CloseSessionCommand, Command};
+use commands::{close_session::CloseSessionCommand, create_session::create_session, Command};
 use connector::{Connector, HttpConfig, HttpConnector, Status as ConnectorStatus};
 use securechannel::{
     Challenge, Channel, CommandMessage, ResponseCode, ResponseMessage, StaticKeys,
@@ -107,7 +107,7 @@ impl<C: Connector> Session<C> {
         let host_challenge = Challenge::random();
 
         let (session_id, session_response) =
-            commands::create_session(&connector, auth_key_id, host_challenge)?;
+            create_session(&connector, auth_key_id, host_challenge)?;
 
         let channel = Channel::new(
             session_id,
@@ -223,7 +223,6 @@ impl<C: Connector> Session<C> {
 /// Close session automatically on drop
 impl<C: Connector> Drop for Session<C> {
     fn drop(&mut self) {
-        let err = self.send_encrypted_command(CloseSessionCommand {}).err();
-        debug_assert_eq!(err.map(|e| e.kind()), None);
+        let _ = self.send_encrypted_command(CloseSessionCommand {});
     }
 }

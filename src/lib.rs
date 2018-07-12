@@ -80,6 +80,10 @@ extern crate uuid;
 /// Error types
 pub mod error;
 
+/// Serde-powered serializers for the `YubiHSM` wire format
+#[macro_use]
+mod serializers;
+
 /// Cryptographic algorithms supported by the `YubiHSM2`
 pub mod algorithm;
 
@@ -114,20 +118,21 @@ pub mod object;
 /// Encrypted communication channel to the YubiHSM hardware
 mod securechannel;
 
-/// Serde-powered serializers for the `YubiHSM` wire format
-mod serializers;
-
 /// `YubiHSM2` sessions: primary API for performing HSM operations
 ///
 /// See <https://developers.yubico.com/YubiHSM2/Concepts/Session.html>
 pub mod session;
 
-pub use algorithm::{
-    Algorithm, AsymmetricAlgorithm, AuthAlgorithm, HMACAlgorithm, OTPAlgorithm, OpaqueAlgorithm,
-    WrapAlgorithm,
-};
+pub use algorithm::*;
 pub use capability::Capability;
-pub use commands::*;
+// Import command functions from all submodules
+pub use commands::{
+    attest_asymmetric::*, blink::*, delete_object::*, device_info::*, echo::*, export_wrapped::*,
+    generate_asymmetric_key::generate_asymmetric_key, generate_wrap_key::generate_wrap_key,
+    get_logs::*, get_object_info::*, get_pubkey::*, import_wrapped::*, list_objects::*,
+    put_asymmetric_key::*, put_auth_key::*, put_hmac_key::*, put_opaque::*, put_otp_aead_key::*,
+    put_wrap_key::*, sign_ecdsa::*, sign_eddsa::*, unwrap_data::*, wrap_data::*, CommandType,
+};
 pub use connector::{Connector, HttpConfig, HttpConnector};
 pub use domain::Domain;
 pub use object::Id as ObjectId;

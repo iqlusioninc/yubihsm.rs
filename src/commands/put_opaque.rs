@@ -2,7 +2,8 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Put_Opaque.html>
 
-use super::{Command, PutObjectCommand, Response};
+use super::put_object::PutObjectParams;
+use super::{Command, Response};
 use {
     Capability, CommandType, Connector, Domain, ObjectId, ObjectLabel, OpaqueAlgorithm, Session,
     SessionError,
@@ -18,19 +19,27 @@ pub fn put_opaque<C: Connector, T: Into<Vec<u8>>>(
     algorithm: OpaqueAlgorithm,
     bytes: T,
 ) -> Result<PutOpaqueResponse, SessionError> {
-    session.send_encrypted_command(PutOpaqueCommand(PutObjectCommand {
-        id: object_id,
-        label,
-        domains,
-        capabilities,
-        algorithm: algorithm.into(),
+    session.send_encrypted_command(PutOpaqueCommand {
+        params: PutObjectParams {
+            id: object_id,
+            label,
+            domains,
+            capabilities,
+            algorithm: algorithm.into(),
+        },
         data: bytes.into(),
-    }))
+    })
 }
 
 /// Request parameters for `commands::put_opaque`
 #[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct PutOpaqueCommand(pub(crate) PutObjectCommand);
+pub(crate) struct PutOpaqueCommand {
+    /// Common parameters to all put object commands
+    pub params: PutObjectParams,
+
+    /// Serialized object
+    pub data: Vec<u8>,
+}
 
 impl Command for PutOpaqueCommand {
     type ResponseType = PutOpaqueResponse;
