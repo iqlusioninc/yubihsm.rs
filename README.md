@@ -59,7 +59,7 @@ NOTE: If there's a command on this list which isn't presently supported,
 
 | Command                   | Impl'd | [MockHSM] | Description |
 |---------------------------|--------|-----------|-------------|
-| [Attest Asymmetric]       | ✅     | ⛔️        | generate an attestation certificate for a key in the HSM |
+| [Attest Asymmetric]       | ✅     | ⛔        | generate an attestation certificate for a key in the HSM |
 | [Authenticate Session]    | ✅     | ✅        | authenticate to the HSM and establish an encrypted connection |
 | [Blink]                   | ✅     | ✅        | Blink the HSM's LEDs (to identify it) |
 | [Close Session]           | ✅     | ✅        | Terminate an encrypted session with the HSM |
