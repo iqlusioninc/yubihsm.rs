@@ -1,7 +1,13 @@
+//! Objects within the `YubiHSM2` (keys, certificates, or other opaque data)
+
+mod handle;
+mod info;
 mod label;
 mod origins;
 mod types;
 
+pub(crate) use self::handle::Handle as ObjectHandle;
+pub use self::info::Info as ObjectInfo;
 pub use self::label::Label as ObjectLabel;
 pub use self::origins::Origin as ObjectOrigin;
 pub use self::types::Type as ObjectType;

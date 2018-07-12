@@ -4,8 +4,7 @@
 //!
 use super::{Command, Response};
 use {
-    Algorithm, Capability, CommandType, Connector, Domain, ObjectId, ObjectLabel, ObjectOrigin,
-    ObjectType, SequenceId, Session, SessionError,
+    CommandType, Connector, ObjectHandle, ObjectId, ObjectInfo, ObjectType, Session, SessionError,
 };
 
 /// Get information about an object
@@ -14,61 +13,26 @@ pub fn get_object_info<C: Connector>(
     object_id: ObjectId,
     object_type: ObjectType,
 ) -> Result<ObjectInfo, SessionError> {
-    session.send_encrypted_command(GetObjectInfoCommand {
-        object_id,
-        object_type,
-    })
+    session
+        .send_encrypted_command(GetObjectInfoCommand(ObjectHandle::new(
+            object_id,
+            object_type,
+        )))
+        .map(|response| response.0)
 }
 
 /// Request parameters for `commands::get_object_info`
 #[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct GetObjectInfoCommand {
-    /// Object ID to obtain information about
-    pub object_id: ObjectId,
-
-    /// Type of object to obtain information about
-    pub object_type: ObjectType,
-}
+pub(crate) struct GetObjectInfoCommand(pub(crate) ObjectHandle);
 
 impl Command for GetObjectInfoCommand {
-    type ResponseType = ObjectInfo;
+    type ResponseType = GetObjectInfoResponse;
 }
 
 /// Response from `commands::get_object_info`
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct ObjectInfo {
-    /// Capabilities (bitfield)
-    pub capabilities: Capability,
+#[derive(Serialize, Deserialize, Debug)]
+pub(crate) struct GetObjectInfoResponse(pub(crate) ObjectInfo);
 
-    /// Object identifier
-    pub object_id: u16,
-
-    /// Length of object in bytes
-    pub length: u16,
-
-    /// Domains from which object is accessible
-    pub domains: Domain,
-
-    /// Object type
-    pub object_type: ObjectType,
-
-    /// Algorithm this object is intended to be used with
-    pub algorithm: Algorithm,
-
-    /// Sequence: number of times an object with this key ID and type has
-    /// previously existed
-    pub sequence: SequenceId,
-
-    /// How did this object originate? (generated, imported, etc)
-    pub origin: ObjectOrigin,
-
-    /// Label of object
-    pub label: ObjectLabel,
-
-    /// Delegated Capabilities (bitfield)
-    pub delegated_capabilities: Capability,
-}
-
-impl Response for ObjectInfo {
+impl Response for GetObjectInfoResponse {
     const COMMAND_TYPE: CommandType = CommandType::GetObjectInfo;
 }

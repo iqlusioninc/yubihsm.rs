@@ -14,7 +14,7 @@ use commands::{
     generate_asymmetric_key::{GenAsymmetricKeyCommand, GenAsymmetricKeyResponse},
     generate_wrap_key::{GenWrapKeyCommand, GenWrapKeyResponse},
     get_logs::GetLogsResponse,
-    get_object_info::GetObjectInfoCommand,
+    get_object_info::{GetObjectInfoCommand, GetObjectInfoResponse},
     get_pubkey::{GetPubKeyCommand, PublicKey},
     import_wrapped::{ImportWrappedCommand, ImportWrappedResponse},
     list_objects::{ListObjectsCommand, ListObjectsEntry, ListObjectsResponse},
@@ -227,7 +227,7 @@ fn export_wrapped(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
 
     match state
         .objects
-        .wrap(wrap_key_id, object_type, object_id, &nonce)
+        .wrap(wrap_key_id, object_id, object_type, &nonce)
     {
         Ok(ciphertext) => ExportWrappedResponse { nonce, ciphertext }.serialize(),
         Err(e) => ResponseMessage::error(&format!("error wrapping object: {}", e)),
@@ -293,10 +293,13 @@ fn get_object_info(state: &State, cmd_data: &[u8]) -> ResponseMessage {
     let command: GetObjectInfoCommand = deserialize(cmd_data)
         .unwrap_or_else(|e| panic!("error parsing CommandType::GetObjectInfo: {:?}", e));
 
-    if let Some(obj) = state.objects.get(command.object_type, command.object_id) {
-        obj.object_info.serialize()
+    if let Some(obj) = state
+        .objects
+        .get(command.0.object_id, command.0.object_type)
+    {
+        GetObjectInfoResponse(obj.object_info.clone()).serialize()
     } else {
-        ResponseMessage::error(&format!("no such object ID: {:?}", command.object_id))
+        ResponseMessage::error(&format!("no such object ID: {:?}", command.0.object_id))
     }
 }
 
@@ -305,7 +308,7 @@ fn get_pubkey(state: &State, cmd_data: &[u8]) -> ResponseMessage {
     let command: GetPubKeyCommand = deserialize(cmd_data)
         .unwrap_or_else(|e| panic!("error parsing CommandType::GetPubKey: {:?}", e));
 
-    if let Some(obj) = state.objects.get(ObjectType::AsymmetricKey, command.key_id) {
+    if let Some(obj) = state.objects.get(command.key_id, ObjectType::AsymmetricKey) {
         PublicKey {
             algorithm: AsymmetricAlgorithm::from_algorithm(obj.algorithm()).unwrap(),
             bytes: obj.payload.public_key_bytes().unwrap(),
@@ -358,8 +361,8 @@ fn put_asymmetric_key(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
         .unwrap_or_else(|e| panic!("error parsing CommandType::PutAsymmetricKey: {:?}", e));
 
     state.objects.put(
-        ObjectType::AsymmetricKey,
         params.id,
+        ObjectType::AsymmetricKey,
         params.algorithm,
         params.label,
         params.capabilities,
@@ -381,8 +384,8 @@ fn put_wrap_key(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
         .unwrap_or_else(|e| panic!("error parsing CommandType::PutWrapKey: {:?}", e));
 
     state.objects.put(
-        ObjectType::WrapKey,
         params.id,
+        ObjectType::WrapKey,
         params.algorithm,
         params.label,
         params.capabilities,
@@ -399,7 +402,7 @@ fn sign_data_ecdsa(state: &State, cmd_data: &[u8]) -> ResponseMessage {
     let command: SignDataECDSACommand = deserialize(cmd_data)
         .unwrap_or_else(|e| panic!("error parsing CommandType::SignDataEdDSA: {:?}", e));
 
-    if let Some(obj) = state.objects.get(ObjectType::AsymmetricKey, command.key_id) {
+    if let Some(obj) = state.objects.get(command.key_id, ObjectType::AsymmetricKey) {
         if let Payload::ECDSAKeyPair(ref key) = obj.payload {
             ECDSASignature(key.sign(command.digest).as_ref().into()).serialize()
         } else {
@@ -415,7 +418,7 @@ fn sign_data_eddsa(state: &State, cmd_data: &[u8]) -> ResponseMessage {
     let command: SignDataEdDSACommand = deserialize(cmd_data)
         .unwrap_or_else(|e| panic!("error parsing CommandType::SignDataEdDSA: {:?}", e));
 
-    if let Some(obj) = state.objects.get(ObjectType::AsymmetricKey, command.key_id) {
+    if let Some(obj) = state.objects.get(command.key_id, ObjectType::AsymmetricKey) {
         if let Payload::Ed25519KeyPair(ref seed) = obj.payload {
             let keypair =
                 Ed25519KeyPair::from_seed_unchecked(untrusted::Input::from(seed)).unwrap();

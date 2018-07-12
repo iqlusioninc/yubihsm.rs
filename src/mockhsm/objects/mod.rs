@@ -13,30 +13,19 @@ use std::collections::HashMap;
 pub(crate) use self::payload::Payload;
 use serializers::{deserialize, serialize};
 use {
-    Algorithm, Capability, Domain, ObjectId, ObjectInfo, ObjectLabel, ObjectOrigin, ObjectType,
-    WrapNonce, WrappedData,
+    Algorithm, Capability, Domain, ObjectHandle, ObjectId, ObjectInfo, ObjectLabel, ObjectOrigin,
+    ObjectType, WrapNonce, WrappedData,
 };
 
 /// Size of the wrap algorithm's MAC tag. The MockHSM uses AES-GCM instead of
 /// AES-CCM as there isn't a readily available Rust implementation
 const WRAPPED_DATA_MAC_SIZE: usize = 16;
 
-/// Objects in the HSM are keyed by a tuple of their type an ObjectId
-/// (i.e. multiple objects of different types can have the same ObjectId)
-#[derive(Clone, Eq, PartialEq, Hash, Debug)]
-pub(crate) struct ObjectKey {
-    /// Type of object
-    pub object_type: ObjectType,
-
-    /// ID of the object
-    pub object_id: ObjectId,
-}
-
 /// Iterator over objects
-pub(crate) type Iter<'a> = HashMapIter<'a, ObjectKey, Object>;
+pub(crate) type Iter<'a> = HashMapIter<'a, ObjectHandle, Object>;
 
 /// Objects stored in the `MockHSM`
-pub(crate) struct Objects(HashMap<ObjectKey, Object>);
+pub(crate) struct Objects(HashMap<ObjectHandle, Object>);
 
 impl Default for Objects {
     fn default() -> Self {
@@ -72,32 +61,26 @@ impl Objects {
             label,
         };
 
-        let key = ObjectKey {
-            object_type,
-            object_id,
-        };
+        let handle = ObjectHandle::new(object_id, object_type);
 
         let object = Object {
             object_info,
             payload,
         };
 
-        assert!(self.0.insert(key, object).is_none());
+        assert!(self.0.insert(handle, object).is_none());
     }
 
     /// Get an object
-    pub fn get(&self, object_type: ObjectType, object_id: ObjectId) -> Option<&Object> {
-        self.0.get(&ObjectKey {
-            object_type,
-            object_id,
-        })
+    pub fn get(&self, object_id: ObjectId, object_type: ObjectType) -> Option<&Object> {
+        self.0.get(&ObjectHandle::new(object_id, object_type))
     }
 
     /// Put a new object in the MockHSM
     pub fn put(
         &mut self,
-        object_type: ObjectType,
         object_id: ObjectId,
+        object_type: ObjectType,
         algorithm: Algorithm,
         label: ObjectLabel,
         capabilities: Capability,
@@ -121,36 +104,30 @@ impl Objects {
             label,
         };
 
-        let key = ObjectKey {
-            object_id,
-            object_type,
-        };
+        let handle = ObjectHandle::new(object_id, object_type);
 
         let object = Object {
             object_info,
             payload,
         };
 
-        assert!(self.0.insert(key, object).is_none());
+        assert!(self.0.insert(handle, object).is_none());
     }
 
     /// Remove an object
     pub fn remove(&mut self, object_id: ObjectId, object_type: ObjectType) -> Option<Object> {
-        self.0.remove(&ObjectKey {
-            object_type,
-            object_id,
-        })
+        self.0.remove(&ObjectHandle::new(object_id, object_type))
     }
 
     /// Serialize an object as ciphertext
     pub fn wrap(
         &mut self,
         wrap_key_id: ObjectId,
-        object_type: ObjectType,
         object_id: ObjectId,
+        object_type: ObjectType,
         nonce: &WrapNonce,
     ) -> Result<WrappedData, Error> {
-        let wrap_key = match self.get(ObjectType::WrapKey, wrap_key_id) {
+        let wrap_key = match self.get(wrap_key_id, ObjectType::WrapKey) {
             Some(k) => k,
             None => bail!("no such wrap key: {:?}", wrap_key_id),
         };
@@ -166,7 +143,7 @@ impl Objects {
             unsupported => bail!("unsupported wrap key algorithm: {:?}", unsupported),
         }.unwrap();
 
-        let object_to_wrap = match self.get(object_type, object_id) {
+        let object_to_wrap = match self.get(object_id, object_type) {
             Some(o) => o,
             None => bail!("no such {:?} object: {:?}", object_type, object_id),
         };
@@ -216,8 +193,8 @@ impl Objects {
         wrap_key_id: ObjectId,
         nonce: &WrapNonce,
         ciphertext: &WrappedData,
-    ) -> Result<ObjectKey, Error> {
-        let opening_key = match self.get(ObjectType::WrapKey, wrap_key_id) {
+    ) -> Result<ObjectHandle, Error> {
+        let opening_key = match self.get(wrap_key_id, ObjectType::WrapKey) {
             Some(k) => match k.algorithm() {
                 Algorithm::AES128_CCM_WRAP => {
                     OpeningKey::new(&AES_128_GCM, &k.payload.private_key_bytes())
@@ -255,10 +232,10 @@ impl Objects {
             &unwrapped_object.data,
         );
 
-        let object_key = ObjectKey {
-            object_type: unwrapped_object.object_info.object_type,
-            object_id: unwrapped_object.object_info.object_id,
-        };
+        let object_key = ObjectHandle::new(
+            unwrapped_object.object_info.object_id,
+            unwrapped_object.object_info.object_type,
+        );
 
         let object = Object {
             object_info: unwrapped_object.object_info,
