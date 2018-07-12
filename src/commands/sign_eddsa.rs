@@ -2,8 +2,6 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Sign_Data_Eddsa.html>
 
-use serde::de::{self, Deserialize, Deserializer, SeqAccess, Visitor};
-use serde::ser::{Serialize, Serializer};
 use std::fmt::{self, Debug};
 
 use super::{Command, Response};

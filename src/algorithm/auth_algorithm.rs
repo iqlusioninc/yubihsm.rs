@@ -1,9 +1,6 @@
-use super::Algorithm;
-
 use failure::Error;
-use serde::de::Error as DeError;
-use serde::de::{Deserialize, Deserializer};
-use serde::ser::{Serialize, Serializer};
+
+use super::Algorithm;
 
 /// Valid algorithms for auth keys
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
