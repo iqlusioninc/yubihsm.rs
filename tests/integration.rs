@@ -6,8 +6,8 @@ extern crate lazy_static;
 extern crate sha2;
 extern crate yubihsm;
 use yubihsm::{
-    AsymmetricAlgorithm, Capability, Domain, ObjectId, ObjectOrigin, ObjectType, Session,
-    WrapAlgorithm,
+    AsymmetricAlgorithm, Capability, Domain, ObjectId, ObjectOrigin, ObjectType, OpaqueAlgorithm,
+    Session, WrapAlgorithm,
 };
 
 #[cfg(not(feature = "mockhsm"))]
@@ -322,6 +322,31 @@ fn list_objects_test() {
             .find(|i| i.id == TEST_KEY_ID && i.object_type == ObjectType::AsymmetricKey)
             .is_some()
     );
+}
+
+/// Put an opaquae object and read it back
+#[test]
+fn opaque_object_test() {
+    let mut session = create_session!();
+
+    clear_test_key_slot(&mut session, ObjectType::Opaque);
+
+    let object_id = yubihsm::put_opaque(
+        &mut session,
+        TEST_KEY_ID,
+        TEST_KEY_LABEL.into(),
+        TEST_DOMAINS,
+        Capability::default(),
+        OpaqueAlgorithm::OPAQUE_DATA,
+        TEST_MESSAGE,
+    ).unwrap_or_else(|err| panic!("error putting opaque object: {}", err));
+
+    assert_eq!(object_id, TEST_KEY_ID);
+
+    let opaque_data = yubihsm::get_opaque(&mut session, TEST_KEY_ID)
+        .unwrap_or_else(|err| panic!("error getting opaque object: {}", err));
+
+    assert_eq!(opaque_data, TEST_MESSAGE);
 }
 
 /// Put an Ed25519 key

@@ -6,7 +6,7 @@ use ring::signature::Ed25519KeyPair;
 use untrusted;
 
 use super::ecdsa::{ECDSAKeyPair, ECDSA_KEY_PAIR_SIZE};
-use {Algorithm, AsymmetricAlgorithm, WrapAlgorithm};
+use {Algorithm, AsymmetricAlgorithm, OpaqueAlgorithm, WrapAlgorithm};
 
 /// Size of an Ed25519 seed
 pub(crate) const ED25519_SEED_SIZE: usize = 32;
@@ -18,6 +18,9 @@ pub(crate) enum Payload {
 
     /// Ed25519 signing keys
     Ed25519KeyPair([u8; ED25519_SEED_SIZE]),
+
+    /// Opaque data
+    Opaque(OpaqueAlgorithm, Vec<u8>),
 
     /// Wrapping (i.e. symmetric encryption keys)
     // TODO: actually simulate AES-CCM. Instead we use GCM because *ring* has it
@@ -39,6 +42,10 @@ impl Payload {
                 bytes.copy_from_slice(data);
                 Payload::Ed25519KeyPair(bytes)
             }
+            Algorithm::OPAQUE_DATA | Algorithm::OPAQUE_X509_CERT => Payload::Opaque(
+                OpaqueAlgorithm::from_algorithm(algorithm).unwrap(),
+                data.into(),
+            ),
             _ => panic!("MockHSM does not support putting {:?} objects", algorithm),
         }
     }
@@ -78,6 +85,7 @@ impl Payload {
         match *self {
             Payload::ECDSAKeyPair(_) => Algorithm::EC_P256,
             Payload::Ed25519KeyPair(_) => Algorithm::EC_ED25519,
+            Payload::Opaque(alg, _) => alg.into(),
             Payload::WrapKey(alg, _) => alg.into(),
         }
     }
@@ -87,6 +95,7 @@ impl Payload {
         let l = match *self {
             Payload::ECDSAKeyPair(_) => ECDSA_KEY_PAIR_SIZE,
             Payload::Ed25519KeyPair(_) => ED25519_SEED_SIZE,
+            Payload::Opaque(_, ref data) => data.len(),
             Payload::WrapKey(_, ref data) => data.len(),
         };
         l as u16
@@ -102,16 +111,18 @@ impl Payload {
                     .public_key_bytes()
                     .into(),
             ),
-            Payload::WrapKey(_, _) => None,
+            _ => None,
         }
     }
+}
 
-    /// Return the private key bytes of this object
-    pub fn private_key_bytes(&self) -> Vec<u8> {
+impl AsRef<[u8]> for Payload {
+    fn as_ref(&self) -> &[u8] {
         match *self {
-            Payload::ECDSAKeyPair(ref k) => k.private_key_bytes.clone(),
-            Payload::Ed25519KeyPair(ref k) => k.as_ref().into(),
-            Payload::WrapKey(_, ref data) => data.clone(),
+            Payload::ECDSAKeyPair(ref k) => &k.private_key_bytes,
+            Payload::Ed25519KeyPair(ref k) => k.as_ref(),
+            Payload::Opaque(_, ref data) => data,
+            Payload::WrapKey(_, ref data) => data,
         }
     }
 }
