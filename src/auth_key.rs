@@ -32,6 +32,7 @@ pub const AUTH_KEY_DEFAULT_PASSWORD: &[u8] = b"password";
 
 /// `YubiHSM2` authentication keys (2 * AES-128 symmetric PSK) from which
 /// session keys are derived.c
+#[derive(Clone)]
 pub struct AuthKey(pub(crate) [u8; AUTH_KEY_SIZE]);
 
 impl AuthKey {
