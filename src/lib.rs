@@ -129,10 +129,10 @@ pub use capabilities::Capability;
 pub use commands::{
     attest_asymmetric::*, blink::*, delete_object::*, device_info::*, echo::*, export_wrapped::*,
     generate_asymmetric_key::generate_asymmetric_key, generate_wrap_key::generate_wrap_key,
-    get_logs::*, get_object_info::*, get_pubkey::*, import_wrapped::*, list_objects::*,
-    put_asymmetric_key::*, put_auth_key::*, put_hmac_key::*, put_opaque::*, put_otp_aead_key::*,
-    put_wrap_key::*, reset::*, sign_ecdsa::*, sign_eddsa::*, storage_status::*, unwrap_data::*,
-    wrap_data::*, CommandType,
+    get_logs::*, get_object_info::*, get_opaque::*, get_pubkey::*, import_wrapped::*,
+    list_objects::*, put_asymmetric_key::*, put_auth_key::*, put_hmac_key::*, put_opaque::*,
+    put_otp_aead_key::*, put_wrap_key::*, reset::*, sign_ecdsa::*, sign_eddsa::*,
+    storage_status::*, unwrap_data::*, wrap_data::*, CommandType,
 };
 pub use connector::{Connector, HttpConfig, HttpConnector};
 pub use domains::Domain;

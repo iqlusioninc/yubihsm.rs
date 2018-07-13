@@ -134,12 +134,8 @@ impl Objects {
 
         let sealing_key = match wrap_key.algorithm() {
             // TODO: actually use AES-CCM
-            Algorithm::AES128_CCM_WRAP => {
-                SealingKey::new(&AES_128_GCM, &wrap_key.payload.private_key_bytes())
-            }
-            Algorithm::AES256_CCM_WRAP => {
-                SealingKey::new(&AES_256_GCM, &wrap_key.payload.private_key_bytes())
-            }
+            Algorithm::AES128_CCM_WRAP => SealingKey::new(&AES_128_GCM, wrap_key.payload.as_ref()),
+            Algorithm::AES256_CCM_WRAP => SealingKey::new(&AES_256_GCM, wrap_key.payload.as_ref()),
             unsupported => bail!("unsupported wrap key algorithm: {:?}", unsupported),
         }.unwrap();
 
@@ -170,7 +166,7 @@ impl Objects {
 
         let mut wrapped_object = serialize(&WrappedObject {
             object_info,
-            data: object_to_wrap.payload.private_key_bytes(),
+            data: object_to_wrap.payload.as_ref().into(),
         }).unwrap();
 
         // Make room for the MAC
@@ -196,12 +192,8 @@ impl Objects {
     ) -> Result<ObjectHandle, Error> {
         let opening_key = match self.get(wrap_key_id, ObjectType::WrapKey) {
             Some(k) => match k.algorithm() {
-                Algorithm::AES128_CCM_WRAP => {
-                    OpeningKey::new(&AES_128_GCM, &k.payload.private_key_bytes())
-                }
-                Algorithm::AES256_CCM_WRAP => {
-                    OpeningKey::new(&AES_256_GCM, &k.payload.private_key_bytes())
-                }
+                Algorithm::AES128_CCM_WRAP => OpeningKey::new(&AES_128_GCM, k.payload.as_ref()),
+                Algorithm::AES256_CCM_WRAP => OpeningKey::new(&AES_256_GCM, k.payload.as_ref()),
                 unsupported => bail!("unsupported wrap key algorithm: {:?}", unsupported),
             }.unwrap(),
             None => bail!("no such wrap key: {:?}", wrap_key_id),
@@ -277,7 +269,7 @@ impl<'a> From<&'a Object> for WrappedObject {
     fn from(obj: &'a Object) -> Self {
         Self {
             object_info: obj.object_info.clone(),
-            data: obj.payload.private_key_bytes(),
+            data: obj.payload.as_ref().into(),
         }
     }
 }

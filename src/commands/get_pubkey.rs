@@ -13,7 +13,7 @@ pub fn get_pubkey<C: Connector>(
     session.send_encrypted_command(GetPubKeyCommand { key_id })
 }
 
-/// Request parameters for `commands::gen_pubkey`
+/// Request parameters for `commands::get_pubkey`
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct GetPubKeyCommand {
     /// Object ID of the key to obtain the corresponding pubkey for
@@ -24,7 +24,7 @@ impl Command for GetPubKeyCommand {
     type ResponseType = PublicKey;
 }
 
-/// Response from `commands::gen_pubkey`
+/// Response from `commands::get_pubkey`
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PublicKey {
     /// Algorithm of the public key

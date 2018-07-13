@@ -1,5 +1,6 @@
 //! Commands supported by the `MockHSM`
 
+use rand::{OsRng, RngCore};
 use ring::signature::Ed25519KeyPair;
 use untrusted;
 
@@ -15,11 +16,13 @@ use commands::{
     generate_wrap_key::{GenWrapKeyCommand, GenWrapKeyResponse},
     get_logs::GetLogsResponse,
     get_object_info::{GetObjectInfoCommand, GetObjectInfoResponse},
+    get_opaque::{GetOpaqueCommand, GetOpaqueResponse},
     get_pseudo_random::{GetPseudoRandomCommand, GetPseudoRandomResponse},
     get_pubkey::{GetPubKeyCommand, PublicKey},
     import_wrapped::{ImportWrappedCommand, ImportWrappedResponse},
     list_objects::{ListObjectsCommand, ListObjectsEntry, ListObjectsResponse},
     put_asymmetric_key::{PutAsymmetricKeyCommand, PutAsymmetricKeyResponse},
+    put_opaque::{PutOpaqueCommand, PutOpaqueResponse},
     put_wrap_key::{PutWrapKeyCommand, PutWrapKeyResponse},
     reset::ResetResponse,
     sign_ecdsa::{ECDSASignature, SignDataECDSACommand},
@@ -107,11 +110,13 @@ pub(crate) fn session_message(
         CommandType::GenerateWrapKey => gen_wrap_key(state, &command.data),
         CommandType::GetLogs => get_logs(),
         CommandType::GetObjectInfo => get_object_info(state, &command.data),
+        CommandType::GetOpaqueObject => get_opaque(state, &command.data),
         CommandType::GetPseudoRandom => get_pseudo_random(state, &command.data),
         CommandType::GetPubKey => get_pubkey(state, &command.data),
         CommandType::ImportWrapped => import_wrapped(state, &command.data),
         CommandType::ListObjects => list_objects(state, &command.data),
         CommandType::PutAsymmetricKey => put_asymmetric_key(state, &command.data),
+        CommandType::PutOpaqueObject => put_opaque(state, &command.data),
         CommandType::PutWrapKey => put_wrap_key(state, &command.data),
         CommandType::Reset => ResetResponse(0x01).serialize(),
         CommandType::SignDataECDSA => sign_data_ecdsa(state, &command.data),
@@ -307,16 +312,29 @@ fn get_object_info(state: &State, cmd_data: &[u8]) -> ResponseMessage {
     }
 }
 
+/// Get an opaque object (X.509 certificate or other data) stored in the HSM
+fn get_opaque(state: &State, cmd_data: &[u8]) -> ResponseMessage {
+    let command: GetOpaqueCommand = deserialize(cmd_data)
+        .unwrap_or_else(|e| panic!("error parsing CommandType::GetOpaqueObject: {:?}", e));
+
+    if let Some(obj) = state.objects.get(command.object_id, ObjectType::Opaque) {
+        GetOpaqueResponse(obj.payload.as_ref().into()).serialize()
+    } else {
+        ResponseMessage::error(&format!(
+            "no such opaque object ID: {:?}",
+            command.object_id
+        ))
+    }
+}
+
 /// Get bytes of random data
 fn get_pseudo_random(_state: &State, cmd_data: &[u8]) -> ResponseMessage {
-    use rand::prelude::*;
-
     let command: GetPseudoRandomCommand = deserialize(cmd_data)
         .unwrap_or_else(|e| panic!("error parsing CommandType::GetPseudoRandom: {:?}", e));
 
-    let mut rng = thread_rng();
+    let mut rng = OsRng::new().unwrap();
     let mut bytes = vec![0u8; command.bytes as usize];
-    rng.fill(&mut bytes[..]); // Generate the requested bytes
+    rng.fill_bytes(&mut bytes[..]);
 
     GetPseudoRandomResponse { bytes }.serialize()
 }
@@ -390,6 +408,27 @@ fn put_asymmetric_key(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
     );
 
     PutAsymmetricKeyResponse { key_id: params.id }.serialize()
+}
+
+/// Put an opaque object (X.509 cert or other data) into the HSM
+fn put_opaque(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
+    let PutOpaqueCommand { params, data } = deserialize(cmd_data)
+        .unwrap_or_else(|e| panic!("error parsing CommandType::PutOpaqueObject: {:?}", e));
+
+    state.objects.put(
+        params.id,
+        ObjectType::Opaque,
+        params.algorithm,
+        params.label,
+        params.capabilities,
+        Capability::default(),
+        params.domains,
+        &data,
+    );
+
+    PutOpaqueResponse {
+        object_id: params.id,
+    }.serialize()
 }
 
 /// Put an existing wrap (i.e. AES-CCM) key into the HSM
