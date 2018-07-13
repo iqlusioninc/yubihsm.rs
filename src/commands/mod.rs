@@ -47,6 +47,7 @@ pub mod generate_key;
 pub mod generate_wrap_key;
 pub mod get_logs;
 pub mod get_object_info;
+pub mod get_pseudo_random;
 pub mod get_pubkey;
 pub mod import_wrapped;
 pub mod list_objects;
