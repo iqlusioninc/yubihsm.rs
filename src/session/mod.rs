@@ -4,19 +4,13 @@ use subtle::ConstantTimeEq;
 mod error;
 
 pub use self::error::{SessionError, SessionErrorKind};
-use super::{ObjectId, SessionId};
+use auth_key::AuthKey;
 use commands::{close_session::CloseSessionCommand, create_session::create_session, Command};
 use connector::{Connector, HttpConfig, HttpConnector, Status as ConnectorStatus};
-use securechannel::{
-    Challenge, Channel, CommandMessage, ResponseCode, ResponseMessage, StaticKeys,
-};
+use object::ObjectId;
+use securechannel::SessionId;
+use securechannel::{Challenge, Channel, CommandMessage, ResponseCode, ResponseMessage};
 use serializers::deserialize;
-
-/// Salt value to use with PBKDF2 when deriving static keys from a password
-pub const PBKDF2_SALT: &[u8] = b"Yubico";
-
-/// Number of PBKDF2 iterations to perform when deriving static keys
-pub const PBKDF2_ITERATIONS: usize = 10_000;
 
 /// Status message returned from healthy connectors
 const CONNECTOR_STATUS_OK: &str = "OK";
@@ -42,10 +36,10 @@ where
     /// Connector to send messages through
     connector: C,
 
-    /// Optional cached static keys for reconnecting lost sessions
+    /// Optional cached `AuthKey` for reconnecting lost sessions
     // TODO: session reconnect support
     #[allow(dead_code)]
-    static_keys: Option<StaticKeys>,
+    auth_key: Option<AuthKey>,
 }
 
 // Special casing these for HttpConnector is a bit of a hack in that default
@@ -55,11 +49,11 @@ where
 //
 // So we special case these for HttpConnector to make the API more ergonomic
 impl Session<HttpConnector> {
-    /// Open a new session to the HSM, authenticating with the given keypair
+    /// Open a new session to the HSM, authenticating with the given `AuthKey`
     pub fn create(
         connector_config: HttpConfig,
         auth_key_id: ObjectId,
-        static_keys: StaticKeys,
+        auth_key: AuthKey,
         reconnect: bool,
     ) -> Result<Self, SessionError> {
         let connector_info = connector_config.to_string();
@@ -75,21 +69,24 @@ impl Session<HttpConnector> {
             );
         }
 
-        Self::new(connector, auth_key_id, static_keys, reconnect)
+        Self::new(connector, auth_key_id, auth_key, reconnect)
     }
 
-    /// Open a new session to the HSM, authenticating with a given password
+    /// Open a new session to the HSM, authenticating with a given password.
+    /// Uses the same password-based key derivation method as yubihsm-shell
+    /// (PBKDF2 + static salt), which is not particularly strong, so use
+    /// of a long, random password is recommended.
     #[cfg(feature = "passwords")]
     pub fn create_from_password(
         connector_config: HttpConfig,
         auth_key_id: ObjectId,
-        password: &str,
+        password: &[u8],
         reconnect: bool,
     ) -> Result<Self, SessionError> {
         Self::create(
             connector_config,
             auth_key_id,
-            StaticKeys::derive_from_password(password.as_bytes(), PBKDF2_SALT, PBKDF2_ITERATIONS),
+            AuthKey::derive_from_password(password),
             reconnect,
         )
     }
@@ -97,11 +94,11 @@ impl Session<HttpConnector> {
 
 impl<C: Connector> Session<C> {
     /// Create a new encrypted session using the given connector, YubiHSM2 auth key ID, and
-    /// static identity keys
+    /// authentication key
     pub fn new(
         connector: C,
         auth_key_id: ObjectId,
-        static_keys: StaticKeys,
+        auth_key: AuthKey,
         reconnect: bool,
     ) -> Result<Self, SessionError> {
         let host_challenge = Challenge::random();
@@ -111,7 +108,7 @@ impl<C: Connector> Session<C> {
 
         let channel = Channel::new(
             session_id,
-            &static_keys,
+            &auth_key,
             host_challenge,
             session_response.card_challenge,
         );
@@ -124,13 +121,13 @@ impl<C: Connector> Session<C> {
             session_fail!(AuthFailed, "card cryptogram mismatch!");
         }
 
-        let static_keys_option = if reconnect { Some(static_keys) } else { None };
+        let auth_key_option = if reconnect { Some(auth_key) } else { None };
 
         let mut session = Self {
             id: session_id,
             channel,
             connector,
-            static_keys: static_keys_option,
+            auth_key: auth_key_option,
         };
 
         session.authenticate()?;

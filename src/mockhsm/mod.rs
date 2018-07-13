@@ -8,11 +8,12 @@ mod session;
 mod state;
 
 use self::state::State;
-use super::{ObjectId, StaticKeys};
+use auth_key::AuthKey;
 use commands::CommandType;
 use connector::{Connector, ConnectorError, ConnectorErrorKind, Status};
+use object::ObjectId;
 use securechannel::CommandMessage;
-use session::{PBKDF2_ITERATIONS, PBKDF2_SALT, Session, SessionError};
+use session::{Session, SessionError};
 
 /// Software simulation of a `YubiHSM2` intended for testing
 /// implemented as a `yubihsm::Connector` (skipping HTTP transport)
@@ -31,15 +32,11 @@ impl MockHSM {
     }
 
     /// Create a simulated session with a MockHSM
-    pub fn create_session(
+    pub fn create_session<K: Into<AuthKey>>(
         auth_key_id: ObjectId,
-        password: &str,
+        auth_key: K,
     ) -> Result<Session<Self>, SessionError> {
-        let mockhsm = Self::default();
-        let static_keys =
-            StaticKeys::derive_from_password(password.as_bytes(), PBKDF2_SALT, PBKDF2_ITERATIONS);
-
-        Session::new(mockhsm, auth_key_id, static_keys, false)
+        Session::new(Self::default(), auth_key_id, auth_key.into(), false)
     }
 }
 

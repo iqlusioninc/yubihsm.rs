@@ -3,19 +3,14 @@
 
 use std::collections::BTreeMap;
 
-use securechannel::{Challenge, Channel, StaticKeys};
-use session::{PBKDF2_ITERATIONS, PBKDF2_SALT};
-use SessionId;
+use object::{ObjectId, ObjectType};
+use securechannel::{Challenge, Channel, SessionId};
 
 use super::objects::Objects;
 use super::session::Session;
 
-/// Default password
-const DEFAULT_PASSWORD: &str = "password";
-
 /// Mutable interior state of the `MockHSM`
 pub(crate) struct State {
-    static_keys: StaticKeys,
     sessions: BTreeMap<SessionId, Session>,
     pub objects: Objects,
 }
@@ -24,18 +19,13 @@ impl State {
     /// Create a new instance of the server's mutable interior state
     pub fn new() -> Self {
         Self {
-            static_keys: StaticKeys::derive_from_password(
-                DEFAULT_PASSWORD.as_bytes(),
-                PBKDF2_SALT,
-                PBKDF2_ITERATIONS,
-            ),
             sessions: BTreeMap::new(),
             objects: Objects::default(),
         }
     }
 
     /// Create a new session with the MockHSM
-    pub fn create_session(&mut self, host_challenge: Challenge) -> &Session {
+    pub fn create_session(&mut self, auth_key_id: ObjectId, host_challenge: Challenge) -> &Session {
         // Generate a random card challenge to send back to the client
         let card_challenge = Challenge::random();
 
@@ -46,12 +36,19 @@ impl State {
             .map(|id| id.succ().expect("session count exceeded"))
             .unwrap_or_else(|| SessionId::new(0).unwrap());
 
-        let channel = Channel::new(
-            session_id,
-            &self.static_keys,
-            host_challenge,
-            card_challenge,
-        );
+        let channel = {
+            let auth_key_obj = self
+                .objects
+                .get(auth_key_id, ObjectType::AuthKey)
+                .unwrap_or_else(|| panic!("MockHSM has no AuthKey in slot {:?}", auth_key_id));
+
+            Channel::new(
+                session_id,
+                auth_key_obj.payload.auth_key().expect("auth key payload"),
+                host_challenge,
+                card_challenge,
+            )
+        };
 
         let session = Session::new(session_id, card_challenge, channel);
         assert!(self.sessions.insert(session_id, session).is_none());

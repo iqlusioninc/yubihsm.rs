@@ -6,13 +6,17 @@ use ring::signature::Ed25519KeyPair;
 use untrusted;
 
 use super::ecdsa::{ECDSAKeyPair, ECDSA_KEY_PAIR_SIZE};
-use {Algorithm, AsymmetricAlgorithm, OpaqueAlgorithm, WrapAlgorithm};
+use algorithm::{Algorithm, AsymmetricAlgorithm, OpaqueAlgorithm, WrapAlgorithm};
+use auth_key::{AuthKey, AUTH_KEY_SIZE};
 
 /// Size of an Ed25519 seed
 pub(crate) const ED25519_SEED_SIZE: usize = 32;
 
 /// Loaded instances of a cryptographic primitives in the MockHSM
 pub(crate) enum Payload {
+    /// Authentication keys
+    AuthKey(AuthKey),
+
     /// ECDSA signing keys
     ECDSAKeyPair(ECDSAKeyPair),
 
@@ -46,6 +50,7 @@ impl Payload {
                 OpaqueAlgorithm::from_algorithm(algorithm).unwrap(),
                 data.into(),
             ),
+            Algorithm::YUBICO_AES_AUTH => Payload::AuthKey(AuthKey::from_slice(data).unwrap()),
             _ => panic!("MockHSM does not support putting {:?} objects", algorithm),
         }
     }
@@ -83,6 +88,7 @@ impl Payload {
     /// Get the algorithm type for this payload
     pub fn algorithm(&self) -> Algorithm {
         match *self {
+            Payload::AuthKey(_) => Algorithm::YUBICO_AES_AUTH,
             Payload::ECDSAKeyPair(_) => Algorithm::EC_P256,
             Payload::Ed25519KeyPair(_) => Algorithm::EC_ED25519,
             Payload::Opaque(alg, _) => alg.into(),
@@ -93,6 +99,7 @@ impl Payload {
     /// Get the length of the object
     pub fn len(&self) -> u16 {
         let l = match *self {
+            Payload::AuthKey(_) => AUTH_KEY_SIZE,
             Payload::ECDSAKeyPair(_) => ECDSA_KEY_PAIR_SIZE,
             Payload::Ed25519KeyPair(_) => ED25519_SEED_SIZE,
             Payload::Opaque(_, ref data) => data.len(),
@@ -114,11 +121,20 @@ impl Payload {
             _ => None,
         }
     }
+
+    /// If this payload is an auth key, return a reference to it
+    pub fn auth_key(&self) -> Option<&AuthKey> {
+        match *self {
+            Payload::AuthKey(ref k) => Some(k),
+            _ => None,
+        }
+    }
 }
 
 impl AsRef<[u8]> for Payload {
     fn as_ref(&self) -> &[u8] {
         match *self {
+            Payload::AuthKey(ref k) => k.0.as_ref(),
             Payload::ECDSAKeyPair(ref k) => &k.private_key_bytes,
             Payload::Ed25519KeyPair(ref k) => k.as_ref(),
             Payload::Opaque(_, ref data) => data,
