@@ -33,9 +33,9 @@
 //! extern crate yubihsm;
 //! use yubihsm::Session;
 //!
-//! // Default host, port, auth key ID, and password for yubihsm-connector
+//! // Default yubihsm-connector URI, auth key ID, and password for yubihsm-connector
 //! let mut session =
-//!     Session::create_from_password(Default::default(), 1, "password", true).unwrap();
+//!     Session::create_from_password(Default::default(), 1, b"password", true).unwrap();
 //!
 //! // Note: You'll need to create this key first. Run the following from yubihsm-shell:
 //! // `generate asymmetric 0 100 ed25519_test_key 1 asymmetric_sign_eddsa ed25519`
@@ -80,17 +80,20 @@ extern crate uuid;
 /// Error types
 pub mod error;
 
-/// Serde-powered serializers for the `YubiHSM` wire format
+/// Serde-powered serializers for the `YubiHSM2` wire format
 #[macro_use]
 mod serializers;
 
 /// Cryptographic algorithms supported by the `YubiHSM2`
 pub mod algorithm;
 
+/// Authentication keys used to establish encrypted sessions with the `YubiHSM2`
+pub mod auth_key;
+
 /// Object attributes specifying which operations are allowed to be performed
 pub mod capabilities;
 
-/// Commands supported by the `YubiHSM`.
+/// Commands supported by the `YubiHSM2`
 ///
 /// Functions defined in the `yubihsm::commands` module are reimported
 /// and available from the toplevel `yubihsm` module as well.
@@ -102,11 +105,11 @@ pub mod commands;
 /// Client for the `yubihsm-connector` service
 pub mod connector;
 
-/// Logical partitions within the `YubiHSM`, allowing several applications to share the device
+/// Logical partitions within the `YubiHSM2`, allowing several applications to share the device
 pub mod domains;
 
 #[cfg(feature = "mockhsm")]
-/// Software simulation of the `YubiHSM2` for integration testing,
+/// Software simulation of the `YubiHSM2` for integration testing
 pub mod mockhsm;
 
 /// Objects stored in the `YubiHSM2`
@@ -115,7 +118,7 @@ pub mod mockhsm;
 /// <https://developers.yubico.com/YubiHSM2/Concepts/Object.html>
 pub mod object;
 
-/// Encrypted communication channel to the YubiHSM hardware
+/// Encrypted communication channel to the `YubiHSM2` hardware
 mod securechannel;
 
 /// `YubiHSM2` sessions: primary API for performing HSM operations
@@ -124,6 +127,7 @@ mod securechannel;
 pub mod session;
 
 pub use algorithm::*;
+pub use auth_key::*;
 pub use capabilities::Capability;
 // Import command functions from all submodules
 pub use commands::{
@@ -137,5 +141,5 @@ pub use commands::{
 pub use connector::{Connector, HttpConfig, HttpConnector};
 pub use domains::Domain;
 pub use object::*;
-pub use securechannel::{SessionId, StaticKeys};
+pub use securechannel::SessionId;
 pub use session::{Session, SessionError};

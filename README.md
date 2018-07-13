@@ -88,7 +88,7 @@ NOTE: If there's a command on this list which isn't presently supported,
 | [OTP AEAD Rewrap]      | ⛔     | ⛔        | Re-wrap a Yubico OTP AEAD from one key to another |
 | [OTP Decrypt]          | ⛔     | ⛔        | Decrypt a Yubico OTP, obtaining counters and timer info |
 | [Put Asymmetric]       | ✅     | ✅        | Put an existing asymmetric key into the HSM |
-| [Put Authkey]          | ✅     | ⛔        | Put an AES-128 preshared authentication key into HSM |
+| [Put Auth Key]         | ✅     | ✅        | Put AES-128x2 preshared authentication key into HSM |
 | [Put HMAC Key]         | ✅     | ⛔        | Put an HMAC key into the HSM |
 | [Put Opaque]           | ✅     | ✅        | Put an opaque bytestring into the HSM |
 | [Put Option]           | ⛔     | ⛔        | Change HSM settings |
@@ -136,7 +136,7 @@ NOTE: If there's a command on this list which isn't presently supported,
 [OTP AEAD Rewrap]: https://developers.yubico.com/YubiHSM2/Commands/Otp_Aead_Rewrap.html
 [OTP Decrypt]: https://developers.yubico.com/YubiHSM2/Commands/Otp_Decrypt.html
 [Put Asymmetric]: https://docs.rs/yubihsm/latest/yubihsm/commands/put_asymmetric_key/fn.put_asymmetric_key.html
-[Put Authkey]: https://docs.rs/yubihsm/latest/yubihsm/commands/put_auth_key/fn.put_auth_key.html
+[Put Auth Key]: https://docs.rs/yubihsm/latest/yubihsm/commands/put_auth_key/fn.put_auth_key.html
 [Put HMAC Key]: https://docs.rs/yubihsm/latest/yubihsm/commands/put_hmac_key/fn.put_hmac_key.html
 [Put Opaque]: https://docs.rs/yubihsm/latest/yubihsm/commands/put_opaque/fn.put_opaque.html
 [Put Option]: https://developers.yubico.com/YubiHSM2/Commands/Put_Option.html
@@ -175,7 +175,7 @@ use yubihsm::Session;
 let mut session = Session::create_from_password(
      "http://127.0.0.1:12345",
      1,
-     "password",
+     b"password",
      true
 ).unwrap();
 

@@ -10,14 +10,10 @@ use cmac::Cmac;
 use super::{Context, KEY_SIZE};
 
 /// Derive a slice of output data using SCP03's KDF
-pub fn derive(
-    mac_key: &[u8; KEY_SIZE],
-    derivation_constant: u8,
-    context: &Context,
-    output: &mut [u8],
-) {
-    let output_len = output.len();
+pub fn derive(mac_key: &[u8], derivation_constant: u8, context: &Context, output: &mut [u8]) {
+    assert_eq!(mac_key.len(), KEY_SIZE, "16-byte MAC key expected");
 
+    let output_len = output.len();
     assert!(
         output_len <= 16,
         "up to 16-bytes of data supported ({} requested)",
@@ -43,7 +39,7 @@ pub fn derive(
     // Derivation context (i.e. challenges concatenated)
     derivation_data[16..].copy_from_slice(context.as_slice());
 
-    let mut mac = Cmac::<Aes128>::new_varkey(mac_key.as_ref()).unwrap();
+    let mut mac = Cmac::<Aes128>::new_varkey(mac_key).unwrap();
     mac.input(&derivation_data);
     output.copy_from_slice(&mac.result().code().as_slice()[..output_len]);
 }

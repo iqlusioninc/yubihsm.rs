@@ -17,8 +17,9 @@ use super::kdf;
 use super::ResponseCode;
 use super::{
     Challenge, CommandMessage, Context, Cryptogram, ResponseMessage, SecureChannelError,
-    StaticKeys, CRYPTOGRAM_SIZE, KEY_SIZE, MAC_SIZE,
+    CRYPTOGRAM_SIZE, KEY_SIZE, MAC_SIZE,
 };
+use auth_key::AuthKey;
 use commands::CommandType;
 
 // Size of an AES block
@@ -109,17 +110,17 @@ pub(crate) struct Channel {
 }
 
 impl Channel {
-    /// Create a new channel with the given ID, static keys, and host/card challenges
+    /// Create a new channel with the given ID, auth key, and host/card challenges
     pub fn new(
         id: Id,
-        static_keys: &StaticKeys,
+        auth_key: &AuthKey,
         host_challenge: Challenge,
         card_challenge: Challenge,
     ) -> Self {
         let context = Context::from_challenges(host_challenge, card_challenge);
-        let enc_key = derive_key(&static_keys.enc_key, 0b100, &context);
-        let mac_key = derive_key(&static_keys.mac_key, 0b110, &context);
-        let rmac_key = derive_key(&static_keys.mac_key, 0b111, &context);
+        let enc_key = derive_key(auth_key.enc_key(), 0b100, &context);
+        let mac_key = derive_key(auth_key.mac_key(), 0b110, &context);
+        let rmac_key = derive_key(auth_key.mac_key(), 0b111, &context);
         let mac_chaining_value = [0u8; MAC_SIZE * 2];
 
         Self {
@@ -512,11 +513,7 @@ impl Drop for Channel {
 }
 
 /// Derive a key using the SCP03 KDF
-fn derive_key(
-    parent_key: &[u8; KEY_SIZE],
-    derivation_constant: u8,
-    context: &Context,
-) -> [u8; KEY_SIZE] {
+fn derive_key(parent_key: &[u8], derivation_constant: u8, context: &Context) -> [u8; KEY_SIZE] {
     let mut key = [0u8; KEY_SIZE];
     kdf::derive(parent_key, derivation_constant, context, &mut key);
     key
@@ -533,14 +530,11 @@ fn compute_icv(cipher: &Aes128, counter: u32) -> GenericArray<u8, U16> {
 
 #[cfg(all(test, feature = "mockhsm"))]
 mod tests {
+    use auth_key::AuthKey;
     use commands::CommandType;
-    use securechannel::{
-        Challenge, Channel, CommandMessage, ResponseMessage, SessionId, StaticKeys,
-    };
+    use securechannel::{Challenge, Channel, CommandMessage, ResponseMessage, SessionId};
 
     const PASSWORD: &[u8] = b"password";
-    const SALT: &[u8] = b"Yubico";
-    const PBKDF_ITERATIONS: usize = 10000;
     const HOST_CHALLENGE: &[u8] = &[0u8; 8];
     const CARD_CHALLENGE: &[u8] = &[0u8; 8];
     const COMMAND_TYPE: CommandType = CommandType::Echo;
@@ -548,7 +542,7 @@ mod tests {
 
     #[test]
     fn happy_path_test() {
-        let static_keys = StaticKeys::derive_from_password(PASSWORD, SALT, PBKDF_ITERATIONS);
+        let auth_key = AuthKey::derive_from_password(PASSWORD);
 
         let host_challenge = Challenge::from_slice(HOST_CHALLENGE);
         let card_challenge = Challenge::from_slice(CARD_CHALLENGE);
@@ -556,11 +550,9 @@ mod tests {
         let session_id = SessionId::new(0).unwrap();
 
         // Create channels
-        let mut host_channel =
-            Channel::new(session_id, &static_keys, host_challenge, card_challenge);
+        let mut host_channel = Channel::new(session_id, &auth_key, host_challenge, card_challenge);
 
-        let mut card_channel =
-            Channel::new(session_id, &static_keys, host_challenge, card_challenge);
+        let mut card_channel = Channel::new(session_id, &auth_key, host_challenge, card_challenge);
 
         // Auth host to card
         let auth_command = host_channel.authenticate_session().unwrap();

@@ -22,6 +22,7 @@ use commands::{
     import_wrapped::{ImportWrappedCommand, ImportWrappedResponse},
     list_objects::{ListObjectsCommand, ListObjectsEntry, ListObjectsResponse},
     put_asymmetric_key::{PutAsymmetricKeyCommand, PutAsymmetricKeyResponse},
+    put_auth_key::{PutAuthKeyCommand, PutAuthKeyResponse},
     put_opaque::{PutOpaqueCommand, PutOpaqueResponse},
     put_wrap_key::{PutWrapKeyCommand, PutWrapKeyResponse},
     reset::ResetResponse,
@@ -33,13 +34,10 @@ use commands::{
 use connector::ConnectorError;
 use securechannel::{CommandMessage, ResponseMessage};
 use serializers::deserialize;
-use {Algorithm, AsymmetricAlgorithm, Capability, ObjectId, ObjectType, SessionId, WrapNonce};
+use {Algorithm, AsymmetricAlgorithm, Capability, ObjectType, SessionId, WrapNonce};
 
 use super::objects::Payload;
 use super::state::State;
-
-/// Default auth key ID slot
-const DEFAULT_AUTH_KEY_ID: ObjectId = 1;
 
 /// Create a new HSM session
 pub(crate) fn create_session(
@@ -49,13 +47,7 @@ pub(crate) fn create_session(
     let cmd: CreateSessionCommand = deserialize(cmd_message.data.as_ref())
         .unwrap_or_else(|e| panic!("error parsing CreateSession command data: {:?}", e));
 
-    assert_eq!(
-        cmd.auth_key_id, DEFAULT_AUTH_KEY_ID,
-        "unexpected auth key ID: {}",
-        cmd.auth_key_id
-    );
-
-    let session = state.create_session(cmd.host_challenge);
+    let session = state.create_session(cmd.auth_key_id, cmd.host_challenge);
 
     let mut response = CreateSessionResponse {
         card_challenge: *session.card_challenge(),
@@ -116,6 +108,7 @@ pub(crate) fn session_message(
         CommandType::ImportWrapped => import_wrapped(state, &command.data),
         CommandType::ListObjects => list_objects(state, &command.data),
         CommandType::PutAsymmetricKey => put_asymmetric_key(state, &command.data),
+        CommandType::PutAuthKey => put_auth_key(state, &command.data),
         CommandType::PutOpaqueObject => put_opaque(state, &command.data),
         CommandType::PutWrapKey => put_wrap_key(state, &command.data),
         CommandType::Reset => ResetResponse(0x01).serialize(),
@@ -408,6 +401,29 @@ fn put_asymmetric_key(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
     );
 
     PutAsymmetricKeyResponse { key_id: params.id }.serialize()
+}
+
+/// Put a new authentication key into the HSM
+fn put_auth_key(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
+    let PutAuthKeyCommand {
+        params,
+        delegated_capabilities,
+        auth_key,
+    } = deserialize(cmd_data)
+        .unwrap_or_else(|e| panic!("error parsing CommandType::PutAuthKey: {:?}", e));
+
+    state.objects.put(
+        params.id,
+        ObjectType::AuthKey,
+        params.algorithm,
+        params.label,
+        params.capabilities,
+        delegated_capabilities,
+        params.domains,
+        &auth_key.0,
+    );
+
+    PutAuthKeyResponse { key_id: params.id }.serialize()
 }
 
 /// Put an opaque object (X.509 cert or other data) into the HSM

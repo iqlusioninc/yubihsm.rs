@@ -44,7 +44,7 @@ bitflags! {
         /// delete_asymmetric: delete asymmetric key objects
         const DELETE_ASYMMETRIC = 0x200_0000_0000;
 
-        /// delete_authkey: delete AuthKey objects
+        /// delete_auth_key: delete AuthKey objects
         const DELETE_AUTHKEY = 0x100_0000_0000;
 
         /// delete_hmac_key: delete HMACKey objects
@@ -113,13 +113,13 @@ bitflags! {
         /// otp_decrypt: decrypt OTP
         const OTP_DECRYPT = 0x2000_0000;
 
-        /// put_asymmetric: write asymmetric objects
+        /// put_asymmetric_key: write asymmetric objects
         const PUT_ASYMMETRIC =  0x8;
 
-        /// put_authkey: write AuthKey objects
+        /// put_auth_key: write AuthKey objects
         const PUT_AUTHKEY = 0x4;
 
-        /// put_hmackey: write HMACKey objects
+        /// put_hmac_key: write HMACKey objects
         const PUT_HMACKEY = 0x10_0000;
 
         /// put_opaque: Write Opaque Objects

@@ -6,12 +6,12 @@ extern crate lazy_static;
 extern crate sha2;
 extern crate yubihsm;
 use yubihsm::{
-    AsymmetricAlgorithm, Capability, Domain, ObjectId, ObjectOrigin, ObjectType, OpaqueAlgorithm,
-    Session, WrapAlgorithm,
+    AsymmetricAlgorithm, AuthAlgorithm, AuthKey, Capability, Domain, ObjectId, ObjectOrigin,
+    ObjectType, OpaqueAlgorithm, Session, WrapAlgorithm, AUTH_KEY_DEFAULT_ID,
 };
 
 #[cfg(not(feature = "mockhsm"))]
-use yubihsm::HttpConnector;
+use yubihsm::{HttpConnector, AUTH_KEY_DEFAULT_PASSWORD};
 
 #[cfg(feature = "mockhsm")]
 use yubihsm::mockhsm::MockHSM;
@@ -24,12 +24,6 @@ extern crate untrusted;
 /// Cryptographic test vectors taken from standards documents
 mod test_vectors;
 use test_vectors::*;
-
-/// Default auth key ID slot
-const DEFAULT_AUTH_KEY_ID: ObjectId = 1;
-
-/// Default password
-const DEFAULT_PASSWORD: &str = "password";
 
 /// Key ID to use for testing keygen/signing
 const TEST_KEY_ID: ObjectId = 100;
@@ -63,8 +57,8 @@ lazy_static! {
     static ref SESSION: ::std::sync::Mutex<TestSession> = {
         let session = Session::create_from_password(
             Default::default(),
-            DEFAULT_AUTH_KEY_ID,
-            DEFAULT_PASSWORD,
+            AUTH_KEY_DEFAULT_ID,
+            AUTH_KEY_DEFAULT_PASSWORD,
             true,
         ).unwrap_or_else(|err| panic!("error creating session: {}", err));
 
@@ -84,7 +78,7 @@ macro_rules! create_session {
 #[cfg(feature = "mockhsm")]
 macro_rules! create_session {
     () => {
-        MockHSM::create_session(DEFAULT_AUTH_KEY_ID, DEFAULT_PASSWORD)
+        MockHSM::create_session(AUTH_KEY_DEFAULT_ID, AuthKey::default())
             .unwrap_or_else(|err| panic!("error creating MockHSM session: {}", err))
     };
 }
@@ -367,6 +361,43 @@ fn put_asymmetric_key_test() {
     assert_eq!(object_info.object_id, TEST_KEY_ID);
     assert_eq!(object_info.domains, TEST_DOMAINS);
     assert_eq!(object_info.object_type, ObjectType::AsymmetricKey);
+    assert_eq!(object_info.algorithm, algorithm.into());
+    assert_eq!(object_info.origin, ObjectOrigin::Imported);
+    assert_eq!(&object_info.label.to_string().unwrap(), TEST_KEY_LABEL);
+}
+
+/// Put a new authentication key into the `YubiHSM`
+#[test]
+fn put_auth_key() {
+    let mut session = create_session!();
+    let algorithm = AuthAlgorithm::YUBICO_AES_AUTH;
+    let capabilities = Capability::all();
+    let delegated_capabilities = Capability::all();
+
+    clear_test_key_slot(&mut session, ObjectType::AuthKey);
+
+    let new_auth_key = AuthKey::derive_from_password(TEST_MESSAGE);
+
+    let key_id = yubihsm::put_auth_key(
+        &mut session,
+        TEST_KEY_ID,
+        TEST_KEY_LABEL.into(),
+        TEST_DOMAINS,
+        capabilities,
+        delegated_capabilities,
+        algorithm,
+        new_auth_key,
+    ).unwrap_or_else(|err| panic!("error putting auth key: {}", err));
+
+    assert_eq!(key_id, TEST_KEY_ID);
+
+    let object_info = yubihsm::get_object_info(&mut session, TEST_KEY_ID, ObjectType::AuthKey)
+        .unwrap_or_else(|err| panic!("error getting object info: {}", err));
+
+    assert_eq!(object_info.capabilities, capabilities);
+    assert_eq!(object_info.object_id, TEST_KEY_ID);
+    assert_eq!(object_info.domains, TEST_DOMAINS);
+    assert_eq!(object_info.object_type, ObjectType::AuthKey);
     assert_eq!(object_info.algorithm, algorithm.into());
     assert_eq!(object_info.origin, ObjectOrigin::Imported);
     assert_eq!(&object_info.label.to_string().unwrap(), TEST_KEY_LABEL);
