@@ -59,8 +59,8 @@ NOTE: If there's a command on this list which isn't presently supported,
 
 | Command                | Impl'd | [MockHSM] | Description |
 |------------------------|--------|-----------|-------------|
-| [Attest Asymmetric]    | ✅     | ⛔        | create X.509 certificate for asymmetric key |
-| [Authenticate Session] | ✅     | ✅        | authenticate to HSM with password or encryption key|
+| [Attest Asymmetric]    | ✅     | ⛔        | Create X.509 certificate for asymmetric key |
+| [Authenticate Session] | ✅     | ✅        | Authenticate to HSM with password or encryption key|
 | [Blink]                | ✅     | ✅        | Blink the HSM's LEDs (to identify it) |
 | [Close Session]        | ✅     | ✅        | Terminate an encrypted session with the HSM |
 | [Create Session]       | ✅     | ✅        | Initiate a new encrypted session with the HSM |
