@@ -24,9 +24,9 @@ connection and command interface to [YubiHSM2] devices from [Yubico].
 
 ## About
 
-This is a pure-Rust client library for [YubiHSM2] devices. It implements a
-subset of the functionality found in the closed-source Yubico SDK and
-communicates with the [yubihsm-connector] service: an HTTP(S) server which
+This is a pure-Rust client library for [YubiHSM2] devices which implements
+most the functionality of the closed-source Yubico SDK.
+It communicates with the [yubihsm-connector] service: an HTTP(S) server which
 sends the commands to the YubiHSM2 hardware device over USB.
 
 Note that this is **NOT** an official Yubico project and is in no way supported
