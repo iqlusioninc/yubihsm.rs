@@ -14,7 +14,7 @@ use yubihsm::{
 use yubihsm::{HttpConnector, AUTH_KEY_DEFAULT_PASSWORD};
 
 #[cfg(feature = "mockhsm")]
-use yubihsm::mockhsm::MockHSM;
+use yubihsm::mockhsm::{MockConnector, MockHSM};
 
 #[cfg(feature = "ring")]
 extern crate ring;
@@ -50,7 +50,7 @@ pub const EC_P256_PUBLIC_KEY_SIZE: usize = 64;
 type TestSession = Session<HttpConnector>;
 
 #[cfg(feature = "mockhsm")]
-type TestSession = Session<MockHSM>;
+type TestSession = Session<MockConnector>;
 
 #[cfg(not(feature = "mockhsm"))]
 lazy_static! {
@@ -78,7 +78,8 @@ macro_rules! create_session {
 #[cfg(feature = "mockhsm")]
 macro_rules! create_session {
     () => {
-        MockHSM::create_session(AUTH_KEY_DEFAULT_ID, AuthKey::default())
+        MockHSM::new()
+            .create_session(AUTH_KEY_DEFAULT_ID, AuthKey::default())
             .unwrap_or_else(|err| panic!("error creating MockHSM session: {}", err))
     };
 }

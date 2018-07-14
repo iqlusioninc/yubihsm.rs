@@ -68,7 +68,7 @@ pub(crate) fn authenticate_session(
         .unwrap_or_else(|| panic!("no session ID in command: {:?}", command.command_type));
 
     Ok(state
-        .get_session(session_id)
+        .get_session(session_id)?
         .channel
         .verify_authenticate_session(command)
         .unwrap()
@@ -88,12 +88,12 @@ pub(crate) fn session_message(
     });
 
     let command = state
-        .get_session(session_id)
+        .get_session(session_id)?
         .decrypt_command(encrypted_command);
 
     let response = match command.command_type {
         CommandType::Blink => BlinkResponse {}.serialize(),
-        CommandType::CloseSession => return Ok(close_session(state, session_id)),
+        CommandType::CloseSession => return close_session(state, session_id),
         CommandType::DeleteObject => delete_object(state, &command.data),
         CommandType::DeviceInfo => device_info(),
         CommandType::Echo => echo(&command.data),
@@ -111,7 +111,7 @@ pub(crate) fn session_message(
         CommandType::PutAuthKey => put_auth_key(state, &command.data),
         CommandType::PutOpaqueObject => put_opaque(state, &command.data),
         CommandType::PutWrapKey => put_wrap_key(state, &command.data),
-        CommandType::Reset => ResetResponse(0x01).serialize(),
+        CommandType::Reset => return Ok(reset(state)),
         CommandType::SignDataECDSA => sign_data_ecdsa(state, &command.data),
         CommandType::SignDataEdDSA => sign_data_eddsa(state, &command.data),
         CommandType::StorageStatus => storage_status(),
@@ -119,19 +119,19 @@ pub(crate) fn session_message(
     };
 
     Ok(state
-        .get_session(session_id)
+        .get_session(session_id)?
         .encrypt_response(response)
         .into())
 }
 
 /// Close an active session
-fn close_session(state: &mut State, session_id: SessionId) -> Vec<u8> {
+fn close_session(state: &mut State, session_id: SessionId) -> Result<Vec<u8>, ConnectorError> {
     let response = state
-        .get_session(session_id)
+        .get_session(session_id)?
         .encrypt_response(CloseSessionResponse {}.serialize());
 
     state.close_session(session_id);
-    response.into()
+    Ok(response.into())
 }
 
 /// Delete an object
@@ -468,6 +468,12 @@ fn put_wrap_key(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
     );
 
     PutWrapKeyResponse { key_id: params.id }.serialize()
+}
+
+/// Reset the MockHSM back to its default state
+fn reset(state: &mut State) -> Vec<u8> {
+    state.reset();
+    ResetResponse(0x01).serialize().into()
 }
 
 /// Sign a message using the ECDSA signature algorithm
