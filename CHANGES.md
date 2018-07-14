@@ -1,3 +1,61 @@
+## [0.12.0] (2018-07-14)
+
+[0.12.0]: https://github.com/tendermint/yubihsm-rs/compare/v0.11.2...v0.12.0
+
+This release includes significant refactoring and API changes, in addition
+to adding support for several commands.
+
+* [#73](https://github.com/tendermint/yubihsm-rs/pull/73)
+  Support multiple connections to MockHSM.
+
+* [#69](https://github.com/tendermint/yubihsm-rs/pull/69)
+  `AuthKey` type (and MockHSM support for `put_auth_key`).
+  
+* [#67](https://github.com/tendermint/yubihsm-rs/pull/67)
+  Implement `get_opaque` command.
+
+* [#66](https://github.com/tendermint/yubihsm-rs/pull/66)
+  Implement `reset` command.
+
+* [#65](https://github.com/tendermint/yubihsm-rs/pull/65)
+  Implement `get_pseudo_random` command.
+
+* [#64](https://github.com/tendermint/yubihsm-rs/pull/64)
+  Factor `ObjectHandle` and `ObjectInfo` into `object` module.
+
+* [#63](https://github.com/tendermint/yubihsm-rs/pull/63)
+  Implement `storage_status` command.
+
+* [#62](https://github.com/tendermint/yubihsm-rs/pull/62)
+  Have `generate_*` and `put_*` commands return an `ObjectId`.
+
+* [#61](https://github.com/tendermint/yubihsm-rs/pull/61)
+  Refactor `object` module into modules for each type.
+
+* [#60](https://github.com/tendermint/yubihsm-rs/pull/60)
+  Implement wrapping: export, import, wrap, unwrap, generate wrap key.
+
+* [#56](https://github.com/tendermint/yubihsm-rs/pull/56)
+  Implement `close_session` command.
+
+* [#55](https://github.com/tendermint/yubihsm-rs/pull/55)
+  Implement `attest_asymmetric` command.
+
+* [#53](https://github.com/tendermint/yubihsm-rs/pull/53)
+  Implement `put_*` commands.
+
+* [#51](https://github.com/tendermint/yubihsm-rs/pull/51)
+  Factor all commands into their own individual modules.
+
+* [#50](https://github.com/tendermint/yubihsm-rs/pull/50)
+  Implement `sign_ecdsa_sha2` command.
+
+* [#49](https://github.com/tendermint/yubihsm-rs/pull/49)
+  Implement `get_logs` command.
+
+* [#48](https://github.com/tendermint/yubihsm-rs/pull/48)
+  Implement `device_info` command.
+
 ## [0.11.2] (2018-07-04)
 
 [0.11.2]: https://github.com/tendermint/yubihsm-rs/compare/v0.11.1...v0.11.2
