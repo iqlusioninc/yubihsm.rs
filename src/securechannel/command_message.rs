@@ -9,6 +9,7 @@
 #[cfg(feature = "mockhsm")]
 use byteorder::ByteOrder;
 use byteorder::{BigEndian, WriteBytesExt};
+use rand::{self, RngCore};
 use uuid::Uuid;
 
 use super::{Mac, SecureChannelError, SessionId, MAC_SIZE, MAX_MSG_SIZE};
@@ -51,7 +52,7 @@ impl CommandMessage {
         );
 
         Ok(Self {
-            uuid: Uuid::new_v4(),
+            uuid: uuid_v4(),
             command_type,
             session_id: None,
             data: command_data_vec,
@@ -81,7 +82,7 @@ impl CommandMessage {
         );
 
         Ok(Self {
-            uuid: Uuid::new_v4(),
+            uuid: uuid_v4(),
             command_type,
             session_id: Some(session_id),
             data: command_data_vec,
@@ -144,7 +145,7 @@ impl CommandMessage {
         };
 
         Ok(Self {
-            uuid: Uuid::new_v4(),
+            uuid: uuid_v4(),
             command_type,
             session_id,
             data: bytes,
@@ -187,4 +188,15 @@ impl Into<Vec<u8>> for CommandMessage {
 
         result
     }
+}
+
+/// Create a new random UUIDv4
+// TODO: use `v4` feature of the `uuid` crate when it updates to rand 0.5
+fn uuid_v4() -> Uuid {
+    let mut rng = rand::thread_rng();
+
+    let mut bytes = [0; 16];
+    rng.fill_bytes(&mut bytes);
+
+    Uuid::from_random_bytes(bytes)
 }
