@@ -15,7 +15,7 @@ use auth_key::{AuthKey, AUTH_KEY_DEFAULT_ID, AUTH_KEY_SIZE};
 use serializers::{deserialize, serialize};
 use {
     Algorithm, Capability, Domain, ObjectHandle, ObjectId, ObjectInfo, ObjectLabel, ObjectOrigin,
-    ObjectType, WrapNonce, WrappedData,
+    ObjectType, WrapNonce,
 };
 
 /// Size of the wrap algorithm's MAC tag. The MockHSM uses AES-GCM instead of
@@ -155,7 +155,7 @@ impl Objects {
         object_id: ObjectId,
         object_type: ObjectType,
         nonce: &WrapNonce,
-    ) -> Result<WrappedData, Error> {
+    ) -> Result<Vec<u8>, Error> {
         let wrap_key = match self.get(wrap_key_id, ObjectType::WrapKey) {
             Some(k) => k,
             None => bail!("no such wrap key: {:?}", wrap_key_id),
@@ -209,15 +209,15 @@ impl Objects {
             WRAPPED_DATA_MAC_SIZE,
         ).unwrap();
 
-        Ok(WrappedData(wrapped_object))
+        Ok(wrapped_object)
     }
 
     /// Deserialize an encrypted object and insert it into the HSM
-    pub fn unwrap(
+    pub fn unwrap<V: Into<Vec<u8>>>(
         &mut self,
         wrap_key_id: ObjectId,
         nonce: &WrapNonce,
-        ciphertext: &WrappedData,
+        ciphertext: V,
     ) -> Result<ObjectHandle, Error> {
         let opening_key = match self.get(wrap_key_id, ObjectType::WrapKey) {
             Some(k) => match k.algorithm() {
@@ -228,7 +228,7 @@ impl Objects {
             None => bail!("no such wrap key: {:?}", wrap_key_id),
         };
 
-        let mut wrapped_data = Vec::from(ciphertext.as_ref());
+        let mut wrapped_data: Vec<u8> = ciphertext.into();
 
         if aead::open_in_place(
             &opening_key,

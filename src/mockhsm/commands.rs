@@ -34,7 +34,7 @@ use commands::{
 use connector::ConnectorError;
 use securechannel::{CommandMessage, ResponseMessage};
 use serializers::deserialize;
-use {Algorithm, AsymmetricAlgorithm, Capability, ObjectType, SessionId, WrapNonce};
+use {Algorithm, AsymmetricAlgorithm, Capability, ObjectType, SessionId, WrapMessage, WrapNonce};
 
 use super::objects::Payload;
 use super::state::State;
@@ -111,7 +111,7 @@ pub(crate) fn session_message(
         CommandType::PutAuthKey => put_auth_key(state, &command.data),
         CommandType::PutOpaqueObject => put_opaque(state, &command.data),
         CommandType::PutWrapKey => put_wrap_key(state, &command.data),
-        CommandType::Reset => return Ok(reset(state)),
+        CommandType::Reset => return Ok(reset(state, session_id)),
         CommandType::SignDataECDSA => sign_data_ecdsa(state, &command.data),
         CommandType::SignDataEdDSA => sign_data_eddsa(state, &command.data),
         CommandType::StorageStatus => storage_status(),
@@ -231,7 +231,7 @@ fn export_wrapped(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
         .objects
         .wrap(wrap_key_id, object_id, object_type, &nonce)
     {
-        Ok(ciphertext) => ExportWrappedResponse { nonce, ciphertext }.serialize(),
+        Ok(ciphertext) => ExportWrappedResponse(WrapMessage { nonce, ciphertext }).serialize(),
         Err(e) => ResponseMessage::error(&format!("error wrapping object: {}", e)),
     }
 }
@@ -356,7 +356,7 @@ fn import_wrapped(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
     } = deserialize(cmd_data)
         .unwrap_or_else(|e| panic!("error parsing CommandType::ImportWrapped: {:?}", e));
 
-    match state.objects.unwrap(wrap_key_id, &nonce, &ciphertext) {
+    match state.objects.unwrap(wrap_key_id, &nonce, ciphertext) {
         Ok(obj) => ImportWrappedResponse {
             object_type: obj.object_type,
             object_id: obj.object_id,
@@ -375,7 +375,7 @@ fn list_objects(state: &State, cmd_data: &[u8]) -> ResponseMessage {
         .objects
         .iter()
         .map(|(_, object)| ListObjectsEntry {
-            id: object.object_info.object_id,
+            object_id: object.object_info.object_id,
             object_type: object.object_info.object_type,
             sequence: object.object_info.sequence,
         })
@@ -471,9 +471,15 @@ fn put_wrap_key(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
 }
 
 /// Reset the MockHSM back to its default state
-fn reset(state: &mut State) -> Vec<u8> {
+fn reset(state: &mut State, session_id: SessionId) -> Vec<u8> {
+    let response = state
+        .get_session(session_id)
+        .unwrap()
+        .encrypt_response(ResetResponse(0x01).serialize())
+        .into();
+
     state.reset();
-    ResetResponse(0x01).serialize().into()
+    response
 }
 
 /// Sign a message using the ECDSA signature algorithm
