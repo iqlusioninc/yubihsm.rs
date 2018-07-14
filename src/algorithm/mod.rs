@@ -37,12 +37,12 @@ mod opaque_algorithm;
 mod otp_algorithm;
 mod wrap_algorithm;
 
-pub use self::asymmetric_algorithm::AsymmetricAlgorithm;
-pub use self::auth_algorithm::AuthAlgorithm;
-pub use self::hmac_algorithm::HMACAlgorithm;
-pub use self::opaque_algorithm::OpaqueAlgorithm;
-pub use self::otp_algorithm::OTPAlgorithm;
-pub use self::wrap_algorithm::{WrapAlgorithm, WrapNonce, WrappedData};
+pub use self::asymmetric_algorithm::*;
+pub use self::auth_algorithm::*;
+pub use self::hmac_algorithm::*;
+pub use self::opaque_algorithm::*;
+pub use self::otp_algorithm::*;
+pub use self::wrap_algorithm::*;
 
 /// Cryptographic algorithm types supported by the `YubiHSM2`
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]

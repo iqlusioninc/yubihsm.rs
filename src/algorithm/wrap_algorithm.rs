@@ -43,6 +43,65 @@ impl WrapAlgorithm {
 
 impl_algorithm!(WrapAlgorithm);
 
+/// Message (either object or arbitrary data) encrypted under a wrap key
+#[derive(Serialize, Deserialize, Debug)]
+pub struct WrapMessage {
+    /// Nonce used to encrypt the wrapped data
+    pub nonce: WrapNonce,
+
+    /// Ciphertext of the encrypted object
+    pub ciphertext: Vec<u8>,
+}
+
+impl WrapMessage {
+    /// Load a `WrapMessage` from a byte vector
+    pub fn from_vec(mut vec: Vec<u8>) -> Result<Self, Error> {
+        ensure!(
+            vec.len() >= WRAP_NONCE_SIZE,
+            "message must be at least {}-bytes",
+            WRAP_NONCE_SIZE
+        );
+
+        let mut nonce = [0u8; WRAP_NONCE_SIZE];
+        nonce.copy_from_slice(vec.split_off(WRAP_NONCE_SIZE).as_ref());
+
+        Ok(Self::new(nonce, vec))
+    }
+
+    /// Create a new `WrapMessage`
+    pub fn new<N, V>(nonce: N, ciphertext: V) -> Self
+    where
+        N: Into<WrapNonce>,
+        V: Into<Vec<u8>>,
+    {
+        Self {
+            nonce: nonce.into(),
+            ciphertext: ciphertext.into(),
+        }
+    }
+
+    /// Convert this message into a byte vector
+    pub fn into_vec(self) -> Vec<u8> {
+        self.into()
+    }
+}
+
+impl Into<Vec<u8>> for WrapMessage {
+    fn into(self) -> Vec<u8> {
+        let WrapMessage {
+            nonce,
+            mut ciphertext,
+        } = self;
+
+        let mut vec = Vec::with_capacity(WRAP_NONCE_SIZE + ciphertext.len());
+        vec.extend_from_slice(nonce.as_ref());
+        vec.append(&mut ciphertext);
+
+        vec
+    }
+}
+
+/// Number of bytes in a nonce used for "wrapping" (i.e AES-CCM encryption)
 pub const WRAP_NONCE_SIZE: usize = 13;
 
 /// Nonces for AES-CCM keywrapping
@@ -66,40 +125,10 @@ impl AsRef<[u8]> for WrapNonce {
     }
 }
 
+impl From<[u8; WRAP_NONCE_SIZE]> for WrapNonce {
+    fn from(bytes: [u8; WRAP_NONCE_SIZE]) -> WrapNonce {
+        WrapNonce(bytes)
+    }
+}
+
 impl_array_serializers!(WrapNonce, WRAP_NONCE_SIZE);
-
-/// Data encrypted (i.e. with AES-CCM) under a wrap key
-#[derive(Serialize, Deserialize, Debug)]
-pub struct WrappedData(pub Vec<u8>);
-
-#[allow(unknown_lints, len_without_is_empty)]
-impl WrappedData {
-    /// Unwrap inner byte vector
-    pub fn into_vec(self) -> Vec<u8> {
-        self.into()
-    }
-
-    /// Get length of the signature
-    #[inline]
-    pub fn len(&self) -> usize {
-        self.0.len()
-    }
-
-    /// Get slice of the inner byte vector
-    #[inline]
-    pub fn as_slice(&self) -> &[u8] {
-        self.as_ref()
-    }
-}
-
-impl AsRef<[u8]> for WrappedData {
-    fn as_ref(&self) -> &[u8] {
-        self.0.as_ref()
-    }
-}
-
-impl Into<Vec<u8>> for WrappedData {
-    fn into(self) -> Vec<u8> {
-        self.0
-    }
-}

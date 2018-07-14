@@ -201,7 +201,7 @@ fn echo_test() {
     let echo_response = yubihsm::echo(&mut session, TEST_MESSAGE)
         .unwrap_or_else(|err| panic!("error sending echo: {}", err));
 
-    assert_eq!(TEST_MESSAGE, echo_response.as_ref());
+    assert_eq!(TEST_MESSAGE, echo_response.as_slice());
 }
 
 /// Generate an Ed25519 key
@@ -314,7 +314,7 @@ fn list_objects_test() {
     assert!(
         objects
             .iter()
-            .find(|i| i.id == TEST_KEY_ID && i.object_type == ObjectType::AsymmetricKey)
+            .find(|i| i.object_id == TEST_KEY_ID && i.object_type == ObjectType::AsymmetricKey)
             .is_some()
     );
 }
@@ -408,7 +408,8 @@ fn put_auth_key() {
 #[cfg(feature = "mockhsm")]
 #[test]
 fn reset_test() {
-    yubihsm::reset(create_session!());
+    let session = create_session!();
+    yubihsm::reset(session).unwrap();
 }
 
 /// Test ECDSA signatures (using NIST P-256)
@@ -552,7 +553,7 @@ fn wrap_key_test() {
         exported_key_algorithm,
     ).unwrap_or_else(|err| panic!("error generating asymmetric key: {}", err));
 
-    let export_response = yubihsm::export_wrapped(
+    let wrap_data = yubihsm::export_wrapped(
         &mut session,
         TEST_KEY_ID,
         exported_key_type,
@@ -563,12 +564,8 @@ fn wrap_key_test() {
     assert!(yubihsm::delete_object(&mut session, TEST_EXPORTED_KEY_ID, exported_key_type).is_ok());
 
     // Re-import the wrapped key back into the HSM
-    let import_response = yubihsm::import_wrapped(
-        &mut session,
-        TEST_KEY_ID,
-        export_response.nonce,
-        export_response.ciphertext,
-    ).unwrap_or_else(|err| panic!("error importing key: {}", err));
+    let import_response = yubihsm::import_wrapped(&mut session, TEST_KEY_ID, wrap_data)
+        .unwrap_or_else(|err| panic!("error importing key: {}", err));
 
     assert_eq!(import_response.object_type, exported_key_type);
     assert_eq!(import_response.object_id, TEST_EXPORTED_KEY_ID);

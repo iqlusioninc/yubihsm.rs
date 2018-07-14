@@ -10,11 +10,12 @@ pub fn delete_object<C: Connector>(
     session: &mut Session<C>,
     object_id: ObjectId,
     object_type: ObjectType,
-) -> Result<DeleteObjectResponse, SessionError> {
+) -> Result<(), SessionError> {
     session.send_encrypted_command(DeleteObjectCommand {
         object_id,
         object_type,
-    })
+    })?;
+    Ok(())
 }
 
 /// Request parameters for `commands::delete_object`
@@ -33,7 +34,7 @@ impl Command for DeleteObjectCommand {
 
 /// Response from `commands::delete_object`
 #[derive(Serialize, Deserialize, Debug)]
-pub struct DeleteObjectResponse {}
+pub(crate) struct DeleteObjectResponse {}
 
 impl Response for DeleteObjectResponse {
     const COMMAND_TYPE: CommandType = CommandType::DeleteObject;

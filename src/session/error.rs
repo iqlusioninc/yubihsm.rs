@@ -56,7 +56,7 @@ macro_rules! session_fail {
 
 impl From<ConnectorError> for SessionError {
     fn from(err: ConnectorError) -> Self {
-        session_err!(ResponseError, err.to_string())
+        session_err!(ProtocolError, err.to_string())
     }
 }
 
