@@ -1,4 +1,4 @@
-//! Obtain an X.509 attestation certificate for a key within the YubiHSM2.
+//! Obtain an X.509 attestation certificate for a key within the `YubiHSM2`
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Get_Object_Info.html>
 //!

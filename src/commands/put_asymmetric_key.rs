@@ -10,8 +10,6 @@ use {
 };
 
 /// Put an existing asymmetric key into the `YubiHSM2`
-///
-/// Valid algorithms
 pub fn put_asymmetric_key<C: Connector, T: Into<Vec<u8>>>(
     session: &mut Session<C>,
     key_id: ObjectId,

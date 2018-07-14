@@ -1,4 +1,4 @@
-//! Generate a wrapping (i.e. encryption) key within the YubiHSM2
+//! Generate a wrapping (i.e. encryption) key within the `YubiHSM2`
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Generate_Wrap_Key.html>
 

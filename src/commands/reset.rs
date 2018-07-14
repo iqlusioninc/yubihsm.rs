@@ -1,5 +1,5 @@
-//! Reset the `YubiHSM2` to a factory state, clearing all stored objects,
-//! restoring the default auth key, and rebooting
+//! Reset the device: clear all stored objects, restore the default auth key,
+//! and reboot
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Reset.html>
 

@@ -1,4 +1,4 @@
-//! Blink the YubiHSM2's LEDs (to identify it) for the given number of seconds
+//! Blink the LED on the `YubiHSM2` for the given number of seconds
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Blink.html>
 

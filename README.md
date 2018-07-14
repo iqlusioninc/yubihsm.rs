@@ -124,9 +124,9 @@ NOTE: If there's a command on this list which isn't presently supported,
 [Generate Wrap Key]: https://docs.rs/yubihsm/latest/yubihsm/commands/generate_wrap_key/fn.generate_wrap_key.html
 [Get Logs]: https://docs.rs/yubihsm/latest/yubihsm/commands/get_logs/fn.get_logs.html
 [Get Object Info]: https://docs.rs/yubihsm/latest/yubihsm/commands/get_object_info/fn.get_object_info.html
-[Get Opaque]: https://developers.yubico.com/YubiHSM2/Commands/Get_Opaque.html
+[Get Opaque]: https://docs.rs/yubihsm/latest/yubihsm/commands/get_opaque/fn.get_opaque.html
 [Get Option]: https://developers.yubico.com/YubiHSM2/Commands/Get_Option.html
-[Get Pseudo Random]: https://developers.yubico.com/YubiHSM2/Commands/Get_Pseudo_Random.html
+[Get Pseudo Random]: https://docs.rs/yubihsm/latest/yubihsm/commands/get_pseudo_random/fn.get_pseudo_random.html
 [Get Pubkey]: https://docs.rs/yubihsm/latest/yubihsm/commands/get_pubkey/fn.get_pubkey.html
 [HMAC Data]: https://developers.yubico.com/YubiHSM2/Commands/Hmac_Data.html
 [Import Wrapped]: https://docs.rs/yubihsm/latest/yubihsm/commands/import_wrapped/fn.import_wrapped.html

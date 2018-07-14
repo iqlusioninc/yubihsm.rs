@@ -1,4 +1,4 @@
-//! Get information about the YubiHSM2 device
+//! Get information about the `YubiHSM2` device
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Device_Info.html>
 
