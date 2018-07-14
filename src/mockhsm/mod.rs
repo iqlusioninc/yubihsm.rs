@@ -19,24 +19,26 @@ use session::{Session, SessionError};
 /// implemented as a `yubihsm::Connector` (skipping HTTP transport)
 ///
 /// To enable, make sure to build yubihsm.rs with the "mockhsm" feature
-pub struct MockHSM {
-    state: Arc<Mutex<State>>,
-}
+pub struct MockHSM(Arc<Mutex<State>>);
 
 impl MockHSM {
     /// Create a new MockHSM
     pub fn new() -> Self {
-        Self {
-            state: Arc::new(Mutex::new(State::new())),
-        }
+        MockHSM(Arc::new(Mutex::new(State::new())))
     }
 
     /// Create a simulated session with a MockHSM
     pub fn create_session<K: Into<AuthKey>>(
+        &self,
         auth_key_id: ObjectId,
         auth_key: K,
-    ) -> Result<Session<Self>, SessionError> {
-        Session::new(Self::default(), auth_key_id, auth_key.into(), false)
+    ) -> Result<Session<MockConnector>, SessionError> {
+        Session::new(
+            MockConnector(self.0.clone()),
+            auth_key_id,
+            auth_key.into(),
+            false,
+        )
     }
 }
 
@@ -45,6 +47,9 @@ impl Default for MockHSM {
         Self::new()
     }
 }
+
+/// A mocked connection to the MockHSM
+pub struct MockConnector(Arc<Mutex<State>>);
 
 /// Fake config
 #[derive(Debug, Default)]
@@ -56,7 +61,7 @@ impl fmt::Display for MockConfig {
     }
 }
 
-impl Connector for MockHSM {
+impl Connector for MockConnector {
     type Config = MockConfig;
 
     /// We don't bother to implement this
@@ -83,7 +88,7 @@ impl Connector for MockHSM {
             )
         })?;
 
-        let mut state = self.state.lock().map_err(|e| {
+        let mut state = self.0.lock().map_err(|e| {
             ConnectorError::new(
                 ConnectorErrorKind::ConnectionFailed,
                 Some(format!("error obtaining state lock: {}", e)),

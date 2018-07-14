@@ -3,6 +3,7 @@
 
 use std::collections::BTreeMap;
 
+use connector::{ConnectorError, ConnectorErrorKind};
 use object::{ObjectId, ObjectType};
 use securechannel::{Challenge, Channel, SessionId};
 
@@ -53,18 +54,27 @@ impl State {
         let session = Session::new(session_id, card_challenge, channel);
         assert!(self.sessions.insert(session_id, session).is_none());
 
-        self.get_session(session_id)
+        self.get_session(session_id).unwrap()
     }
 
     /// Obtain the channel for a session by its ID
-    pub fn get_session(&mut self, id: SessionId) -> &mut Session {
-        self.sessions
-            .get_mut(&id)
-            .unwrap_or_else(|| panic!("invalid session ID: {:?}", id))
+    pub fn get_session(&mut self, id: SessionId) -> Result<&mut Session, ConnectorError> {
+        self.sessions.get_mut(&id).ok_or_else(|| {
+            ConnectorError::new(
+                ConnectorErrorKind::RequestError,
+                Some(format!("invalid session ID: {:?}", id)),
+            )
+        })
     }
 
     /// Close an active session
     pub fn close_session(&mut self, id: SessionId) {
         assert!(self.sessions.remove(&id).is_some());
+    }
+
+    /// Reset the internal HSM state, closing all connections
+    pub fn reset(&mut self) {
+        self.sessions = BTreeMap::new();
+        self.objects = Objects::default();
     }
 }

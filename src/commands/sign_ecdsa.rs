@@ -4,7 +4,7 @@
 
 use super::{Command, Response};
 #[cfg(feature = "mockhsm")]
-use mockhsm::MockHSM;
+use mockhsm::MockConnector;
 #[cfg(feature = "sha2")]
 use session::{Session, SessionError};
 #[cfg(all(feature = "sha2", not(feature = "mockhsm")))]
@@ -30,7 +30,7 @@ pub fn sign_ecdsa_sha2<C: Connector>(
 // NOTE: this version is enabled when we compile with MockHSM support
 #[cfg(feature = "mockhsm")]
 pub fn sign_ecdsa_sha2(
-    session: &mut Session<MockHSM>,
+    session: &mut Session<MockConnector>,
     key_id: ObjectId,
     data: &[u8],
 ) -> Result<ECDSASignature, SessionError> {
