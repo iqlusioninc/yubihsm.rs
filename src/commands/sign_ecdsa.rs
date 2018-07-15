@@ -60,6 +60,10 @@ impl Command for SignDataECDSACommand {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ECDSASignature(pub Vec<u8>);
 
+impl Response for ECDSASignature {
+    const COMMAND_TYPE: CommandType = CommandType::SignDataECDSA;
+}
+
 #[allow(unknown_lints, len_without_is_empty)]
 impl ECDSASignature {
     /// Unwrap inner byte vector
@@ -78,10 +82,6 @@ impl ECDSASignature {
     pub fn as_slice(&self) -> &[u8] {
         self.as_ref()
     }
-}
-
-impl Response for ECDSASignature {
-    const COMMAND_TYPE: CommandType = CommandType::SignDataECDSA;
 }
 
 impl AsRef<[u8]> for ECDSASignature {

@@ -22,14 +22,14 @@ pub fn put_hmac_key<C: Connector, T: Into<Vec<u8>>>(
     algorithm: HMACAlgorithm,
     key_bytes: T,
 ) -> Result<ObjectId, SessionError> {
-    let data = key_bytes.into();
+    let hmac_key = key_bytes.into();
 
-    if data.len() < HMAC_MIN_KEY_SIZE || data.len() > algorithm.max_key_len() {
+    if hmac_key.len() < HMAC_MIN_KEY_SIZE || hmac_key.len() > algorithm.max_key_len() {
         command_fail!(
             ProtocolError,
             "invalid key length for {:?}: {} (min {}, max {})",
             algorithm,
-            data.len(),
+            hmac_key.len(),
             HMAC_MIN_KEY_SIZE,
             algorithm.max_key_len()
         );
@@ -44,7 +44,7 @@ pub fn put_hmac_key<C: Connector, T: Into<Vec<u8>>>(
                 capabilities,
                 algorithm: algorithm.into(),
             },
-            data,
+            hmac_key,
         })
         .map(|response| response.key_id)
 }
@@ -56,7 +56,7 @@ pub(crate) struct PutHMACKeyCommand {
     pub params: PutObjectParams,
 
     /// Serialized object
-    pub data: Vec<u8>,
+    pub hmac_key: Vec<u8>,
 }
 
 impl Command for PutHMACKeyCommand {
