@@ -96,7 +96,7 @@ NOTE: If there's a command on this list which isn't presently supported,
 | [Put Wrap Key]         | ✅     | ✅        | Put an AES keywrapping key into the HSM |
 | [Reset]                | ✅     | ✅        | Reset the HSM back to factory default settings |
 | [Session Message]      | ✅     | ✅        | Send an encrypted message to the HSM |
-| [Set Log Index]        | ⛔     | ⛔        | Mark log messages in the HSM as consumed |
+| [Set Log Index]        | ✅     | ✅        | Mark log messages in the HSM as consumed |
 | [Sign Data ECDSA]      | ✅     | ✅        | Compute an ECDSA signature using HSM-backed key |
 | [Sign Data EdDSA]      | ✅     | ✅        | Compute an Ed25519 signature using HSM-backed key |
 | [Sign Data PKCS1]      | ⛔     | ⛔        | Compute an RSASSA-PKCS#1v1.5 signature using HSM-backed key |
@@ -144,7 +144,7 @@ NOTE: If there's a command on this list which isn't presently supported,
 [Put Wrap Key]: https://docs.rs/yubihsm/latest/yubihsm/commands/put_wrap_key/fn.put_wrap_key.html
 [Reset]: https://docs.rs/yubihsm/latest/yubihsm/commands/reset/fn.reset.html
 [Session Message]: https://developers.yubico.com/YubiHSM2/Commands/Session_Message.html
-[Set Log Index]: https://developers.yubico.com/YubiHSM2/Commands/Set_Log_Index.html
+[Set Log Index]: https://docs.rs/yubihsm/latest/yubihsm/commands/set_log_index/fn.set_log_index.html
 [Sign Data ECDSA]: https://docs.rs/yubihsm/latest/yubihsm/commands/sign_ecdsa/fn.sign_ecdsa_sha2.html
 [Sign Data EdDSA]: https://docs.rs/yubihsm/latest/yubihsm/commands/sign_eddsa/fn.sign_ed25519.html
 [Sign Data PKCS1]: https://developers.yubico.com/YubiHSM2/Commands/Sign_Data_Pkcs1.html

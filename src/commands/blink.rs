@@ -7,11 +7,9 @@ use connector::Connector;
 use session::{Session, SessionError};
 
 /// Blink the YubiHSM2's LEDs (to identify it) for the given number of seconds
-pub fn blink<C: Connector>(
-    session: &mut Session<C>,
-    num_seconds: u8,
-) -> Result<BlinkResponse, SessionError> {
-    session.send_encrypted_command(BlinkCommand { num_seconds })
+pub fn blink<C: Connector>(session: &mut Session<C>, num_seconds: u8) -> Result<(), SessionError> {
+    session.send_encrypted_command(BlinkCommand { num_seconds })?;
+    Ok(())
 }
 
 /// Request parameters for `commands::blink`
@@ -27,7 +25,7 @@ impl Command for BlinkCommand {
 
 /// Response from `commands::blink`
 #[derive(Serialize, Deserialize, Debug)]
-pub struct BlinkResponse {}
+pub(crate) struct BlinkResponse {}
 
 impl Response for BlinkResponse {
     const COMMAND_TYPE: CommandType = CommandType::Blink;
