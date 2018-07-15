@@ -6,8 +6,12 @@ mod aesccm;
 /// Ed25519 digital signature test vectors
 mod ed25519;
 
+/// HMAC-SHA-256 test vectors
+mod hmac;
+
 pub use self::aesccm::AESCCM_TEST_VECTORS;
 pub use self::ed25519::ED25519_TEST_VECTORS;
+pub use self::hmac::HMAC_SHA256_TEST_VECTORS;
 
 /// Authenticated encryption test vector (presently specialized for AES-CCM)
 pub struct EncryptionTestVector {
@@ -25,6 +29,18 @@ pub struct EncryptionTestVector {
 
     /// Resulting ciphertext after encryption
     pub ciphertext: &'static [u8],
+}
+
+/// Authenticated encryption test vector (presently specialized for AES-CCM)
+pub struct HMACTestVector {
+    /// Encryption key
+    pub key: &'static [u8],
+
+    /// Message to be authenticated
+    pub msg: &'static [u8],
+
+    /// HMAC tag
+    pub tag: &'static [u8],
 }
 
 /// Signature test vector

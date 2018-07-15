@@ -32,6 +32,16 @@ impl HMACAlgorithm {
         })
     }
 
+    /// Recommended key length (identical to output size)
+    pub fn key_len(self) -> usize {
+        match self {
+            HMACAlgorithm::HMAC_SHA1 => 20,
+            HMACAlgorithm::HMAC_SHA256 => 32,
+            HMACAlgorithm::HMAC_SHA384 => 48,
+            HMACAlgorithm::HMAC_SHA512 => 64,
+        }
+    }
+
     /// Return the size of the given key (as expected by the `YubiHSM2`) in bytes
     pub fn max_key_len(self) -> usize {
         match self {

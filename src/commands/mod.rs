@@ -43,6 +43,7 @@ pub mod device_info;
 pub mod echo;
 pub mod export_wrapped;
 pub mod generate_asymmetric_key;
+pub mod generate_hmac_key;
 pub mod generate_key;
 pub mod generate_wrap_key;
 pub mod get_logs;
@@ -50,6 +51,7 @@ pub mod get_object_info;
 pub mod get_opaque;
 pub mod get_pseudo_random;
 pub mod get_pubkey;
+pub mod hmac;
 pub mod import_wrapped;
 pub mod list_objects;
 pub mod put_asymmetric_key;
@@ -64,6 +66,7 @@ pub mod sign_ecdsa;
 pub mod sign_eddsa;
 pub mod storage_status;
 pub mod unwrap_data;
+pub mod verify_hmac;
 pub mod wrap_data;
 
 /// Structured commands (i.e. requests) which are encrypted and then sent to

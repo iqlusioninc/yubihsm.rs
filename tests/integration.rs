@@ -6,8 +6,8 @@ extern crate lazy_static;
 extern crate sha2;
 extern crate yubihsm;
 use yubihsm::{
-    AsymmetricAlgorithm, AuthAlgorithm, AuthKey, Capability, Domain, ObjectId, ObjectOrigin,
-    ObjectType, OpaqueAlgorithm, Session, WrapAlgorithm, AUTH_KEY_DEFAULT_ID,
+    AsymmetricAlgorithm, AuthAlgorithm, AuthKey, Capability, Domain, HMACAlgorithm, ObjectId,
+    ObjectOrigin, ObjectType, OpaqueAlgorithm, Session, WrapAlgorithm, AUTH_KEY_DEFAULT_ID,
 };
 
 #[cfg(not(feature = "mockhsm"))]
@@ -227,6 +227,39 @@ fn generate_ed25519_key_test() {
     assert_eq!(&object_info.label.to_string().unwrap(), TEST_KEY_LABEL);
 }
 
+/// Generate an Ed25519 key
+#[test]
+fn generate_hmac_key_test() {
+    let mut session = create_session!();
+
+    let algorithm = HMACAlgorithm::HMAC_SHA256;
+    let capabilities = Capability::HMAC_DATA | Capability::HMAC_VERIFY;
+
+    clear_test_key_slot(&mut session, ObjectType::HMACKey);
+
+    let key_id = yubihsm::generate_hmac_key(
+        &mut session,
+        TEST_KEY_ID,
+        TEST_KEY_LABEL.into(),
+        TEST_DOMAINS,
+        capabilities,
+        algorithm,
+    ).unwrap_or_else(|err| panic!("error generating wrap key: {}", err));
+
+    assert_eq!(key_id, TEST_KEY_ID);
+
+    let object_info = yubihsm::get_object_info(&mut session, TEST_KEY_ID, ObjectType::HMACKey)
+        .unwrap_or_else(|err| panic!("error getting object info: {}", err));
+
+    assert_eq!(object_info.capabilities, capabilities);
+    assert_eq!(object_info.object_id, TEST_KEY_ID);
+    assert_eq!(object_info.domains, TEST_DOMAINS);
+    assert_eq!(object_info.object_type, ObjectType::HMACKey);
+    assert_eq!(object_info.algorithm, algorithm.into());
+    assert_eq!(object_info.origin, ObjectOrigin::Generated);
+    assert_eq!(&object_info.label.to_string().unwrap(), TEST_KEY_LABEL);
+}
+
 /// Generate a NIST P-256 key
 #[test]
 fn generate_secp256r1_key_test() {
@@ -294,6 +327,53 @@ fn get_logs_test() {
 
     // TODO: test audit logging functionality
     yubihsm::get_logs(&mut session).unwrap_or_else(|err| panic!("error getting logs: {}", err));
+}
+
+/// Get random bytes
+#[test]
+fn get_pseudo_random() {
+    let mut session = create_session!();
+
+    let bytes = yubihsm::commands::get_pseudo_random::get_pseudo_random(&mut session, 32)
+        .unwrap_or_else(|err| panic!("error getting random data: {}", err));
+
+    assert_eq!(32, bytes.len());
+}
+
+/// Test HMAC against RFC 4231 test vectors
+#[test]
+fn hmac_test_vectors() {
+    let mut session = create_session!();
+    let algorithm = HMACAlgorithm::HMAC_SHA256;
+    let capabilities = Capability::HMAC_DATA | Capability::HMAC_VERIFY;
+
+    for vector in HMAC_SHA256_TEST_VECTORS {
+        clear_test_key_slot(&mut session, ObjectType::HMACKey);
+
+        let key_id = yubihsm::put_hmac_key(
+            &mut session,
+            TEST_KEY_ID,
+            TEST_KEY_LABEL.into(),
+            TEST_DOMAINS,
+            capabilities,
+            algorithm,
+            vector.key,
+        ).unwrap_or_else(|err| panic!("error putting HMAC key: {}", err));
+
+        assert_eq!(key_id, TEST_KEY_ID);
+
+        let tag = yubihsm::hmac(&mut session, TEST_KEY_ID, vector.msg)
+            .unwrap_or_else(|err| panic!("error computing HMAC of data: {}", err));
+
+        assert_eq!(tag.as_ref(), vector.tag);
+
+        assert!(yubihsm::verify_hmac(&mut session, TEST_KEY_ID, vector.msg, vector.tag).is_ok());
+
+        let mut bad_tag = Vec::from(vector.tag);
+        bad_tag[0] ^= 1;
+
+        assert!(yubihsm::verify_hmac(&mut session, TEST_KEY_ID, vector.msg, bad_tag).is_err());
+    }
 }
 
 /// List the objects in the YubiHSM2
@@ -584,15 +664,4 @@ fn wrap_key_test() {
         &imported_key_info.label.to_string().unwrap(),
         TEST_EXPORTED_KEY_LABEL
     );
-}
-
-/// Get random bytes
-#[test]
-fn get_pseudo_random() {
-    let mut session = create_session!();
-
-    let bytes = yubihsm::commands::get_pseudo_random::get_pseudo_random(&mut session, 32)
-        .unwrap_or_else(|err| panic!("error getting random data: {}", err));
-
-    assert_eq!(32, bytes.len());
 }
