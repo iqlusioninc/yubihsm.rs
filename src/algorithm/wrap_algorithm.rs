@@ -44,7 +44,7 @@ impl WrapAlgorithm {
 impl_algorithm!(WrapAlgorithm);
 
 /// Message (either object or arbitrary data) encrypted under a wrap key
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct WrapMessage {
     /// Nonce used to encrypt the wrapped data
     pub nonce: WrapNonce,
@@ -105,7 +105,7 @@ impl Into<Vec<u8>> for WrapMessage {
 pub const WRAP_NONCE_SIZE: usize = 13;
 
 /// Nonces for AES-CCM keywrapping
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct WrapNonce(pub [u8; WRAP_NONCE_SIZE]);
 
 impl WrapNonce {
