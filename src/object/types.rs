@@ -78,6 +78,13 @@ impl<'de> Deserialize<'de> for Type {
             {
                 Type::from_u8(value).or_else(|e| Err(E::custom(format!("{}", e))))
             }
+            fn visit_u64<E>(self, value: u64) -> Result<Type, E>
+            where
+                E: de::Error,
+            {
+                assert!(value < 255);
+                Type::from_u8(value as u8).or_else(|e| Err(E::custom(format!("{}", e))))
+            }
         }
 
         deserializer.deserialize_u8(TypeVisitor)
