@@ -26,14 +26,12 @@ impl Label {
 
     /// Create a string representation of this label
     pub fn to_string(&self) -> Result<String, Error> {
-        let mut string = String::from_utf8(self.0.as_ref().into())?;
+        let slice = match self.0.iter().position(|b| *b == b'\0') {
+            Some(pos) => &self.0.as_ref()[..pos],
+            None => self.0.as_ref(),
+        };
 
-        // Ignore trailing zeroes when converting to a String
-        if let Some(pos) = string.find('\0') {
-            string.truncate(pos);
-        }
-
-        Ok(string)
+        Ok(String::from_utf8(slice.into())?)
     }
 }
 

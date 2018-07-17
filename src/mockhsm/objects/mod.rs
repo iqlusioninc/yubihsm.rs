@@ -22,6 +22,9 @@ use {
 /// AES-CCM as there isn't a readily available Rust implementation
 const WRAPPED_DATA_MAC_SIZE: usize = 16;
 
+/// Label for the default auth key
+const DEFAULT_AUTH_KEY_LABEL: &str = "DEFAULT AUTHKEY CHANGE THIS ASAP";
+
 /// Iterator over objects
 pub(crate) type Iter<'a> = HashMapIter<'a, ObjectHandle, Object>;
 
@@ -45,7 +48,7 @@ impl Default for Objects {
             length: AUTH_KEY_SIZE as u16,
             sequence: 1,
             origin: ObjectOrigin::Imported,
-            label: "Default authentication key".into(),
+            label: DEFAULT_AUTH_KEY_LABEL.into(),
         };
 
         let auth_key_payload = Payload::AuthKey(AuthKey::default());

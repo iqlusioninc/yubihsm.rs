@@ -34,6 +34,9 @@ const TEST_EXPORTED_KEY_ID: ObjectId = 101;
 /// Label to use for the test key
 const TEST_KEY_LABEL: &str = "yubihsm.rs test key";
 
+/// Label for the default auth key
+const DEFAULT_AUTH_KEY_LABEL: &str = "DEFAULT AUTHKEY CHANGE THIS ASAP";
+
 /// Label to use for the exported test
 const TEST_EXPORTED_KEY_LABEL: &str = "yubihsm.rs exported test key";
 
@@ -327,6 +330,27 @@ fn get_logs_test() {
 
     // TODO: test audit logging functionality
     yubihsm::get_logs(&mut session).unwrap_or_else(|err| panic!("error getting logs: {}", err));
+}
+
+/// Get object info on default auth key
+#[test]
+fn get_object_info_default_authkey() {
+    let mut session = create_session!();
+
+    let object_info =
+        yubihsm::get_object_info(&mut session, AUTH_KEY_DEFAULT_ID, ObjectType::AuthKey)
+            .unwrap_or_else(|err| panic!("error getting object info: {}", err));
+
+    assert_eq!(object_info.capabilities, Capability::all());
+    assert_eq!(object_info.object_id, AUTH_KEY_DEFAULT_ID);
+    assert_eq!(object_info.domains, Domain::all());
+    assert_eq!(object_info.object_type, ObjectType::AuthKey);
+    assert_eq!(object_info.algorithm, AuthAlgorithm::YUBICO_AES_AUTH.into());
+    assert_eq!(object_info.origin, ObjectOrigin::Imported);
+    assert_eq!(
+        &object_info.label.to_string().unwrap(),
+        DEFAULT_AUTH_KEY_LABEL
+    );
 }
 
 /// Get random bytes
