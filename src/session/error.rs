@@ -26,6 +26,10 @@ pub enum SessionErrorKind {
     /// HSM returned an error response
     #[fail(display = "bad HSM response")]
     ResponseError,
+
+    /// Session with the YubiHSM2 timed out
+    #[fail(display = "session timeout")]
+    TimeoutError,
 }
 
 /// Create a new Session error with a formatted message
@@ -37,10 +41,7 @@ macro_rules! session_err {
         )
     };
     ($kind:ident, $fmt:expr, $($arg:tt)+) => {
-        ::session::SessionError::new(
-            ::session::SessionErrorKind::$kind,
-            Some(format!($fmt, $($arg)+))
-        )
+        session_err!($kind, format!($fmt, $($arg)+))
     };
 }
 
