@@ -1,3 +1,4 @@
+use std::time::{Duration, Instant};
 use subtle::ConstantTimeEq;
 
 #[macro_use]
@@ -11,6 +12,15 @@ use object::ObjectId;
 use securechannel::SessionId;
 use securechannel::{Challenge, Channel, CommandMessage, ResponseCode, ResponseMessage};
 use serializers::deserialize;
+
+/// Sessions with the YubiHSM2 are stateful and expire after 30 seconds. See:
+/// <https://developers.yubico.com/YubiHSM2/Concepts/Session.html>
+pub const SESSION_INACTIVITY_TIMEOUT: Duration = Duration::from_secs(30);
+
+/// Timeout fuzz factor: to avoid races/skew with the YubiHSM2's clock,
+/// we consider sessions to be timed out slightly earlier than the actual
+/// timeout. This should (hopefully) ensure we always time out first.
+const TIMEOUT_SKEW_INTERVAL: Duration = Duration::from_secs(1);
 
 /// Status message returned from healthy connectors
 const CONNECTOR_STATUS_OK: &str = "OK";
@@ -35,6 +45,10 @@ where
 
     /// Connector to send messages through
     connector: C,
+
+    /// Instant when the last command with the YubiHSM2 was sent. Used for
+    /// tracking session inactivity timeouts
+    last_command_timestamp: Instant,
 
     /// Optional cached `AuthKey` for reconnecting lost sessions
     // TODO: session reconnect support
@@ -121,13 +135,12 @@ impl<C: Connector> Session<C> {
             session_fail!(AuthFailed, "card cryptogram mismatch!");
         }
 
-        let auth_key_option = if reconnect { Some(auth_key) } else { None };
-
         let mut session = Self {
             id: session_id,
             channel,
             connector,
-            auth_key: auth_key_option,
+            last_command_timestamp: Instant::now(),
+            auth_key: if reconnect { Some(auth_key) } else { None },
         };
 
         session.authenticate()?;
@@ -157,12 +170,22 @@ impl<C: Connector> Session<C> {
     /// Send a command message to the YubiHSM2 and parse the response
     /// POST /connector/api with a given command message
     fn send_command(&mut self, cmd: CommandMessage) -> Result<ResponseMessage, SessionError> {
-        let cmd_type = cmd.command_type;
-        let uuid = cmd.uuid;
-
         // TODO: handle reconnecting when sessions are lost
-        let response_bytes = self.connector.send_command(uuid, cmd.into())?;
+        if Instant::now().duration_since(self.last_command_timestamp)
+            > (SESSION_INACTIVITY_TIMEOUT - TIMEOUT_SKEW_INTERVAL)
+        {
+            session_fail!(
+                TimeoutError,
+                "session timed out after {} seconds",
+                SESSION_INACTIVITY_TIMEOUT.as_secs()
+            );
+        }
+
+        let cmd_type = cmd.command_type;
+        let response_bytes = self.connector.send_command(cmd.uuid, cmd.into())?;
         let response = ResponseMessage::parse(response_bytes)?;
+
+        self.last_command_timestamp = Instant::now();
 
         if response.is_err() {
             session_fail!(ResponseError, "HSM error: {:?}", response.code);
