@@ -53,8 +53,9 @@ rustflags = ["-Ctarget-feature=+aes"]
 
 ## Supported Commands
 
-NOTE: If there's a command on this list which isn't presently supported,
-[contributing is easy! (See below)](https://github.com/tendermint/yubihsm-rs/blob/master/README.md#contributing)
+NOTE: If there's a command on this list you'd like to use which isn't presently supported,
+[contributing is easy (see below)](https://github.com/tendermint/yubihsm-rs/blob/master/README.md#contributing)
+or open an issue requesting support.
 
 | Command                | Impl'd | [MockHSM] | Description |
 |------------------------|--------|-----------|-------------|
@@ -99,12 +100,18 @@ NOTE: If there's a command on this list which isn't presently supported,
 | [Set Log Index]        | ✅     | ✅        | Mark log messages in the HSM as consumed |
 | [Sign Data ECDSA]      | ✅     | ✅        | Compute an ECDSA signature using HSM-backed key |
 | [Sign Data EdDSA]      | ✅     | ✅        | Compute an Ed25519 signature using HSM-backed key |
-| [Sign Data PKCS1]      | ⛔     | ⛔        | Compute an RSASSA-PKCS#1v1.5 signature using HSM-backed key |
-| [Sign Data PSS]        | ⛔     | ⛔        | Compute an RSASSA-PSS signature using HSM-backed key |
+| [Sign Data PKCS1]      | ⚠️     | ⛔        | Compute an RSASSA-PKCS#1v1.5 signature using HSM-backed key |
+| [Sign Data PSS]        | ⚠️     | ⛔        | Compute an RSASSA-PSS signature using HSM-backed key |
 | [Storage Status]       | ✅     | ✅        | Fetch information about currently free storage |
 | [Unwrap Data]          | ✅     | ⛔        | Decrypt data encrypted using a wrap key |
 | [Verify HMAC]          | ✅     | ✅        | Verify that an HMAC tag for given data is valid |
 | [Wrap Data]            | ✅     | ⛔        | Encrypt data using a wrap key |
+
+|    | Status                   |
+|----|--------------------------|
+| ✅ | Supported                |
+| ⚠️ | Partial/Untested Support |
+| ⛔ | Unsupported              |
 
 [Attest Asymmetric]: https://docs.rs/yubihsm/latest/yubihsm/commands/attest_asymmetric/fn.attest_asymmetric.html
 [Authenticate Session]: https://developers.yubico.com/YubiHSM2/Commands/Authenticate_Session.html
@@ -145,10 +152,10 @@ NOTE: If there's a command on this list which isn't presently supported,
 [Reset]: https://docs.rs/yubihsm/latest/yubihsm/commands/reset/fn.reset.html
 [Session Message]: https://developers.yubico.com/YubiHSM2/Commands/Session_Message.html
 [Set Log Index]: https://docs.rs/yubihsm/latest/yubihsm/commands/set_log_index/fn.set_log_index.html
-[Sign Data ECDSA]: https://docs.rs/yubihsm/latest/yubihsm/commands/sign_ecdsa/fn.sign_ecdsa_sha2.html
+[Sign Data ECDSA]: https://docs.rs/yubihsm/latest/yubihsm/commands/sign_ecdsa/fn.sign_ecdsa_sha256.html
 [Sign Data EdDSA]: https://docs.rs/yubihsm/latest/yubihsm/commands/sign_eddsa/fn.sign_ed25519.html
-[Sign Data PKCS1]: https://developers.yubico.com/YubiHSM2/Commands/Sign_Data_Pkcs1.html
-[Sign Data PSS]: https://developers.yubico.com/YubiHSM2/Commands/Sign_Data_Pss.html
+[Sign Data PKCS1]: https://docs.rs/yubihsm/latest/yubihsm/commands/sign_rsa_pkcs1v15/fn.sign_rsa_pkcs1v15_sha256.html
+[Sign Data PSS]: https://docs.rs/yubihsm/latest/yubihsm/commands/sign_rsa_pss/fn.sign_rsa_pss_sha256.html
 [Storage Status]: https://docs.rs/yubihsm/latest/yubihsm/commands/storage_status/fn.storage_status.html
 [Unwrap Data]: https://docs.rs/yubihsm/latest/yubihsm/commands/unwrap_data/fn.unwrap_data.html
 [Verify HMAC]: https://docs.rs/yubihsm/latest/yubihsm/commands/verify_hmac/fn.verify_hmac.html

@@ -140,6 +140,8 @@ pub use commands::{
     put_wrap_key::*, reset::*, set_log_index::*, sign_ecdsa::*, sign_eddsa::*, storage_status::*,
     unwrap_data::*, verify_hmac::*, wrap_data::*, CommandType,
 };
+#[cfg(feature = "rsa")]
+pub use commands::{sign_rsa_pkcs1v15::*, sign_rsa_pss::*};
 pub use connector::{Connector, HttpConfig, HttpConnector};
 pub use domains::Domain;
 pub use object::*;

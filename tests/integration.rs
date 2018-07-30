@@ -538,7 +538,7 @@ fn sign_ecdsa_secp256r1_with_generated_key_test() {
     pubkey[0] = 0x04; // DER OCTET STRING tag
     pubkey[1..].copy_from_slice(pubkey_response.bytes.as_slice());
 
-    let signature = yubihsm::sign_ecdsa_sha2(&mut session, TEST_KEY_ID, TEST_MESSAGE)
+    let signature = yubihsm::sign_ecdsa_sha256(&mut session, TEST_KEY_ID, TEST_MESSAGE)
         .unwrap_or_else(|err| panic!("error performing ECDSA signature: {}", err));
 
     ring::signature::verify(

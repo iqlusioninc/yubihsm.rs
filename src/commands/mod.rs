@@ -65,6 +65,10 @@ pub mod reset;
 pub mod set_log_index;
 pub mod sign_ecdsa;
 pub mod sign_eddsa;
+#[cfg(feature = "rsa")]
+pub mod sign_rsa_pkcs1v15;
+#[cfg(feature = "rsa")]
+pub mod sign_rsa_pss;
 pub mod storage_status;
 pub mod unwrap_data;
 pub mod verify_hmac;
