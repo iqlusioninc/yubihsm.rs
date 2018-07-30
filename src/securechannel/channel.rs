@@ -135,6 +135,12 @@ impl Channel {
         }
     }
 
+    /// Get the channel (i.e. session) ID
+    #[inline]
+    pub fn id(&self) -> Id {
+        self.id
+    }
+
     /// Calculate the card's cryptogram for this session
     pub fn card_cryptogram(&self) -> Cryptogram {
         let mut result_bytes = [0u8; CRYPTOGRAM_SIZE];

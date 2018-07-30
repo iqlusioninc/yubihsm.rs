@@ -21,6 +21,9 @@ pub trait Connector: Sized + Send + Sync {
     /// Open a connection to a yubihsm-connector
     fn open(config: Self::Config) -> Result<Self, ConnectorError>;
 
+    /// Reconnect to yubihsm-connector, closing the existing connection
+    fn reconnect(&self) -> Result<(), ConnectorError>;
+
     /// GET /connector/status returning the result as connector::Status
     fn status(&self) -> Result<Status, ConnectorError>;
 
