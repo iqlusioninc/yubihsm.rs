@@ -27,12 +27,19 @@ jobs:
             cargo build --no-default-features
             cargo build --no-default-features --release
       - run:
-          name: build
+          name: build --features=rsa
           command: |
             rustc --version
             cargo --version
             cargo build
             cargo build --release --features=rsa
+      - run:
+          name: build --features=doc
+          command: |
+            rustc --version
+            cargo --version
+            cargo build
+            cargo build --release --features=doc
       - run:
           name: test
           command: |
