@@ -40,7 +40,7 @@ lazy_static = "1"
 
 [features]
 aes-soft = ["aes/force_soft"]
-doc = []
+doc = ["mockhsm", "rsa"]
 default = ["passwords"]
 integration = ["ring", "untrusted"]
 mockhsm = ["integration", "passwords"]
@@ -49,5 +49,5 @@ passwords = ["hmac", "pbkdf2", "sha2"]
 rsa = ["sha2"]
 
 [package.metadata.docs.rs]
-features = ["doc", "mockhsm", "rsa"]
+features = ["doc"]
 rustc-args = ["-Ctarget-feature=+aes"]

@@ -3,13 +3,23 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/Sign_Data_Ecdsa.html>
 
 use super::{Command, Response};
-#[cfg(feature = "mockhsm")]
+#[cfg(all(feature = "mockhsm", not(feature = "doc")))]
 use mockhsm::MockConnector;
 #[cfg(feature = "sha2")]
 use session::{Session, SessionError};
-#[cfg(all(feature = "sha2", not(feature = "mockhsm")))]
+#[cfg(
+    all(
+        feature = "sha2",
+        any(feature = "doc", not(feature = "mockhsm"))
+    )
+)]
 use sha2::{Digest, Sha256};
-#[cfg(all(feature = "sha2", not(feature = "mockhsm")))]
+#[cfg(
+    all(
+        feature = "sha2",
+        any(feature = "doc", not(feature = "mockhsm"))
+    )
+)]
 use Connector;
 use {CommandType, ObjectId};
 
