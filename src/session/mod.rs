@@ -28,10 +28,10 @@ const CONNECTOR_STATUS_OK: &str = "OK";
 /// Write consistent `debug!(...) lines for sessions
 macro_rules! session_debug {
     ($session:expr, $msg:expr) => {
-        debug!("yubihsm: session={} {}", $session.id.to_u8(), $msg);
+        debug!("yubihsm: session={} {}", $session.id().to_u8(), $msg);
     };
     ($session:expr, $fmt:expr, $($arg:tt)+) => {
-        debug!(concat!("yubihsm: session={} ", $fmt), $session.id.to_u8(), $($arg)+);
+        debug!(concat!("yubihsm: session={} ", $fmt), $session.id().to_u8(), $($arg)+);
     };
 }
 
@@ -47,9 +47,6 @@ pub struct Session<C = HttpConnector>
 where
     C: Connector,
 {
-    /// ID of this session
-    id: SessionId,
-
     /// Encrypted channel to the HSM
     channel: Channel,
 
@@ -60,10 +57,20 @@ where
     /// tracking session inactivity timeouts
     last_command_timestamp: Instant,
 
-    /// Optional cached `AuthKey` for reconnecting lost sessions
-    // TODO: session reconnect support
-    #[allow(dead_code)]
-    auth_key: Option<AuthKey>,
+    /// Is the connection presumed to be healthy?
+    active: bool,
+
+    /// Cached `Credentials` for reconnecting lost sessions
+    credentials: Option<Credentials>,
+}
+
+/// Credentials used to establish a YubiHSM2 session
+struct Credentials {
+    /// Key ID to authenticate with
+    auth_key_id: ObjectId,
+
+    /// Auth key to authenticate with
+    auth_key: AuthKey,
 }
 
 // Special casing these for HttpConnector is a bit of a hack in that default
@@ -127,14 +134,69 @@ impl<C: Connector> Session<C> {
     ) -> Result<Self, SessionError> {
         debug!("yubihsm: creating new session");
 
+        let credentials = Credentials {
+            auth_key_id,
+            auth_key,
+        };
+
+        let channel = Self::create_channel(&connector, &credentials)?;
+
+        let mut session = Self {
+            channel,
+            connector,
+            last_command_timestamp: Instant::now(),
+            active: true,
+            credentials: if reconnect { Some(credentials) } else { None },
+        };
+
+        session.authenticate(auth_key_id)?;
+        Ok(session)
+    }
+
+    /// Get the current session ID
+    #[inline]
+    pub fn id(&self) -> SessionId {
+        self.channel.id()
+    }
+
+    /// Request current yubihsm-connector status
+    pub fn connector_status(&mut self) -> Result<ConnectorStatus, SessionError> {
+        self.connector.status().map_err(|e| e.into())
+    }
+
+    /// Is the current session active?
+    pub fn is_active(&self) -> bool {
+        if !self.active {
+            return false;
+        }
+
+        let time_since_last_command = Instant::now().duration_since(self.last_command_timestamp);
+
+        // Make sure the session hasn't timed out
+        if time_since_last_command > (SESSION_INACTIVITY_TIMEOUT - TIMEOUT_SKEW_INTERVAL) {
+            session_debug!(
+                self,
+                "session timed out after {} seconds (max {})",
+                time_since_last_command.as_secs(),
+                SESSION_INACTIVITY_TIMEOUT.as_secs()
+            );
+
+            return false;
+        }
+
+        true
+    }
+
+    /// Create a new encrypted session with the YubiHSM2
+    fn create_channel(connector: &C, credentials: &Credentials) -> Result<Channel, SessionError> {
         let host_challenge = Challenge::random();
 
         let (session_id, session_response) =
-            create_session(&connector, auth_key_id, host_challenge)?;
+            create_session(connector, credentials.auth_key_id, host_challenge)?;
 
         let channel = Channel::new(
             session_id,
-            &auth_key,
+            &credentials.auth_key,
             host_challenge,
             session_response.card_challenge,
         );
@@ -147,67 +209,69 @@ impl<C: Connector> Session<C> {
             session_fail!(AuthFailed, "card cryptogram mismatch!");
         }
 
-        let mut session = Self {
-            id: session_id,
-            channel,
-            connector,
-            last_command_timestamp: Instant::now(),
-            auth_key: if reconnect { Some(auth_key) } else { None },
+        Ok(channel)
+    }
+
+    /// Attempt to re-establish an encrypted connection with the YubiHSM2
+    fn reconnect(&mut self) -> Result<(), SessionError> {
+        let auth_key_id = match self.credentials {
+            Some(ref credentials) => {
+                // TODO: display connector debug info?
+                session_debug!(self, "attempting to reconnect");
+
+                self.connector.reconnect()?;
+                self.channel = Self::create_channel(&self.connector, credentials)?;
+                credentials.auth_key_id
+            }
+            None => session_fail!(CreateFailed, "session reconnect is disabled"),
         };
 
-        session_debug!(
-            session,
-            "authenticating session with key ID: {}",
-            auth_key_id
-        );
+        self.active = true;
+        self.last_command_timestamp = Instant::now();
+        self.authenticate(auth_key_id)?;
 
-        session.authenticate()?;
-
-        session_debug!(session, "session authenticated successfully");
-
-        Ok(session)
-    }
-
-    /// Get the current session ID
-    #[inline]
-    pub fn id(&self) -> SessionId {
-        self.id
-    }
-
-    /// Request current yubihsm-connector status
-    pub fn connector_status(&mut self) -> Result<ConnectorStatus, SessionError> {
-        self.connector.status().map_err(|e| e.into())
+        Ok(())
     }
 
     /// Authenticate the current session with the `YubiHSM2`
-    fn authenticate(&mut self) -> Result<(), SessionError> {
+    fn authenticate(&mut self, auth_key_id: ObjectId) -> Result<(), SessionError> {
+        session_debug!(self, "authenticating session with key ID: {}", auth_key_id);
+
         let command = self.channel.authenticate_session()?;
         let response = self.send_command(command)?;
-        self.channel
-            .finish_authenticate_session(&response)
-            .map_err(|e| e.into())
+
+        if let Err(e) = self.channel.finish_authenticate_session(&response) {
+            session_debug!(self, "error authenticating with key ID: {}", auth_key_id);
+            self.active = false;
+            return Err(e.into());
+        }
+
+        session_debug!(self, "session authenticated successfully");
+
+        Ok(())
     }
 
     /// Send a command message to the YubiHSM2 and parse the response
     fn send_command(&mut self, cmd: CommandMessage) -> Result<ResponseMessage, SessionError> {
-        let time_since_last_command = Instant::now().duration_since(self.last_command_timestamp);
-        // TODO: handle reconnecting when sessions are lost
-        if time_since_last_command > (SESSION_INACTIVITY_TIMEOUT - TIMEOUT_SKEW_INTERVAL) {
-            let msg = format!(
-                "session timed out after {} seconds (max {})",
-                time_since_last_command.as_secs(),
-                SESSION_INACTIVITY_TIMEOUT.as_secs()
-            );
-
-            session_debug!(self, &msg);
-            session_fail!(TimeoutError, msg);
+        // Attempt to automatically reconnect if the session is unhealthy
+        if !self.is_active() {
+            self.active = false;
+            self.reconnect()?;
         }
 
         let cmd_type = cmd.command_type;
         let uuid = cmd.uuid;
 
         session_debug!(self, "uuid={} command={:?}", &uuid, cmd_type);
-        let response_bytes = self.connector.send_command(uuid, cmd.into())?;
+
+        let response_bytes = match self.connector.send_command(uuid, cmd.into()) {
+            Ok(bytes) => bytes,
+            Err(e) => {
+                // Mark connection as unhealthy
+                self.active = false;
+                return Err(e.into());
+            }
+        };
 
         let response = ResponseMessage::parse(response_bytes)?;
 
@@ -226,6 +290,8 @@ impl<C: Connector> Session<C> {
         }
 
         if response.command().unwrap() != cmd_type {
+            self.active = false;
+
             session_fail!(
                 ProtocolError,
                 "command type mismatch: expected {:?}, got {:?}",
@@ -296,9 +362,13 @@ impl<C: Connector> Drop for Session<C> {
     /// Because of this, it's very important `send_encrypted_command` and
     /// everything it calls be panic-free.
     fn drop(&mut self) {
+        // Don't do anything if the session is presumed unhealthy
+        if !self.is_active() {
+            return;
+        }
+
         session_debug!(self, "closing dropped session");
 
-        // TODO: only attempt to do this if the connection state is healthy
         if let Err(e) = self.send_encrypted_command(CloseSessionCommand {}) {
             session_debug!(self, "error closing dropped session: {}", e);
         }

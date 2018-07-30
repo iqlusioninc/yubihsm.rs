@@ -69,6 +69,10 @@ impl Connector for MockConnector {
         panic!("use MockHSM::create_session() to open a MockHSM session");
     }
 
+    fn reconnect(&self) -> Result<(), ConnectorError> {
+        panic!("MockHSM does not support reconnect");
+    }
+
     /// GET /connector/status returning the result as connector::Status
     fn status(&self) -> Result<Status, ConnectorError> {
         Ok(Status {

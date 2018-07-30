@@ -11,12 +11,15 @@
 
 #![allow(unknown_lints, write_with_newline)]
 
-use std::fmt::{self, Write as FmtWrite};
-use std::io::{Read, Write as IoWrite};
-use std::net::{TcpStream, ToSocketAddrs};
-use std::str;
-use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
+use std::{
+    cell::RefCell,
+    fmt::{self, Write as FmtWrite},
+    io::{Read, Write as IoWrite},
+    net::{TcpStream, ToSocketAddrs},
+    str,
+    sync::{Arc, Mutex},
+    time::{Duration, Instant},
+};
 use uuid::Uuid;
 
 use super::{Connector, ConnectorError, Status, USER_AGENT};
@@ -50,7 +53,7 @@ macro_rules! http_debug {
 }
 
 /// Configuration options for this connector
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct HttpConfig {
     /// Address of the connector (IP address or DNS name)
     pub addr: String,
@@ -89,8 +92,11 @@ pub struct HttpConnector {
     /// Host we're configured to connect to (i.e. the "Host" HTTP header)
     host: String,
 
+    /// Configured timeout as a rust duration
+    timeout: Duration,
+
     /// Socket to the connector process
-    socket: Arc<Mutex<TcpStream>>,
+    socket: Arc<Mutex<RefCell<TcpStream>>>,
 }
 
 impl Connector for HttpConnector {
@@ -99,27 +105,22 @@ impl Connector for HttpConnector {
     /// Open a connection to a yubihsm-connector
     fn open(config: Self::Config) -> Result<Self, ConnectorError> {
         let host = format!("{}:{}", config.addr, config.port);
-
-        // Resolve DNS, and for now pick the first available address
-        // TODO: round robin DNS support?
-        let socketaddr = &host.to_socket_addrs()?.next().ok_or_else(|| {
-            connector_err!(
-                InvalidURL,
-                "no IP addresses in DNS response for {}",
-                config.addr
-            )
-        })?;
-
-        let timeout = Duration::from_millis(DEFAULT_TIMEOUT_MILLIS);
-        let socket = TcpStream::connect_timeout(socketaddr, timeout)?;
-
-        socket.set_read_timeout(Some(timeout))?;
-        socket.set_write_timeout(Some(timeout))?;
+        let timeout = Duration::from_millis(config.timeout_ms);
+        let socket = connect(&host, timeout)?;
 
         Ok(Self {
             host,
-            socket: Arc::new(Mutex::new(socket)),
+            timeout,
+            socket: Arc::new(Mutex::new(RefCell::new(socket))),
         })
+    }
+
+    /// Reconnect to yubihsm-connector, closing the existing connection
+    fn reconnect(&self) -> Result<(), ConnectorError> {
+        let socket_cell = self.socket.lock().unwrap();
+        let new_socket = connect(&self.host, self.timeout)?;
+        socket_cell.replace(new_socket);
+        Ok(())
     }
 
     /// GET /connector/status returning the result as connector::Status
@@ -134,6 +135,25 @@ impl Connector for HttpConnector {
     }
 }
 
+/// Open a socket to yubihsm-connector
+fn connect(host: &str, timeout: Duration) -> Result<TcpStream, ConnectorError> {
+    // Resolve DNS, and for now pick the first available address
+    // TODO: round robin DNS support?
+    let socketaddr = &host.to_socket_addrs()?.next().ok_or_else(|| {
+        connector_err!(
+            InvalidURL,
+            "couldn't resolve DNS for {}",
+            host.split(':').next().unwrap()
+        )
+    })?;
+
+    let socket = TcpStream::connect_timeout(socketaddr, timeout)?;
+    socket.set_read_timeout(Some(timeout))?;
+    socket.set_write_timeout(Some(timeout))?;
+
+    Ok(socket)
+}
+
 impl HttpConnector {
     /// Make an HTTP GET request to the yubihsm-connector
     fn get(&self, path: &str) -> Result<Vec<u8>, ConnectorError> {
@@ -144,12 +164,12 @@ impl HttpConnector {
         write!(request, "User-Agent: {}\r\n", USER_AGENT)?;
         write!(request, "Content-Length: 0\r\n\r\n")?;
 
-        let mut socket = self.socket.lock().unwrap();
+        let socket = self.socket.lock().unwrap();
 
         let request_start = Instant::now();
-        socket.write_all(request.as_bytes())?;
+        socket.borrow_mut().write_all(request.as_bytes())?;
 
-        let response = ResponseReader::read(&mut socket)?;
+        let response = ResponseReader::read(&mut socket.borrow_mut())?;
         let elapsed_time = Instant::now().duration_since(request_start);
 
         http_debug!(
@@ -177,12 +197,12 @@ impl HttpConnector {
         let mut request: Vec<u8> = headers.into();
         request.append(&mut body);
 
-        let mut socket = self.socket.lock().unwrap();
+        let socket = self.socket.lock().unwrap();
 
         let request_start = Instant::now();
-        socket.write_all(&request)?;
+        socket.borrow_mut().write_all(&request)?;
 
-        let response = ResponseReader::read(&mut socket)?;
+        let response = ResponseReader::read(&mut socket.borrow_mut())?;
         let elapsed_time = Instant::now().duration_since(request_start);
 
         http_debug!(
