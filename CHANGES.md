@@ -1,3 +1,10 @@
+## [0.14.1] (2018-07-29)
+
+[0.14.1]: https://github.com/tendermint/yubihsm-rs/compare/v0.14.0...v0.14.1
+
+* [#89](https://github.com/tendermint/yubihsm-rs/pull/89)
+  Fix builds with the "doc" feature.
+
 ## [0.14.0] (2018-07-29)
 
 [0.14.0]: https://github.com/tendermint/yubihsm-rs/compare/v0.13.0...v0.14.0
