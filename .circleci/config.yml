@@ -32,13 +32,13 @@ jobs:
             rustc --version
             cargo --version
             cargo build
-            cargo build --release
+            cargo build --release --features=rsa
       - run:
           name: test
           command: |
             rustc --version
             cargo --version
-            cargo test --features=mockhsm
+            cargo test --features=mockhsm,rsa
       - run:
           name: audit
           command: |
