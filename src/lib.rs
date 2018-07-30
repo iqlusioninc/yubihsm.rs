@@ -62,6 +62,8 @@ extern crate failure;
 extern crate failure_derive;
 #[cfg(feature = "hmac")]
 extern crate hmac;
+#[macro_use]
+extern crate log;
 #[cfg(feature = "pbkdf2")]
 extern crate pbkdf2;
 extern crate rand;

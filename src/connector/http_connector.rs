@@ -16,7 +16,7 @@ use std::io::{Read, Write as IoWrite};
 use std::net::{TcpStream, ToSocketAddrs};
 use std::str;
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use uuid::Uuid;
 
 use super::{Connector, ConnectorError, Status, USER_AGENT};
@@ -38,6 +38,16 @@ const CONTENT_LENGTH_HEADER: &str = "Content-Length: ";
 
 /// The Transfer-Encoding Header
 const TRANSFER_ENCODING_HEADER: &str = "Transfer-Encoding: ";
+
+/// Write consistent `debug!(...) lines for connectors
+macro_rules! http_debug {
+    ($connector:expr, $msg:expr) => {
+        debug!("yubihsm-connector: host={} {}", $connector.host, $msg);
+    };
+    ($connector:expr, $fmt:expr, $($arg:tt)+) => {
+        debug!(concat!("yubihsm-connector: host={} ", $fmt), $connector.host, $($arg)+);
+    };
+}
 
 /// Configuration options for this connector
 #[derive(Debug)]
@@ -135,9 +145,21 @@ impl HttpConnector {
         write!(request, "Content-Length: 0\r\n\r\n")?;
 
         let mut socket = self.socket.lock().unwrap();
+
+        let request_start = Instant::now();
         socket.write_all(request.as_bytes())?;
 
-        Ok(ResponseReader::read(&mut socket)?.into())
+        let response = ResponseReader::read(&mut socket)?;
+        let elapsed_time = Instant::now().duration_since(request_start);
+
+        http_debug!(
+            self,
+            "method=GET path={} t={}ms)",
+            path,
+            elapsed_time.as_secs() * 1000 + u64::from(elapsed_time.subsec_millis())
+        );
+
+        Ok(response.into())
     }
 
     /// Make an HTTP POST request to the yubihsm-connector
@@ -156,9 +178,22 @@ impl HttpConnector {
         request.append(&mut body);
 
         let mut socket = self.socket.lock().unwrap();
+
+        let request_start = Instant::now();
         socket.write_all(&request)?;
 
-        Ok(ResponseReader::read(&mut socket)?.into())
+        let response = ResponseReader::read(&mut socket)?;
+        let elapsed_time = Instant::now().duration_since(request_start);
+
+        http_debug!(
+            self,
+            "method=POST path={} uuid={} t={}ms",
+            path,
+            uuid,
+            elapsed_time.as_secs() * 1000 + u64::from(elapsed_time.subsec_millis())
+        );
+
+        Ok(response.into())
     }
 }
 

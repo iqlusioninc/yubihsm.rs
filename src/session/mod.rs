@@ -25,6 +25,16 @@ const TIMEOUT_SKEW_INTERVAL: Duration = Duration::from_secs(1);
 /// Status message returned from healthy connectors
 const CONNECTOR_STATUS_OK: &str = "OK";
 
+/// Write consistent `debug!(...) lines for sessions
+macro_rules! session_debug {
+    ($session:expr, $msg:expr) => {
+        debug!("yubihsm: session={} {}", $session.id.to_u8(), $msg);
+    };
+    ($session:expr, $fmt:expr, $($arg:tt)+) => {
+        debug!(concat!("yubihsm: session={} ", $fmt), $session.id.to_u8(), $($arg)+);
+    };
+}
+
 /// Encrypted session with the `YubiHSM2`.
 /// A session is needed to perform any commands.
 ///
@@ -115,6 +125,8 @@ impl<C: Connector> Session<C> {
         auth_key: AuthKey,
         reconnect: bool,
     ) -> Result<Self, SessionError> {
+        debug!("yubihsm: creating new session");
+
         let host_challenge = Challenge::random();
 
         let (session_id, session_response) =
@@ -143,7 +155,16 @@ impl<C: Connector> Session<C> {
             auth_key: if reconnect { Some(auth_key) } else { None },
         };
 
+        session_debug!(
+            session,
+            "authenticating session with key ID: {}",
+            auth_key_id
+        );
+
         session.authenticate()?;
+
+        session_debug!(session, "session authenticated successfully");
+
         Ok(session)
     }
 
@@ -168,22 +189,35 @@ impl<C: Connector> Session<C> {
     }
 
     /// Send a command message to the YubiHSM2 and parse the response
-    /// POST /connector/api with a given command message
     fn send_command(&mut self, cmd: CommandMessage) -> Result<ResponseMessage, SessionError> {
+        let time_since_last_command = Instant::now().duration_since(self.last_command_timestamp);
         // TODO: handle reconnecting when sessions are lost
-        if Instant::now().duration_since(self.last_command_timestamp)
-            > (SESSION_INACTIVITY_TIMEOUT - TIMEOUT_SKEW_INTERVAL)
-        {
-            session_fail!(
-                TimeoutError,
-                "session timed out after {} seconds",
+        if time_since_last_command > (SESSION_INACTIVITY_TIMEOUT - TIMEOUT_SKEW_INTERVAL) {
+            let msg = format!(
+                "session timed out after {} seconds (max {})",
+                time_since_last_command.as_secs(),
                 SESSION_INACTIVITY_TIMEOUT.as_secs()
             );
+
+            session_debug!(self, &msg);
+            session_fail!(TimeoutError, msg);
         }
 
         let cmd_type = cmd.command_type;
-        let response_bytes = self.connector.send_command(cmd.uuid, cmd.into())?;
+        let uuid = cmd.uuid;
+
+        session_debug!(self, "uuid={} command={:?}", &uuid, cmd_type);
+        let response_bytes = self.connector.send_command(uuid, cmd.into())?;
+
         let response = ResponseMessage::parse(response_bytes)?;
+
+        session_debug!(
+            self,
+            "uuid={} response={:?} length={}",
+            &uuid,
+            response.code,
+            response.data.len()
+        );
 
         self.last_command_timestamp = Instant::now();
 
@@ -209,11 +243,21 @@ impl<C: Connector> Session<C> {
         &mut self,
         command: T,
     ) -> Result<T::ResponseType, SessionError> {
-        let plaintext_cmd = command.into();
-        let encrypted_cmd = self.channel.encrypt_command(plaintext_cmd)?;
+        let encrypted_cmd = self.channel.encrypt_command(command.into())?;
+        let uuid = encrypted_cmd.uuid;
+
+        session_debug!(self, "uuid={} encrypted-cmd={:?}", uuid, T::COMMAND_TYPE);
 
         let encrypted_response = self.send_command(encrypted_cmd)?;
         let response = self.channel.decrypt_response(encrypted_response)?;
+
+        session_debug!(
+            self,
+            "uuid={} decrypted-resp={:?} length={}",
+            uuid,
+            response.code,
+            response.data.len()
+        );
 
         if response.is_err() {
             // TODO: factor this into ResponseMessage or ResponseCode?
@@ -242,7 +286,21 @@ impl<C: Connector> Session<C> {
 
 /// Close session automatically on drop
 impl<C: Connector> Drop for Session<C> {
+    /// Make a best effort to close the session
+    ///
+    /// NOTE: this runs the potential of panicking in a drop handler, which
+    /// results in the following when it occurs (Aieee!):
+    ///
+    /// "thread panicked while panicking. aborting"
+    ///
+    /// Because of this, it's very important `send_encrypted_command` and
+    /// everything it calls be panic-free.
     fn drop(&mut self) {
-        let _ = self.send_encrypted_command(CloseSessionCommand {});
+        session_debug!(self, "closing dropped session");
+
+        // TODO: only attempt to do this if the connection state is healthy
+        if let Err(e) = self.send_encrypted_command(CloseSessionCommand {}) {
+            session_debug!(self, "error closing dropped session: {}", e);
+        }
     }
 }

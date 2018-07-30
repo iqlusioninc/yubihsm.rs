@@ -24,6 +24,7 @@ cmac = "0.1"
 failure = "0.1"
 failure_derive = "0.1"
 hmac = { version = "0.6", optional = true }
+log = "0.4"
 pbkdf2 = { version = "0.2", optional = true }
 rand = "0.5"
 serde = "1.0"
