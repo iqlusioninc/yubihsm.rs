@@ -1,3 +1,10 @@
+## [0.14.2] (2018-07-30)
+
+[0.14.2]: https://github.com/tendermint/yubihsm-rs/compare/v0.14.1...v0.14.2
+
+* [#90](https://github.com/tendermint/yubihsm-rs/pull/90)
+  AsymmetricAlgorithm: fix typo in `EC_K256` conversion.
+
 ## [0.14.1] (2018-07-29)
 
 [0.14.1]: https://github.com/tendermint/yubihsm-rs/compare/v0.14.0...v0.14.1
