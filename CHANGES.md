@@ -1,6 +1,34 @@
+## [0.14.0] (2018-07-29)
+
+[0.14.0]: https://github.com/tendermint/yubihsm-rs/compare/v0.13.0...v0.14.0
+
+* [#88](https://github.com/tendermint/yubihsm-rs/pull/88)
+  Initial RSASSA-PKCS#1v1.5 and PSS support.
+
+* [#87](https://github.com/tendermint/yubihsm-rs/pull/87)
+  Test SecureChannel MAC verification failure (fixes #14).
+
+* [#86](https://github.com/tendermint/yubihsm-rs/pull/86)
+  Initial reconnect support.
+
+* [#84](https://github.com/tendermint/yubihsm-rs/pull/84)
+  Support debug output using the `log` crate.
+
+* [#83](https://github.com/tendermint/yubihsm-rs/pull/83)
+  Handle session timeouts.
+
+* [#82](https://github.com/tendermint/yubihsm-rs/pull/82)
+  Handle NUL (i.e. `\0`) byte in label before UTF-8 conversion (fixes #81)
+
+* [#80](https://github.com/tendermint/yubihsm-rs/pull/80)
+  `derive(Clone)` for `WrapMessage`.
+
+* [#79](https://github.com/tendermint/yubihsm-rs/pull/79)
+  ObjectType json deserialization helper (u64).
+
 ## [0.13.0] (2018-07-14)
 
-[0.12.0]: https://github.com/tendermint/yubihsm-rs/compare/v0.12.0...v0.13.0
+[0.13.0]: https://github.com/tendermint/yubihsm-rs/compare/v0.12.0...v0.13.0
 
 * [#77](https://github.com/tendermint/yubihsm-rs/pull/77)
   Implement `set_log_index` command.
