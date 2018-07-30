@@ -70,8 +70,9 @@ pub const MAX_ID: Id = Id(16);
 pub const MAX_COMMANDS_PER_SESSION: u32 = 0x10_0000;
 
 /// Current Security Level: protocol state
+#[allow(unknown_lints, enum_variant_names)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum SecurityLevel {
+pub(crate) enum SecurityLevel {
     /// 'NO_SECURITY_LEVEL' i.e. session is terminated or not fully initialized
     NoSecurityLevel,
 
@@ -536,9 +537,10 @@ fn compute_icv(cipher: &Aes128, counter: u32) -> GenericArray<u8, U16> {
 
 #[cfg(all(test, feature = "mockhsm"))]
 mod tests {
+    use super::SecurityLevel;
     use auth_key::AuthKey;
     use commands::CommandType;
-    use securechannel::{Challenge, Channel, CommandMessage, ResponseMessage, SessionId};
+    use securechannel::{Challenge, Channel, CommandMessage, Mac, ResponseMessage, SessionId};
 
     const PASSWORD: &[u8] = b"password";
     const HOST_CHALLENGE: &[u8] = &[0u8; 8];
@@ -546,8 +548,7 @@ mod tests {
     const COMMAND_TYPE: CommandType = CommandType::Echo;
     const COMMAND_DATA: &[u8] = b"Hello, world!";
 
-    #[test]
-    fn happy_path_test() {
+    fn create_channel_pair() -> (Channel, Channel) {
         let auth_key = AuthKey::derive_from_password(PASSWORD);
 
         let host_challenge = Challenge::from_slice(HOST_CHALLENGE);
@@ -557,7 +558,6 @@ mod tests {
 
         // Create channels
         let mut host_channel = Channel::new(session_id, &auth_key, host_challenge, card_challenge);
-
         let mut card_channel = Channel::new(session_id, &auth_key, host_challenge, card_challenge);
 
         // Auth host to card
@@ -569,6 +569,13 @@ mod tests {
         host_channel
             .finish_authenticate_session(&auth_response)
             .unwrap();
+
+        (host_channel, card_channel)
+    }
+
+    #[test]
+    fn happy_path_test() {
+        let (mut host_channel, mut card_channel) = create_channel_pair();
 
         // Host sends encrypted command
         let command_ciphertext = host_channel
@@ -588,9 +595,42 @@ mod tests {
 
         let decrypted_response = host_channel.decrypt_response(response_ciphertext).unwrap();
 
+        assert_eq!(host_channel.security_level, SecurityLevel::Authenticated);
         assert_eq!(decrypted_response.command().unwrap(), COMMAND_TYPE);
         assert_eq!(&decrypted_response.data[..], COMMAND_DATA);
     }
 
-    // TODO: test MAC/cryptogram verification failures
+    #[test]
+    fn mac_verify_failure_test() {
+        let (mut host_channel, mut card_channel) = create_channel_pair();
+
+        // Host sends encrypted command
+        let command_ciphertext = host_channel
+            .encrypt_command(CommandMessage::new(COMMAND_TYPE, Vec::from(COMMAND_DATA)).unwrap())
+            .unwrap();
+
+        // Card decrypts command
+        let decrypted_command = card_channel.decrypt_command(command_ciphertext).unwrap();
+
+        // Card sends decrypted response
+        let mut response_ciphertext = card_channel
+            .encrypt_response(ResponseMessage::success(
+                decrypted_command.command_type,
+                decrypted_command.data,
+            ))
+            .unwrap();
+
+        // Tweak MAC in response
+        let mut bad_mac = Vec::from(response_ciphertext.mac.as_ref().unwrap().as_slice());
+        bad_mac[0] ^= 0xAA;
+        response_ciphertext.mac = Some(Mac::from_slice(&bad_mac));
+
+        let response = host_channel.decrypt_response(response_ciphertext);
+        assert!(response.is_err());
+        assert_eq!(host_channel.security_level, SecurityLevel::Terminated);
+        assert_eq!(
+            response.err().unwrap().to_string(),
+            "verification failed: R-MAC mismatch!"
+        );
+    }
 }
