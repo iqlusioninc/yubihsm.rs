@@ -52,7 +52,7 @@ impl AsymmetricAlgorithm {
             Algorithm::EC_P256 => AsymmetricAlgorithm::EC_P256,
             Algorithm::EC_P384 => AsymmetricAlgorithm::EC_P384,
             Algorithm::EC_P521 => AsymmetricAlgorithm::EC_P521,
-            Algorithm::EC_K256 => AsymmetricAlgorithm::EC_P384,
+            Algorithm::EC_K256 => AsymmetricAlgorithm::EC_K256,
             Algorithm::EC_BP256 => AsymmetricAlgorithm::EC_BP256,
             Algorithm::EC_BP384 => AsymmetricAlgorithm::EC_BP384,
             Algorithm::EC_BP512 => AsymmetricAlgorithm::EC_BP512,
