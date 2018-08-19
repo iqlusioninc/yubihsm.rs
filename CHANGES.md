@@ -1,3 +1,10 @@
+## [0.15.0] (2018-07-30)
+
+[0.15.0]: https://github.com/tendermint/yubihsm-rs/compare/v0.14.2...v0.15.0
+
+* [#91](https://github.com/tendermint/yubihsm-rs/pull/91)
+  Add `yubihsm::sign_ecdsa_raw_digest()`.
+
 ## [0.14.2] (2018-07-30)
 
 [0.14.2]: https://github.com/tendermint/yubihsm-rs/compare/v0.14.1...v0.14.2
