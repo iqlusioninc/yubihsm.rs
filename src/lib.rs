@@ -47,7 +47,10 @@
 #![crate_type = "rlib"]
 #![deny(warnings, missing_docs, trivial_casts, trivial_numeric_casts)]
 #![deny(unsafe_code, unused_import_braces, unused_qualifications)]
-#![doc(html_root_url = "https://docs.rs/yubihsm/0.14.2")]
+#![doc(
+    html_logo_url = "https://raw.githubusercontent.com/tendermint/yubihsm-rs/master/img/logo.png",
+    html_root_url = "https://docs.rs/yubihsm/0.14.2"
+)]
 
 extern crate aes;
 #[macro_use]
