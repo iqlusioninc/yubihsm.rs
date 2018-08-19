@@ -5,7 +5,6 @@
 use super::{Command, Response};
 #[cfg(all(feature = "mockhsm", not(feature = "doc")))]
 use mockhsm::MockConnector;
-#[cfg(feature = "sha2")]
 use session::{Session, SessionError};
 #[cfg(
     all(
@@ -14,14 +13,26 @@ use session::{Session, SessionError};
     )
 )]
 use sha2::{Digest, Sha256};
-#[cfg(
-    all(
-        feature = "sha2",
-        any(feature = "doc", not(feature = "mockhsm"))
-    )
-)]
+#[cfg(any(feature = "doc", not(feature = "mockhsm")))]
 use Connector;
 use {CommandType, ObjectId};
+
+/// Compute an ECDSA signature of the SHA-256 hash of the given data with the given key ID
+#[cfg(any(feature = "doc", not(feature = "mockhsm")))]
+pub fn sign_ecdsa_raw_digest<C, T>(
+    session: &mut Session<C>,
+    key_id: ObjectId,
+    digest: T,
+) -> Result<ECDSASignature, SessionError>
+where
+    C: Connector,
+    T: Into<Vec<u8>>,
+{
+    session.send_encrypted_command(SignDataECDSACommand {
+        key_id,
+        digest: digest.into(),
+    })
+}
 
 /// Compute an ECDSA signature of the SHA-256 hash of the given data with the given key ID
 #[cfg(
@@ -35,10 +46,7 @@ pub fn sign_ecdsa_sha256<C: Connector>(
     key_id: ObjectId,
     data: &[u8],
 ) -> Result<ECDSASignature, SessionError> {
-    session.send_encrypted_command(SignDataECDSACommand {
-        key_id,
-        digest: Sha256::digest(data).as_slice().into(),
-    })
+    sign_ecdsa_raw_digest(session, key_id, Sha256::digest(data).as_slice())
 }
 
 /// Compute an ECDSA signature of the SHA-256 hash of the given data with the given key ID
