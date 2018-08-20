@@ -1,4 +1,4 @@
-## [0.15.0] (2018-07-30)
+## [0.15.0] (2018-08-19)
 
 [0.15.0]: https://github.com/tendermint/yubihsm-rs/compare/v0.14.2...v0.15.0
 
