@@ -1,4 +1,4 @@
-<img src="https://raw.githubusercontent.com/tendermint/yubihsm-rs/master/img/logo.png" width="140" height="80">
+<img src="https://raw.githubusercontent.com/tendermint/yubihsm-rs/master/img/logo.png" width="150" height="110">
 
 # yubihsm.rs
 
