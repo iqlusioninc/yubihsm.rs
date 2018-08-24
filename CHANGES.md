@@ -1,3 +1,10 @@
+## [0.15.1] (2018-08-24)
+
+[0.15.1]: https://github.com/tendermint/yubihsm-rs/compare/v0.15.0...v0.15.1
+
+* [#93](https://github.com/tendermint/yubihsm-rs/pull/93)
+  `http_connector.rs`: Derive Clone on HttpConfig,
+
 ## [0.15.0] (2018-08-19)
 
 [0.15.0]: https://github.com/tendermint/yubihsm-rs/compare/v0.14.2...v0.15.0
