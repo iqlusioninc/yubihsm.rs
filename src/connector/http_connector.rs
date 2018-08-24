@@ -53,7 +53,7 @@ macro_rules! http_debug {
 }
 
 /// Configuration options for this connector
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct HttpConfig {
     /// Address of the connector (IP address or DNS name)
     pub addr: String,
