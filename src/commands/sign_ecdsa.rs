@@ -1,8 +1,25 @@
-//! Compute an ECDSA signature of the SHA-256 hash of the given data with the given key ID
+//! Compute an ECDSA signature of the SHA-256 hash of the given data with the given key ID.
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Sign_Data_Ecdsa.html>
+//!
+//! ## secp256k1 notes
+//!
+//! The YubiHSM2 does not produce signatures in "low S" form, which is expected
+//! for most cryptocurrency applications (the typical use case for secp256k1).
+//!
+//! If your application demands this (e.g. Bitcoin), you'll need to normalize
+//! the signatures. One option for this is the `secp256k1` crate's
+//! [Signature::normalize_s] function.
+//!
+//! The [signatory-yubihsm] crate automatically normalizes secp256k1 ECDSA
+//! signatures to "low S" form. Consider using that if you'd like a ready-made
+//! solution for cryptocurrency applications.
+//!
+//! [Signature::normalize_s]: https://docs.rs/secp256k1/latest/secp256k1/struct.Signature.html#method.normalize_s
+//! [signatory-yubihsm]: https://docs.rs/signatory-yubihsm/latest/signatory_yubihsm/ecdsa/struct.ECDSASigner.html
 
 use super::{Command, Response};
+use connector::HttpConnector;
 #[cfg(all(feature = "mockhsm", not(feature = "doc")))]
 use mockhsm::MockConnector;
 use session::{Session, SessionError};
@@ -13,19 +30,15 @@ use session::{Session, SessionError};
     )
 )]
 use sha2::{Digest, Sha256};
-#[cfg(any(feature = "doc", not(feature = "mockhsm")))]
-use Connector;
 use {CommandType, ObjectId};
 
 /// Compute an ECDSA signature of the SHA-256 hash of the given data with the given key ID
-#[cfg(any(feature = "doc", not(feature = "mockhsm")))]
-pub fn sign_ecdsa_raw_digest<C, T>(
-    session: &mut Session<C>,
+pub fn sign_ecdsa_raw_digest<T>(
+    session: &mut Session<HttpConnector>,
     key_id: ObjectId,
     digest: T,
 ) -> Result<ECDSASignature, SessionError>
 where
-    C: Connector,
     T: Into<Vec<u8>>,
 {
     session.send_encrypted_command(SignDataECDSACommand {
@@ -41,8 +54,8 @@ where
         any(feature = "doc", not(feature = "mockhsm"))
     )
 )]
-pub fn sign_ecdsa_sha256<C: Connector>(
-    session: &mut Session<C>,
+pub fn sign_ecdsa_sha256(
+    session: &mut Session<HttpConnector>,
     key_id: ObjectId,
     data: &[u8],
 ) -> Result<ECDSASignature, SessionError> {
