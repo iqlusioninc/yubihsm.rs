@@ -3,12 +3,12 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/Echo.html>
 
 use super::{Command, Response};
-use {CommandType, Connector, Session, SessionError};
+use {Adapter, CommandType, Session, SessionError};
 
 /// Have the card echo an input message
 pub fn echo<C, T>(session: &mut Session<C>, message: T) -> Result<Vec<u8>, SessionError>
 where
-    C: Connector,
+    C: Adapter,
     T: Into<Vec<u8>>,
 {
     session

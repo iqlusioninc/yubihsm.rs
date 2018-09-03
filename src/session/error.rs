@@ -1,6 +1,6 @@
 //! Errors that occur during sessions
 
-use connector::ConnectorError;
+use adapters::AdapterError;
 use error::Error;
 use securechannel::SecureChannelError;
 use serializers::SerializationError;
@@ -55,8 +55,8 @@ macro_rules! session_fail {
     };
 }
 
-impl From<ConnectorError> for SessionError {
-    fn from(err: ConnectorError) -> Self {
+impl From<AdapterError> for SessionError {
+    fn from(err: AdapterError) -> Self {
         session_err!(ProtocolError, err.to_string())
     }
 }

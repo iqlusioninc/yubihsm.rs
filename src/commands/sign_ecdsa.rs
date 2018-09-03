@@ -19,22 +19,17 @@
 //! [signatory-yubihsm]: https://docs.rs/signatory-yubihsm/latest/signatory_yubihsm/ecdsa/struct.ECDSASigner.html
 
 use super::{Command, Response};
-use connector::HttpConnector;
+use adapters::HttpAdapter;
 #[cfg(all(feature = "mockhsm", not(feature = "doc")))]
-use mockhsm::MockConnector;
+use mockhsm::MockAdapter;
 use session::{Session, SessionError};
-#[cfg(
-    all(
-        feature = "sha2",
-        any(feature = "doc", not(feature = "mockhsm"))
-    )
-)]
+#[cfg(all(feature = "sha2", any(feature = "doc", not(feature = "mockhsm"))))]
 use sha2::{Digest, Sha256};
 use {CommandType, ObjectId};
 
 /// Compute an ECDSA signature of the SHA-256 hash of the given data with the given key ID
 pub fn sign_ecdsa_raw_digest<T>(
-    session: &mut Session<HttpConnector>,
+    session: &mut Session<HttpAdapter>,
     key_id: ObjectId,
     digest: T,
 ) -> Result<ECDSASignature, SessionError>
@@ -48,14 +43,9 @@ where
 }
 
 /// Compute an ECDSA signature of the SHA-256 hash of the given data with the given key ID
-#[cfg(
-    all(
-        feature = "sha2",
-        any(feature = "doc", not(feature = "mockhsm"))
-    )
-)]
+#[cfg(all(feature = "sha2", any(feature = "doc", not(feature = "mockhsm"))))]
 pub fn sign_ecdsa_sha256(
-    session: &mut Session<HttpConnector>,
+    session: &mut Session<HttpAdapter>,
     key_id: ObjectId,
     data: &[u8],
 ) -> Result<ECDSASignature, SessionError> {
@@ -66,7 +56,7 @@ pub fn sign_ecdsa_sha256(
 // NOTE: this version is enabled when we compile with MockHSM support
 #[cfg(all(feature = "mockhsm", not(feature = "doc")))]
 pub fn sign_ecdsa_sha256(
-    session: &mut Session<MockConnector>,
+    session: &mut Session<MockAdapter>,
     key_id: ObjectId,
     data: &[u8],
 ) -> Result<ECDSASignature, SessionError> {

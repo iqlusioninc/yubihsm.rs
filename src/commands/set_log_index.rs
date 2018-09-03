@@ -3,11 +3,11 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/Set_Log_Index.html>
 
 use super::{Command, CommandType, Response};
-use connector::Connector;
+use adapters::Adapter;
 use session::{Session, SessionError};
 
 /// Set the index of the last consumed index of the `YubiHSM2` audit log
-pub fn set_log_index<C: Connector>(
+pub fn set_log_index<C: Adapter>(
     session: &mut Session<C>,
     log_index: u16,
 ) -> Result<(), SessionError> {

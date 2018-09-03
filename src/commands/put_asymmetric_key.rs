@@ -5,12 +5,12 @@
 use super::put_object::PutObjectParams;
 use super::{Command, Response};
 use {
-    AsymmetricAlgorithm, Capability, CommandType, Connector, Domain, ObjectId, ObjectLabel,
-    Session, SessionError,
+    Adapter, AsymmetricAlgorithm, Capability, CommandType, Domain, ObjectId, ObjectLabel, Session,
+    SessionError,
 };
 
 /// Put an existing asymmetric key into the `YubiHSM2`
-pub fn put_asymmetric_key<C: Connector, T: Into<Vec<u8>>>(
+pub fn put_asymmetric_key<C: Adapter, T: Into<Vec<u8>>>(
     session: &mut Session<C>,
     key_id: ObjectId,
     label: ObjectLabel,

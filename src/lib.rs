@@ -89,6 +89,9 @@ pub mod error;
 #[macro_use]
 mod serializers;
 
+/// Adapters for connecting to the `YubiHSM2`
+pub mod adapters;
+
 /// Cryptographic algorithms supported by the `YubiHSM2`
 pub mod algorithm;
 
@@ -106,9 +109,6 @@ pub mod capabilities;
 /// For more information, see:
 /// <https://developers.yubico.com/YubiHSM2/Commands/>
 pub mod commands;
-
-/// Client for the `yubihsm-connector` service
-pub mod connector;
 
 /// Logical partitions within the `YubiHSM2`, allowing several applications to share the device
 pub mod domains;
@@ -131,6 +131,7 @@ mod securechannel;
 /// See <https://developers.yubico.com/YubiHSM2/Concepts/Session.html>
 pub mod session;
 
+pub use adapters::{Adapter, HttpAdapter, HttpConfig};
 pub use algorithm::*;
 pub use auth_key::*;
 pub use capabilities::Capability;
@@ -145,7 +146,6 @@ pub use commands::{
 };
 #[cfg(feature = "rsa")]
 pub use commands::{sign_rsa_pkcs1v15::*, sign_rsa_pss::*};
-pub use connector::{Connector, HttpConfig, HttpConnector};
 pub use domains::Domain;
 pub use object::*;
 pub use securechannel::SessionId;

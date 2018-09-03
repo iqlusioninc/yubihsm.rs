@@ -6,10 +6,10 @@ use std::fmt::{self, Debug};
 
 use super::{Command, Response};
 use securechannel::ResponseCode;
-use {CommandType, Connector, ObjectId, Session, SessionError};
+use {Adapter, CommandType, ObjectId, Session, SessionError};
 
 /// Get audit logs from the YubiHSM2 device
-pub fn get_logs<C: Connector>(session: &mut Session<C>) -> Result<GetLogsResponse, SessionError> {
+pub fn get_logs<C: Adapter>(session: &mut Session<C>) -> Result<GetLogsResponse, SessionError> {
     session.send_encrypted_command(GetLogsCommand {})
 }
 

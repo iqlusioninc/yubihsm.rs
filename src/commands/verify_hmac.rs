@@ -4,7 +4,7 @@
 
 use super::hmac::HMACTag;
 use super::{Command, Response};
-use {CommandType, Connector, ObjectId, Session, SessionError};
+use {Adapter, CommandType, ObjectId, Session, SessionError};
 
 /// Verify an HMAC tag of the given data with the given key ID
 pub fn verify_hmac<C, D, T>(
@@ -14,7 +14,7 @@ pub fn verify_hmac<C, D, T>(
     tag: T,
 ) -> Result<(), SessionError>
 where
-    C: Connector,
+    C: Adapter,
     D: Into<Vec<u8>>,
     T: Into<HMACTag>,
 {

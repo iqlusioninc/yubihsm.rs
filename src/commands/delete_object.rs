@@ -3,10 +3,10 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/Blink.html>
 
 use super::{Command, Response};
-use {CommandType, Connector, ObjectId, ObjectType, Session, SessionError};
+use {Adapter, CommandType, ObjectId, ObjectType, Session, SessionError};
 
 /// Delete an object of the given ID and type
-pub fn delete_object<C: Connector>(
+pub fn delete_object<C: Adapter>(
     session: &mut Session<C>,
     object_id: ObjectId,
     object_type: ObjectType,

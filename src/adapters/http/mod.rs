@@ -13,7 +13,7 @@
 
 use std::{
     cell::RefCell,
-    fmt::{self, Write as FmtWrite},
+    fmt::Write as FmtWrite,
     io::{Read, Write as IoWrite},
     net::{TcpStream, ToSocketAddrs},
     str,
@@ -22,12 +22,16 @@ use std::{
 };
 use uuid::Uuid;
 
-use super::{Connector, ConnectorError, Status, USER_AGENT};
+mod config;
+mod status;
 
-/// Default timeouts for reading and writing (5 seconds)
-pub const DEFAULT_TIMEOUT_MILLIS: u64 = 5000;
+pub use self::{config::HttpConfig, status::ConnectorStatus};
+use super::{Adapter, AdapterError};
 
-/// Maximum size of the HTTP response from the connector
+/// User-Agent string to supply
+pub const USER_AGENT: &str = concat!("yubihsm.rs ", env!("CARGO_PKG_VERSION"));
+
+/// Maximum size of the HTTP response from `yubihsm-connector`
 pub const MAX_RESPONSE_SIZE: usize = 4096;
 
 /// Delimiter string that separates HTTP headers from bodies
@@ -42,68 +46,35 @@ const CONTENT_LENGTH_HEADER: &str = "Content-Length: ";
 /// The Transfer-Encoding Header
 const TRANSFER_ENCODING_HEADER: &str = "Transfer-Encoding: ";
 
-/// Write consistent `debug!(...) lines for connectors
+/// Write consistent `debug!(...) lines for adapters
 macro_rules! http_debug {
-    ($connector:expr, $msg:expr) => {
-        debug!("yubihsm-connector: host={} {}", $connector.host, $msg);
+    ($adapter:expr, $msg:expr) => {
+        debug!("yubihsm-connector: host={} {}", $adapter.host, $msg);
     };
-    ($connector:expr, $fmt:expr, $($arg:tt)+) => {
-        debug!(concat!("yubihsm-connector: host={} ", $fmt), $connector.host, $($arg)+);
+    ($adapter:expr, $fmt:expr, $($arg:tt)+) => {
+        debug!(concat!("yubihsm-connector: host={} ", $fmt), $adapter.host, $($arg)+);
     };
 }
 
-/// Configuration options for this connector
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct HttpConfig {
-    /// Address of the connector (IP address or DNS name)
-    pub addr: String,
-
-    /// Port the connector process is listening on
-    pub port: u16,
-
-    /// Timeout for connecting, reading, and writing in milliseconds
-    pub timeout_ms: u64,
-}
-
-impl Default for HttpConfig {
-    fn default() -> Self {
-        Self {
-            // Default yubihsm-connector address
-            addr: "127.0.0.1".to_owned(),
-
-            // Default yubihsm-connector port
-            port: 12345,
-
-            // 5 seconds
-            timeout_ms: DEFAULT_TIMEOUT_MILLIS,
-        }
-    }
-}
-
-impl fmt::Display for HttpConfig {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "http://{}:{}", self.addr, self.port)
-    }
-}
-
-/// HTTP(-ish) connector which supports the minimal parts of the protocol
+/// HTTP(-ish) adapter which supports the minimal parts of the protocol
 /// required to communicate with the yubihsm-connector service.
-pub struct HttpConnector {
+pub struct HttpAdapter {
     /// Host we're configured to connect to (i.e. the "Host" HTTP header)
     host: String,
 
     /// Configured timeout as a rust duration
     timeout: Duration,
 
-    /// Socket to the connector process
+    /// Socket to `yubihsm-connector` process
     socket: Arc<Mutex<RefCell<TcpStream>>>,
 }
 
-impl Connector for HttpConnector {
+impl Adapter for HttpAdapter {
     type Config = HttpConfig;
+    type Status = ConnectorStatus;
 
     /// Open a connection to a yubihsm-connector
-    fn open(config: Self::Config) -> Result<Self, ConnectorError> {
+    fn open(config: Self::Config) -> Result<Self, AdapterError> {
         let host = format!("{}:{}", config.addr, config.port);
         let timeout = Duration::from_millis(config.timeout_ms);
         let socket = connect(&host, timeout)?;
@@ -116,31 +87,31 @@ impl Connector for HttpConnector {
     }
 
     /// Reconnect to yubihsm-connector, closing the existing connection
-    fn reconnect(&self) -> Result<(), ConnectorError> {
+    fn reconnect(&self) -> Result<(), AdapterError> {
         let socket_cell = self.socket.lock().unwrap();
         let new_socket = connect(&self.host, self.timeout)?;
         socket_cell.replace(new_socket);
         Ok(())
     }
 
-    /// GET /connector/status returning the result as connector::Status
-    fn status(&self) -> Result<Status, ConnectorError> {
+    /// GET /connector/status returning the result as adapter::Status
+    fn status(&self) -> Result<ConnectorStatus, AdapterError> {
         let http_response = self.get("/connector/status")?;
-        Status::parse(str::from_utf8(&http_response)?)
+        ConnectorStatus::parse(str::from_utf8(&http_response)?)
     }
 
     /// POST /connector/api with a given command message
-    fn send_command(&self, uuid: Uuid, cmd: Vec<u8>) -> Result<Vec<u8>, ConnectorError> {
+    fn send_command(&self, uuid: Uuid, cmd: Vec<u8>) -> Result<Vec<u8>, AdapterError> {
         self.post("/connector/api", uuid, cmd)
     }
 }
 
 /// Open a socket to yubihsm-connector
-fn connect(host: &str, timeout: Duration) -> Result<TcpStream, ConnectorError> {
+fn connect(host: &str, timeout: Duration) -> Result<TcpStream, AdapterError> {
     // Resolve DNS, and for now pick the first available address
     // TODO: round robin DNS support?
     let socketaddr = &host.to_socket_addrs()?.next().ok_or_else(|| {
-        connector_err!(
+        adapter_err!(
             InvalidURL,
             "couldn't resolve DNS for {}",
             host.split(':').next().unwrap()
@@ -154,9 +125,9 @@ fn connect(host: &str, timeout: Duration) -> Result<TcpStream, ConnectorError> {
     Ok(socket)
 }
 
-impl HttpConnector {
+impl HttpAdapter {
     /// Make an HTTP GET request to the yubihsm-connector
-    fn get(&self, path: &str) -> Result<Vec<u8>, ConnectorError> {
+    fn get(&self, path: &str) -> Result<Vec<u8>, AdapterError> {
         let mut request = String::new();
 
         write!(request, "GET {} HTTP/1.1\r\n", path)?;
@@ -183,7 +154,7 @@ impl HttpConnector {
     }
 
     /// Make an HTTP POST request to the yubihsm-connector
-    fn post(&self, path: &str, uuid: Uuid, mut body: Vec<u8>) -> Result<Vec<u8>, ConnectorError> {
+    fn post(&self, path: &str, uuid: Uuid, mut body: Vec<u8>) -> Result<Vec<u8>, AdapterError> {
         let mut headers = String::new();
 
         write!(headers, "POST {} HTTP/1.1\r\n", path)?;
@@ -234,7 +205,7 @@ struct ResponseReader {
 
 impl ResponseReader {
     /// Create a new response buffer
-    pub fn read(socket: &mut TcpStream) -> Result<Self, ConnectorError> {
+    pub fn read(socket: &mut TcpStream) -> Result<Self, AdapterError> {
         let mut buffer = Self {
             buffer: [0u8; MAX_RESPONSE_SIZE],
             pos: 0,
@@ -249,14 +220,14 @@ impl ResponseReader {
     }
 
     /// Read some data into the internal buffer
-    fn fill_buffer(&mut self, socket: &mut TcpStream) -> Result<usize, ConnectorError> {
+    fn fill_buffer(&mut self, socket: &mut TcpStream) -> Result<usize, AdapterError> {
         let nbytes = socket.read(&mut self.buffer[..])?;
         self.pos += nbytes;
         Ok(nbytes)
     }
 
     /// Read the HTTP response headers
-    fn read_headers(&mut self, socket: &mut TcpStream) -> Result<(), ConnectorError> {
+    fn read_headers(&mut self, socket: &mut TcpStream) -> Result<(), AdapterError> {
         assert!(self.body_offset.is_none(), "already read headers!");
 
         loop {
@@ -277,7 +248,7 @@ impl ResponseReader {
             if self.body_offset.is_some() {
                 break;
             } else if self.pos + 1 >= MAX_RESPONSE_SIZE {
-                connector_fail!(
+                adapter_fail!(
                     ResponseError,
                     "exceeded {}-byte response limit reading headers",
                     MAX_RESPONSE_SIZE
@@ -289,7 +260,7 @@ impl ResponseReader {
     }
 
     /// Parse the HTTP headers, extracting the Content-Length
-    fn parse_headers(&mut self) -> Result<(), ConnectorError> {
+    fn parse_headers(&mut self) -> Result<(), AdapterError> {
         let body_offset = self.body_offset.unwrap();
         let header_str = str::from_utf8(&self.buffer[..body_offset])?;
 
@@ -298,12 +269,12 @@ impl ResponseReader {
         // Ensure we got a 200 OK status
         match header_iter.next() {
             Some(HTTP_SUCCESS_STATUS) => (),
-            Some(status) => connector_fail!(
+            Some(status) => adapter_fail!(
                 ResponseError,
                 "unexpected HTTP response status: \"{}\"",
                 status
             ),
-            None => connector_fail!(ResponseError, "HTTP response status line missing!"),
+            None => adapter_fail!(ResponseError, "HTTP response status line missing!"),
         }
 
         for header in header_iter {
@@ -311,7 +282,7 @@ impl ResponseReader {
                 let content_length: usize = header[CONTENT_LENGTH_HEADER.len()..].parse()?;
 
                 if MAX_RESPONSE_SIZE - body_offset < content_length {
-                    connector_fail!(
+                    adapter_fail!(
                         ResponseError,
                         "response body length too large for buffer ({} bytes)",
                         content_length
@@ -321,9 +292,9 @@ impl ResponseReader {
                 self.content_length = content_length;
             } else if header.starts_with(TRANSFER_ENCODING_HEADER) {
                 let transfer_encoding = &header[TRANSFER_ENCODING_HEADER.len()..];
-                connector_fail!(
+                adapter_fail!(
                     ResponseError,
-                    "connector sent unsupported transfer encoding: {}",
+                    "adapter sent unsupported transfer encoding: {}",
                     transfer_encoding
                 );
             }
@@ -333,7 +304,7 @@ impl ResponseReader {
     }
 
     /// Read the response body into the internal buffer
-    fn read_body(&mut self, socket: &mut TcpStream) -> Result<(), ConnectorError> {
+    fn read_body(&mut self, socket: &mut TcpStream) -> Result<(), AdapterError> {
         let body_end =
             self.content_length + self.body_offset.expect("not ready to read the body yet");
 

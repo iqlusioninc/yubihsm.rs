@@ -1,6 +1,6 @@
 //! Error types for Secure Channel communications
 
-use connector::ConnectorError;
+use adapters::AdapterError;
 use error::Error;
 
 /// Secure Channel errors
@@ -62,8 +62,8 @@ macro_rules! secure_channel_ensure {
     };
 }
 
-impl From<ConnectorError> for SecureChannelError {
-    fn from(err: ConnectorError) -> Self {
+impl From<AdapterError> for SecureChannelError {
+    fn from(err: AdapterError) -> Self {
         secure_channel_err!(ProtocolError, err.to_string())
     }
 }

@@ -5,14 +5,14 @@
 use super::put_object::PutObjectParams;
 use super::{Command, Response};
 use {
-    Capability, CommandType, Connector, Domain, OTPAlgorithm, ObjectId, ObjectLabel, Session,
+    Adapter, Capability, CommandType, Domain, OTPAlgorithm, ObjectId, ObjectLabel, Session,
     SessionError,
 };
 
 /// Put an existing OTP AEAD key into the `YubiHSM2`
 ///
 /// Valid algorithms
-pub fn put_otp_aead_key<C: Connector, T: Into<Vec<u8>>>(
+pub fn put_otp_aead_key<C: Adapter, T: Into<Vec<u8>>>(
     session: &mut Session<C>,
     key_id: ObjectId,
     label: ObjectLabel,

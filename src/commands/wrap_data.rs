@@ -3,10 +3,10 @@
 //! https://developers.yubico.com/YubiHSM2/Commands/Wrap_Data.html
 
 use super::{Command, Response};
-use {CommandType, Connector, ObjectId, Session, SessionError, WrapMessage};
+use {Adapter, CommandType, ObjectId, Session, SessionError, WrapMessage};
 
 /// Export an encrypted object from the `YubiHSM2` using the given key-wrapping key
-pub fn wrap_data<C: Connector>(
+pub fn wrap_data<C: Adapter>(
     session: &mut Session<C>,
     wrap_key_id: ObjectId,
     plaintext: Vec<u8>,

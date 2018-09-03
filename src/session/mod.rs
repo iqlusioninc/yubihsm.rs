@@ -5,9 +5,9 @@ use subtle::ConstantTimeEq;
 mod error;
 
 pub use self::error::{SessionError, SessionErrorKind};
+use adapters::{Adapter, HttpAdapter, HttpConfig};
 use auth_key::AuthKey;
 use commands::{close_session::CloseSessionCommand, create_session::create_session, Command};
-use connector::{Connector, HttpConfig, HttpConnector, Status as ConnectorStatus};
 use object::ObjectId;
 use securechannel::SessionId;
 use securechannel::{Challenge, Channel, CommandMessage, ResponseCode, ResponseMessage};
@@ -22,7 +22,7 @@ pub const SESSION_INACTIVITY_TIMEOUT: Duration = Duration::from_secs(30);
 /// timeout. This should (hopefully) ensure we always time out first.
 const TIMEOUT_SKEW_INTERVAL: Duration = Duration::from_secs(1);
 
-/// Status message returned from healthy connectors
+/// Status message returned from healthy adapters
 const CONNECTOR_STATUS_OK: &str = "OK";
 
 /// Write consistent `debug!(...) lines for sessions
@@ -38,20 +38,20 @@ macro_rules! session_debug {
 /// Encrypted session with the `YubiHSM2`.
 /// A session is needed to perform any commands.
 ///
-/// Sessions are eneric over `Connector` types in case a different one needs to
+/// Sessions are eneric over `Adapter` types in case a different one needs to
 /// be swapped in, which is primarily useful for substituting the `MockHSM`.
 ///
 /// Sessions are automatically closed on `Drop`, releasing `YubiHSM2` session
 /// resources and wiping the ephemeral keys used to encrypt the session.
-pub struct Session<C = HttpConnector>
+pub struct Session<A = HttpAdapter>
 where
-    C: Connector,
+    A: Adapter,
 {
     /// Encrypted channel to the HSM
     channel: Channel,
 
-    /// Connector to send messages through
-    connector: C,
+    /// Adapter to send messages through
+    adapter: A,
 
     /// Instant when the last command with the YubiHSM2 was sent. Used for
     /// tracking session inactivity timeouts
@@ -73,34 +73,34 @@ struct Credentials {
     auth_key: AuthKey,
 }
 
-// Special casing these for HttpConnector is a bit of a hack in that default
+// Special casing these for HttpAdapter is a bit of a hack in that default
 // generics and static methods do not play well together, e.g.
 //
-// error[E0283]: type annotations required: cannot resolve `yubihsm::Connector`
+// error[E0283]: type annotations required: cannot resolve `yubihsm::Adapter`
 //
-// So we special case these for HttpConnector to make the API more ergonomic
-impl Session<HttpConnector> {
+// So we special case these for HttpAdapter to make the API more ergonomic
+impl Session<HttpAdapter> {
     /// Open a new session to the HSM, authenticating with the given `AuthKey`
     pub fn create(
-        connector_config: HttpConfig,
+        config: HttpConfig,
         auth_key_id: ObjectId,
         auth_key: AuthKey,
         reconnect: bool,
     ) -> Result<Self, SessionError> {
-        let connector_info = connector_config.to_string();
-        let connector = HttpConnector::open(connector_config)?;
-        let status = connector.status()?;
+        let adapter_info = config.to_string();
+        let adapter = HttpAdapter::open(config)?;
+        let status = adapter.status()?;
 
         if status.message != CONNECTOR_STATUS_OK {
             session_fail!(
                 CreateFailed,
                 "bad status response from {}: {}",
-                connector_info,
+                adapter_info,
                 status.message
             );
         }
 
-        Self::new(connector, auth_key_id, auth_key, reconnect)
+        Self::new(adapter, auth_key_id, auth_key, reconnect)
     }
 
     /// Open a new session to the HSM, authenticating with a given password.
@@ -109,13 +109,13 @@ impl Session<HttpConnector> {
     /// of a long, random password is recommended.
     #[cfg(feature = "passwords")]
     pub fn create_from_password(
-        connector_config: HttpConfig,
+        config: HttpConfig,
         auth_key_id: ObjectId,
         password: &[u8],
         reconnect: bool,
     ) -> Result<Self, SessionError> {
         Self::create(
-            connector_config,
+            config,
             auth_key_id,
             AuthKey::derive_from_password(password),
             reconnect,
@@ -123,11 +123,11 @@ impl Session<HttpConnector> {
     }
 }
 
-impl<C: Connector> Session<C> {
-    /// Create a new encrypted session using the given connector, YubiHSM2 auth key ID, and
+impl<A: Adapter> Session<A> {
+    /// Create a new encrypted session using the given adapter, YubiHSM2 auth key ID, and
     /// authentication key
     pub fn new(
-        connector: C,
+        adapter: A,
         auth_key_id: ObjectId,
         auth_key: AuthKey,
         reconnect: bool,
@@ -139,11 +139,11 @@ impl<C: Connector> Session<C> {
             auth_key,
         };
 
-        let channel = Self::create_channel(&connector, &credentials)?;
+        let channel = Self::create_channel(&adapter, &credentials)?;
 
         let mut session = Self {
             channel,
-            connector,
+            adapter,
             last_command_timestamp: Instant::now(),
             active: true,
             credentials: if reconnect { Some(credentials) } else { None },
@@ -159,14 +159,14 @@ impl<C: Connector> Session<C> {
         self.channel.id()
     }
 
-    /// Request current yubihsm-connector status
-    pub fn connector_status(&mut self) -> Result<ConnectorStatus, SessionError> {
-        self.connector.status().map_err(|e| e.into())
+    /// Borrow the underlying adapter
+    pub fn adapter(&mut self) -> &A {
+        &self.adapter
     }
 
     /// Is the current session active?
     pub fn is_active(&self) -> bool {
-        if !self.active {
+        if !self.active || !self.adapter.status().is_ok() {
             return false;
         }
 
@@ -188,11 +188,11 @@ impl<C: Connector> Session<C> {
     }
 
     /// Create a new encrypted session with the YubiHSM2
-    fn create_channel(connector: &C, credentials: &Credentials) -> Result<Channel, SessionError> {
+    fn create_channel(adapter: &A, credentials: &Credentials) -> Result<Channel, SessionError> {
         let host_challenge = Challenge::random();
 
         let (session_id, session_response) =
-            create_session(connector, credentials.auth_key_id, host_challenge)?;
+            create_session(adapter, credentials.auth_key_id, host_challenge)?;
 
         let channel = Channel::new(
             session_id,
@@ -216,11 +216,11 @@ impl<C: Connector> Session<C> {
     fn reconnect(&mut self) -> Result<(), SessionError> {
         let auth_key_id = match self.credentials {
             Some(ref credentials) => {
-                // TODO: display connector debug info?
+                // TODO: display adapter debug info?
                 session_debug!(self, "attempting to reconnect");
 
-                self.connector.reconnect()?;
-                self.channel = Self::create_channel(&self.connector, credentials)?;
+                self.adapter.reconnect()?;
+                self.channel = Self::create_channel(&self.adapter, credentials)?;
                 credentials.auth_key_id
             }
             None => session_fail!(CreateFailed, "session reconnect is disabled"),
@@ -264,7 +264,7 @@ impl<C: Connector> Session<C> {
 
         session_debug!(self, "uuid={} command={:?}", &uuid, cmd_type);
 
-        let response_bytes = match self.connector.send_command(uuid, cmd.into()) {
+        let response_bytes = match self.adapter.send_command(uuid, cmd.into()) {
             Ok(bytes) => bytes,
             Err(e) => {
                 // Mark connection as unhealthy
@@ -351,7 +351,7 @@ impl<C: Connector> Session<C> {
 }
 
 /// Close session automatically on drop
-impl<C: Connector> Drop for Session<C> {
+impl<A: Adapter> Drop for Session<A> {
     /// Make a best effort to close the session
     ///
     /// NOTE: this runs the potential of panicking in a drop handler, which

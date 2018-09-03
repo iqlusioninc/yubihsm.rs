@@ -5,13 +5,13 @@
 use super::put_object::PutObjectParams;
 use super::{Command, Response};
 use {
-    AuthAlgorithm, AuthKey, Capability, CommandType, Connector, Domain, ObjectId, ObjectLabel,
+    Adapter, AuthAlgorithm, AuthKey, Capability, CommandType, Domain, ObjectId, ObjectLabel,
     Session, SessionError,
 };
 
 /// Put an existing auth key into the `YubiHSM2`
 #[allow(unknown_lints, too_many_arguments)]
-pub fn put_auth_key<C: Connector, K: Into<AuthKey>>(
+pub fn put_auth_key<C: Adapter, K: Into<AuthKey>>(
     session: &mut Session<C>,
     key_id: ObjectId,
     label: ObjectLabel,

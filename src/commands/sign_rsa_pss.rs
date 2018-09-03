@@ -7,7 +7,7 @@ use byteorder::{BigEndian, ByteOrder};
 use super::{Command, Response};
 use session::{Session, SessionError};
 use sha2::{Digest, Sha256};
-use Connector;
+use Adapter;
 use {Algorithm, CommandType, ObjectId};
 
 /// Maximum message size supported for RSASSA-PSS
@@ -17,7 +17,7 @@ pub const RSA_PSS_MAX_MESSAGE_SIZE: usize = 0xFFFF;
 ///
 /// WARNING: This method has not been tested and is not confirmed to actually work! Use at your
 /// own risk!
-pub fn sign_rsa_pss_sha256<C: Connector>(
+pub fn sign_rsa_pss_sha256<C: Adapter>(
     session: &mut Session<C>,
     key_id: ObjectId,
     data: &[u8],

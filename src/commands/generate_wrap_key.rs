@@ -5,7 +5,7 @@
 use super::generate_key::GenerateKeyParams;
 use super::{Command, Response};
 use {
-    Capability, CommandType, Connector, Domain, ObjectId, ObjectLabel, Session, SessionError,
+    Adapter, Capability, CommandType, Domain, ObjectId, ObjectLabel, Session, SessionError,
     WrapAlgorithm,
 };
 
@@ -13,7 +13,7 @@ use {
 ///
 /// Delegated capabilities are the set of `Capability` bits that an object is allowed to have
 /// when imported or exported using the wrap key
-pub fn generate_wrap_key<C: Connector>(
+pub fn generate_wrap_key<C: Adapter>(
     session: &mut Session<C>,
     key_id: ObjectId,
     label: ObjectLabel,

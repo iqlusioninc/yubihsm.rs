@@ -3,12 +3,10 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/Get_Object_Info.html>
 //!
 use super::{Command, Response};
-use {
-    CommandType, Connector, ObjectHandle, ObjectId, ObjectInfo, ObjectType, Session, SessionError,
-};
+use {Adapter, CommandType, ObjectHandle, ObjectId, ObjectInfo, ObjectType, Session, SessionError};
 
 /// Get information about an object
-pub fn get_object_info<C: Connector>(
+pub fn get_object_info<C: Adapter>(
     session: &mut Session<C>,
     object_id: ObjectId,
     object_type: ObjectType,

@@ -1,4 +1,4 @@
-//! Error types for yubihsm-connector
+//! Error types for `yubihsm-connector`
 
 use std::num::ParseIntError;
 use std::str::Utf8Error;
@@ -6,17 +6,17 @@ use std::{fmt, io};
 
 use error::Error;
 
-/// yubihsm-connector related errors
-pub type ConnectorError = Error<ConnectorErrorKind>;
+/// `yubihsm-connector` related errors
+pub type AdapterError = Error<AdapterErrorKind>;
 
-/// yubihsm-connector related error kinds
+/// `yubihsm-connector` related error kinds
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
-pub enum ConnectorErrorKind {
-    /// URL provided for yubihsm-connector is not valid
+pub enum AdapterErrorKind {
+    /// URL provided for `yubihsm-connector` is not valid
     #[fail(display = "invalid URL")]
     InvalidURL,
 
-    /// Connection to yubihsm-connector failed
+    /// Connection to `yubihsm-connector` failed
     #[fail(display = "connection failed")]
     ConnectionFailed,
 
@@ -28,57 +28,57 @@ pub enum ConnectorErrorKind {
     #[fail(display = "invalid request")]
     RequestError,
 
-    /// yubihsm-connector sent bad response
+    /// `yubihsm-connector` sent bad response
     #[fail(display = "bad connector response")]
     ResponseError,
 }
 
 /// Create a new connector error with a formatted message
-macro_rules! connector_err {
+macro_rules! adapter_err {
     ($kind:ident, $msg:expr) => {
-        ::connector::ConnectorError::new(
-            ::connector::ConnectorErrorKind::$kind,
+        ::adapters::AdapterError::new(
+            ::adapters::AdapterErrorKind::$kind,
             Some($msg.to_owned())
         )
     };
     ($kind:ident, $fmt:expr, $($arg:tt)+) => {
-        ::connector::ConnectorError::new(
-            ::connector::ConnectorErrorKind::$kind,
+        ::adapters::AdapterError::new(
+            ::adapters::AdapterErrorKind::$kind,
             Some(format!($fmt, $($arg)+))
         )
     };
 }
 
 /// Create and return an connector error with a formatted message
-macro_rules! connector_fail {
+macro_rules! adapter_fail {
     ($kind:ident, $msg:expr) => {
-        return Err(connector_err!($kind, $msg).into());
+        return Err(adapter_err!($kind, $msg).into());
     };
     ($kind:ident, $fmt:expr, $($arg:tt)+) => {
-        return Err(connector_err!($kind, $fmt, $($arg)+).into());
+        return Err(adapter_err!($kind, $fmt, $($arg)+).into());
     };
 }
 
-impl From<fmt::Error> for ConnectorError {
+impl From<fmt::Error> for AdapterError {
     fn from(err: fmt::Error) -> Self {
-        connector_err!(IoError, err.to_string())
+        adapter_err!(IoError, err.to_string())
     }
 }
 
-impl From<io::Error> for ConnectorError {
+impl From<io::Error> for AdapterError {
     fn from(err: io::Error) -> Self {
-        connector_err!(IoError, err.to_string())
+        adapter_err!(IoError, err.to_string())
     }
 }
 
-impl From<ParseIntError> for ConnectorError {
+impl From<ParseIntError> for AdapterError {
     fn from(err: ParseIntError) -> Self {
-        connector_err!(ResponseError, err.to_string())
+        adapter_err!(ResponseError, err.to_string())
     }
 }
 
-impl From<Utf8Error> for ConnectorError {
+impl From<Utf8Error> for AdapterError {
     fn from(err: Utf8Error) -> Self {
-        connector_err!(ResponseError, err.to_string())
+        adapter_err!(ResponseError, err.to_string())
     }
 }

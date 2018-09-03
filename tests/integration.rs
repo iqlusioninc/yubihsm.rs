@@ -11,10 +11,10 @@ use yubihsm::{
 };
 
 #[cfg(not(feature = "mockhsm"))]
-use yubihsm::{HttpConnector, AUTH_KEY_DEFAULT_PASSWORD};
+use yubihsm::{HttpAdapter, AUTH_KEY_DEFAULT_PASSWORD};
 
 #[cfg(feature = "mockhsm")]
-use yubihsm::mockhsm::{MockConnector, MockHSM};
+use yubihsm::mockhsm::{MockAdapter, MockHSM};
 
 #[cfg(feature = "ring")]
 extern crate ring;
@@ -50,10 +50,10 @@ const TEST_MESSAGE: &[u8] = b"The YubiHSM2 is a simple, affordable, and secure H
 pub const EC_P256_PUBLIC_KEY_SIZE: usize = 64;
 
 #[cfg(not(feature = "mockhsm"))]
-type TestSession = Session<HttpConnector>;
+type TestSession = Session<HttpAdapter>;
 
 #[cfg(feature = "mockhsm")]
-type TestSession = Session<MockConnector>;
+type TestSession = Session<MockAdapter>;
 
 #[cfg(not(feature = "mockhsm"))]
 lazy_static! {
