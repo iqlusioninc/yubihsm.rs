@@ -1,14 +1,13 @@
 #[macro_use]
 mod error;
-mod http;
-#[cfg(features = "usb")]
-mod usb;
+pub mod http;
+#[cfg(feature = "usb")]
+pub mod usb;
 
 use std::fmt::{Debug, Display};
 use uuid::Uuid;
 
 pub use self::error::{AdapterError, AdapterErrorKind};
-pub use self::http::{HttpAdapter, HttpConfig};
 
 /// Adapters for communicating with the YubiHSM2
 pub trait Adapter: Sized + Send + Sync {
@@ -18,15 +17,15 @@ pub trait Adapter: Sized + Send + Sync {
     /// Status type for this adapter
     type Status;
 
-    /// Open a connection to a yubihsm-connector
+    /// Open a connection to this adapter
     fn open(config: Self::Config) -> Result<Self, AdapterError>;
 
-    /// Reconnect to yubihsm-connector, closing the existing connection
+    /// Reconnect to the adapter, terminating the existing connection
     fn reconnect(&self) -> Result<(), AdapterError>;
 
     /// Get the status of this adapter
     fn status(&self) -> Result<Self::Status, AdapterError>;
 
-    /// POST /adapter/api with a given command message and return the response message
+    /// Send a command to the YubiHSM, returning the response
     fn send_command(&self, uuid: Uuid, cmd: Vec<u8>) -> Result<Vec<u8>, AdapterError>;
 }

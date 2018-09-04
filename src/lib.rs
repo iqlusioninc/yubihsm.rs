@@ -65,6 +65,11 @@ extern crate failure;
 extern crate failure_derive;
 #[cfg(feature = "hmac")]
 extern crate hmac;
+#[cfg(feature = "usb")]
+#[macro_use]
+extern crate lazy_static;
+#[cfg(feature = "usb")]
+extern crate libusb;
 #[macro_use]
 extern crate log;
 #[cfg(feature = "pbkdf2")]
@@ -126,12 +131,20 @@ pub mod object;
 /// Encrypted communication channel to the `YubiHSM2` hardware
 mod securechannel;
 
+/// `YubiHSM2` serial numbers
+mod serial;
+
 /// `YubiHSM2` sessions: primary API for performing HSM operations
 ///
 /// See <https://developers.yubico.com/YubiHSM2/Concepts/Session.html>
 pub mod session;
 
-pub use adapters::{Adapter, HttpAdapter, HttpConfig};
+#[cfg(feature = "usb")]
+pub use adapters::usb::{UsbAdapter, UsbDevices, UsbTimeout};
+pub use adapters::{
+    http::{HttpAdapter, HttpConfig},
+    Adapter,
+};
 pub use algorithm::*;
 pub use auth_key::*;
 pub use capabilities::Capability;
@@ -149,4 +162,6 @@ pub use commands::{sign_rsa_pkcs1v15::*, sign_rsa_pss::*};
 pub use domains::Domain;
 pub use object::*;
 pub use securechannel::SessionId;
+pub use serial::SerialNumber;
 pub use session::{Session, SessionError};
+pub use uuid::Uuid;

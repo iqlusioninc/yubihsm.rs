@@ -5,7 +5,10 @@ use subtle::ConstantTimeEq;
 mod error;
 
 pub use self::error::{SessionError, SessionErrorKind};
-use adapters::{Adapter, HttpAdapter, HttpConfig};
+use adapters::{
+    http::{HttpAdapter, HttpConfig},
+    Adapter,
+};
 use auth_key::AuthKey;
 use commands::{close_session::CloseSessionCommand, create_session::create_session, Command};
 use object::ObjectId;
@@ -166,7 +169,7 @@ impl<A: Adapter> Session<A> {
 
     /// Is the current session active?
     pub fn is_active(&self) -> bool {
-        if !self.active || !self.adapter.status().is_ok() {
+        if !self.active || self.adapter.status().is_err() {
             return false;
         }
 

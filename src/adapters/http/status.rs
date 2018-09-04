@@ -1,6 +1,8 @@
 //! Status responses from `yubihsm-connector` process (from the YubiHSM2 SDK)
 
-use super::AdapterError;
+use std::str::FromStr;
+
+use {adapters::AdapterError, SerialNumber};
 
 /// Status response from `yubihsm-connector` containing information about its
 /// health and what `YubiHSM2` we're connected to
@@ -11,7 +13,7 @@ pub struct ConnectorStatus {
 
     /// Serial number of `YubiHSM2` device. Only available if `yubihsm-connector`
     /// has been started with the --serial option
-    pub serial: Option<String>,
+    pub serial: Option<SerialNumber>,
 
     /// `YubiHSM2` SDK version for `yubihsm-connector`
     pub version: String,
@@ -62,7 +64,7 @@ impl ConnectorStatus {
 
         let serial = match response_serial {
             Some("*") => None,
-            Some(s) => Some(s.to_owned()),
+            Some(s) => Some(SerialNumber::from_str(s)?),
             None => adapter_fail!(ResponseError, "missing serial"),
         };
 

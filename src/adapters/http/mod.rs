@@ -12,7 +12,6 @@
 #![allow(unknown_lints, write_with_newline)]
 
 use std::{
-    cell::RefCell,
     fmt::Write as FmtWrite,
     io::{Read, Write as IoWrite},
     net::{TcpStream, ToSocketAddrs},
@@ -66,7 +65,7 @@ pub struct HttpAdapter {
     timeout: Duration,
 
     /// Socket to `yubihsm-connector` process
-    socket: Arc<Mutex<RefCell<TcpStream>>>,
+    socket: Arc<Mutex<TcpStream>>,
 }
 
 impl Adapter for HttpAdapter {
@@ -82,15 +81,14 @@ impl Adapter for HttpAdapter {
         Ok(Self {
             host,
             timeout,
-            socket: Arc::new(Mutex::new(RefCell::new(socket))),
+            socket: Arc::new(Mutex::new(socket)),
         })
     }
 
     /// Reconnect to yubihsm-connector, closing the existing connection
     fn reconnect(&self) -> Result<(), AdapterError> {
-        let socket_cell = self.socket.lock().unwrap();
-        let new_socket = connect(&self.host, self.timeout)?;
-        socket_cell.replace(new_socket);
+        let mut socket = self.socket.lock().unwrap();
+        *socket = connect(&self.host, self.timeout)?;
         Ok(())
     }
 
@@ -112,7 +110,7 @@ fn connect(host: &str, timeout: Duration) -> Result<TcpStream, AdapterError> {
     // TODO: round robin DNS support?
     let socketaddr = &host.to_socket_addrs()?.next().ok_or_else(|| {
         adapter_err!(
-            InvalidURL,
+            AddrInvalid,
             "couldn't resolve DNS for {}",
             host.split(':').next().unwrap()
         )
@@ -135,12 +133,12 @@ impl HttpAdapter {
         write!(request, "User-Agent: {}\r\n", USER_AGENT)?;
         write!(request, "Content-Length: 0\r\n\r\n")?;
 
-        let socket = self.socket.lock().unwrap();
+        let mut socket = self.socket.lock().unwrap();
 
         let request_start = Instant::now();
-        socket.borrow_mut().write_all(request.as_bytes())?;
+        socket.write_all(request.as_bytes())?;
 
-        let response = ResponseReader::read(&mut socket.borrow_mut())?;
+        let response = ResponseReader::read(&mut socket)?;
         let elapsed_time = Instant::now().duration_since(request_start);
 
         http_debug!(
@@ -168,12 +166,12 @@ impl HttpAdapter {
         let mut request: Vec<u8> = headers.into();
         request.append(&mut body);
 
-        let socket = self.socket.lock().unwrap();
+        let mut socket = self.socket.lock().unwrap();
 
         let request_start = Instant::now();
-        socket.borrow_mut().write_all(&request)?;
+        socket.write_all(&request)?;
 
-        let response = ResponseReader::read(&mut socket.borrow_mut())?;
+        let response = ResponseReader::read(&mut socket)?;
         let elapsed_time = Instant::now().duration_since(request_start);
 
         http_debug!(

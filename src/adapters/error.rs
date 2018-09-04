@@ -1,5 +1,7 @@
 //! Error types for `yubihsm-connector`
 
+#[cfg(feature = "usb")]
+use libusb;
 use std::num::ParseIntError;
 use std::str::Utf8Error;
 use std::{fmt, io};
@@ -12,11 +14,19 @@ pub type AdapterError = Error<AdapterErrorKind>;
 /// `yubihsm-connector` related error kinds
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
 pub enum AdapterErrorKind {
-    /// URL provided for `yubihsm-connector` is not valid
-    #[fail(display = "invalid URL")]
-    InvalidURL,
+    /// Address provided was not valid
+    #[fail(display = "invalid address")]
+    AddrInvalid,
 
-    /// Connection to `yubihsm-connector` failed
+    /// Access denied
+    #[fail(display = "access denied")]
+    AccessDenied,
+
+    /// YubiHSM2 is busy (in use by another client / process)
+    #[fail(display = "device already in use")]
+    DeviceBusyError,
+
+    /// Couldn't connect to the YubiHSM2
     #[fail(display = "connection failed")]
     ConnectionFailed,
 
@@ -31,6 +41,11 @@ pub enum AdapterErrorKind {
     /// `yubihsm-connector` sent bad response
     #[fail(display = "bad connector response")]
     ResponseError,
+
+    /// USB operation failed
+    #[cfg(feature = "usb")]
+    #[fail(display = "USB error")]
+    UsbError,
 }
 
 /// Create a new connector error with a formatted message
@@ -68,6 +83,17 @@ impl From<fmt::Error> for AdapterError {
 impl From<io::Error> for AdapterError {
     fn from(err: io::Error) -> Self {
         adapter_err!(IoError, err.to_string())
+    }
+}
+
+#[cfg(feature = "usb")]
+impl From<libusb::Error> for AdapterError {
+    fn from(err: libusb::Error) -> AdapterError {
+        match err {
+            libusb::Error::Access => adapter_err!(AccessDenied, "{}", err),
+            libusb::Error::Io => adapter_err!(IoError, "{}", err),
+            _ => adapter_err!(UsbError, "{}", err),
+        }
     }
 }
 

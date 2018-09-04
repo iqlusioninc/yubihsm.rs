@@ -63,24 +63,20 @@ impl fmt::Display for MockConfig {
 
 impl Adapter for MockAdapter {
     type Config = MockConfig;
+    type Status = ();
 
     /// We don't bother to implement this
     fn open(_config: MockConfig) -> Result<Self, AdapterError> {
-        panic!("use MockHSM::create_session() to open a MockHSM session");
+        panic!("unimplemented");
     }
 
     fn reconnect(&self) -> Result<(), AdapterError> {
-        panic!("MockHSM does not support reconnect");
+        panic!("unimplemented");
     }
 
     /// GET /connector/status returning the result as connector::Status
-    fn status(&self) -> Result<Status, AdapterError> {
-        Ok(Status {
-            message: "OK".to_owned(),
-            serial: None,
-            version: "1.0.1".to_owned(),
-            pid: 12_345,
-        })
+    fn status(&self) -> Result<(), AdapterError> {
+        panic!("unimplemented");
     }
 
     /// POST /connector/api with a given command message and return the response message

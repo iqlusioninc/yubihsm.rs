@@ -5,15 +5,20 @@
 extern crate lazy_static;
 extern crate sha2;
 extern crate yubihsm;
+#[cfg(not(any(feature = "usb", feature = "mockhsm")))]
+use yubihsm::AUTH_KEY_DEFAULT_PASSWORD;
 use yubihsm::{
     AsymmetricAlgorithm, AuthAlgorithm, AuthKey, Capability, Domain, HMACAlgorithm, ObjectId,
     ObjectOrigin, ObjectType, OpaqueAlgorithm, Session, WrapAlgorithm, AUTH_KEY_DEFAULT_ID,
 };
 
-#[cfg(not(feature = "mockhsm"))]
-use yubihsm::{HttpAdapter, AUTH_KEY_DEFAULT_PASSWORD};
+#[cfg(not(any(feature = "usb", feature = "mockhsm")))]
+use yubihsm::HttpAdapter;
 
-#[cfg(feature = "mockhsm")]
+#[cfg(all(feature = "usb", not(feature = "mockhsm")))]
+use yubihsm::UsbAdapter;
+
+#[cfg(all(not(feature = "usb"), feature = "mockhsm"))]
 use yubihsm::mockhsm::{MockAdapter, MockHSM};
 
 #[cfg(feature = "ring")]
@@ -49,13 +54,16 @@ const TEST_MESSAGE: &[u8] = b"The YubiHSM2 is a simple, affordable, and secure H
 /// Size of a NIST P-256 public key
 pub const EC_P256_PUBLIC_KEY_SIZE: usize = 64;
 
-#[cfg(not(feature = "mockhsm"))]
+#[cfg(not(any(feature = "usb", feature = "mockhsm")))]
 type TestSession = Session<HttpAdapter>;
 
-#[cfg(feature = "mockhsm")]
+#[cfg(all(feature = "usb", not(feature = "mockhsm")))]
+type TestSession = Session<UsbAdapter>;
+
+#[cfg(all(not(feature = "usb"), feature = "mockhsm"))]
 type TestSession = Session<MockAdapter>;
 
-#[cfg(not(feature = "mockhsm"))]
+#[cfg(not(any(feature = "usb", feature = "mockhsm")))]
 lazy_static! {
     static ref SESSION: ::std::sync::Mutex<TestSession> = {
         let session = Session::create_from_password(
@@ -64,7 +72,16 @@ lazy_static! {
             AUTH_KEY_DEFAULT_PASSWORD,
             true,
         ).unwrap_or_else(|err| panic!("error creating session: {}", err));
+        ::std::sync::Mutex::new(session)
+    };
+}
 
+#[cfg(all(feature = "usb", not(feature = "mockhsm")))]
+lazy_static! {
+    static ref SESSION: ::std::sync::Mutex<TestSession> = {
+        let adapter = UsbAdapter::default();
+        let session = Session::new(adapter, AUTH_KEY_DEFAULT_ID, AuthKey::default(), false)
+            .unwrap_or_else(|err| panic!("error creating session: {}", err));
         ::std::sync::Mutex::new(session)
     };
 }
