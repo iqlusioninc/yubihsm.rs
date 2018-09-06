@@ -6,7 +6,7 @@ use std::{
 };
 
 use super::{UsbConfig, UsbDevices, UsbTimeout};
-use adapters::{Adapter, AdapterError};
+use adapters::{Adapter, AdapterError, AdapterErrorKind::UsbError};
 use securechannel::MAX_MSG_SIZE;
 use serial::SerialNumber;
 use uuid::Uuid;
@@ -132,7 +132,7 @@ fn send_message(
     if data.len() == nbytes {
         Ok(nbytes)
     } else {
-        adapter_fail!(
+        fail!(
             UsbError,
             "incomplete bulk transfer: {} of {} bytes",
             nbytes,

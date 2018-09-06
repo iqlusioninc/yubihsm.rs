@@ -36,43 +36,20 @@ pub enum SessionErrorKind {
     TimeoutError,
 }
 
-/// Create a new Session error with a formatted message
-macro_rules! session_err {
-    ($kind:ident, $msg:expr) => {
-        ::session::SessionError::new(
-            ::session::SessionErrorKind::$kind,
-            Some($msg.to_owned())
-        )
-    };
-    ($kind:ident, $fmt:expr, $($arg:tt)+) => {
-        session_err!($kind, format!($fmt, $($arg)+))
-    };
-}
-
-/// Create and return a Session error with a formatted message
-macro_rules! session_fail {
-    ($kind:ident, $msg:expr) => {
-        return Err(session_err!($kind, $msg).into());
-    };
-    ($kind:ident, $fmt:expr, $($arg:tt)+) => {
-        return Err(session_err!($kind, $fmt, $($arg)+).into());
-    };
-}
-
 impl From<AdapterError> for SessionError {
     fn from(err: AdapterError) -> Self {
-        session_err!(ProtocolError, err.to_string())
+        err!(SessionErrorKind::ProtocolError, err.to_string())
     }
 }
 
 impl From<SecureChannelError> for SessionError {
     fn from(err: SecureChannelError) -> Self {
-        session_err!(ProtocolError, err.to_string())
+        err!(SessionErrorKind::ProtocolError, err.to_string())
     }
 }
 
 impl From<SerializationError> for SessionError {
     fn from(err: SerializationError) -> Self {
-        session_err!(ProtocolError, err.to_string())
+        err!(SessionErrorKind::ProtocolError, err.to_string())
     }
 }

@@ -12,6 +12,7 @@ use byteorder::{BigEndian, WriteBytesExt};
 use rand::{self, RngCore};
 use uuid::Uuid;
 
+use super::SecureChannelErrorKind::ProtocolError;
 use super::{Mac, SecureChannelError, SessionId, MAC_SIZE, MAX_MSG_SIZE};
 use commands::CommandType;
 
@@ -43,7 +44,7 @@ impl CommandMessage {
     {
         let command_data_vec: Vec<u8> = command_data.into();
 
-        secure_channel_ensure!(
+        ensure!(
             command_data_vec.len() <= MAX_MSG_SIZE,
             ProtocolError,
             "command data too long: {} bytes (max {})",
@@ -73,7 +74,7 @@ impl CommandMessage {
     {
         let command_data_vec: Vec<u8> = command_data.into();
 
-        secure_channel_ensure!(
+        ensure!(
             command_data_vec.len() <= MAX_MSG_SIZE,
             ProtocolError,
             "command data too long: {} bytes (max {})",
@@ -94,20 +95,20 @@ impl CommandMessage {
     #[cfg(feature = "mockhsm")]
     pub fn parse(mut bytes: Vec<u8>) -> Result<Self, SecureChannelError> {
         if bytes.len() < 3 {
-            secure_channel_fail!(
+            fail!(
                 ProtocolError,
                 "command too short: {} (expected at least 3-bytes)",
                 bytes.len()
             );
         }
 
-        let command_type = CommandType::from_u8(bytes[0])
-            .map_err(|e| secure_channel_err!(ProtocolError, "{}", e))?;
+        let command_type =
+            CommandType::from_u8(bytes[0]).map_err(|e| err!(ProtocolError, "{}", e))?;
 
         let length = BigEndian::read_u16(&bytes[1..3]) as usize;
 
         if length + 3 != bytes.len() {
-            secure_channel_fail!(
+            fail!(
                 ProtocolError,
                 "unexpected command length {} (expecting {})",
                 bytes.len() - 3,
@@ -120,7 +121,7 @@ impl CommandMessage {
         let (session_id, mac) = match command_type {
             CommandType::AuthSession | CommandType::SessionMessage => {
                 if bytes.is_empty() {
-                    secure_channel_fail!(
+                    fail!(
                         ProtocolError,
                         "expected session ID but command data is empty"
                     );
@@ -129,7 +130,7 @@ impl CommandMessage {
                 let id = SessionId::new(bytes.remove(0))?;
 
                 if bytes.len() < MAC_SIZE {
-                    secure_channel_fail!(
+                    fail!(
                         ProtocolError,
                         "expected MAC for {:?} but command data is too short: {}",
                         command_type,

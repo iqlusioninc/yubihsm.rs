@@ -7,6 +7,7 @@ pub(crate) mod connection;
 mod timeout;
 
 use self::connection::Connection;
+use self::error::SessionErrorKind::*;
 pub use self::{
     error::{SessionError, SessionErrorKind},
     timeout::SessionTimeout,
@@ -110,7 +111,7 @@ impl<A: Adapter> Session<A> {
         self.connection.open(
             self.credentials
                 .as_ref()
-                .ok_or_else(|| session_err!(AuthFailed, "session reconnection disabled"))?,
+                .ok_or_else(|| err!(AuthFailed, "session reconnection disabled"))?,
         )?;
 
         self.last_command_timestamp = Instant::now();
@@ -207,11 +208,11 @@ impl<A: Adapter> Session<A> {
                 &description
             );
 
-            session_fail!(ResponseError, description);
+            fail!(ResponseError, description);
         }
 
         if response.command().unwrap() != T::COMMAND_TYPE {
-            session_fail!(
+            fail!(
                 ResponseError,
                 "command type mismatch: expected {:?}, got {:?}",
                 T::COMMAND_TYPE,

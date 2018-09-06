@@ -89,6 +89,7 @@ extern crate untrusted;
 extern crate uuid;
 
 /// Error types
+#[macro_use]
 pub mod error;
 
 /// Serde-powered serializers for the `YubiHSM2` wire format

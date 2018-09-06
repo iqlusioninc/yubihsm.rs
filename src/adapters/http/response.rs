@@ -1,7 +1,7 @@
 use std::{io::Read, net::TcpStream, str};
 
 use super::MAX_RESPONSE_SIZE;
-use adapters::AdapterError;
+use adapters::{AdapterError, AdapterErrorKind::ResponseError};
 
 /// The Transfer-Encoding Header
 const TRANSFER_ENCODING_HEADER: &str = "Transfer-Encoding: ";
@@ -75,7 +75,7 @@ impl ResponseReader {
             if self.body_offset.is_some() {
                 break;
             } else if self.pos + 1 >= MAX_RESPONSE_SIZE {
-                adapter_fail!(
+                fail!(
                     ResponseError,
                     "exceeded {}-byte response limit reading headers",
                     MAX_RESPONSE_SIZE
@@ -96,12 +96,12 @@ impl ResponseReader {
         // Ensure we got a 200 OK status
         match header_iter.next() {
             Some(HTTP_SUCCESS_STATUS) => (),
-            Some(status) => adapter_fail!(
+            Some(status) => fail!(
                 ResponseError,
                 "unexpected HTTP response status: \"{}\"",
                 status
             ),
-            None => adapter_fail!(ResponseError, "HTTP response status line missing!"),
+            None => fail!(ResponseError, "HTTP response status line missing!"),
         }
 
         for header in header_iter {
@@ -109,7 +109,7 @@ impl ResponseReader {
                 let content_length: usize = header[CONTENT_LENGTH_HEADER.len()..].parse()?;
 
                 if MAX_RESPONSE_SIZE - body_offset < content_length {
-                    adapter_fail!(
+                    fail!(
                         ResponseError,
                         "response body length too large for buffer ({} bytes)",
                         content_length
@@ -119,7 +119,7 @@ impl ResponseReader {
                 self.content_length = content_length;
             } else if header.starts_with(TRANSFER_ENCODING_HEADER) {
                 let transfer_encoding = &header[TRANSFER_ENCODING_HEADER.len()..];
-                adapter_fail!(
+                fail!(
                     ResponseError,
                     "adapter sent unsupported transfer encoding: {}",
                     transfer_encoding

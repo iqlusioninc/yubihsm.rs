@@ -5,7 +5,7 @@
 use super::{Command, Response};
 use securechannel::{Challenge, CommandMessage, Cryptogram, ResponseMessage};
 use serializers::deserialize;
-use session::SessionError;
+use session::{SessionError, SessionErrorKind::*};
 use {Adapter, CommandType, ObjectId, SessionId};
 
 /// Create a new encrypted session with the YubiHSM2 using the given connector
@@ -24,11 +24,11 @@ pub(crate) fn create_session<A: Adapter>(
     let response_message = ResponseMessage::parse(response_body)?;
 
     if response_message.is_err() {
-        command_fail!(ResponseError, "HSM error: {:?}", response_message.code);
+        fail!(ResponseError, "HSM error: {:?}", response_message.code);
     }
 
     if response_message.command().unwrap() != CommandType::CreateSession {
-        command_fail!(
+        fail!(
             ProtocolError,
             "command type mismatch: expected {:?}, got {:?}",
             CommandType::CreateSession,
@@ -38,7 +38,7 @@ pub(crate) fn create_session<A: Adapter>(
 
     let session_id = response_message
         .session_id
-        .ok_or_else(|| command_err!(CreateFailed, "no session ID in response"))?;
+        .ok_or_else(|| err!(CreateFailed, "no session ID in response"))?;
 
     let session_response = deserialize(response_message.data.as_ref())?;
 

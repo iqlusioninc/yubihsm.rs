@@ -48,41 +48,15 @@ pub enum AdapterErrorKind {
     UsbError,
 }
 
-/// Create a new connector error with a formatted message
-macro_rules! adapter_err {
-    ($kind:ident, $msg:expr) => {
-        ::adapters::AdapterError::new(
-            ::adapters::AdapterErrorKind::$kind,
-            Some($msg.to_owned())
-        )
-    };
-    ($kind:ident, $fmt:expr, $($arg:tt)+) => {
-        ::adapters::AdapterError::new(
-            ::adapters::AdapterErrorKind::$kind,
-            Some(format!($fmt, $($arg)+))
-        )
-    };
-}
-
-/// Create and return an connector error with a formatted message
-macro_rules! adapter_fail {
-    ($kind:ident, $msg:expr) => {
-        return Err(adapter_err!($kind, $msg).into());
-    };
-    ($kind:ident, $fmt:expr, $($arg:tt)+) => {
-        return Err(adapter_err!($kind, $fmt, $($arg)+).into());
-    };
-}
-
 impl From<fmt::Error> for AdapterError {
     fn from(err: fmt::Error) -> Self {
-        adapter_err!(IoError, err.to_string())
+        err!(AdapterErrorKind::IoError, err.to_string())
     }
 }
 
 impl From<io::Error> for AdapterError {
     fn from(err: io::Error) -> Self {
-        adapter_err!(IoError, err.to_string())
+        err!(AdapterErrorKind::IoError, err.to_string())
     }
 }
 
@@ -90,21 +64,21 @@ impl From<io::Error> for AdapterError {
 impl From<libusb::Error> for AdapterError {
     fn from(err: libusb::Error) -> AdapterError {
         match err {
-            libusb::Error::Access => adapter_err!(AccessDenied, "{}", err),
-            libusb::Error::Io => adapter_err!(IoError, "{}", err),
-            _ => adapter_err!(UsbError, "{}", err),
+            libusb::Error::Access => err!(AdapterErrorKind::AccessDenied, "{}", err),
+            libusb::Error::Io => err!(AdapterErrorKind::IoError, "{}", err),
+            _ => err!(AdapterErrorKind::UsbError, "{}", err),
         }
     }
 }
 
 impl From<ParseIntError> for AdapterError {
     fn from(err: ParseIntError) -> Self {
-        adapter_err!(ResponseError, err.to_string())
+        err!(AdapterErrorKind::ResponseError, err.to_string())
     }
 }
 
 impl From<Utf8Error> for AdapterError {
     fn from(err: Utf8Error) -> Self {
-        adapter_err!(ResponseError, err.to_string())
+        err!(AdapterErrorKind::ResponseError, err.to_string())
     }
 }

@@ -4,6 +4,7 @@
 
 use super::put_object::PutObjectParams;
 use super::{Command, Response};
+use session::SessionErrorKind::ProtocolError;
 use {
     Adapter, Capability, CommandType, Domain, HMACAlgorithm, ObjectId, ObjectLabel, Session,
     SessionError,
@@ -25,7 +26,7 @@ pub fn put_hmac_key<A: Adapter, T: Into<Vec<u8>>>(
     let hmac_key = key_bytes.into();
 
     if hmac_key.len() < HMAC_MIN_KEY_SIZE || hmac_key.len() > algorithm.max_key_len() {
-        command_fail!(
+        fail!(
             ProtocolError,
             "invalid key length for {:?}: {} (min {}, max {})",
             algorithm,

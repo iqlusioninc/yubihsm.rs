@@ -7,7 +7,7 @@ use serde::de::{self, Deserialize, Deserializer, Visitor};
 use serde::ser::{Serialize, Serializer};
 use std::fmt;
 
-use super::{Mac, SecureChannelError, SessionId, MAC_SIZE};
+use super::{Mac, SecureChannelError, SecureChannelErrorKind::ProtocolError, SessionId, MAC_SIZE};
 use commands::CommandType;
 
 /// Command responses
@@ -30,7 +30,7 @@ impl ResponseMessage {
     /// Parse a response into a Response struct
     pub fn parse(mut bytes: Vec<u8>) -> Result<Self, SecureChannelError> {
         if bytes.len() < 3 {
-            secure_channel_fail!(
+            fail!(
                 ProtocolError,
                 "response too short: {} (expected at least 3-bytes)",
                 bytes.len()
@@ -41,7 +41,7 @@ impl ResponseMessage {
         let length = BigEndian::read_u16(&bytes[1..3]) as usize;
 
         if length + 3 != bytes.len() {
-            secure_channel_fail!(
+            fail!(
                 ProtocolError,
                 "unexpected response length {} (expecting {})",
                 bytes.len() - 3,
@@ -53,7 +53,7 @@ impl ResponseMessage {
 
         let session_id = if code.has_session_id() {
             if bytes.is_empty() {
-                secure_channel_fail!(
+                fail!(
                     ProtocolError,
                     "expected session ID but response data is empty"
                 );
@@ -66,7 +66,7 @@ impl ResponseMessage {
 
         let mac = if code.has_rmac() {
             if bytes.len() < MAC_SIZE {
-                secure_channel_fail!(
+                fail!(
                     ProtocolError,
                     "expected R-MAC for {:?} but response data is too short: {}",
                     code,
@@ -232,8 +232,8 @@ impl ResponseCode {
         let code = (i16::from(byte) - 0x80) as i8;
 
         if code >= 0 {
-            let command_type = CommandType::from_u8(code as u8)
-                .map_err(|e| secure_channel_err!(ProtocolError, "{}", e))?;
+            let command_type =
+                CommandType::from_u8(code as u8).map_err(|e| err!(ProtocolError, "{}", e))?;
 
             return Ok(ResponseCode::Success(command_type));
         }
@@ -268,7 +268,7 @@ impl ResponseCode {
             -27 => ResponseCode::GenericError,
             -28 => ResponseCode::DeviceObjectExists,
             -29 => ResponseCode::ConnectorError,
-            _ => secure_channel_fail!(ProtocolError, "invalid response code: {}", code),
+            _ => fail!(ProtocolError, "invalid response code: {}", code),
         })
     }
 

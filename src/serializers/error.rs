@@ -22,36 +22,20 @@ pub enum SerializationErrorKind {
     UnexpectedEof,
 }
 
-/// Create a new serialization error with a formatted message
-macro_rules! serialization_err {
-    ($kind:ident, $msg:expr) => {
-        SerializationError::new(
-            ::serializers::SerializationErrorKind::$kind,
-            Some($msg.to_owned())
-        )
-    };
-    ($kind:ident, $fmt:expr, $($arg:tt)+) => {
-        SerializationError::new(
-            ::serializers::SerializationErrorKind::$kind,
-            Some(format!($fmt, $($arg)+))
-        )
-    };
-}
-
 impl serde::ser::Error for SerializationError {
     fn custom<T: fmt::Display>(msg: T) -> Self {
-        serialization_err!(Parse, msg.to_string())
+        err!(SerializationErrorKind::Parse, msg.to_string())
     }
 }
 
 impl serde::de::Error for SerializationError {
     fn custom<T: fmt::Display>(msg: T) -> Self {
-        serialization_err!(Parse, msg.to_string())
+        err!(SerializationErrorKind::Parse, msg.to_string())
     }
 }
 
 impl From<io::Error> for SerializationError {
     fn from(err: io::Error) -> Self {
-        serialization_err!(Io, err.to_string())
+        err!(SerializationErrorKind::Io, err.to_string())
     }
 }

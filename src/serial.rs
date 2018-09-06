@@ -1,18 +1,9 @@
 use std::str;
 
-use adapters::{AdapterError, AdapterErrorKind};
+use adapters::{AdapterError, AdapterErrorKind::AddrInvalid};
 
 /// Length of a YubiHSM2 serial number
 pub const SERIAL_SIZE: usize = 10;
-
-macro_rules! err {
-    ($msg:expr) => {
-        AdapterError::new(AdapterErrorKind::AddrInvalid, Some($msg.to_owned()))
-    };
-    ($fmt:expr, $($arg:tt)+) => {
-        err!(format!($fmt, $($arg)+))
-    };
-}
 
 /// YubiHSM serial numbers
 #[derive(Copy, Clone, Debug, Deserialize, Eq, Hash, PartialEq, PartialOrd, Ord, Serialize)]
@@ -34,15 +25,26 @@ impl AsRef<str> for SerialNumber {
 impl str::FromStr for SerialNumber {
     type Err = AdapterError;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<SerialNumber, AdapterError> {
         if s.len() != SERIAL_SIZE {
-            return Err(err!("invalid serial number length ({}): {}", s.len(), s));
+            return Err(err!(
+                AddrInvalid,
+                "invalid serial number length ({}): {}",
+                s.len(),
+                s
+            ));
         }
 
         for char in s.chars() {
             match char {
                 '0'...'9' => (),
-                _ => return Err(err!("invalid character in serial number: {}", s)),
+                _ => {
+                    return Err(err!(
+                        AddrInvalid,
+                        "invalid character in serial number: {}",
+                        s
+                    ))
+                }
             }
         }
 

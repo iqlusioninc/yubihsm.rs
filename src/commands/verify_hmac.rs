@@ -4,6 +4,7 @@
 
 use super::hmac::HMACTag;
 use super::{Command, Response};
+use session::SessionErrorKind::ResponseError;
 use {Adapter, CommandType, ObjectId, Session, SessionError};
 
 /// Verify an HMAC tag of the given data with the given key ID
@@ -27,7 +28,7 @@ where
     if result.0 == 1 {
         Ok(())
     } else {
-        Err(command_err!(ResponseError, "HMAC verification failure"))
+        Err(err!(ResponseError, "HMAC verification failure"))
     }
 }
 

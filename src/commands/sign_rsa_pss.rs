@@ -5,7 +5,7 @@
 use byteorder::{BigEndian, ByteOrder};
 
 use super::{Command, Response};
-use session::{Session, SessionError};
+use session::{Session, SessionError, SessionErrorKind::ProtocolError};
 use sha2::{Digest, Sha256};
 use Adapter;
 use {Algorithm, CommandType, ObjectId};
@@ -23,7 +23,7 @@ pub fn sign_rsa_pss_sha256<A: Adapter>(
     data: &[u8],
 ) -> Result<RSAPSSSignature, SessionError> {
     if data.len() > RSA_PSS_MAX_MESSAGE_SIZE {
-        command_fail!(
+        fail!(
             ProtocolError,
             "message too large to be signed (max: {})",
             RSA_PSS_MAX_MESSAGE_SIZE
