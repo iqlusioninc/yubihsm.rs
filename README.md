@@ -172,17 +172,18 @@ process, and then performing an Ed25519 signature:
 
 ```rust
 extern crate yubihsm;
-use yubihsm::Session;
 
-// Default host, port, auth key ID, and password for yubihsm-connector
-let mut session = Session::create_from_password(
-     "http://127.0.0.1:12345",
-     1,
-     b"password",
-     true
+// Default yubihsm-connector URI, auth key ID, and password for yubihsm-connector
+// NOTE: DON'T USE THIS IN PRODUCTION!
+let mut session = yubihsm::HttpSession::create(
+    Default::default(), // `yubihsm-connector` configuration (`yubihsm::HttpConfig`)
+    Default::default(), // auth key ID and key/password (`yubihsm::Credentials`)
+    true // automatically reconnect if we get disconnected
 ).unwrap();
 
-// Note: You'll need to create this key first. Run the following from yubihsm-shell:
+// Note: You'll need to create an Ed25519 key in slot #100 for this to work.
+// Run this from yubihsm-shell (or use `yubihsm::generate_asymmetric_key`):
+//
 // `generate asymmetric 0 100 ed25519_test_key 1 asymmetric_sign_eddsa ed25519`
 let signature = yubihsm::sign_ed25519(&session, 100, "Hello, world!").unwrap();
 println!("Ed25519 signature: {:?}", signature);
