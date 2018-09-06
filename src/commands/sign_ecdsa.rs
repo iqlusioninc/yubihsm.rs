@@ -26,12 +26,10 @@ use adapters::usb::UsbAdapter;
 #[cfg(all(feature = "mockhsm", not(feature = "doc")))]
 use mockhsm::MockAdapter;
 use session::{Session, SessionError};
-#[cfg(
-    all(
-        feature = "sha2",
-        any(feature = "doc", not(feature = "mockhsm"))
-    )
-)]
+#[cfg(all(
+    feature = "sha2",
+    any(feature = "doc", not(feature = "mockhsm"))
+))]
 use sha2::{Digest, Sha256};
 use {CommandType, ObjectId};
 
@@ -52,19 +50,17 @@ pub fn sign_ecdsa_raw_digest<T>(
 where
     T: Into<Vec<u8>>,
 {
-    session.send_encrypted_command(SignDataECDSACommand {
+    session.send_command(SignDataECDSACommand {
         key_id,
         digest: digest.into(),
     })
 }
 
 /// Compute an ECDSA signature of the SHA-256 hash of the given data with the given key ID
-#[cfg(
-    all(
-        feature = "sha2",
-        any(feature = "doc", not(feature = "mockhsm"))
-    )
-)]
+#[cfg(all(
+    feature = "sha2",
+    any(feature = "doc", not(feature = "mockhsm"))
+))]
 pub fn sign_ecdsa_sha256(
     session: &mut Session<AdapterType>,
     key_id: ObjectId,
@@ -83,7 +79,7 @@ pub fn sign_ecdsa_sha256(
 ) -> Result<ECDSASignature, SessionError> {
     // When using the MockHSM, pass the unhashed raw message. This is because *ring* does not (yet)
     // provide an API for signing a raw digest. See: https://github.com/briansmith/ring/issues/253
-    session.send_encrypted_command(SignDataECDSACommand {
+    session.send_command(SignDataECDSACommand {
         key_id,
         digest: data.into(),
     })

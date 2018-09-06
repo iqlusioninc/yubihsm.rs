@@ -15,7 +15,7 @@ macro_rules! err {
 }
 
 /// YubiHSM serial numbers
-#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
+#[derive(Copy, Clone, Debug, Deserialize, Eq, Hash, PartialEq, PartialOrd, Ord, Serialize)]
 pub struct SerialNumber([u8; SERIAL_SIZE]);
 
 impl SerialNumber {

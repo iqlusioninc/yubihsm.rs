@@ -12,12 +12,12 @@ use {CommandType, ObjectId};
 ///
 /// WARNING: This method has not been tested and is not confirmed to actually work! Use at your
 /// own risk!
-pub fn sign_rsa_pkcs1v15_sha256<C: Adapter>(
-    session: &mut Session<C>,
+pub fn sign_rsa_pkcs1v15_sha256<A: Adapter>(
+    session: &mut Session<A>,
     key_id: ObjectId,
     data: &[u8],
 ) -> Result<RSAPKCS1Signature, SessionError> {
-    session.send_encrypted_command(SignDataPKCS1Command {
+    session.send_command(SignDataPKCS1Command {
         key_id,
         digest: Sha256::digest(data).as_slice().into(),
     })

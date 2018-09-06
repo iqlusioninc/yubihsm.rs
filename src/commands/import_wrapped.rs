@@ -6,18 +6,18 @@ use super::{Command, Response};
 use {Adapter, CommandType, ObjectId, ObjectType, Session, SessionError, WrapMessage, WrapNonce};
 
 /// Import an encrypted object from the `YubiHSM2` using the given key-wrapping key
-pub fn import_wrapped<C, M>(
-    session: &mut Session<C>,
+pub fn import_wrapped<A, M>(
+    session: &mut Session<A>,
     wrap_key_id: ObjectId,
     wrap_message: M,
 ) -> Result<ImportWrappedResponse, SessionError>
 where
-    C: Adapter,
+    A: Adapter,
     M: Into<WrapMessage>,
 {
     let WrapMessage { nonce, ciphertext } = wrap_message.into();
 
-    session.send_encrypted_command(ImportWrappedCommand {
+    session.send_command(ImportWrappedCommand {
         wrap_key_id,
         nonce,
         ciphertext,

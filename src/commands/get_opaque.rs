@@ -6,12 +6,12 @@ use super::{Command, Response};
 use {Adapter, CommandType, ObjectId, Session, SessionError};
 
 /// Get the public key for an asymmetric key stored on the device
-pub fn get_opaque<C: Adapter>(
-    session: &mut Session<C>,
+pub fn get_opaque<A: Adapter>(
+    session: &mut Session<A>,
     object_id: ObjectId,
 ) -> Result<Vec<u8>, SessionError> {
     session
-        .send_encrypted_command(GetOpaqueCommand { object_id })
+        .send_command(GetOpaqueCommand { object_id })
         .map(|response| response.0)
 }
 

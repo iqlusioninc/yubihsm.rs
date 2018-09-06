@@ -15,6 +15,10 @@ pub enum SessionErrorKind {
     #[fail(display = "authentication failed")]
     AuthFailed,
 
+    /// Session is closed
+    #[fail(display = "session closed")]
+    ClosedSessionError,
+
     /// Couldn't create session
     #[fail(display = "couldn't create session")]
     CreateFailed,

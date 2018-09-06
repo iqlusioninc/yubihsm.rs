@@ -10,8 +10,8 @@ use {
 };
 
 /// Put an existing asymmetric key into the `YubiHSM2`
-pub fn put_asymmetric_key<C: Adapter, T: Into<Vec<u8>>>(
-    session: &mut Session<C>,
+pub fn put_asymmetric_key<A: Adapter, T: Into<Vec<u8>>>(
+    session: &mut Session<A>,
     key_id: ObjectId,
     label: ObjectLabel,
     domains: Domain,
@@ -32,7 +32,7 @@ pub fn put_asymmetric_key<C: Adapter, T: Into<Vec<u8>>>(
     }
 
     session
-        .send_encrypted_command(PutAsymmetricKeyCommand {
+        .send_command(PutAsymmetricKeyCommand {
             params: PutObjectParams {
                 id: key_id,
                 label,
@@ -41,8 +41,7 @@ pub fn put_asymmetric_key<C: Adapter, T: Into<Vec<u8>>>(
                 algorithm: algorithm.into(),
             },
             data,
-        })
-        .map(|response| response.key_id)
+        }).map(|response| response.key_id)
 }
 
 /// Request parameters for `commands::put_asymmetric_key`

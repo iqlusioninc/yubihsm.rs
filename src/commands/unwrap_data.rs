@@ -6,24 +6,23 @@ use super::{Command, Response};
 use {Adapter, CommandType, ObjectId, Session, SessionError, WrapMessage, WrapNonce};
 
 /// Decrypt data which was encrypted (using AES-CCM) under a wrap key
-pub fn unwrap_data<C, M>(
-    session: &mut Session<C>,
+pub fn unwrap_data<A, M>(
+    session: &mut Session<A>,
     wrap_key_id: ObjectId,
     wrap_message: M,
 ) -> Result<Vec<u8>, SessionError>
 where
-    C: Adapter,
+    A: Adapter,
     M: Into<WrapMessage>,
 {
     let WrapMessage { nonce, ciphertext } = wrap_message.into();
 
     session
-        .send_encrypted_command(UnwrapDataCommand {
+        .send_command(UnwrapDataCommand {
             wrap_key_id,
             nonce,
             ciphertext,
-        })
-        .map(|response| response.0)
+        }).map(|response| response.0)
 }
 
 /// Request parameters for `commands::unwrap_data`

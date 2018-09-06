@@ -3,22 +3,23 @@ version: 2
 jobs:
   build:
     docker:
-      - image: iqlusion/rust-ci:20180729.2 # bump cache keys when modifying this
+      - image: iqlusion/rust-ci:20180905.2 # bump cache keys when modifying this
 
     steps:
       - checkout
       - restore_cache:
-          key: cache-20180729.2 # bump save_cache key below too
+          key: cache-20180905.2 # bump save_cache key below too
       - run:
           name: rustfmt
           command: |
             cargo +$RUST_NIGHTLY_VERSION fmt --version
             cargo +$RUST_NIGHTLY_VERSION fmt -- --check
-      - run:
-          name: clippy
-          command: |
-            cargo +$RUST_NIGHTLY_VERSION clippy --version
-            cargo +$RUST_NIGHTLY_VERSION clippy --features=mockhsm
+      # Wait for the dust to settle around scoped lints
+      #- run:
+      #    name: clippy
+      #    command: |
+      #      cargo +$RUST_NIGHTLY_VERSION clippy --version
+      #      cargo +$RUST_NIGHTLY_VERSION clippy --features=mockhsm
       - run:
           name: build --no-default-features
           command: |
@@ -27,19 +28,25 @@ jobs:
             cargo build --no-default-features
             cargo build --no-default-features --release
       - run:
-          name: build --features=rsa
+          name: build
           command: |
             rustc --version
             cargo --version
             cargo build
-            cargo build --release --features=rsa
+            cargo build --release
+      - run:
+          name: build --features=rsa,usb
+          command: |
+            rustc --version
+            cargo --version
+            cargo build --features=rsa,usb
+            cargo build --features=rsa,usb --release
       - run:
           name: build --features=doc
           command: |
             rustc --version
             cargo --version
-            cargo build
-            cargo build --release --features=doc
+            cargo build --features=doc
       - run:
           name: test
           command: |
@@ -52,7 +59,7 @@ jobs:
             cargo audit --version
             cargo audit
       - save_cache:
-          key: cache-20180729.2 # bump restore_cache key above too
+          key: cache-20180905.2 # bump restore_cache key above too
           paths:
             - "~/.cargo"
             - "./target"

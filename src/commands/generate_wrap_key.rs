@@ -13,8 +13,8 @@ use {
 ///
 /// Delegated capabilities are the set of `Capability` bits that an object is allowed to have
 /// when imported or exported using the wrap key
-pub fn generate_wrap_key<C: Adapter>(
-    session: &mut Session<C>,
+pub fn generate_wrap_key<A: Adapter>(
+    session: &mut Session<A>,
     key_id: ObjectId,
     label: ObjectLabel,
     domains: Domain,
@@ -23,7 +23,7 @@ pub fn generate_wrap_key<C: Adapter>(
     algorithm: WrapAlgorithm,
 ) -> Result<ObjectId, SessionError> {
     session
-        .send_encrypted_command(GenWrapKeyCommand {
+        .send_command(GenWrapKeyCommand {
             params: GenerateKeyParams {
                 key_id,
                 label,
@@ -32,8 +32,7 @@ pub fn generate_wrap_key<C: Adapter>(
                 algorithm: algorithm.into(),
             },
             delegated_capabilities,
-        })
-        .map(|response| response.key_id)
+        }).map(|response| response.key_id)
 }
 
 /// Request parameters for `commands::generate_wrap_key`

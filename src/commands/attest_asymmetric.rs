@@ -15,12 +15,12 @@ use {Adapter, CommandType, ObjectId, Session, SessionError};
 ///
 /// If no attestation key is given, the device's default attestation key
 /// will be used, and can be verified against Yubico's certificate.
-pub fn attest_asymmetric<C: Adapter>(
-    session: &mut Session<C>,
+pub fn attest_asymmetric<A: Adapter>(
+    session: &mut Session<A>,
     key_id: ObjectId,
     attestation_key_id: Option<ObjectId>,
 ) -> Result<AttestationCertificate, SessionError> {
-    session.send_encrypted_command(AttestAsymmetricCommand {
+    session.send_command(AttestAsymmetricCommand {
         key_id,
         attestation_key_id: attestation_key_id.unwrap_or(0),
     })

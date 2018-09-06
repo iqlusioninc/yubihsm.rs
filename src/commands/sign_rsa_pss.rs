@@ -17,8 +17,8 @@ pub const RSA_PSS_MAX_MESSAGE_SIZE: usize = 0xFFFF;
 ///
 /// WARNING: This method has not been tested and is not confirmed to actually work! Use at your
 /// own risk!
-pub fn sign_rsa_pss_sha256<C: Adapter>(
-    session: &mut Session<C>,
+pub fn sign_rsa_pss_sha256<A: Adapter>(
+    session: &mut Session<A>,
     key_id: ObjectId,
     data: &[u8],
 ) -> Result<RSAPSSSignature, SessionError> {
@@ -38,7 +38,7 @@ pub fn sign_rsa_pss_sha256<C: Adapter>(
     hasher.input(data);
     let digest = hasher.result();
 
-    session.send_encrypted_command(SignDataPSSCommand {
+    session.send_command(SignDataPSSCommand {
         key_id,
         mgf1_hash_alg: Algorithm::MGF1_SHA256,
         salt_len: digest.as_slice().len() as u16,

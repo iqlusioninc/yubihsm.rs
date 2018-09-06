@@ -10,8 +10,8 @@ use {
 };
 
 /// Generate a new HMAC key within the `YubiHSM2`
-pub fn generate_hmac_key<C: Adapter>(
-    session: &mut Session<C>,
+pub fn generate_hmac_key<A: Adapter>(
+    session: &mut Session<A>,
     key_id: ObjectId,
     label: ObjectLabel,
     domains: Domain,
@@ -19,14 +19,13 @@ pub fn generate_hmac_key<C: Adapter>(
     algorithm: HMACAlgorithm,
 ) -> Result<ObjectId, SessionError> {
     session
-        .send_encrypted_command(GenHMACKeyCommand(GenerateKeyParams {
+        .send_command(GenHMACKeyCommand(GenerateKeyParams {
             key_id,
             label,
             domains,
             capabilities,
             algorithm: algorithm.into(),
-        }))
-        .map(|response| response.key_id)
+        })).map(|response| response.key_id)
 }
 
 /// Request parameters for `commands::generate_hmac_key`

@@ -13,8 +13,8 @@ use {
 pub const HMAC_MIN_KEY_SIZE: usize = 8;
 
 /// Put an existing auth key into the `YubiHSM2`
-pub fn put_hmac_key<C: Adapter, T: Into<Vec<u8>>>(
-    session: &mut Session<C>,
+pub fn put_hmac_key<A: Adapter, T: Into<Vec<u8>>>(
+    session: &mut Session<A>,
     key_id: ObjectId,
     label: ObjectLabel,
     domains: Domain,
@@ -36,7 +36,7 @@ pub fn put_hmac_key<C: Adapter, T: Into<Vec<u8>>>(
     }
 
     session
-        .send_encrypted_command(PutHMACKeyCommand {
+        .send_command(PutHMACKeyCommand {
             params: PutObjectParams {
                 id: key_id,
                 label,
@@ -45,8 +45,7 @@ pub fn put_hmac_key<C: Adapter, T: Into<Vec<u8>>>(
                 algorithm: algorithm.into(),
             },
             hmac_key,
-        })
-        .map(|response| response.key_id)
+        }).map(|response| response.key_id)
 }
 
 /// Request parameters for `commands::put_hmac_key`

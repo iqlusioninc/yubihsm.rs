@@ -4,6 +4,9 @@ use std::str::FromStr;
 
 use {adapters::AdapterError, SerialNumber};
 
+/// `yubihsm-connector` status message when healthy
+const CONNECTOR_STATUS_OK: &str = "OK";
+
 /// Status response from `yubihsm-connector` containing information about its
 /// health and what `YubiHSM2` we're connected to
 #[derive(Clone, Debug)]
@@ -83,5 +86,18 @@ impl ConnectorStatus {
             version,
             pid,
         })
+    }
+
+    /// Is the status message "OK"?
+    pub fn is_ok(&self) -> bool {
+        if self.message == CONNECTOR_STATUS_OK {
+            true
+        } else {
+            debug!(
+                "bad status message from yubihsm-connector: {}",
+                &self.message
+            );
+            false
+        }
     }
 }

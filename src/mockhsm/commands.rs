@@ -35,7 +35,7 @@ use commands::{
     reset::ResetResponse,
     set_log_index::SetLogIndexResponse,
     sign_ecdsa::{ECDSASignature, SignDataECDSACommand},
-    sign_eddsa::{ED25519_SIGNATURE_SIZE, Ed25519Signature, SignDataEdDSACommand},
+    sign_eddsa::{Ed25519Signature, SignDataEdDSACommand, ED25519_SIGNATURE_SIZE},
     storage_status::StorageStatusResponse,
     verify_hmac::{VerifyHMACCommand, VerifyHMACResponse},
     CommandType, Response,
@@ -431,8 +431,7 @@ fn list_objects(state: &State, cmd_data: &[u8]) -> ResponseMessage {
             object_id: object.object_info.object_id,
             object_type: object.object_info.object_type,
             sequence: object.object_info.sequence,
-        })
-        .collect();
+        }).collect();
 
     ListObjectsResponse(list_entries).serialize()
 }

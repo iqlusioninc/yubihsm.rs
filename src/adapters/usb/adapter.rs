@@ -5,7 +5,7 @@ use std::{
     time::Duration,
 };
 
-use super::{UsbDevices, UsbTimeout};
+use super::{UsbConfig, UsbDevices, UsbTimeout};
 use adapters::{Adapter, AdapterError};
 use securechannel::MAX_MSG_SIZE;
 use serial::SerialNumber;
@@ -24,6 +24,12 @@ const YUBIHSM2_BULK_IN_ENDPOINT: u8 = 0x81;
 pub struct UsbAdapter {
     /// Handle to the underlying USB device
     handle: Mutex<libusb::DeviceHandle<'static>>,
+
+    /// USB bus number for this device
+    pub bus_number: u8,
+
+    /// USB device address for this device
+    pub device_address: u8,
 
     /// Serial number of the device
     pub serial_number: SerialNumber,
@@ -47,6 +53,8 @@ impl UsbAdapter {
         flush(&mut handle)?;
 
         let adapter = UsbAdapter {
+            bus_number: device.bus_number(),
+            device_address: device.address(),
             serial_number,
             timeout,
             handle: Mutex::new(handle),
@@ -58,49 +66,21 @@ impl UsbAdapter {
 
 impl Adapter for UsbAdapter {
     type Config = UsbConfig;
-    type Status = ();
 
-    /// We don't bother to implement this
-    fn open(_config: UsbConfig) -> Result<Self, AdapterError> {
-        panic!("unimplemented");
+    /// Connect to a YubiHSM2 using the given configuration
+    fn open(config: &UsbConfig) -> Result<Self, AdapterError> {
+        UsbDevices::open(config.serial, UsbTimeout::from_millis(config.timeout_ms))
     }
 
-    /// If we get a reconnect signal, rescan USB devices looking for a YubiHSM2
-    /// with the same serial number. If we find it, open a new handle and
-    /// replace the old one.
-    fn reconnect(&self) -> Result<(), AdapterError> {
-        println!(
-            "resetting YubiHSM 2 (serial #{})",
-            self.serial_number.as_str()
-        );
-
-        let mut handle = self.handle.lock().unwrap();
-
-        // Make a best effort to release the current interface
-        let _ = handle.release_interface(YUBIHSM2_INTERFACE_NUM);
-
-        // Rescan the device bus for a YubiHSM 2 with the same serial number, opening a
-        // new adapter (whose handle we'll steal and claim as our own)
-        let new_handle = UsbDevices::open(Some(self.serial_number), self.timeout)?.handle;
-
-        // If we found one, replace the old one
-        *handle = new_handle.into_inner().unwrap();
-
-        println!(
-            "successfully reset YubiHSM 2 (serial #{})",
-            self.serial_number.as_str()
-        );
-
-        Ok(())
-    }
-
-    /// Stub (TODO: remove this from the trait)
-    fn status(&self) -> Result<(), AdapterError> {
-        Ok(())
+    /// Check that we still have an active USB connection
+    fn is_open(&self) -> bool {
+        let handle = self.handle.lock().unwrap();
+        // TODO: better test that our USB connection is still open?
+        handle.active_configuration().is_ok()
     }
 
     /// Send a command to the YubiHSM and read its response
-    fn send_command(&self, _uuid: Uuid, cmd: Vec<u8>) -> Result<Vec<u8>, AdapterError> {
+    fn send_message(&self, _uuid: Uuid, cmd: Vec<u8>) -> Result<Vec<u8>, AdapterError> {
         let mut handle = self.handle.lock().unwrap();
         send_message(&mut handle, cmd.as_ref(), self.timeout)?;
         recv_message(&mut handle, self.timeout)
@@ -111,7 +91,9 @@ impl Debug for UsbAdapter {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "yubihsm::UsbAdapter {{ serial_number: {:?}, timeout: {:?} }}",
+            "yubihsm::UsbAdapter(bus={} addr={} serial=#{:?} timeout={:?})",
+            self.bus_number,
+            self.device_address,
             self.serial_number.as_str(),
             self.timeout.duration()
         )
@@ -121,17 +103,6 @@ impl Debug for UsbAdapter {
 impl Default for UsbAdapter {
     fn default() -> Self {
         UsbDevices::open(None, UsbTimeout::default()).unwrap()
-    }
-}
-
-/// Fake config
-// TODO: real config
-#[derive(Debug, Default)]
-pub struct UsbConfig;
-
-impl fmt::Display for UsbConfig {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "(nothing to see here)")
     }
 }
 
@@ -177,7 +148,6 @@ fn recv_message(
 ) -> Result<Vec<u8>, AdapterError> {
     // Allocate a buffer which is the maximum size we expect to receive
     let mut response = vec![0u8; MAX_MSG_SIZE];
-
     let nbytes = handle.read_bulk(YUBIHSM2_BULK_IN_ENDPOINT, &mut response, timeout.duration())?;
 
     response.truncate(nbytes);

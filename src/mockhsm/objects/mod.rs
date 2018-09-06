@@ -6,12 +6,13 @@ mod ecdsa;
 mod payload;
 
 use failure::Error;
-use ring::aead::{self, AES_128_GCM, AES_256_GCM, OpeningKey, SealingKey};
+use ring::aead::{self, OpeningKey, SealingKey, AES_128_GCM, AES_256_GCM};
 use std::collections::hash_map::Iter as HashMapIter;
 use std::collections::HashMap;
 
 pub(crate) use self::payload::Payload;
-use auth_key::{AuthKey, AUTH_KEY_DEFAULT_ID, AUTH_KEY_SIZE};
+use auth_key::{AuthKey, AUTH_KEY_SIZE};
+use credentials::DEFAULT_AUTH_KEY_ID;
 use serializers::{deserialize, serialize};
 use {
     Algorithm, Capability, Domain, ObjectHandle, ObjectId, ObjectInfo, ObjectLabel, ObjectOrigin,
@@ -36,10 +37,10 @@ impl Default for Objects {
         let mut objects = HashMap::new();
 
         // Insert default authentication key
-        let auth_key_handle = ObjectHandle::new(AUTH_KEY_DEFAULT_ID, ObjectType::AuthKey);
+        let auth_key_handle = ObjectHandle::new(DEFAULT_AUTH_KEY_ID, ObjectType::AuthKey);
 
         let auth_key_info = ObjectInfo {
-            object_id: AUTH_KEY_DEFAULT_ID,
+            object_id: DEFAULT_AUTH_KEY_ID,
             object_type: ObjectType::AuthKey,
             algorithm: Algorithm::YUBICO_AES_AUTH,
             capabilities: Capability::all(),

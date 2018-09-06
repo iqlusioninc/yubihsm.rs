@@ -11,8 +11,8 @@ use {
 
 /// Put an existing wrap key into the `YubiHSM2`
 #[allow(unknown_lints, too_many_arguments)]
-pub fn put_wrap_key<C: Adapter, T: Into<Vec<u8>>>(
-    session: &mut Session<C>,
+pub fn put_wrap_key<A: Adapter, T: Into<Vec<u8>>>(
+    session: &mut Session<A>,
     key_id: ObjectId,
     label: ObjectLabel,
     domains: Domain,
@@ -34,7 +34,7 @@ pub fn put_wrap_key<C: Adapter, T: Into<Vec<u8>>>(
     }
 
     session
-        .send_encrypted_command(PutWrapKeyCommand {
+        .send_command(PutWrapKeyCommand {
             params: PutObjectParams {
                 id: key_id,
                 label,
@@ -44,8 +44,7 @@ pub fn put_wrap_key<C: Adapter, T: Into<Vec<u8>>>(
             },
             delegated_capabilities,
             data,
-        })
-        .map(|response| response.key_id)
+        }).map(|response| response.key_id)
 }
 
 /// Request parameters for `commands::put_wrap_key`

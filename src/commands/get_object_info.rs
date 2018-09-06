@@ -6,17 +6,16 @@ use super::{Command, Response};
 use {Adapter, CommandType, ObjectHandle, ObjectId, ObjectInfo, ObjectType, Session, SessionError};
 
 /// Get information about an object
-pub fn get_object_info<C: Adapter>(
-    session: &mut Session<C>,
+pub fn get_object_info<A: Adapter>(
+    session: &mut Session<A>,
     object_id: ObjectId,
     object_type: ObjectType,
 ) -> Result<ObjectInfo, SessionError> {
     session
-        .send_encrypted_command(GetObjectInfoCommand(ObjectHandle::new(
+        .send_command(GetObjectInfoCommand(ObjectHandle::new(
             object_id,
             object_type,
-        )))
-        .map(|response| response.0)
+        ))).map(|response| response.0)
 }
 
 /// Request parameters for `commands::get_object_info`

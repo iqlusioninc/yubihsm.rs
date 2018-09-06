@@ -6,16 +6,15 @@ use super::{Command, Response};
 use {Adapter, CommandType, Session, SessionError};
 
 /// Have the card echo an input message
-pub fn echo<C, T>(session: &mut Session<C>, message: T) -> Result<Vec<u8>, SessionError>
+pub fn echo<A, T>(session: &mut Session<A>, message: T) -> Result<Vec<u8>, SessionError>
 where
-    C: Adapter,
+    A: Adapter,
     T: Into<Vec<u8>>,
 {
     session
-        .send_encrypted_command(EchoCommand {
+        .send_command(EchoCommand {
             message: message.into(),
-        })
-        .map(|response| response.0)
+        }).map(|response| response.0)
 }
 
 /// Request parameters for `commands::echo`

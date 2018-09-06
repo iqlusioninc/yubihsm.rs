@@ -1,26 +1,22 @@
 use std::time::Duration;
 
-/// Number of seconds to wait when communicating with the YubiHSM2
-pub const DEFAULT_USB_TIMEOUT_SECS: u64 = 1; // 1 second
+/// Sessions with the YubiHSM are stateful and expire after 30 seconds. See:
+/// <https://developers.yubico.com/YubiHSM2/Concepts/Session.html>
+pub const SESSION_INACTIVITY_TIMEOUT: Duration = Duration::from_secs(30);
 
 /// Timeouts when performing USB operations
 #[derive(Copy, Clone, Debug, Deserialize, Serialize)]
-pub struct UsbTimeout(Duration);
+pub struct SessionTimeout(Duration);
 
-impl UsbTimeout {
+impl SessionTimeout {
     /// Create a new timeout from the given duration
     pub fn new(duration: Duration) -> Self {
-        UsbTimeout(duration)
+        SessionTimeout(duration)
     }
 
     /// Create a new timeout from the given number of secs
     pub fn from_secs(secs: u64) -> Self {
         Self::from(Duration::from_secs(secs))
-    }
-
-    /// Create a new timeout from the given number of milliseconds
-    pub fn from_millis(millis: u64) -> Self {
-        Self::from(Duration::from_millis(millis))
     }
 
     /// Get the duration value
@@ -30,13 +26,13 @@ impl UsbTimeout {
 }
 
 /// Default timeout
-impl Default for UsbTimeout {
+impl Default for SessionTimeout {
     fn default() -> Self {
-        Self::from_secs(DEFAULT_USB_TIMEOUT_SECS)
+        Self::new(SESSION_INACTIVITY_TIMEOUT)
     }
 }
 
-impl From<Duration> for UsbTimeout {
+impl From<Duration> for SessionTimeout {
     fn from(duration: Duration) -> Self {
         Self::new(duration)
     }

@@ -6,16 +6,16 @@ use super::{Command, Response};
 use {Adapter, CommandType, ObjectId, Session, SessionError};
 
 /// Compute an HMAC tag of the given data with the given key ID
-pub fn hmac<C, D>(
-    session: &mut Session<C>,
+pub fn hmac<A, D>(
+    session: &mut Session<A>,
     key_id: ObjectId,
     data: D,
 ) -> Result<HMACTag, SessionError>
 where
-    C: Adapter,
+    A: Adapter,
     D: Into<Vec<u8>>,
 {
-    session.send_encrypted_command(HMACDataCommand {
+    session.send_command(HMACDataCommand {
         key_id,
         data: data.into(),
     })

@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 
 use adapters::{AdapterError, AdapterErrorKind};
 use object::{ObjectId, ObjectType};
-use securechannel::{Challenge, Channel, SessionId};
+use securechannel::{Challenge, SecureChannel, SessionId};
 
 use super::objects::Objects;
 use super::session::Session;
@@ -43,7 +43,7 @@ impl State {
                 .get(auth_key_id, ObjectType::AuthKey)
                 .unwrap_or_else(|| panic!("MockHSM has no AuthKey in slot {:?}", auth_key_id));
 
-            Channel::new(
+            SecureChannel::new(
                 session_id,
                 auth_key_obj.payload.auth_key().expect("auth key payload"),
                 host_challenge,

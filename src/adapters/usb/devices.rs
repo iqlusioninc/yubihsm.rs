@@ -11,6 +11,47 @@ pub const YUBICO_VENDOR_ID: u16 = 0x1050;
 /// USB product ID for the YubiHSM2
 pub const YUBIHSM2_PRODUCT_ID: u16 = 0x0030;
 
+/// Write consistent `debug!(...) lines for `UsbAdapter`
+macro_rules! usb_debug {
+    ($device:expr, $msg:expr) => {
+        debug!(
+            concat!("USB(bus={},addr={}): ", $msg),
+            $device.bus_number(),
+            $device.address(),
+        );
+    };
+    ($device:expr, $fmt:expr, $($arg:tt)+) => {
+        debug!(
+            concat!("USB(bus={},addr={}): ", $fmt),
+            $device.bus_number(),
+            $device.address(),
+            $($arg)+
+        );
+    };
+}
+
+/// Create `UsbError`s that include bus and address information
+macro_rules! usb_err {
+    ($device:expr, $msg:expr) => {
+        adapter_err!(
+            UsbError,
+            "USB(bus={},addr={}): {}",
+            $device.bus_number(),
+            $device.address(),
+            $msg
+        );
+    };
+    ($device:expr, $fmt:expr, $($arg:tt)+) => {
+        adapter_err!(
+            UsbError,
+            concat!("USB(bus={},addr={}): ", $fmt),
+            $device.bus_number(),
+            $device.address(),
+            $($arg)+
+        );
+    };
+}
+
 lazy_static! {
     /// Global USB context for accessing YubiHSM2s
     static ref GLOBAL_USB_CONTEXT: libusb::Context = libusb::Context::new().unwrap_or_else(|e| {
@@ -19,8 +60,7 @@ lazy_static! {
     });
 }
 
-/// The `UsbDevices` type enumerates available YubiHSM2 devices by their serial
-/// number and opening connections to them (in the form of a `UsbAdapter`).
+/// A collection of detected YubiHSM 2 devices, represented as `HsmDevice`
 pub struct UsbDevices(Vec<HsmDevice>);
 
 impl UsbDevices {
@@ -73,7 +113,7 @@ impl UsbDevices {
         let device_list = GLOBAL_USB_CONTEXT.devices()?;
         let mut devices = vec![];
 
-        println!("USB: enumerating devices...");
+        debug!("USB: enumerating devices...");
 
         for device in device_list.iter() {
             let desc = device.device_descriptor()?;
@@ -82,21 +122,11 @@ impl UsbDevices {
                 continue;
             }
 
-            println!(
-                "USB(bus={},addr={}): found YubiHSM 2 device",
-                device.bus_number(),
-                device.address(),
-            );
+            usb_debug!(device, "found YubiHSM device");
 
-            let mut handle = device.open().map_err(|e| {
-                adapter_err!(
-                    UsbError,
-                    "USB(bus={},addr={}): error opening device: {}",
-                    device.bus_number(),
-                    device.address(),
-                    e
-                )
-            })?;
+            let mut handle = device
+                .open()
+                .map_err(|e| usb_err!(device, "error opening device: {}", e))?;
 
             handle.reset().map_err(|error| match error {
                 libusb::Error::NoDevice => adapter_err!(
@@ -105,37 +135,32 @@ impl UsbDevices {
                     device.bus_number(),
                     device.address()
                 ),
-                other => adapter_err!(
-                    UsbError,
-                    "USB(bus={},addr={}): error resetting device: {}",
-                    device.bus_number(),
-                    device.address(),
-                    other
-                ),
+                other => usb_err!(device, "error resetting device: {}", other),
             })?;
 
             let language = *handle
                 .read_languages(timeout.duration())?
                 .first()
                 .ok_or_else(|| {
-                    adapter_err!(
-                        UsbError,
-                        "USB(bus={},addr={}): couldn't read YubiHSM serial number (missing language info)",
-                        device.bus_number(),
-                        device.address(),
+                    usb_err!(
+                        device,
+                        "couldn't read YubiHSM serial number (missing language info)"
                     )
                 })?;
 
-            let serial_number = SerialNumber::from_str(&handle.read_serial_number_string(
-                language,
-                &desc,
-                timeout.duration(),
-            )?)?;
+            let t = timeout.duration();
+            let manufacturer = handle.read_manufacturer_string(language, &desc, t)?;
+            let product = handle.read_product_string(language, &desc, t)?;
 
-            println!(
-                "USB(bus={},addr={}): successfully opened YubiHSM 2 device (serial #{})",
+            let serial_number =
+                SerialNumber::from_str(&handle.read_serial_number_string(language, &desc, t)?)?;
+
+            info!(
+                "USB(bus={},addr={}): successfully opened {} {} (serial #{})",
                 device.bus_number(),
                 device.address(),
+                manufacturer,
+                product,
                 serial_number.as_str(),
             );
 
@@ -146,7 +171,7 @@ impl UsbDevices {
         }
 
         if devices.is_empty() {
-            println!("no YubiHSM 2 devices found");
+            debug!("no YubiHSM 2 devices found");
         }
 
         Ok(UsbDevices(devices))

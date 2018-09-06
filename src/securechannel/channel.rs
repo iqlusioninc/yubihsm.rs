@@ -84,33 +84,33 @@ pub(crate) enum SecurityLevel {
 }
 
 /// SCP03 Secure Channel
-pub(crate) struct Channel {
-    // ID of this channel (a.k.a. session ID)
+pub(crate) struct SecureChannel {
+    /// ID of this channel (a.k.a. session ID)
     id: Id,
 
-    // Counter of total commands performed in this session
+    /// Counter of total commands performed in this session
     counter: u32,
 
-    // External authentication state
+    /// External authentication state
     security_level: SecurityLevel,
 
-    // Context (card + host challenges)
+    /// Context (card + host challenges)
     context: Context,
 
-    // Session encryption key (S-ENC)
+    /// Session encryption key (S-ENC)
     enc_key: [u8; KEY_SIZE],
 
-    // Session Command MAC key (S-MAC)
+    /// Session Command MAC key (S-MAC)
     mac_key: [u8; KEY_SIZE],
 
-    // Session Respose MAC key (S-RMAC)
+    /// Session Respose MAC key (S-RMAC)
     rmac_key: [u8; KEY_SIZE],
 
-    // Chaining value to be included when computing MACs
+    /// Chaining value to be included when computing MACs
     mac_chaining_value: [u8; MAC_SIZE * 2],
 }
 
-impl Channel {
+impl SecureChannel {
     /// Create a new channel with the given ID, auth key, and host/card challenges
     pub fn new(
         id: Id,
@@ -276,8 +276,7 @@ impl Channel {
             .map_err(|e| {
                 self.terminate();
                 secure_channel_err!(ProtocolError, "error decrypting response: {:?}", e)
-            })?
-            .len();
+            })?.len();
 
         response_message.truncate(response_len);
         let mut decrypted_response = ResponseMessage::parse(response_message)?;
@@ -349,7 +348,8 @@ impl Channel {
 
         if expected_host_cryptogram
             .ct_eq(&actual_host_cryptogram)
-            .unwrap_u8() != 1
+            .unwrap_u8()
+            != 1
         {
             self.terminate();
             secure_channel_fail!(VerifyFailed, "host cryptogram mismatch!");
@@ -388,8 +388,7 @@ impl Channel {
             .map_err(|e| {
                 self.terminate();
                 secure_channel_err!(ProtocolError, "error decrypting command: {:?}", e)
-            })?
-            .len();
+            })?.len();
 
         command_data.truncate(command_len);
         let mut decrypted_command = CommandMessage::parse(command_data)?;
@@ -513,7 +512,7 @@ impl Channel {
     }
 }
 
-impl Drop for Channel {
+impl Drop for SecureChannel {
     fn drop(&mut self) {
         self.terminate();
     }
@@ -540,7 +539,9 @@ mod tests {
     use super::SecurityLevel;
     use auth_key::AuthKey;
     use commands::CommandType;
-    use securechannel::{Challenge, Channel, CommandMessage, Mac, ResponseMessage, SessionId};
+    use securechannel::{
+        Challenge, CommandMessage, Mac, ResponseMessage, SecureChannel, SessionId,
+    };
 
     const PASSWORD: &[u8] = b"password";
     const HOST_CHALLENGE: &[u8] = &[0u8; 8];
@@ -548,7 +549,7 @@ mod tests {
     const COMMAND_TYPE: CommandType = CommandType::Echo;
     const COMMAND_DATA: &[u8] = b"Hello, world!";
 
-    fn create_channel_pair() -> (Channel, Channel) {
+    fn create_channel_pair() -> (SecureChannel, SecureChannel) {
         let auth_key = AuthKey::derive_from_password(PASSWORD);
 
         let host_challenge = Challenge::from_slice(HOST_CHALLENGE);
@@ -557,8 +558,10 @@ mod tests {
         let session_id = SessionId::new(0).unwrap();
 
         // Create channels
-        let mut host_channel = Channel::new(session_id, &auth_key, host_challenge, card_challenge);
-        let mut card_channel = Channel::new(session_id, &auth_key, host_challenge, card_challenge);
+        let mut host_channel =
+            SecureChannel::new(session_id, &auth_key, host_challenge, card_challenge);
+        let mut card_channel =
+            SecureChannel::new(session_id, &auth_key, host_challenge, card_challenge);
 
         // Auth host to card
         let auth_command = host_channel.authenticate_session().unwrap();
@@ -590,8 +593,7 @@ mod tests {
             .encrypt_response(ResponseMessage::success(
                 decrypted_command.command_type,
                 decrypted_command.data,
-            ))
-            .unwrap();
+            )).unwrap();
 
         let decrypted_response = host_channel.decrypt_response(response_ciphertext).unwrap();
 
@@ -617,8 +619,7 @@ mod tests {
             .encrypt_response(ResponseMessage::success(
                 decrypted_command.command_type,
                 decrypted_command.data,
-            ))
-            .unwrap();
+            )).unwrap();
 
         // Tweak MAC in response
         let mut bad_mac = Vec::from(response_ciphertext.mac.as_ref().unwrap().as_slice());

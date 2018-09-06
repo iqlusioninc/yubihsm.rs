@@ -9,8 +9,8 @@ use securechannel::ResponseCode;
 use {Adapter, CommandType, ObjectId, Session, SessionError};
 
 /// Get audit logs from the YubiHSM2 device
-pub fn get_logs<C: Adapter>(session: &mut Session<C>) -> Result<GetLogsResponse, SessionError> {
-    session.send_encrypted_command(GetLogsCommand {})
+pub fn get_logs<A: Adapter>(session: &mut Session<A>) -> Result<GetLogsResponse, SessionError> {
+    session.send_command(GetLogsCommand {})
 }
 
 /// Request parameters for `commands::get_logs`

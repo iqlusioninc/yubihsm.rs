@@ -198,7 +198,7 @@ pub enum ResponseCode {
     MemoryError,
     InitError,
     NetError,
-    AdapterNotFound,
+    ConnectorNotFound,
     InvalidParams,
     WrongLength,
     BufferTooSmall,
@@ -223,7 +223,7 @@ pub enum ResponseCode {
     DeviceCmdUnexecuted,
     GenericError,
     DeviceObjectExists,
-    AdapterError,
+    ConnectorError,
 }
 
 impl ResponseCode {
@@ -242,7 +242,7 @@ impl ResponseCode {
             -1 => ResponseCode::MemoryError,
             -2 => ResponseCode::InitError,
             -3 => ResponseCode::NetError,
-            -4 => ResponseCode::AdapterNotFound,
+            -4 => ResponseCode::ConnectorNotFound,
             -5 => ResponseCode::InvalidParams,
             -6 => ResponseCode::WrongLength,
             -7 => ResponseCode::BufferTooSmall,
@@ -267,7 +267,7 @@ impl ResponseCode {
             -26 => ResponseCode::DeviceCmdUnexecuted,
             -27 => ResponseCode::GenericError,
             -28 => ResponseCode::DeviceObjectExists,
-            -29 => ResponseCode::AdapterError,
+            -29 => ResponseCode::ConnectorError,
             _ => secure_channel_fail!(ProtocolError, "invalid response code: {}", code),
         })
     }
@@ -279,7 +279,7 @@ impl ResponseCode {
             ResponseCode::MemoryError => -1,
             ResponseCode::InitError => -2,
             ResponseCode::NetError => -3,
-            ResponseCode::AdapterNotFound => -4,
+            ResponseCode::ConnectorNotFound => -4,
             ResponseCode::InvalidParams => -5,
             ResponseCode::WrongLength => -6,
             ResponseCode::BufferTooSmall => -7,
@@ -304,7 +304,7 @@ impl ResponseCode {
             ResponseCode::DeviceCmdUnexecuted => -26,
             ResponseCode::GenericError => -27,
             ResponseCode::DeviceObjectExists => -28,
-            ResponseCode::AdapterError => -29,
+            ResponseCode::ConnectorError => -29,
         };
 
         (i16::from(code) + 0x80) as u8

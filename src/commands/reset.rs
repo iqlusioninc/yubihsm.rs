@@ -8,9 +8,9 @@ use adapters::Adapter;
 use session::{Session, SessionError, SessionErrorKind};
 
 /// Reset the `YubiHSM2` to a factory default state and reboot
-pub fn reset<C: Adapter>(mut session: Session<C>) -> Result<(), SessionError> {
+pub fn reset<A: Adapter>(mut session: Session<A>) -> Result<(), SessionError> {
     // Resetting the session does not send a valid response
-    if let Err(e) = session.send_encrypted_command(ResetCommand {}) {
+    if let Err(e) = session.send_command(ResetCommand {}) {
         match e.kind() {
             // TODO: we don't handle the yubihsm-connector response to reset correctly
             SessionErrorKind::ProtocolError => Ok(()),

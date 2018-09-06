@@ -6,10 +6,10 @@ use super::{Command, Response};
 use {Adapter, CommandType, Session, SessionError};
 
 /// Get storage status (i.e. currently free storage) from the `YubiHSM2` device
-pub fn storage_status<C: Adapter>(
-    session: &mut Session<C>,
+pub fn storage_status<A: Adapter>(
+    session: &mut Session<A>,
 ) -> Result<StorageStatusResponse, SessionError> {
-    session.send_encrypted_command(StorageStatusCommand {})
+    session.send_command(StorageStatusCommand {})
 }
 
 /// Request parameters for `commands::storage_status`

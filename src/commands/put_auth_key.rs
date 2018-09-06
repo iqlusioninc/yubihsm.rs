@@ -11,8 +11,8 @@ use {
 
 /// Put an existing auth key into the `YubiHSM2`
 #[allow(unknown_lints, too_many_arguments)]
-pub fn put_auth_key<C: Adapter, K: Into<AuthKey>>(
-    session: &mut Session<C>,
+pub fn put_auth_key<A: Adapter, K: Into<AuthKey>>(
+    session: &mut Session<A>,
     key_id: ObjectId,
     label: ObjectLabel,
     domains: Domain,
@@ -22,7 +22,7 @@ pub fn put_auth_key<C: Adapter, K: Into<AuthKey>>(
     auth_key: K,
 ) -> Result<ObjectId, SessionError> {
     session
-        .send_encrypted_command(PutAuthKeyCommand {
+        .send_command(PutAuthKeyCommand {
             params: PutObjectParams {
                 id: key_id,
                 label,
@@ -32,8 +32,7 @@ pub fn put_auth_key<C: Adapter, K: Into<AuthKey>>(
             },
             delegated_capabilities,
             auth_key: auth_key.into(),
-        })
-        .map(|response| response.key_id)
+        }).map(|response| response.key_id)
 }
 
 /// Request parameters for `commands::put_auth_key`

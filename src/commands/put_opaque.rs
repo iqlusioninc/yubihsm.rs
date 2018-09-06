@@ -10,8 +10,8 @@ use {
 };
 
 /// Put an opaque object (X.509 certificate or other bytestring) into the `YubiHSM2`
-pub fn put_opaque<C: Adapter, T: Into<Vec<u8>>>(
-    session: &mut Session<C>,
+pub fn put_opaque<A: Adapter, T: Into<Vec<u8>>>(
+    session: &mut Session<A>,
     object_id: ObjectId,
     label: ObjectLabel,
     domains: Domain,
@@ -20,7 +20,7 @@ pub fn put_opaque<C: Adapter, T: Into<Vec<u8>>>(
     bytes: T,
 ) -> Result<ObjectId, SessionError> {
     session
-        .send_encrypted_command(PutOpaqueCommand {
+        .send_command(PutOpaqueCommand {
             params: PutObjectParams {
                 id: object_id,
                 label,
@@ -29,8 +29,7 @@ pub fn put_opaque<C: Adapter, T: Into<Vec<u8>>>(
                 algorithm: algorithm.into(),
             },
             data: bytes.into(),
-        })
-        .map(|response| response.object_id)
+        }).map(|response| response.object_id)
 }
 
 /// Request parameters for `commands::put_opaque`

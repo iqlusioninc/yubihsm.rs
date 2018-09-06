@@ -7,8 +7,8 @@ use adapters::Adapter;
 use session::{Session, SessionError};
 
 /// Blink the YubiHSM2's LEDs (to identify it) for the given number of seconds
-pub fn blink<C: Adapter>(session: &mut Session<C>, num_seconds: u8) -> Result<(), SessionError> {
-    session.send_encrypted_command(BlinkCommand { num_seconds })?;
+pub fn blink<A: Adapter>(session: &mut Session<A>, num_seconds: u8) -> Result<(), SessionError> {
+    session.send_command(BlinkCommand { num_seconds })?;
     Ok(())
 }
 
