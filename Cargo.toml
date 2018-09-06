@@ -38,6 +38,7 @@ untrusted = { version = "0.6", optional = true }
 uuid = { version = "0.6", default-features = false }
 
 [dev-dependencies]
+criterion = "0.2"
 lazy_static = "1"
 
 [features]
@@ -54,3 +55,7 @@ usb = ["lazy_static", "libusb"]
 [package.metadata.docs.rs]
 features = ["doc"]
 rustc-args = ["-Ctarget-feature=+aes"]
+
+[[bench]]
+name = "ed25519"
+harness = false
