@@ -297,7 +297,15 @@ impl SecureChannel {
             secure_channel_err!(ProtocolError, "no session ID in response")
         })?;
 
-        assert_eq!(self.id, session_id, "session ID mismatch: {:?}", session_id);
+        if self.id != session_id {
+            self.terminate();
+            secure_channel_fail!(
+                SessionMismatch,
+                "message has session ID {} (expected {})",
+                session_id.to_u8(),
+                self.id.to_u8(),
+            );
+        }
 
         let mut mac = Cmac::<Aes128>::new_varkey(self.rmac_key.as_ref()).unwrap();
         mac.input(&self.mac_chaining_value);

@@ -145,9 +145,9 @@ impl<A: Adapter> Session<A> {
         true
     }
 
-    /// Borrow the adapter for this session
-    pub fn adapter(&self) -> Option<&A> {
-        self.connection.adapter()
+    /// Borrow the adapter for this session (if available)
+    pub fn adapter(&mut self) -> Result<&A, SessionError> {
+        self.connection.open_adapter()
     }
 
     /// Encrypt a command, send it to the HSM, then read and decrypt the response
@@ -155,20 +155,35 @@ impl<A: Adapter> Session<A> {
         &mut self,
         command: T,
     ) -> Result<T::ResponseType, SessionError> {
-        let session_id = self.channel()?.id().to_u8();
         let plaintext_cmd: CommandMessage = command.into();
         let cmd_type = plaintext_cmd.command_type;
-        let encrypted_cmd = self.channel()?.encrypt_command(plaintext_cmd)?;
+        let encrypted_cmd = self.secure_channel()?.encrypt_command(plaintext_cmd)?;
         let uuid = encrypted_cmd.uuid;
 
-        session_debug!(self, "uuid={} encrypted-cmd={:?}", uuid, T::COMMAND_TYPE);
+        session_debug!(self, "uuid={} cmd={:?}", uuid, T::COMMAND_TYPE);
 
+        self.last_command_timestamp = Instant::now();
         let encrypted_response = self.connection.send_message(encrypted_cmd)?;
-        let response = self.channel()?.decrypt_response(encrypted_response)?;
+
+        // For decryption we go straight to the connection's secure channel,
+        // skipping checks of whether or not the connection is open, as we
+        // have already completed all I/O.
+        let response = match self
+            .connection
+            .secure_channel()?
+            .decrypt_response(encrypted_response)
+        {
+            Ok(resp) => resp,
+            Err(e) => {
+                // Cryptographic error. Terminate the current secure channel
+                self.connection.close_secure_channel();
+                return Err(e.into());
+            }
+        };
 
         session_debug!(
             self,
-            "uuid={} decrypted-resp={:?} length={}",
+            "uuid={} resp={:?} length={}",
             uuid,
             response.code,
             response.data.len()
@@ -183,10 +198,15 @@ impl<A: Adapter> Session<A> {
                 other => format!("{:?}", other),
             };
 
-            warn!(
-                "(session: {}) command failed: {:?}: {}",
-                session_id, cmd_type, &description
+            session_debug!(
+                self,
+                "uuid={} failed={:?} code={:?} err=\"{}\"",
+                uuid,
+                cmd_type,
+                response.code.to_u8(),
+                &description
             );
+
             session_fail!(ResponseError, description);
         }
 
@@ -203,13 +223,14 @@ impl<A: Adapter> Session<A> {
     }
 
     /// Get the `SecureChannel` for this session
-    fn channel(&mut self) -> Result<&mut SecureChannel, SessionError> {
-        // Attempt to open the channel if we're disconnected
+    fn secure_channel(&mut self) -> Result<&mut SecureChannel, SessionError> {
+        // (Re)open the secure channel if we're in a disconnected state
         if !self.is_open() {
+            self.connection.close_secure_channel();
             self.open()?;
         }
 
-        self.connection.channel()
+        self.connection.secure_channel()
     }
 }
 
