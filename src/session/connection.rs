@@ -70,27 +70,41 @@ impl<A: Adapter> Connection<A> {
         self.adapter.is_some() && self.channel.is_some()
     }
 
-    /// Get the current session ID
+    /// Get the current session ID (if we have an open session)
     #[inline]
     pub fn id(&self) -> Option<SessionId> {
         self.channel.as_ref().map(|c| c.id())
     }
 
-    /// Borrow the current adapter for this session
-    pub fn adapter(&self) -> Option<&A> {
-        self.adapter.as_ref()
-    }
-
-    /// Get the channel for this session
-    pub fn channel(&mut self) -> Result<&mut SecureChannel, SessionError> {
+    /// Get the currently open `SecureChannel` for this connection
+    pub fn secure_channel(&mut self) -> Result<&mut SecureChannel, SessionError> {
         self.channel
             .as_mut()
-            .ok_or_else(|| session_err!(CreateFailed, "couldn't create channel"))
+            .ok_or_else(|| session_err!(CreateFailed, "couldn't open secure channel"))
+    }
+
+    /// Close the currently open `SecureChannel` for this connection (if any),
+    /// also checking the adapter's health and potentially closing it as well
+    /// if it's unhealthy.
+    pub fn close_secure_channel(&mut self) {
+        self.channel = None;
+
+        // Check that the `Adapter` is still healthy, and if it isn't, drop it
+        // in addition to the `SecureChannel`.
+        //
+        // This check is potentially expensive (i.e. HTTP request) so we avoid
+        // doing it unless we presume the underlying connection may be
+        // unhealthy.
+        let adapter_is_open = self.adapter.as_ref().map(|a| a.is_open()).unwrap_or(false);
+
+        if !adapter_is_open {
+            self.adapter = None;
+        }
     }
 
     /// Send a command message to the HSM and parse the response
     pub fn send_message(&mut self, cmd: CommandMessage) -> Result<ResponseMessage, SessionError> {
-        let session_id = self.channel()?.id().to_u8();
+        let session_id = self.secure_channel()?.id().to_u8();
         let cmd_type = cmd.command_type;
         let uuid = cmd.uuid;
 
@@ -102,7 +116,7 @@ impl<A: Adapter> Connection<A> {
         let response = match self.open_adapter()?.send_message(uuid, cmd.into()) {
             Ok(response_bytes) => ResponseMessage::parse(response_bytes)?,
             Err(e) => {
-                self.terminate_channel();
+                self.close_secure_channel();
                 return Err(e.into());
             }
         };
@@ -132,7 +146,7 @@ impl<A: Adapter> Connection<A> {
         }
 
         if response.command().unwrap() != cmd_type {
-            self.terminate_channel();
+            self.close_secure_channel();
 
             session_fail!(
                 ProtocolError,
@@ -148,7 +162,7 @@ impl<A: Adapter> Connection<A> {
 
     /// Open the underlying adapter, either using our existing connection or
     /// creating a new one
-    fn open_adapter(&mut self) -> Result<&A, SessionError> {
+    pub fn open_adapter(&mut self) -> Result<&A, SessionError> {
         if let Some(ref adapter) = self.adapter {
             return Ok(adapter);
         }
@@ -169,45 +183,30 @@ impl<A: Adapter> Connection<A> {
 
     /// Authenticate the current session with the HSM
     fn authenticate_channel(&mut self, credentials: &Credentials) -> Result<(), SessionError> {
-        let session_id = self.channel()?.id().to_u8();
+        let session_id = self.secure_channel()?.id().to_u8();
 
         debug!(
             "(session: {}) authenticating with key: {}",
             session_id, credentials.auth_key_id
         );
 
-        let command = self.channel()?.authenticate_session()?;
+        let command = self.secure_channel()?.authenticate_session()?;
         let response = self.send_message(command)?;
 
-        if let Err(e) = self.channel()?.finish_authenticate_session(&response) {
+        if let Err(e) = self
+            .secure_channel()?
+            .finish_authenticate_session(&response)
+        {
             error!(
                 "(session: {}) error authenticating with key: {} ({})",
                 session_id, credentials.auth_key_id, e
             );
-            self.terminate_channel();
+            self.close_secure_channel();
             return Err(e.into());
         }
 
         debug!("(session: {}) authenticated successfully", session_id);
 
         Ok(())
-    }
-
-    /// Terminate the secure channel, also checking the adapter's health and
-    /// potentially closing it as well
-    fn terminate_channel(&mut self) {
-        self.channel = None;
-
-        // Check that the `Adapter` is still healthy, and if it isn't, drop it
-        // in addition to the `SecureChannel`.
-        //
-        // This check is potentially expensive (i.e. HTTP request) so we avoid
-        // doing it unless we presume the underlying connection may be
-        // unhealthy.
-        let adapter_is_open = self.adapter.as_ref().map(|a| a.is_open()).unwrap_or(false);
-
-        if !adapter_is_open {
-            self.adapter = None;
-        }
     }
 }
