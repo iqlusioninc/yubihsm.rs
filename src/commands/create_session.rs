@@ -6,11 +6,11 @@ use super::{Command, Response};
 use securechannel::{Challenge, CommandMessage, Cryptogram, ResponseMessage};
 use serializers::deserialize;
 use session::SessionError;
-use {CommandType, Connector, ObjectId, SessionId};
+use {Adapter, CommandType, ObjectId, SessionId};
 
 /// Create a new encrypted session with the YubiHSM2 using the given connector
-pub(crate) fn create_session<C: Connector>(
-    connector: &C,
+pub(crate) fn create_session<A: Adapter>(
+    adapter: &A,
     auth_key_id: ObjectId,
     host_challenge: Challenge,
 ) -> Result<(SessionId, CreateSessionResponse), SessionError> {
@@ -20,7 +20,7 @@ pub(crate) fn create_session<C: Connector>(
     }.into();
 
     let uuid = command_message.uuid;
-    let response_body = connector.send_command(uuid, command_message.into())?;
+    let response_body = adapter.send_message(uuid, command_message.into())?;
     let response_message = ResponseMessage::parse(response_body)?;
 
     if response_message.is_err() {

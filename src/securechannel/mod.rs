@@ -25,12 +25,12 @@ mod error;
 
 mod challenge;
 mod channel;
-mod command_message;
+mod command;
 mod context;
 mod cryptogram;
 mod kdf;
 mod mac;
-mod response_message;
+mod response;
 
 /// AES key size in bytes. SCP03 theoretically supports other key sizes, but
 /// since this crate is somewhat specialized to the `YubiHSM2` (at least for now)
@@ -41,11 +41,11 @@ pub const KEY_SIZE: usize = 16;
 pub const MAX_MSG_SIZE: usize = 2048;
 
 pub use self::challenge::{Challenge, CHALLENGE_SIZE};
-pub(crate) use self::channel::Channel;
 pub use self::channel::Id as SessionId;
-pub(crate) use self::command_message::CommandMessage;
+pub(crate) use self::channel::SecureChannel;
+pub(crate) use self::command::CommandMessage;
 pub use self::context::{Context, CONTEXT_SIZE};
 pub use self::cryptogram::{Cryptogram, CRYPTOGRAM_SIZE};
 pub use self::error::{SecureChannelError, SecureChannelErrorKind};
 pub(crate) use self::mac::{Mac, MAC_SIZE};
-pub(crate) use self::response_message::{ResponseCode, ResponseMessage};
+pub(crate) use self::response::{ResponseCode, ResponseMessage};

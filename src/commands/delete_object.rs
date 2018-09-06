@@ -3,15 +3,15 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/Blink.html>
 
 use super::{Command, Response};
-use {CommandType, Connector, ObjectId, ObjectType, Session, SessionError};
+use {Adapter, CommandType, ObjectId, ObjectType, Session, SessionError};
 
 /// Delete an object of the given ID and type
-pub fn delete_object<C: Connector>(
-    session: &mut Session<C>,
+pub fn delete_object<A: Adapter>(
+    session: &mut Session<A>,
     object_id: ObjectId,
     object_type: ObjectType,
 ) -> Result<(), SessionError> {
-    session.send_encrypted_command(DeleteObjectCommand {
+    session.send_command(DeleteObjectCommand {
         object_id,
         object_type,
     })?;

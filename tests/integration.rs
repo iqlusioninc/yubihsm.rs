@@ -6,15 +6,19 @@ extern crate lazy_static;
 extern crate sha2;
 extern crate yubihsm;
 use yubihsm::{
-    AsymmetricAlgorithm, AuthAlgorithm, AuthKey, Capability, Domain, HMACAlgorithm, ObjectId,
-    ObjectOrigin, ObjectType, OpaqueAlgorithm, Session, WrapAlgorithm, AUTH_KEY_DEFAULT_ID,
+    credentials::DEFAULT_AUTH_KEY_ID, AsymmetricAlgorithm, AuthAlgorithm, AuthKey, Capability,
+    Domain, HMACAlgorithm, ObjectId, ObjectOrigin, ObjectType, OpaqueAlgorithm, Session,
+    WrapAlgorithm,
 };
 
-#[cfg(not(feature = "mockhsm"))]
-use yubihsm::{HttpConnector, AUTH_KEY_DEFAULT_PASSWORD};
+#[cfg(not(any(feature = "usb", feature = "mockhsm")))]
+use yubihsm::HttpAdapter;
 
-#[cfg(feature = "mockhsm")]
-use yubihsm::mockhsm::{MockConnector, MockHSM};
+#[cfg(all(feature = "usb", not(feature = "mockhsm")))]
+use yubihsm::UsbAdapter;
+
+#[cfg(all(not(feature = "usb"), feature = "mockhsm"))]
+use yubihsm::mockhsm::{MockAdapter, MockHSM};
 
 #[cfg(feature = "ring")]
 extern crate ring;
@@ -49,22 +53,29 @@ const TEST_MESSAGE: &[u8] = b"The YubiHSM2 is a simple, affordable, and secure H
 /// Size of a NIST P-256 public key
 pub const EC_P256_PUBLIC_KEY_SIZE: usize = 64;
 
-#[cfg(not(feature = "mockhsm"))]
-type TestSession = Session<HttpConnector>;
+#[cfg(not(any(feature = "usb", feature = "mockhsm")))]
+type TestSession = Session<HttpAdapter>;
 
-#[cfg(feature = "mockhsm")]
-type TestSession = Session<MockConnector>;
+#[cfg(all(feature = "usb", not(feature = "mockhsm")))]
+type TestSession = Session<UsbAdapter>;
 
-#[cfg(not(feature = "mockhsm"))]
+#[cfg(all(not(feature = "usb"), feature = "mockhsm"))]
+type TestSession = Session<MockAdapter>;
+
+#[cfg(not(any(feature = "usb", feature = "mockhsm")))]
 lazy_static! {
     static ref SESSION: ::std::sync::Mutex<TestSession> = {
-        let session = Session::create_from_password(
-            Default::default(),
-            AUTH_KEY_DEFAULT_ID,
-            AUTH_KEY_DEFAULT_PASSWORD,
-            true,
-        ).unwrap_or_else(|err| panic!("error creating session: {}", err));
+        let session = Session::create(Default::default(), Default::default(), true)
+            .unwrap_or_else(|err| panic!("error creating session: {}", err));
+        ::std::sync::Mutex::new(session)
+    };
+}
 
+#[cfg(all(feature = "usb", not(feature = "mockhsm")))]
+lazy_static! {
+    static ref SESSION: ::std::sync::Mutex<TestSession> = {
+        let session = Session::create(Default::default(), Default::default(), true)
+            .unwrap_or_else(|err| panic!("error creating session: {}", err));
         ::std::sync::Mutex::new(session)
     };
 }
@@ -81,9 +92,7 @@ macro_rules! create_session {
 #[cfg(feature = "mockhsm")]
 macro_rules! create_session {
     () => {
-        MockHSM::new()
-            .create_session(AUTH_KEY_DEFAULT_ID, AuthKey::default())
-            .unwrap_or_else(|err| panic!("error creating MockHSM session: {}", err))
+        MockHSM::new().create_session(DEFAULT_AUTH_KEY_ID, AuthKey::default())
     };
 }
 
@@ -338,11 +347,11 @@ fn get_object_info_default_authkey() {
     let mut session = create_session!();
 
     let object_info =
-        yubihsm::get_object_info(&mut session, AUTH_KEY_DEFAULT_ID, ObjectType::AuthKey)
+        yubihsm::get_object_info(&mut session, DEFAULT_AUTH_KEY_ID, ObjectType::AuthKey)
             .unwrap_or_else(|err| panic!("error getting object info: {}", err));
 
     assert_eq!(object_info.capabilities, Capability::all());
-    assert_eq!(object_info.object_id, AUTH_KEY_DEFAULT_ID);
+    assert_eq!(object_info.object_id, DEFAULT_AUTH_KEY_ID);
     assert_eq!(object_info.domains, Domain::all());
     assert_eq!(object_info.object_type, ObjectType::AuthKey);
     assert_eq!(object_info.algorithm, AuthAlgorithm::YUBICO_AES_AUTH.into());

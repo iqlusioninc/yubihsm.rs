@@ -3,22 +3,21 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/Export_Wrap_Key.html>
 
 use super::{Command, Response};
-use {CommandType, Connector, ObjectId, ObjectType, Session, SessionError, WrapMessage};
+use {Adapter, CommandType, ObjectId, ObjectType, Session, SessionError, WrapMessage};
 
 /// Export an encrypted object from the `YubiHSM2` using the given key-wrapping key
-pub fn export_wrapped<C: Connector>(
-    session: &mut Session<C>,
+pub fn export_wrapped<A: Adapter>(
+    session: &mut Session<A>,
     wrap_key_id: ObjectId,
     object_type: ObjectType,
     object_id: ObjectId,
 ) -> Result<WrapMessage, SessionError> {
     session
-        .send_encrypted_command(ExportWrappedCommand {
+        .send_command(ExportWrappedCommand {
             wrap_key_id,
             object_type,
             object_id,
-        })
-        .map(|response| response.0)
+        }).map(|response| response.0)
 }
 
 /// Request parameters for `commands::export_wrapped`

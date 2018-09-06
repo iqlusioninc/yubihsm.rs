@@ -31,11 +31,12 @@
 //!
 //! ```no_run
 //! extern crate yubihsm;
-//! use yubihsm::Session;
+//! use yubihsm::HttpSession;
 //!
 //! // Default yubihsm-connector URI, auth key ID, and password for yubihsm-connector
+//! // NOTE: DON'T USE THIS IN PRODUCTION!
 //! let mut session =
-//!     Session::create_from_password(Default::default(), 1, b"password", true).unwrap();
+//!     HttpSession::create(Default::default(), Default::default(), true).unwrap();
 //!
 //! // Note: You'll need to create this key first. Run the following from yubihsm-shell:
 //! // `generate asymmetric 0 100 ed25519_test_key 1 asymmetric_sign_eddsa ed25519`
@@ -65,6 +66,11 @@ extern crate failure;
 extern crate failure_derive;
 #[cfg(feature = "hmac")]
 extern crate hmac;
+#[cfg(feature = "usb")]
+#[macro_use]
+extern crate lazy_static;
+#[cfg(feature = "usb")]
+extern crate libusb;
 #[macro_use]
 extern crate log;
 #[cfg(feature = "pbkdf2")]
@@ -89,6 +95,9 @@ pub mod error;
 #[macro_use]
 mod serializers;
 
+/// Adapters for connecting to the `YubiHSM2`
+pub mod adapters;
+
 /// Cryptographic algorithms supported by the `YubiHSM2`
 pub mod algorithm;
 
@@ -107,8 +116,8 @@ pub mod capabilities;
 /// <https://developers.yubico.com/YubiHSM2/Commands/>
 pub mod commands;
 
-/// Client for the `yubihsm-connector` service
-pub mod connector;
+/// Credentials used to authenticate to the `YubiHSM2` (key ID + `AuthKey`)
+pub mod credentials;
 
 /// Logical partitions within the `YubiHSM2`, allowing several applications to share the device
 pub mod domains;
@@ -126,13 +135,22 @@ pub mod object;
 /// Encrypted communication channel to the `YubiHSM2` hardware
 mod securechannel;
 
+/// `YubiHSM2` serial numbers
+mod serial;
+
 /// `YubiHSM2` sessions: primary API for performing HSM operations
 ///
 /// See <https://developers.yubico.com/YubiHSM2/Concepts/Session.html>
 pub mod session;
 
+#[cfg(feature = "usb")]
+pub use adapters::usb::{UsbAdapter, UsbDevices, UsbTimeout};
+pub use adapters::{
+    http::{HttpAdapter, HttpConfig},
+    Adapter,
+};
 pub use algorithm::*;
-pub use auth_key::*;
+pub use auth_key::{AuthKey, AUTH_KEY_SIZE};
 pub use capabilities::Capability;
 // Import command functions from all submodules
 pub use commands::{
@@ -145,8 +163,12 @@ pub use commands::{
 };
 #[cfg(feature = "rsa")]
 pub use commands::{sign_rsa_pkcs1v15::*, sign_rsa_pss::*};
-pub use connector::{Connector, HttpConfig, HttpConnector};
+pub use credentials::Credentials;
 pub use domains::Domain;
 pub use object::*;
 pub use securechannel::SessionId;
-pub use session::{Session, SessionError};
+pub use serial::SerialNumber;
+#[cfg(feature = "usb")]
+pub use session::UsbSession;
+pub use session::{HttpSession, Session, SessionError};
+pub use uuid::Uuid;

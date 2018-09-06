@@ -1,6 +1,6 @@
 //! Errors that occur during sessions
 
-use connector::ConnectorError;
+use adapters::AdapterError;
 use error::Error;
 use securechannel::SecureChannelError;
 use serializers::SerializationError;
@@ -14,6 +14,10 @@ pub enum SessionErrorKind {
     /// Couldn't authenticate session
     #[fail(display = "authentication failed")]
     AuthFailed,
+
+    /// Session is closed
+    #[fail(display = "session closed")]
+    ClosedSessionError,
 
     /// Couldn't create session
     #[fail(display = "couldn't create session")]
@@ -55,8 +59,8 @@ macro_rules! session_fail {
     };
 }
 
-impl From<ConnectorError> for SessionError {
-    fn from(err: ConnectorError) -> Self {
+impl From<AdapterError> for SessionError {
+    fn from(err: AdapterError) -> Self {
         session_err!(ProtocolError, err.to_string())
     }
 }

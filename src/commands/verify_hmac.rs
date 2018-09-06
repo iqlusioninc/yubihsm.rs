@@ -4,21 +4,21 @@
 
 use super::hmac::HMACTag;
 use super::{Command, Response};
-use {CommandType, Connector, ObjectId, Session, SessionError};
+use {Adapter, CommandType, ObjectId, Session, SessionError};
 
 /// Verify an HMAC tag of the given data with the given key ID
-pub fn verify_hmac<C, D, T>(
-    session: &mut Session<C>,
+pub fn verify_hmac<A, D, T>(
+    session: &mut Session<A>,
     key_id: ObjectId,
     data: D,
     tag: T,
 ) -> Result<(), SessionError>
 where
-    C: Connector,
+    A: Adapter,
     D: Into<Vec<u8>>,
     T: Into<HMACTag>,
 {
-    let result = session.send_encrypted_command(VerifyHMACCommand {
+    let result = session.send_command(VerifyHMACCommand {
         key_id,
         tag: tag.into(),
         data: data.into(),

@@ -19,43 +19,50 @@
 //! [signatory-yubihsm]: https://docs.rs/signatory-yubihsm/latest/signatory_yubihsm/ecdsa/struct.ECDSASigner.html
 
 use super::{Command, Response};
-use connector::HttpConnector;
+#[cfg(not(feature = "usb"))]
+use adapters::http::HttpAdapter;
+#[cfg(feature = "usb")]
+use adapters::usb::UsbAdapter;
 #[cfg(all(feature = "mockhsm", not(feature = "doc")))]
-use mockhsm::MockConnector;
+use mockhsm::MockAdapter;
 use session::{Session, SessionError};
-#[cfg(
-    all(
-        feature = "sha2",
-        any(feature = "doc", not(feature = "mockhsm"))
-    )
-)]
+#[cfg(all(
+    feature = "sha2",
+    any(feature = "doc", not(feature = "mockhsm"))
+))]
 use sha2::{Digest, Sha256};
 use {CommandType, ObjectId};
 
+// Hax: specialize `sign_ecdsa_sha256` to a particular adapter type
+// as a workaround for the MockHSM presenting a different API than the YubiHSM2
+// TODO: find a better solution than this
+#[cfg(not(feature = "usb"))]
+type AdapterType = HttpAdapter;
+#[cfg(feature = "usb")]
+type AdapterType = UsbAdapter;
+
 /// Compute an ECDSA signature of the SHA-256 hash of the given data with the given key ID
 pub fn sign_ecdsa_raw_digest<T>(
-    session: &mut Session<HttpConnector>,
+    session: &mut Session<AdapterType>,
     key_id: ObjectId,
     digest: T,
 ) -> Result<ECDSASignature, SessionError>
 where
     T: Into<Vec<u8>>,
 {
-    session.send_encrypted_command(SignDataECDSACommand {
+    session.send_command(SignDataECDSACommand {
         key_id,
         digest: digest.into(),
     })
 }
 
 /// Compute an ECDSA signature of the SHA-256 hash of the given data with the given key ID
-#[cfg(
-    all(
-        feature = "sha2",
-        any(feature = "doc", not(feature = "mockhsm"))
-    )
-)]
+#[cfg(all(
+    feature = "sha2",
+    any(feature = "doc", not(feature = "mockhsm"))
+))]
 pub fn sign_ecdsa_sha256(
-    session: &mut Session<HttpConnector>,
+    session: &mut Session<AdapterType>,
     key_id: ObjectId,
     data: &[u8],
 ) -> Result<ECDSASignature, SessionError> {
@@ -66,13 +73,13 @@ pub fn sign_ecdsa_sha256(
 // NOTE: this version is enabled when we compile with MockHSM support
 #[cfg(all(feature = "mockhsm", not(feature = "doc")))]
 pub fn sign_ecdsa_sha256(
-    session: &mut Session<MockConnector>,
+    session: &mut Session<MockAdapter>,
     key_id: ObjectId,
     data: &[u8],
 ) -> Result<ECDSASignature, SessionError> {
     // When using the MockHSM, pass the unhashed raw message. This is because *ring* does not (yet)
     // provide an API for signing a raw digest. See: https://github.com/briansmith/ring/issues/253
-    session.send_encrypted_command(SignDataECDSACommand {
+    session.send_command(SignDataECDSACommand {
         key_id,
         digest: data.into(),
     })

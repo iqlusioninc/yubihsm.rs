@@ -3,15 +3,15 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/Get_Pseudo_Random.html>
 //!
 use super::{Command, Response};
-use {CommandType, Connector, Session, SessionError};
+use {Adapter, CommandType, Session, SessionError};
 
 pub(crate) const MAX_RAND_BYTES: u16 = 2048 // packet size
     - 1 // response type byte
     - 2; // length of response data
 
 /// Get some number of bytes of pseudo random data generated on the device
-pub fn get_pseudo_random<C: Connector>(
-    session: &mut Session<C>,
+pub fn get_pseudo_random<A: Adapter>(
+    session: &mut Session<A>,
     bytes: u16,
 ) -> Result<Vec<u8>, SessionError> {
     if bytes >= MAX_RAND_BYTES {
@@ -21,7 +21,7 @@ pub fn get_pseudo_random<C: Connector>(
         );
     }
     session
-        .send_encrypted_command(GetPseudoRandomCommand { bytes })
+        .send_command(GetPseudoRandomCommand { bytes })
         .map(|response| response.bytes)
 }
 

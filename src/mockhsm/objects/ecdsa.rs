@@ -5,7 +5,7 @@ use ring::rand::{SecureRandom, SystemRandom};
 // TODO: ideally *ring* could do everything our `ECDSAKeyPair` type is doing.
 // This is the biggest blocker: https://github.com/briansmith/ring/issues/672
 use ring::signature::ECDSAKeyPair as ECDSAPrivateKey;
-use ring::signature::{ECDSA_P256_SHA256_ASN1_SIGNING, Signature};
+use ring::signature::{Signature, ECDSA_P256_SHA256_ASN1_SIGNING};
 use untrusted;
 
 use AsymmetricAlgorithm;
@@ -69,7 +69,6 @@ impl ECDSAKeyPair {
             .sign(
                 untrusted::Input::from(message.as_ref()),
                 &SystemRandom::new(),
-            )
-            .unwrap()
+            ).unwrap()
     }
 }

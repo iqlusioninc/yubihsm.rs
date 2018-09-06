@@ -3,15 +3,15 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/List_Objects.html>
 
 use super::{Command, Response};
-use {CommandType, Connector, ObjectId, ObjectType, SequenceId, Session, SessionError};
+use {Adapter, CommandType, ObjectId, ObjectType, SequenceId, Session, SessionError};
 
 /// List objects visible from the current session
-pub fn list_objects<C: Connector>(
-    session: &mut Session<C>,
+pub fn list_objects<A: Adapter>(
+    session: &mut Session<A>,
 ) -> Result<Vec<ListObjectsEntry>, SessionError> {
     // TODO: support for filtering objects
     session
-        .send_encrypted_command(ListObjectsCommand {})
+        .send_command(ListObjectsCommand {})
         .map(|response| response.0)
 }
 

@@ -5,19 +5,19 @@
 use super::{Command, Response};
 use session::{Session, SessionError};
 use sha2::{Digest, Sha256};
-use Connector;
+use Adapter;
 use {CommandType, ObjectId};
 
 /// Compute an RSASSA-PKCS#1v1.5 signature of the SHA-256 hash of the given data.
 ///
 /// WARNING: This method has not been tested and is not confirmed to actually work! Use at your
 /// own risk!
-pub fn sign_rsa_pkcs1v15_sha256<C: Connector>(
-    session: &mut Session<C>,
+pub fn sign_rsa_pkcs1v15_sha256<A: Adapter>(
+    session: &mut Session<A>,
     key_id: ObjectId,
     data: &[u8],
 ) -> Result<RSAPKCS1Signature, SessionError> {
-    session.send_encrypted_command(SignDataPKCS1Command {
+    session.send_command(SignDataPKCS1Command {
         key_id,
         digest: Sha256::digest(data).as_slice().into(),
     })

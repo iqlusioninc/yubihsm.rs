@@ -1,6 +1,6 @@
 //! Sessions with the `MockHSM`
 
-use securechannel::{Challenge, Channel, CommandMessage, Cryptogram, ResponseMessage};
+use securechannel::{Challenge, CommandMessage, Cryptogram, ResponseMessage, SecureChannel};
 use SessionId;
 
 /// Session with the `MockHSM`
@@ -12,12 +12,12 @@ pub(crate) struct Session {
     pub card_challenge: Challenge,
 
     /// Encrypted channel
-    pub channel: Channel,
+    pub channel: SecureChannel,
 }
 
 impl Session {
     /// Create a new session
-    pub fn new(id: SessionId, card_challenge: Challenge, channel: Channel) -> Self {
+    pub fn new(id: SessionId, card_challenge: Challenge, channel: SecureChannel) -> Self {
         Self {
             id,
             card_challenge,
