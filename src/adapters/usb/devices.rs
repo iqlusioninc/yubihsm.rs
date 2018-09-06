@@ -2,7 +2,10 @@ use libusb;
 use std::{process::exit, slice::Iter, str::FromStr};
 
 use super::{UsbAdapter, UsbTimeout};
-use adapters::AdapterError;
+use adapters::{
+    AdapterError,
+    AdapterErrorKind::{DeviceBusyError, UsbError},
+};
 use serial::SerialNumber;
 
 /// USB vendor ID for Yubico
@@ -33,7 +36,7 @@ macro_rules! usb_debug {
 /// Create `UsbError`s that include bus and address information
 macro_rules! usb_err {
     ($device:expr, $msg:expr) => {
-        adapter_err!(
+        err!(
             UsbError,
             "USB(bus={},addr={}): {}",
             $device.bus_number(),
@@ -42,7 +45,7 @@ macro_rules! usb_err {
         );
     };
     ($device:expr, $fmt:expr, $($arg:tt)+) => {
-        adapter_err!(
+        err!(
             UsbError,
             concat!("USB(bus={},addr={}): ", $fmt),
             $device.bus_number(),
@@ -86,7 +89,7 @@ impl UsbDevices {
                 }
             }
 
-            adapter_fail!(
+            fail!(
                 UsbError,
                 "no YubiHSM 2 found with serial number: {:?}",
                 serial_number
@@ -94,7 +97,7 @@ impl UsbDevices {
         } else if devices.0.len() == 1 {
             devices.0.remove(0).open(timeout)
         } else {
-            adapter_fail!(
+            fail!(
                 UsbError,
                 "expected a single YubiHSM device to be connected, found {}: {:?}",
                 devices.0.len(),
@@ -129,7 +132,7 @@ impl UsbDevices {
                 .map_err(|e| usb_err!(device, "error opening device: {}", e))?;
 
             handle.reset().map_err(|error| match error {
-                libusb::Error::NoDevice => adapter_err!(
+                libusb::Error::NoDevice => err!(
                     DeviceBusyError,
                     "USB(bus={},addr={}): couldn't reset device (already in use or disconnected)",
                     device.bus_number(),

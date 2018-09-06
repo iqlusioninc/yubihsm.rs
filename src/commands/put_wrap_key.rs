@@ -4,6 +4,7 @@
 
 use super::put_object::PutObjectParams;
 use super::{Command, Response};
+use session::SessionErrorKind::ProtocolError;
 use {
     Adapter, Capability, CommandType, Domain, ObjectId, ObjectLabel, Session, SessionError,
     WrapAlgorithm,
@@ -24,7 +25,7 @@ pub fn put_wrap_key<A: Adapter, T: Into<Vec<u8>>>(
     let data = key_bytes.into();
 
     if data.len() != algorithm.key_len() {
-        command_fail!(
+        fail!(
             ProtocolError,
             "invalid key length for {:?}: {} (expected {})",
             algorithm,

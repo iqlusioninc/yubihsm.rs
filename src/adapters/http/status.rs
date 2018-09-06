@@ -2,7 +2,8 @@
 
 use std::str::FromStr;
 
-use {adapters::AdapterError, SerialNumber};
+use adapters::{AdapterError, AdapterErrorKind::ResponseError};
+use serial::SerialNumber;
 
 /// `yubihsm-connector` status message when healthy
 const CONNECTOR_STATUS_OK: &str = "OK";
@@ -42,14 +43,14 @@ impl ConnectorStatus {
 
             let key = fields
                 .next()
-                .ok_or_else(|| adapter_err!(ResponseError, "couldn't parse key"))?;
+                .ok_or_else(|| err!(ResponseError, "couldn't parse key"))?;
 
             let value = fields
                 .next()
-                .ok_or_else(|| adapter_err!(ResponseError, "couldn't parse value"))?;
+                .ok_or_else(|| err!(ResponseError, "couldn't parse value"))?;
 
             if let Some(remaining) = fields.next() {
-                adapter_fail!(ResponseError, "unexpected additional data: {}", remaining)
+                fail!(ResponseError, "unexpected additional data: {}", remaining)
             }
 
             match key {
@@ -62,23 +63,23 @@ impl ConnectorStatus {
         }
 
         let message = response_message
-            .ok_or_else(|| adapter_err!(ResponseError, "missing status"))?
+            .ok_or_else(|| err!(ResponseError, "missing status"))?
             .to_owned();
 
         let serial = match response_serial {
             Some("*") => None,
             Some(s) => Some(SerialNumber::from_str(s)?),
-            None => adapter_fail!(ResponseError, "missing serial"),
+            None => fail!(ResponseError, "missing serial"),
         };
 
         let version = response_version
-            .ok_or_else(|| adapter_err!(ResponseError, "missing version"))?
+            .ok_or_else(|| err!(ResponseError, "missing version"))?
             .to_owned();
 
         let pid = response_pid
-            .ok_or_else(|| adapter_err!(ResponseError, "missing PID"))?
+            .ok_or_else(|| err!(ResponseError, "missing PID"))?
             .parse()
-            .map_err(|_| adapter_err!(ResponseError, "invalid PID: {}", response_pid.unwrap()))?;
+            .map_err(|_| err!(ResponseError, "invalid PID: {}", response_pid.unwrap()))?;
 
         Ok(Self {
             message,

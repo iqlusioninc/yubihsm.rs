@@ -9,7 +9,7 @@ use std::{
 use uuid::Uuid;
 
 use super::{ConnectorStatus, HttpConfig, ResponseReader, USER_AGENT};
-use adapters::{Adapter, AdapterError};
+use adapters::{Adapter, AdapterError, AdapterErrorKind::AddrInvalid};
 
 /// HTTP(-ish) adapter which supports the minimal parts of the protocol
 /// required to communicate with the yubihsm-connector service.
@@ -32,7 +32,7 @@ impl Adapter for HttpAdapter {
         // Resolve DNS, and for now pick the first available address
         // TODO: round robin DNS support?
         let socketaddr = &host.to_socket_addrs()?.next().ok_or_else(|| {
-            adapter_err!(
+            err!(
                 AddrInvalid,
                 "couldn't resolve DNS for {}",
                 host.split(':').next().unwrap()

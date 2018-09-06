@@ -54,3 +54,37 @@ where
         }
     }
 }
+
+/// Create a new error (of a given kind) with a formatted message
+macro_rules! err {
+    ($kind:path, $msg:expr) => {
+        ::error::Error::new($kind, Some($msg.to_string()))
+    };
+    ($kind:path, $fmt:expr, $($arg:tt)+) => {
+        err!($kind, &format!($fmt, $($arg)+))
+    };
+}
+
+/// Create and return an error with a formatted message
+macro_rules! fail {
+    ($kind:path, $msg:expr) => {
+        return Err(err!($kind, $msg).into());
+    };
+    ($kind:path, $fmt:expr, $($arg:tt)+) => {
+        fail!($kind, &format!($fmt, $($arg)+));
+    };
+}
+
+/// Assert a condition is true, returning an error type with a formatted message if not
+macro_rules! ensure {
+    ($cond:expr, $kind:path, $msg:expr) => {
+        if !($cond) {
+            return Err(err!($kind, $msg).into());
+        }
+    };
+    ($cond:expr, $kind:path, $fmt:expr, $($arg:tt)+) => {
+        if !($cond) {
+            return Err(err!($kind, $fmt, $($arg)+).into());
+        }
+    };
+}

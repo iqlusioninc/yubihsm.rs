@@ -1,7 +1,7 @@
 //! `YubiHSM2` authentication keys (2 * AES-128 symmetric PSK) from which session keys are derived
 
 use clear_on_drop::clear::Clear;
-use failure::Error;
+use error::Error;
 #[cfg(feature = "hmac")]
 use hmac::Hmac;
 #[cfg(feature = "pbkdf2")]
@@ -58,9 +58,10 @@ impl AuthKey {
 
     /// Create an AuthKey from a 32-byte slice, returning an error if the key
     /// is the wrong length
-    pub fn from_slice(key_slice: &[u8]) -> Result<Self, Error> {
+    pub fn from_slice(key_slice: &[u8]) -> Result<Self, AuthKeyError> {
         ensure!(
             key_slice.len() == AUTH_KEY_SIZE,
+            AuthKeyErrorKind::SizeInvalid,
             "expected {}-byte key, got {}",
             AUTH_KEY_SIZE,
             key_slice.len()
@@ -121,3 +122,14 @@ impl From<[u8; AUTH_KEY_SIZE]> for AuthKey {
 }
 
 impl_array_serializers!(AuthKey, AUTH_KEY_SIZE);
+
+/// `AuthKey`-related errors
+pub type AuthKeyError = Error<AuthKeyErrorKind>;
+
+/// Kinds of `AuthKey`-related errors
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
+pub enum AuthKeyErrorKind {
+    /// Size is invalid
+    #[fail(display = "invalid size")]
+    SizeInvalid,
+}

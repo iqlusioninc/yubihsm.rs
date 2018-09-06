@@ -3,6 +3,7 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/Get_Pseudo_Random.html>
 //!
 use super::{Command, Response};
+use session::SessionErrorKind::ProtocolError;
 use {Adapter, CommandType, Session, SessionError};
 
 pub(crate) const MAX_RAND_BYTES: u16 = 2048 // packet size
@@ -15,7 +16,7 @@ pub fn get_pseudo_random<A: Adapter>(
     bytes: u16,
 ) -> Result<Vec<u8>, SessionError> {
     if bytes >= MAX_RAND_BYTES {
-        command_fail!(
+        fail!(
             ProtocolError,
             "Requested too many random bytes (>= 2045) to fit in response packet"
         );

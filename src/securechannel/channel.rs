@@ -17,7 +17,7 @@ use super::kdf;
 use super::ResponseCode;
 use super::{
     Challenge, CommandMessage, Context, Cryptogram, ResponseMessage, SecureChannelError,
-    CRYPTOGRAM_SIZE, KEY_SIZE, MAC_SIZE,
+    SecureChannelErrorKind::*, CRYPTOGRAM_SIZE, KEY_SIZE, MAC_SIZE,
 };
 use auth_key::AuthKey;
 use commands::CommandType;
@@ -36,7 +36,7 @@ impl Id {
     /// Create a new session ID from a byte value
     pub fn new(id: u8) -> Result<Self, SecureChannelError> {
         if id > MAX_ID.0 {
-            secure_channel_fail!(
+            fail!(
                 ProtocolError,
                 "session ID exceeds the maximum allowed: {} (max {})",
                 id,
@@ -172,7 +172,7 @@ impl SecureChannel {
     ) -> Result<CommandMessage, SecureChannelError> {
         if self.counter >= MAX_COMMANDS_PER_SESSION {
             self.terminate();
-            secure_channel_fail!(
+            fail!(
                 SessionLimitReached,
                 "max of {} commands per session exceeded",
                 MAX_COMMANDS_PER_SESSION
@@ -217,7 +217,7 @@ impl SecureChannel {
         // The EXTERNAL_AUTHENTICATE command does not send an R-MAC value
         if !response.data.is_empty() {
             self.terminate();
-            secure_channel_fail!(
+            fail!(
                 ProtocolError,
                 "expected empty response data (got {}-bytes)",
                 response.data.len(),
@@ -275,7 +275,7 @@ impl SecureChannel {
             .decrypt_pad(&mut response_message)
             .map_err(|e| {
                 self.terminate();
-                secure_channel_err!(ProtocolError, "error decrypting response: {:?}", e)
+                err!(ProtocolError, "error decrypting response: {:?}", e)
             })?.len();
 
         response_message.truncate(response_len);
@@ -294,12 +294,12 @@ impl SecureChannel {
 
         let session_id = response.session_id.ok_or_else(|| {
             self.terminate();
-            secure_channel_err!(ProtocolError, "no session ID in response")
+            err!(ProtocolError, "no session ID in response")
         })?;
 
         if self.id != session_id {
             self.terminate();
-            secure_channel_fail!(
+            fail!(
                 SessionMismatch,
                 "message has session ID {} (expected {})",
                 session_id.to_u8(),
@@ -325,7 +325,7 @@ impl SecureChannel {
             .is_err()
         {
             self.terminate();
-            secure_channel_fail!(VerifyFailed, "R-MAC mismatch!");
+            fail!(VerifyFailed, "R-MAC mismatch!");
         }
 
         self.increment_counter();
@@ -343,7 +343,7 @@ impl SecureChannel {
 
         if command.data.len() != CRYPTOGRAM_SIZE {
             self.terminate();
-            secure_channel_fail!(
+            fail!(
                 ProtocolError,
                 "expected {}-byte command data (got {})",
                 CRYPTOGRAM_SIZE,
@@ -360,7 +360,7 @@ impl SecureChannel {
             != 1
         {
             self.terminate();
-            secure_channel_fail!(VerifyFailed, "host cryptogram mismatch!");
+            fail!(VerifyFailed, "host cryptogram mismatch!");
         }
 
         self.verify_command_mac(command)?;
@@ -395,7 +395,7 @@ impl SecureChannel {
             .decrypt_pad(&mut command_data)
             .map_err(|e| {
                 self.terminate();
-                secure_channel_err!(ProtocolError, "error decrypting command: {:?}", e)
+                err!(ProtocolError, "error decrypting command: {:?}", e)
             })?.len();
 
         command_data.truncate(command_len);
@@ -438,7 +438,7 @@ impl SecureChannel {
             .is_err()
         {
             self.terminate();
-            secure_channel_fail!(VerifyFailed, "C-MAC mismatch!");
+            fail!(VerifyFailed, "C-MAC mismatch!");
         }
 
         self.mac_chaining_value.copy_from_slice(tag.as_slice());

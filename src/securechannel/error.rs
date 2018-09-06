@@ -26,48 +26,8 @@ pub enum SecureChannelErrorKind {
     VerifyFailed,
 }
 
-/// Create a new Secure Channel error with a formatted message
-macro_rules! secure_channel_err {
-    ($kind:ident, $msg:expr) => {
-        ::securechannel::SecureChannelError::new(
-            ::securechannel::SecureChannelErrorKind::$kind,
-            Some($msg.to_owned())
-        )
-    };
-    ($kind:ident, $fmt:expr, $($arg:tt)+) => {
-        ::securechannel::SecureChannelError::new(
-            ::securechannel::SecureChannelErrorKind::$kind,
-            Some(format!($fmt, $($arg)+))
-        )
-    };
-}
-
-/// Create and return a Secure Channel error with a formatted message
-macro_rules! secure_channel_fail {
-    ($kind:ident, $msg:expr) => {
-        return Err(secure_channel_err!($kind, $msg).into());
-    };
-    ($kind:ident, $fmt:expr, $($arg:tt)+) => {
-        return Err(secure_channel_err!($kind, $fmt, $($arg)+).into());
-    };
-}
-
-/// Assert a condition is true, returning an error type with a formatted message if not
-macro_rules! secure_channel_ensure {
-    ($condition:expr, $kind:ident, $msg:expr) => {
-        if !($condition) {
-            secure_channel_fail!($kind, $msg);
-        }
-    };
-    ($condition:expr, $kind:ident, $fmt:expr, $($arg:tt)+) => {
-        if !($condition) {
-            secure_channel_fail!($kind, $fmt, $($arg)+);
-        }
-    };
-}
-
 impl From<AdapterError> for SecureChannelError {
     fn from(err: AdapterError) -> Self {
-        secure_channel_err!(ProtocolError, err.to_string())
+        err!(SecureChannelErrorKind::ProtocolError, err.to_string())
     }
 }

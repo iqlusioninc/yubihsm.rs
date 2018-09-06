@@ -8,32 +8,6 @@ use securechannel::CommandMessage;
 use securechannel::ResponseMessage;
 use serializers::serialize;
 
-/// Create a command error (presently just a `SessionError`)
-macro_rules! command_err {
-    ($kind:ident, $msg:expr) => {
-        ::session::SessionError::new(
-            ::session::SessionErrorKind::$kind,
-            Some($msg.to_owned())
-        )
-    };
-    ($kind:ident, $fmt:expr, $($arg:tt)+) => {
-        ::session::SessionError::new(
-            ::session::SessionErrorKind::$kind,
-            Some(format!($fmt, $($arg)+))
-        )
-    };
-}
-
-/// Create and return a command error (presently just a `SessionError`)
-macro_rules! command_fail {
-    ($kind:ident, $msg:expr) => {
-        return Err(command_err!($kind, $msg).into());
-    };
-    ($kind:ident, $fmt:expr, $($arg:tt)+) => {
-        return Err(command_err!($kind, $fmt, $($arg)+).into());
-    };
-}
-
 pub mod attest_asymmetric;
 pub mod blink;
 pub(crate) mod close_session;

@@ -3,7 +3,7 @@ use failure::Error;
 use rand::{OsRng, RngCore};
 use std::fmt;
 
-use super::Algorithm;
+use super::{Algorithm, AlgorithmError, AlgorithmErrorKind::SizeInvalid};
 
 /// Valid algorithms for "wrap" (symmetric encryption/key wrapping) keys
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -55,9 +55,10 @@ pub struct WrapMessage {
 
 impl WrapMessage {
     /// Load a `WrapMessage` from a byte vector
-    pub fn from_vec(mut vec: Vec<u8>) -> Result<Self, Error> {
+    pub fn from_vec(mut vec: Vec<u8>) -> Result<Self, AlgorithmError> {
         ensure!(
             vec.len() >= WRAP_NONCE_SIZE,
+            SizeInvalid,
             "message must be at least {}-bytes",
             WRAP_NONCE_SIZE
         );

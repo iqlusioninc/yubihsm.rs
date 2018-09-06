@@ -12,7 +12,7 @@ use cmac::crypto_mac::generic_array::GenericArray;
 use std::fmt;
 use subtle::{Choice, ConstantTimeEq};
 
-use super::SecureChannelError;
+use super::{SecureChannelError, SecureChannelErrorKind::VerifyFailed};
 
 /// Size of the MAC in bytes: SCP03 truncates it to 8-bytes
 pub const MAC_SIZE: usize = 8;
@@ -45,7 +45,7 @@ impl Mac {
         if self.ct_eq(&other.into()).unwrap_u8() == 1 {
             Ok(())
         } else {
-            secure_channel_fail!(VerifyFailed, "MAC mismatch!");
+            fail!(VerifyFailed, "MAC mismatch!");
         }
     }
 }

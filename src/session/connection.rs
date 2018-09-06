@@ -2,7 +2,7 @@
 
 use subtle::ConstantTimeEq;
 
-use super::SessionError;
+use super::{SessionError, SessionErrorKind::*};
 use adapters::Adapter;
 use commands::create_session::create_session;
 use credentials::Credentials;
@@ -55,7 +55,7 @@ impl<A: Adapter> Connection<A> {
                 .unwrap_u8()
                 != 1
             {
-                session_fail!(AuthFailed, "card cryptogram mismatch!");
+                fail!(AuthFailed, "card cryptogram mismatch!");
             }
 
             Some(channel)
@@ -80,7 +80,7 @@ impl<A: Adapter> Connection<A> {
     pub fn secure_channel(&mut self) -> Result<&mut SecureChannel, SessionError> {
         self.channel
             .as_mut()
-            .ok_or_else(|| session_err!(CreateFailed, "couldn't open secure channel"))
+            .ok_or_else(|| err!(CreateFailed, "couldn't open secure channel"))
     }
 
     /// Close the currently open `SecureChannel` for this connection (if any),
@@ -137,7 +137,7 @@ impl<A: Adapter> Connection<A> {
                 response.data.len()
             );
 
-            session_fail!(
+            fail!(
                 ResponseError,
                 "(session: {}) HSM error: {:?}",
                 session_id,
@@ -148,7 +148,7 @@ impl<A: Adapter> Connection<A> {
         if response.command().unwrap() != cmd_type {
             self.close_secure_channel();
 
-            session_fail!(
+            fail!(
                 ProtocolError,
                 "(session: {}) command type mismatch: expected {:?}, got {:?}",
                 session_id,
@@ -171,7 +171,7 @@ impl<A: Adapter> Connection<A> {
 
         // Ensure the new connection is healthy
         if !adapter.is_open() {
-            session_fail!(
+            fail!(
                 CreateFailed,
                 "adapter unhealthy. check debug log for more info."
             )
