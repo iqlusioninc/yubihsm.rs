@@ -15,27 +15,24 @@
 [build-link]: https://circleci.com/gh/tendermint/yubihsm-rs
 [license-image]: https://img.shields.io/badge/license-MIT/Apache2.0-blue.svg
 
-A pure-Rust client for [YubiHSM2] devices from [Yubico].
+A pure-Rust client for [YubiHSM 2] devices from [Yubico].
 
 [Documentation][docs-link]
 
-[libyubihsm]: https://developers.yubico.com/YubiHSM2/Component_Reference/libyubihsm/
-[YubiHSM2]: https://www.yubico.com/products/yubihsm/
-[Yubico]: https://www.yubico.com/
-
 ## About
 
-This is a pure-Rust client library for [YubiHSM2] devices which implements
+This is a pure-Rust client library for [YubiHSM 2] devices which implements
 most the functionality of the closed-source [libyubihsm] library from the
-Yubico SDK. It communicates with the [yubihsm-connector] service: an HTTP(S)
-server which sends the commands to the YubiHSM2 hardware device over USB.
+Yubico SDK. It provides two backends for communicating with YubiHSMs:
+
+- [yubihsm::HttpAdapter]: communicate with YubiHSM via the
+  `yubihsm-connector` process from the Yubico SDK.
+- [yubihsm::UsbAdapter]: communicate directly with the YubiHSM over USB using
+  the [libusb] crate.
 
 Note that this is **NOT** an official Yubico project and is in no way supported
 or endorsed by Yubico (although whoever runs their Twitter account
 [thinks it's awesome]).
-
-[yubihsm-connector]: https://developers.yubico.com/YubiHSM2/Component_Reference/yubihsm-connector/
-[thinks it's awesome]: https://twitter.com/Yubico/status/971186516796915712
 
 ## Prerequisites
 
@@ -170,9 +167,6 @@ The following documentation describes the most important parts of this crate's A
 * [Session]: end-to-end encrypted connection with the YubiHSM. You'll need an active one to do anything.
 * [commands]: commands supported by the YubiHSM2 (i.e. main functionality)
 
-[Session]: https://docs.rs/yubihsm/latest/yubihsm/session/struct.Session.html
-[commands]: https://docs.rs/yubihsm/latest/yubihsm/commands/index.html
-
 Here is an example of how to create a `Session` by connecting to a [yubihsm-connector]
 process, and then performing an Ed25519 signature:
 
@@ -214,12 +208,6 @@ Here's a list of steps necessary to implement a new command type:
 3. (Optional) Implement the command in [mockhsm/commands.rs] and write an
    [integration test].
 
-[YubiHSM2 commands]: https://developers.yubico.com/YubiHSM2/Commands/
-[Serde-based message parser]: https://github.com/tendermint/yubihsm-rs/tree/master/src/serializers
-[commands]: https://github.com/tendermint/yubihsm-rs/tree/master/src/commands
-[mockhsm/commands.rs]: https://github.com/tendermint/yubihsm-rs/blob/master/src/mockhsm/commands.rs
-[integration test]:  https://github.com/tendermint/yubihsm-rs/blob/master/tests/integration.rs
-
 ## Testing
 
 This crate allows you to run the integration test suite in two different ways:
@@ -244,9 +232,6 @@ blinking rapidly for 1 second.
 **NOTE THAT THESE TESTS ARE DESTRUCTIVE: DO NOT RUN THEM AGAINST A YUBIHSM2
 WHICH CONTAINS KEYS YOU CARE ABOUT**
 
-[YubiHSM2 SDK]: https://developers.yubico.com/YubiHSM2/Releases/
-[yubihsm-shell reset]: https://developers.yubico.com/YubiHSM2/Commands/Reset.html
-
 ### `cargo test --features=mockhsm`: simulated tests against a mock HSM
 
 This mode is useful for when you don't have access to physical YubiHSM2
@@ -258,3 +243,21 @@ hardware, such as CI environments.
 the Apache License (Version 2.0).
 
 See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT) for details.
+
+[libyubihsm]: https://developers.yubico.com/YubiHSM2/Component_Reference/libyubihsm/
+[YubiHSM 2]: https://www.yubico.com/products/yubihsm/
+[Yubico]: https://www.yubico.com/
+[yubihsm-connector]: https://developers.yubico.com/YubiHSM2/Component_Reference/yubihsm-connector/
+[yubihsm::HttpAdapter]: https://docs.rs/yubihsm/latest/yubihsm/struct.HttpAdapter.html
+[yubihsm::UsbAdapter]: https://docs.rs/yubihsm/latest/yubihsm/struct.UsbAdapter.html
+[libusb]: https://github.com/dcuddeback/libusb-rs
+[thinks it's awesome]: https://twitter.com/Yubico/status/971186516796915712
+[Session]: https://docs.rs/yubihsm/latest/yubihsm/session/struct.Session.html
+[commands]: https://docs.rs/yubihsm/latest/yubihsm/commands/index.html
+[YubiHSM2 commands]: https://developers.yubico.com/YubiHSM2/Commands/
+[Serde-based message parser]: https://github.com/tendermint/yubihsm-rs/tree/master/src/serializers
+[commands]: https://github.com/tendermint/yubihsm-rs/tree/master/src/commands
+[mockhsm/commands.rs]: https://github.com/tendermint/yubihsm-rs/blob/master/src/mockhsm/commands.rs
+[integration test]:  https://github.com/tendermint/yubihsm-rs/blob/master/tests/integration.rs
+[YubiHSM2 SDK]: https://developers.yubico.com/YubiHSM2/Releases/
+[yubihsm-shell reset]: https://developers.yubico.com/YubiHSM2/Commands/Reset.html
