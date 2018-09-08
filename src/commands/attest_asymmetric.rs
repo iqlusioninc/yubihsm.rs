@@ -48,7 +48,12 @@ impl Response for AttestationCertificate {
     const COMMAND_TYPE: CommandType = CommandType::AttestAsymmetric;
 }
 
-#[allow(unknown_lints, len_without_is_empty)]
+// TODO: use clippy's scoped lints once they work on stable
+#[allow(
+    unknown_lints,
+    renamed_and_removed_lints,
+    len_without_is_empty
+)]
 impl AttestationCertificate {
     /// Unwrap inner byte vector
     pub fn into_vec(self) -> Vec<u8> {

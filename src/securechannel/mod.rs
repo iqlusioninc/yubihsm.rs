@@ -18,8 +18,6 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/>
 
-#![allow(unknown_lints, doc_markdown)]
-
 #[macro_use]
 mod error;
 

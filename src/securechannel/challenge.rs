@@ -33,7 +33,7 @@ impl Challenge {
     }
 
     /// Borrow the challenge value as a slice
-    #[allow(trivially_copy_pass_by_ref)]
+    #[cfg_attr(clippy, allow(clippy::trivially_copy_pass_by_ref))]
     pub fn as_slice(&self) -> &[u8] {
         &self.0
     }

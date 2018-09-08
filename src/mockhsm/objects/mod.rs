@@ -1,6 +1,6 @@
 //! Objects stored inside of the `MockHSM`
 
-#![allow(unknown_lints, too_many_arguments)]
+#![allow(unknown_lints, renamed_and_removed_lints, too_many_arguments)]
 
 mod ecdsa;
 mod payload;
