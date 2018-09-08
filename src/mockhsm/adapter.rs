@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 use uuid::Uuid;
 
-use super::{commands, state::State, MockConfig};
+use super::{commands, state::State, MockHSM};
 use adapters::{Adapter, AdapterError, AdapterErrorKind::ConnectionFailed};
 use commands::CommandType;
 use securechannel::CommandMessage;
@@ -9,19 +9,12 @@ use securechannel::CommandMessage;
 /// A mocked connection to the MockHSM
 pub struct MockAdapter(Arc<Mutex<State>>);
 
-impl MockAdapter {
-    pub(super) fn new(state: Arc<Mutex<State>>) -> Self {
-        MockAdapter(state)
-    }
-}
-
 impl Adapter for MockAdapter {
-    type Config = MockConfig;
+    type Config = MockHSM;
 
-    /// We don't bother to implement this
-    // TODO: use this as the entry point for the `MockHSM`'s `Arc<Mutex<State>>`?
-    fn open(_config: &MockConfig) -> Result<Self, AdapterError> {
-        panic!("unimplemented");
+    /// Create a new adapter with a clone of the MockHSM state
+    fn open(hsm: &MockHSM) -> Result<Self, AdapterError> {
+        Ok(MockAdapter(hsm.0.clone()))
     }
 
     /// Rust never sleeps

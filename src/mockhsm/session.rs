@@ -1,5 +1,7 @@
 //! Sessions with the `MockHSM`
 
+use std::fmt::{self, Debug};
+
 use securechannel::{Challenge, CommandMessage, Cryptogram, ResponseMessage, SecureChannel};
 use SessionId;
 
@@ -43,5 +45,11 @@ impl Session {
     /// Encrypt an outgoing response
     pub fn encrypt_response(&mut self, response: ResponseMessage) -> ResponseMessage {
         self.channel.encrypt_response(response).unwrap()
+    }
+}
+
+impl Debug for Session {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "mockhsm::Session {{ id: {} }}", self.id.to_u8())
     }
 }

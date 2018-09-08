@@ -30,6 +30,7 @@ const DEFAULT_AUTH_KEY_LABEL: &str = "DEFAULT AUTHKEY CHANGE THIS ASAP";
 pub(crate) type Iter<'a> = HashMapIter<'a, ObjectHandle, Object>;
 
 /// Objects stored in the `MockHSM`
+#[derive(Debug)]
 pub(crate) struct Objects(HashMap<ObjectHandle, Object>);
 
 impl Default for Objects {
@@ -279,6 +280,7 @@ impl Objects {
 }
 
 /// An individual object in the `MockHSM`, specialized for a given object type
+#[derive(Debug)]
 pub(crate) struct Object {
     pub object_info: ObjectInfo,
     pub payload: Payload,

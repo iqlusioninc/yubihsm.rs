@@ -1,6 +1,7 @@
 //! ECDSA keypairs
 
 use ring::rand::{SecureRandom, SystemRandom};
+use std::fmt::{self, Debug};
 
 // TODO: ideally *ring* could do everything our `ECDSAKeyPair` type is doing.
 // This is the biggest blocker: https://github.com/briansmith/ring/issues/672
@@ -70,5 +71,11 @@ impl ECDSAKeyPair {
                 untrusted::Input::from(message.as_ref()),
                 &SystemRandom::new(),
             ).unwrap()
+    }
+}
+
+impl Debug for ECDSAKeyPair {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "ECDSAKeyPair {{ alg: {:?} }}", self.algorithm)
     }
 }

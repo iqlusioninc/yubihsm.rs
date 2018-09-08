@@ -13,6 +13,7 @@ use auth_key::{AuthKey, AUTH_KEY_SIZE};
 pub(crate) const ED25519_SEED_SIZE: usize = 32;
 
 /// Loaded instances of a cryptographic primitives in the MockHSM
+#[derive(Debug)]
 pub(crate) enum Payload {
     /// Authentication keys
     AuthKey(AuthKey),

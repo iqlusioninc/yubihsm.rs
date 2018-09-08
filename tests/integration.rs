@@ -92,7 +92,7 @@ macro_rules! create_session {
 #[cfg(feature = "mockhsm")]
 macro_rules! create_session {
     () => {
-        MockHSM::new().create_session(DEFAULT_AUTH_KEY_ID, AuthKey::default())
+        TestSession::create(MockHSM::new(), Default::default(), true).unwrap()
     };
 }
 
