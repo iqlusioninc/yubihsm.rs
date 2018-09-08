@@ -45,7 +45,12 @@ impl Response for RSAPKCS1Signature {
     const COMMAND_TYPE: CommandType = CommandType::SignDataPKCS1;
 }
 
-#[cfg_attr(clippy, clippy::len_without_is_empty)]
+// TODO: use clippy's scoped lints once they work on stable
+#[allow(
+    unknown_lints,
+    renamed_and_removed_lints,
+    len_without_is_empty
+)]
 impl RSAPKCS1Signature {
     /// Unwrap inner byte vector
     pub fn into_vec(self) -> Vec<u8> {
