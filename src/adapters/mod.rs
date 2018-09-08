@@ -18,7 +18,7 @@ pub trait Adapter: Sized + Send + Sync {
     fn open(config: &Self::Config) -> Result<Self, AdapterError>;
 
     /// Are we able to send/receive messages to/from the HSM?
-    fn is_open(&self) -> bool;
+    fn healthcheck(&self) -> Result<(), AdapterError>;
 
     /// Send a command message to the HSM, then read and return the response
     fn send_message(&self, uuid: Uuid, msg: Vec<u8>) -> Result<Vec<u8>, AdapterError>;

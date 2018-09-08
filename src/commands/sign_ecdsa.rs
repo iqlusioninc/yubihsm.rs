@@ -1,4 +1,4 @@
-//! Compute an ECDSA signature of the SHA-256 hash of the given data with the given key ID.
+//! Compute an ECDSA signature with the given key ID.
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Sign_Data_Ecdsa.html>
 //!
@@ -41,7 +41,7 @@ type AdapterType = HttpAdapter;
 #[cfg(feature = "usb")]
 type AdapterType = UsbAdapter;
 
-/// Compute an ECDSA signature of the SHA-256 hash of the given data with the given key ID
+/// Compute an ECDSA signature of the given raw digest (i.e. a precomputed SHA-256 digest)
 pub fn sign_ecdsa_raw_digest<T>(
     session: &mut Session<AdapterType>,
     key_id: ObjectId,

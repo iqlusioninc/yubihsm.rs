@@ -50,19 +50,13 @@ impl Type {
 }
 
 impl Serialize for Type {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         serializer.serialize_u8(self.to_u8())
     }
 }
 
 impl<'de> Deserialize<'de> for Type {
-    fn deserialize<D>(deserializer: D) -> Result<Type, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Type, D::Error> {
         struct TypeVisitor;
 
         impl<'de> Visitor<'de> for TypeVisitor {
@@ -72,16 +66,11 @@ impl<'de> Deserialize<'de> for Type {
                 formatter.write_str("an unsigned byte between 0x01 and 0x07")
             }
 
-            fn visit_u8<E>(self, value: u8) -> Result<Type, E>
-            where
-                E: de::Error,
-            {
+            fn visit_u8<E: de::Error>(self, value: u8) -> Result<Type, E> {
                 Type::from_u8(value).or_else(|e| Err(E::custom(format!("{}", e))))
             }
-            fn visit_u64<E>(self, value: u64) -> Result<Type, E>
-            where
-                E: de::Error,
-            {
+
+            fn visit_u64<E: de::Error>(self, value: u64) -> Result<Type, E> {
                 assert!(value < 255);
                 Type::from_u8(value as u8).or_else(|e| Err(E::custom(format!("{}", e))))
             }

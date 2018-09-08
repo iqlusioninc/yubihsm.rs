@@ -8,8 +8,11 @@ use std::{
 };
 use uuid::Uuid;
 
-use super::{ConnectorStatus, HttpConfig, ResponseReader, USER_AGENT};
-use adapters::{Adapter, AdapterError, AdapterErrorKind::AddrInvalid};
+use super::{status::CONNECTOR_STATUS_OK, ConnectorStatus, HttpConfig, ResponseReader, USER_AGENT};
+use adapters::{
+    Adapter, AdapterError,
+    AdapterErrorKind::{AddrInvalid, ConnectionFailed},
+};
 
 /// HTTP(-ish) adapter which supports the minimal parts of the protocol
 /// required to communicate with the yubihsm-connector service.
@@ -50,8 +53,18 @@ impl Adapter for HttpAdapter {
     }
 
     /// Check that `yubihsm-connector` is available and returning status `OK`
-    fn is_open(&self) -> bool {
-        self.status().map(|s| s.is_ok()).ok().unwrap_or(false)
+    fn healthcheck(&self) -> Result<(), AdapterError> {
+        let status = self.status()?;
+
+        if status.message == CONNECTOR_STATUS_OK {
+            Ok(())
+        } else {
+            fail!(
+                ConnectionFailed,
+                "bad status message from yubihsm-connector: {}",
+                &status.message
+            );
+        }
     }
 
     /// `POST /connector/api` with a given command message

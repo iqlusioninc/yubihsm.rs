@@ -6,20 +6,18 @@ use std::{
     sync::{Arc, Mutex},
     time::Instant,
 };
-use uuid::Uuid;
 
+mod adapter;
 mod commands;
 mod objects;
 mod session;
 mod state;
 
+pub use self::adapter::MockAdapter;
 use self::state::State;
-use adapters::{Adapter, AdapterError, AdapterErrorKind};
 use auth_key::AuthKey;
-use commands::CommandType;
 use credentials::Credentials;
 use object::ObjectId;
-use securechannel::CommandMessage;
 use session::{connection::Connection, Session, SessionTimeout};
 
 /// Software simulation of a `YubiHSM2` intended for testing
@@ -56,7 +54,7 @@ impl MockHSM {
     // TODO: refactor `Connection` so we don't need to create it this way
     fn connection(&self) -> Connection<MockAdapter> {
         Connection {
-            adapter: Some(MockAdapter(self.0.clone())),
+            adapter: Some(MockAdapter::new(self.0.clone())),
             channel: None,
             config: MockConfig {},
         }
@@ -69,9 +67,6 @@ impl Default for MockHSM {
     }
 }
 
-/// A mocked connection to the MockHSM
-pub struct MockAdapter(Arc<Mutex<State>>);
-
 /// Fake config
 #[derive(Debug, Default)]
 pub struct MockConfig {}
@@ -79,47 +74,5 @@ pub struct MockConfig {}
 impl fmt::Display for MockConfig {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "(nothing to see here)")
-    }
-}
-
-impl Adapter for MockAdapter {
-    type Config = MockConfig;
-
-    /// We don't bother to implement this
-    // TODO: use this as the entry point for the `MockHSM`'s `Arc<Mutex<State>>`?
-    fn open(_config: &MockConfig) -> Result<Self, AdapterError> {
-        panic!("unimplemented");
-    }
-
-    /// Rust never sleeps
-    fn is_open(&self) -> bool {
-        true
-    }
-
-    /// Send a message to the MockHSM
-    fn send_message(&self, _uuid: Uuid, body: Vec<u8>) -> Result<Vec<u8>, AdapterError> {
-        let command = CommandMessage::parse(body).map_err(|e| {
-            AdapterError::new(
-                AdapterErrorKind::ConnectionFailed,
-                Some(format!("error parsing command: {}", e)),
-            )
-        })?;
-
-        let mut state = self.0.lock().map_err(|e| {
-            AdapterError::new(
-                AdapterErrorKind::ConnectionFailed,
-                Some(format!("error obtaining state lock: {}", e)),
-            )
-        })?;
-
-        match command.command_type {
-            CommandType::CreateSession => commands::create_session(&mut state, &command),
-            CommandType::AuthSession => commands::authenticate_session(&mut state, &command),
-            CommandType::SessionMessage => commands::session_message(&mut state, command),
-            unsupported => Err(AdapterError::new(
-                AdapterErrorKind::ConnectionFailed,
-                Some(format!("unsupported command: {:?}", unsupported)),
-            )),
-        }
     }
 }

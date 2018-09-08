@@ -8,6 +8,7 @@ use untrusted;
 
 use adapters::AdapterError;
 use algorithm::{Algorithm, AsymmetricAlgorithm, HMACAlgorithm};
+use audit::{AuditCommand, AuditOption, AuditTag};
 use commands::{
     blink::BlinkResponse,
     close_session::CloseSessionResponse,
@@ -22,6 +23,7 @@ use commands::{
     get_logs::GetLogsResponse,
     get_object_info::{GetObjectInfoCommand, GetObjectInfoResponse},
     get_opaque::{GetOpaqueCommand, GetOpaqueResponse},
+    get_option::{GetOptionCommand, GetOptionResponse},
     get_pseudo_random::{GetPseudoRandomCommand, GetPseudoRandomResponse},
     get_pubkey::{GetPubKeyCommand, PublicKey},
     hmac::{HMACDataCommand, HMACTag},
@@ -41,7 +43,7 @@ use commands::{
     CommandType, Response,
 };
 use securechannel::{CommandMessage, ResponseMessage};
-use serializers::deserialize;
+use serializers::{deserialize, serialize};
 use {Capability, ObjectType, SessionId, WrapMessage, WrapNonce};
 
 use super::objects::Payload;
@@ -112,6 +114,7 @@ pub(crate) fn session_message(
         CommandType::GetLogs => get_logs(),
         CommandType::GetObjectInfo => get_object_info(state, &command.data),
         CommandType::GetOpaqueObject => get_opaque(state, &command.data),
+        CommandType::GetOption => get_option(state, &command.data),
         CommandType::GetPseudoRandom => get_pseudo_random(state, &command.data),
         CommandType::GetPubKey => get_pubkey(state, &command.data),
         CommandType::HMACData => hmac_data(state, &command.data),
@@ -351,6 +354,234 @@ fn get_opaque(state: &State, cmd_data: &[u8]) -> ResponseMessage {
             command.object_id
         ))
     }
+}
+
+/// Get an auditing option
+fn get_option(_state: &State, cmd_data: &[u8]) -> ResponseMessage {
+    let command: GetOptionCommand = deserialize(cmd_data)
+        .unwrap_or_else(|e| panic!("error parsing CommandType::GetOpaqueObject: {:?}", e));
+
+    let results = match command.tag {
+        AuditTag::Command => {
+            // TODO: actually enforce these, and represent them in a better way
+            // than a gigantic `vec!` literal
+            let commands = vec![
+                AuditCommand {
+                    command: CommandType::Echo,
+                    audit: AuditOption::Off,
+                },
+                AuditCommand {
+                    command: CommandType::CreateSession,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::AuthSession,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::SessionMessage,
+                    audit: AuditOption::Off,
+                },
+                AuditCommand {
+                    command: CommandType::DeviceInfo,
+                    audit: AuditOption::Off,
+                },
+                AuditCommand {
+                    command: CommandType::BSL,
+                    audit: AuditOption::Off,
+                },
+                AuditCommand {
+                    command: CommandType::Command0x09,
+                    audit: AuditOption::Off,
+                },
+                AuditCommand {
+                    command: CommandType::Reset,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::CloseSession,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::StorageStatus,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::PutOpaqueObject,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::GetOpaqueObject,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::PutAuthKey,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::PutAsymmetricKey,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::GenerateAsymmetricKey,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::SignDataPKCS1,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::SignDataPSS,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::SignDataECDSA,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::ListObjects,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::DecryptPKCS1,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::DecryptECDH,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::ExportWrapped,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::ImportWrapped,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::PutWrapKey,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::GetLogs,
+                    audit: AuditOption::Off,
+                },
+                AuditCommand {
+                    command: CommandType::SetLogIndex,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::GetObjectInfo,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::PutOption,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::GetOption,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::GetPseudoRandom,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::PutHMACKey,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::HMACData,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::GetPubKey,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::DeleteObject,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::DecryptOAEP,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::GenerateHMACKey,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::GenerateWrapKey,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::VerifyHMAC,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::SSHCertify,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::PutTemplate,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::GetTemplate,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::DecryptOTP,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::CreateOTPAEAD,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::RandomOTPAEAD,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::RewrapOTPAEAD,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::AttestAsymmetric,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::PutOTPAEAD,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::GenerateOTPAEAD,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::WrapData,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::UnwrapData,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::SignDataEdDSA,
+                    audit: AuditOption::On,
+                },
+                AuditCommand {
+                    command: CommandType::Blink,
+                    audit: AuditOption::On,
+                },
+            ];
+
+            serialize(&commands).unwrap()
+        }
+        AuditTag::Force => vec![AuditOption::Off.to_u8()],
+    };
+
+    GetOptionResponse(results).serialize()
 }
 
 /// Get bytes of random data

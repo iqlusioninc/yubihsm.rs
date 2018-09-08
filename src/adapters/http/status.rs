@@ -6,7 +6,7 @@ use adapters::{AdapterError, AdapterErrorKind::ResponseError};
 use serial::SerialNumber;
 
 /// `yubihsm-connector` status message when healthy
-const CONNECTOR_STATUS_OK: &str = "OK";
+pub(super) const CONNECTOR_STATUS_OK: &str = "OK";
 
 /// Status response from `yubihsm-connector` containing information about its
 /// health and what `YubiHSM2` we're connected to
