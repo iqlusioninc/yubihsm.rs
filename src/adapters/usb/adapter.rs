@@ -73,10 +73,15 @@ impl Adapter for UsbAdapter {
     }
 
     /// Check that we still have an active USB connection
-    fn is_open(&self) -> bool {
+    fn healthcheck(&self) -> Result<(), AdapterError> {
         let handle = self.handle.lock().unwrap();
+
         // TODO: better test that our USB connection is still open?
-        handle.active_configuration().is_ok()
+        if let Err(e) = handle.active_configuration() {
+            fail!(UsbError, "healthcheck failed: {}", e);
+        }
+
+        Ok(())
     }
 
     /// Send a command to the YubiHSM and read its response

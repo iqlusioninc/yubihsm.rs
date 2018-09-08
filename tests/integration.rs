@@ -66,7 +66,7 @@ type TestSession = Session<MockAdapter>;
 lazy_static! {
     static ref SESSION: ::std::sync::Mutex<TestSession> = {
         let session = Session::create(Default::default(), Default::default(), true)
-            .unwrap_or_else(|err| panic!("error creating session: {}", err));
+            .unwrap_or_else(|err| panic!("{}", err));
         ::std::sync::Mutex::new(session)
     };
 }
@@ -75,7 +75,7 @@ lazy_static! {
 lazy_static! {
     static ref SESSION: ::std::sync::Mutex<TestSession> = {
         let session = Session::create(Default::default(), Default::default(), true)
-            .unwrap_or_else(|err| panic!("error creating session: {}", err));
+            .unwrap_or_else(|err| panic!("{}", err));
         ::std::sync::Mutex::new(session)
     };
 }
@@ -362,12 +362,30 @@ fn get_object_info_default_authkey() {
     );
 }
 
+/// Get the auditing options for all commands
+#[test]
+fn get_command_audit_options_test() {
+    let mut session = create_session!();
+    let results = yubihsm::get_all_command_audit_options(&mut session)
+        .unwrap_or_else(|err| panic!("error getting force option: {}", err));
+
+    assert!(results.len() > 1);
+}
+
+/// Get the "force audit" option setting
+#[test]
+fn get_force_audit_option_test() {
+    let mut session = create_session!();
+    yubihsm::get_force_audit_option(&mut session)
+        .unwrap_or_else(|err| panic!("error getting force option: {}", err));
+}
+
 /// Get random bytes
 #[test]
 fn get_pseudo_random() {
     let mut session = create_session!();
 
-    let bytes = yubihsm::commands::get_pseudo_random::get_pseudo_random(&mut session, 32)
+    let bytes = yubihsm::get_pseudo_random(&mut session, 32)
         .unwrap_or_else(|err| panic!("error getting random data: {}", err));
 
     assert_eq!(32, bytes.len());

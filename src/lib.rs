@@ -102,6 +102,9 @@ pub mod adapters;
 /// Cryptographic algorithms supported by the `YubiHSM2`
 pub mod algorithm;
 
+/// Auditing options (for use with the `get_option` and `put_option` commands)
+pub(crate) mod audit;
+
 /// Authentication keys used to establish encrypted sessions with the `YubiHSM2`
 pub mod auth_key;
 
@@ -151,16 +154,17 @@ pub use adapters::{
     Adapter,
 };
 pub use algorithm::*;
+pub use audit::AuditOption;
 pub use auth_key::{AuthKey, AUTH_KEY_SIZE};
 pub use capabilities::Capability;
 // Import command functions from all submodules
 pub use commands::{
     attest_asymmetric::*, blink::*, delete_object::*, device_info::*, echo::*, export_wrapped::*,
     generate_asymmetric_key::*, generate_hmac_key::*, generate_wrap_key::*, get_logs::*,
-    get_object_info::*, get_opaque::*, get_pubkey::*, hmac::*, import_wrapped::*, list_objects::*,
-    put_asymmetric_key::*, put_auth_key::*, put_hmac_key::*, put_opaque::*, put_otp_aead_key::*,
-    put_wrap_key::*, reset::*, set_log_index::*, sign_ecdsa::*, sign_eddsa::*, storage_status::*,
-    unwrap_data::*, verify_hmac::*, wrap_data::*, CommandType,
+    get_object_info::*, get_opaque::*, get_option::*, get_pseudo_random::*, get_pubkey::*, hmac::*,
+    import_wrapped::*, list_objects::*, put_asymmetric_key::*, put_auth_key::*, put_hmac_key::*,
+    put_opaque::*, put_otp_aead_key::*, put_wrap_key::*, reset::*, set_log_index::*, sign_ecdsa::*,
+    sign_eddsa::*, storage_status::*, unwrap_data::*, verify_hmac::*, wrap_data::*, CommandType,
 };
 #[cfg(feature = "rsa")]
 pub use commands::{sign_rsa_pkcs1v15::*, sign_rsa_pss::*};

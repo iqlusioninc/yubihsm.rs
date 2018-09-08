@@ -22,13 +22,12 @@ pub fn sign_rsa_pss_sha256<A: Adapter>(
     key_id: ObjectId,
     data: &[u8],
 ) -> Result<RSAPSSSignature, SessionError> {
-    if data.len() > RSA_PSS_MAX_MESSAGE_SIZE {
-        fail!(
-            ProtocolError,
-            "message too large to be signed (max: {})",
-            RSA_PSS_MAX_MESSAGE_SIZE
-        );
-    }
+    ensure!(
+        data.len() > RSA_PSS_MAX_MESSAGE_SIZE,
+        ProtocolError,
+        "message too large to be signed (max: {})",
+        RSA_PSS_MAX_MESSAGE_SIZE
+    );
 
     let mut hasher = Sha256::default();
 

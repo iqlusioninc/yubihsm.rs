@@ -23,6 +23,7 @@ pub mod generate_wrap_key;
 pub mod get_logs;
 pub mod get_object_info;
 pub mod get_opaque;
+pub mod get_option;
 pub mod get_pseudo_random;
 pub mod get_pubkey;
 pub mod hmac;
@@ -81,6 +82,7 @@ pub(crate) trait Response: Serialize + DeserializeOwned + Sized {
 /// Command IDs for `YubiHSM2` operations
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[allow(missing_docs)]
+#[repr(u8)]
 pub enum CommandType {
     Unknown = 0x00,
     Echo = 0x01,
@@ -90,6 +92,7 @@ pub enum CommandType {
     DeviceInfo = 0x06,
     BSL = 0x07,
     Reset = 0x08,
+    Command0x09 = 0x09, // Unknown command: appears in audit options
     CloseSession = 0x40,
     StorageStatus = 0x41,
     PutOpaqueObject = 0x42,
@@ -149,6 +152,7 @@ impl CommandType {
             0x06 => CommandType::DeviceInfo,
             0x07 => CommandType::BSL,
             0x08 => CommandType::Reset,
+            0x09 => CommandType::Command0x09,
             0x40 => CommandType::CloseSession,
             0x41 => CommandType::StorageStatus,
             0x42 => CommandType::PutOpaqueObject,

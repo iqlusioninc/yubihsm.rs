@@ -95,7 +95,11 @@ impl<A: Adapter> Connection<A> {
         // This check is potentially expensive (i.e. HTTP request) so we avoid
         // doing it unless we presume the underlying connection may be
         // unhealthy.
-        let adapter_is_open = self.adapter.as_ref().map(|a| a.is_open()).unwrap_or(false);
+        let adapter_is_open = self
+            .adapter
+            .as_ref()
+            .map(|a| a.healthcheck().is_ok())
+            .unwrap_or(false);
 
         if !adapter_is_open {
             self.adapter = None;
@@ -170,11 +174,8 @@ impl<A: Adapter> Connection<A> {
         let adapter = A::open(&self.config)?;
 
         // Ensure the new connection is healthy
-        if !adapter.is_open() {
-            fail!(
-                CreateFailed,
-                "adapter unhealthy. check debug log for more info."
-            )
+        if let Err(e) = adapter.healthcheck() {
+            fail!(CreateFailed, e);
         }
 
         self.adapter = Some(adapter);
