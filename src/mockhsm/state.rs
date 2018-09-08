@@ -11,6 +11,7 @@ use super::objects::Objects;
 use super::session::Session;
 
 /// Mutable interior state of the `MockHSM`
+#[derive(Debug)]
 pub(crate) struct State {
     sessions: BTreeMap<SessionId, Session>,
     pub objects: Objects,

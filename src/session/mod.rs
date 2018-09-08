@@ -3,6 +3,49 @@ use std::time::{Duration, Instant};
 #[macro_use]
 mod error;
 
+#[cfg(feature = "usb")]
+use adapters::usb::UsbAdapter;
+use adapters::{http::HttpAdapter, Adapter};
+use commands::{close_session::CloseSessionCommand, Command};
+use credentials::Credentials;
+use securechannel::SessionId;
+
+/// Write consistent `debug!(...) lines for sessions
+macro_rules! session_debug {
+    ($session:expr, $msg:expr) => {
+        if let Some(session) = $session.id() {
+            debug!("session={} {}", session.to_u8(), $msg);
+        } else {
+            debug!("session=none {}", $msg);
+        }
+    };
+    ($session:expr, $fmt:expr, $($arg:tt)+) => {
+        if let Some(session) = $session.id() {
+            debug!(concat!("session={} ", $fmt), session.to_u8(), $($arg)+);
+        } else {
+            debug!(concat!("session=none ", $fmt), $($arg)+);
+        }
+    };
+}
+
+/// Write consistent `error!(...) lines for sessions
+macro_rules! session_error {
+    ($session:expr, $msg:expr) => {
+        if let Some(session) = $session.id() {
+            error!("session={} {}", session.to_u8(), $msg);
+        } else {
+            error!("session=none {}", $msg);
+        }
+    };
+    ($session:expr, $fmt:expr, $($arg:tt)+) => {
+        if let Some(session) = $session.id() {
+            error!(concat!("session={} ", $fmt), session.to_u8(), $($arg)+);
+        } else {
+            error!(concat!("session=none ", $fmt), $($arg)+);
+        }
+    };
+}
+
 pub(crate) mod connection;
 mod timeout;
 
@@ -12,36 +55,11 @@ pub use self::{
     error::{SessionError, SessionErrorKind},
     timeout::SessionTimeout,
 };
-#[cfg(feature = "usb")]
-use adapters::usb::UsbAdapter;
-use adapters::{http::HttpAdapter, Adapter};
-use commands::{close_session::CloseSessionCommand, Command};
-use credentials::Credentials;
-use securechannel::{CommandMessage, ResponseCode, SecureChannel, SessionId};
-use serializers::deserialize;
 
 /// Timeout fuzz factor: to avoid races/skew with the YubiHSM's clock,
 /// we consider sessions to be timed out slightly earlier than the actual
 /// timeout. This should (hopefully) ensure we always time out first.
 const TIMEOUT_SKEW_INTERVAL: Duration = Duration::from_secs(1);
-
-/// Write consistent `debug!(...) lines for sessions
-macro_rules! session_debug {
-    ($session:expr, $msg:expr) => {
-        if let Some(session) = $session.id() {
-            debug!("(session: {}) {}", session.to_u8(), $msg);
-        } else {
-            debug!("(session: none) {}", $msg);
-        }
-    };
-    ($session:expr, $fmt:expr, $($arg:tt)+) => {
-        if let Some(session) = $session.id() {
-            debug!(concat!("(session: {}) ", $fmt), session.to_u8(), $($arg)+);
-        } else {
-            debug!(concat!("(session: none) ", $fmt), $($arg)+);
-        }
-    };
-}
 
 /// Session with a YubiHSM connected through `yubihsm-connector`
 pub type HttpSession = Session<HttpAdapter>;
@@ -59,18 +77,21 @@ pub type UsbSession = Session<UsbAdapter>;
 /// Sessions are automatically closed on `Drop`, releasing `YubiHSM2` session
 /// resources and wiping the ephemeral keys used to encrypt the session.
 pub struct Session<A: Adapter> {
+    /// Configuration for connecting to the HSM
+    config: A::Config,
+
     /// Connection to the HSM (low-level session state)
-    pub(crate) connection: Connection<A>,
+    connection: Option<Connection<A>>,
 
     /// Cached `Credentials`
-    pub(crate) credentials: Option<Credentials>,
+    credentials: Option<Credentials>,
 
     /// Instant when the last command with the HSM was sent. Used for
     /// tracking session inactivity timeouts
-    pub(crate) last_command_timestamp: Instant,
+    last_command_timestamp: Instant,
 
     /// Timeout to use for session inactivity
-    pub(crate) timeout: SessionTimeout,
+    timeout: SessionTimeout,
 }
 
 impl<A: Adapter> Session<A> {
@@ -97,7 +118,8 @@ impl<A: Adapter> Session<A> {
         debug!("yubihsm: creating new session");
 
         let session = Self {
-            connection: Connection::new(config),
+            config,
+            connection: None,
             credentials: Some(credentials),
             last_command_timestamp: Instant::now(),
             timeout: SessionTimeout::default(),
@@ -108,25 +130,19 @@ impl<A: Adapter> Session<A> {
 
     /// Connect to the YubiHSM
     pub fn open(&mut self) -> Result<(), SessionError> {
-        self.connection.open(
-            self.credentials
-                .as_ref()
-                .ok_or_else(|| err!(AuthFailed, "session reconnection disabled"))?,
-        )?;
-
-        self.last_command_timestamp = Instant::now();
+        self.connection()?;
         Ok(())
     }
 
     /// Get the current session ID
     #[inline]
     pub fn id(&self) -> Option<SessionId> {
-        self.connection.id()
+        self.connection.as_ref().and_then(|ref c| c.id())
     }
 
     /// Do we currently have an open session with the HSM?
     pub fn is_open(&self) -> bool {
-        if !self.connection.is_open() {
+        if self.connection.is_none() {
             return false;
         }
 
@@ -148,7 +164,7 @@ impl<A: Adapter> Session<A> {
 
     /// Borrow the adapter for this session (if available)
     pub fn adapter(&mut self) -> Result<&A, SessionError> {
-        self.connection.open_adapter()
+        Ok(self.connection()?.adapter())
     }
 
     /// Encrypt a command, send it to the HSM, then read and decrypt the response
@@ -156,82 +172,31 @@ impl<A: Adapter> Session<A> {
         &mut self,
         command: T,
     ) -> Result<T::ResponseType, SessionError> {
-        let plaintext_cmd: CommandMessage = command.into();
-        let cmd_type = plaintext_cmd.command_type;
-        let encrypted_cmd = self.secure_channel()?.encrypt_command(plaintext_cmd)?;
-        let uuid = encrypted_cmd.uuid;
-
-        session_debug!(self, "uuid={} cmd={:?}", uuid, T::COMMAND_TYPE);
-
+        let response = self.connection()?.send_command(command)?;
         self.last_command_timestamp = Instant::now();
-        let encrypted_response = self.connection.send_message(encrypted_cmd)?;
-
-        // For decryption we go straight to the connection's secure channel,
-        // skipping checks of whether or not the connection is open, as we
-        // have already completed all I/O.
-        let response = match self
-            .connection
-            .secure_channel()?
-            .decrypt_response(encrypted_response)
-        {
-            Ok(resp) => resp,
-            Err(e) => {
-                // Cryptographic error. Terminate the current secure channel
-                self.connection.close_secure_channel();
-                return Err(e.into());
-            }
-        };
-
-        session_debug!(
-            self,
-            "uuid={} resp={:?} length={}",
-            uuid,
-            response.code,
-            response.data.len()
-        );
-
-        if response.is_err() {
-            // TODO: factor this into ResponseMessage or ResponseCode?
-            let description = match response.code {
-                ResponseCode::MemoryError => {
-                    "general HSM error (e.g. bad command params, missing object)".to_owned()
-                }
-                other => format!("{:?}", other),
-            };
-
-            session_debug!(
-                self,
-                "uuid={} failed={:?} code={:?} err=\"{}\"",
-                uuid,
-                cmd_type,
-                response.code.to_u8(),
-                &description
-            );
-
-            fail!(ResponseError, description);
-        }
-
-        if response.command().unwrap() != T::COMMAND_TYPE {
-            fail!(
-                ResponseError,
-                "command type mismatch: expected {:?}, got {:?}",
-                T::COMMAND_TYPE,
-                response.command().unwrap()
-            );
-        }
-
-        deserialize(response.data.as_ref()).map_err(|e| e.into())
+        Ok(response)
     }
 
-    /// Get the `SecureChannel` for this session
-    fn secure_channel(&mut self) -> Result<&mut SecureChannel, SessionError> {
-        // (Re)open the secure channel if we're in a disconnected state
-        if !self.is_open() {
-            self.connection.close_secure_channel();
-            self.open()?;
+    /// Get the underlying connection or return an error
+    fn connection(&mut self) -> Result<&mut Connection<A>, SessionError> {
+        if self.is_open() {
+            return Ok(self.connection.as_mut().unwrap());
         }
 
-        self.connection.secure_channel()
+        // Clear any existing connection (i.e. make sure old connections are
+        // dropped before opening new ones)
+        self.connection = None;
+
+        let connection = Connection::open(
+            &self.config,
+            self.credentials
+                .as_ref()
+                .ok_or_else(|| err!(AuthFailed, "session reconnection disabled"))?,
+        )?;
+
+        self.connection = Some(connection);
+        self.last_command_timestamp = Instant::now();
+        Ok(self.connection.as_mut().unwrap())
     }
 }
 

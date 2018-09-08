@@ -4,191 +4,158 @@ use subtle::ConstantTimeEq;
 
 use super::{SessionError, SessionErrorKind::*};
 use adapters::Adapter;
-use commands::create_session::create_session;
+use commands::{create_session::create_session, Command, CommandType};
 use credentials::Credentials;
 use securechannel::{Challenge, CommandMessage, ResponseMessage, SecureChannel, SessionId};
+use serializers::deserialize;
 
 /// Encrypted connection to the HSM made through a particular adapter.
 /// This type handles opening/closing adapters and creating encrypted
 /// (SCP03) channels.
-pub(crate) struct Connection<A: Adapter> {
+pub(super) struct Connection<A: Adapter> {
     /// Adapter which communicates with the HSM (HTTP or USB)
-    pub(crate) adapter: Option<A>,
+    adapter: A,
 
     /// Encrypted (SCP03) channel to the HSM
-    pub(crate) channel: Option<SecureChannel>,
-
-    /// Configuration for the adapter
-    pub(crate) config: A::Config,
+    secure_channel: Option<SecureChannel>,
 }
 
 impl<A: Adapter> Connection<A> {
-    /// Create a new connection object, deferring connecting until the
-    /// `connect` function is called.
-    pub fn new(config: A::Config) -> Self {
-        Connection {
-            adapter: None,
-            channel: None,
-            config,
-        }
-    }
-
-    /// Connect to the HSM using the given credentials
-    pub fn open(&mut self, credentials: &Credentials) -> Result<(), SessionError> {
-        self.channel = {
-            let adapter = self.open_adapter()?;
-            let host_challenge = Challenge::random();
-
-            let (session_id, session_response) =
-                create_session(adapter, credentials.auth_key_id, host_challenge)?;
-
-            let channel = SecureChannel::new(
-                session_id,
-                &credentials.auth_key,
-                host_challenge,
-                session_response.card_challenge,
-            );
-
-            if channel
-                .card_cryptogram()
-                .ct_eq(&session_response.card_cryptogram)
-                .unwrap_u8()
-                != 1
-            {
-                fail!(AuthFailed, "card cryptogram mismatch!");
-            }
-
-            Some(channel)
-        };
-
-        self.authenticate_channel(credentials)?;
-        Ok(())
-    }
-
-    /// Do we have an active connection to the HSM?
-    pub fn is_open(&self) -> bool {
-        self.adapter.is_some() && self.channel.is_some()
-    }
-
-    /// Get the current session ID (if we have an open session)
-    #[inline]
-    pub fn id(&self) -> Option<SessionId> {
-        self.channel.as_ref().map(|c| c.id())
-    }
-
-    /// Get the currently open `SecureChannel` for this connection
-    pub fn secure_channel(&mut self) -> Result<&mut SecureChannel, SessionError> {
-        self.channel
-            .as_mut()
-            .ok_or_else(|| err!(CreateFailed, "couldn't open secure channel"))
-    }
-
-    /// Close the currently open `SecureChannel` for this connection (if any),
-    /// also checking the adapter's health and potentially closing it as well
-    /// if it's unhealthy.
-    pub fn close_secure_channel(&mut self) {
-        self.channel = None;
-
-        // Check that the `Adapter` is still healthy, and if it isn't, drop it
-        // in addition to the `SecureChannel`.
-        //
-        // This check is potentially expensive (i.e. HTTP request) so we avoid
-        // doing it unless we presume the underlying connection may be
-        // unhealthy.
-        let adapter_is_open = self
-            .adapter
-            .as_ref()
-            .map(|a| a.healthcheck().is_ok())
-            .unwrap_or(false);
-
-        if !adapter_is_open {
-            self.adapter = None;
-        }
-    }
-
-    /// Send a command message to the HSM and parse the response
-    pub fn send_message(&mut self, cmd: CommandMessage) -> Result<ResponseMessage, SessionError> {
-        let session_id = self.secure_channel()?.id().to_u8();
-        let cmd_type = cmd.command_type;
-        let uuid = cmd.uuid;
-
-        debug!(
-            "(session: {}) uuid={} command={:?}",
-            session_id, &uuid, cmd_type
-        );
-
-        let response = match self.open_adapter()?.send_message(uuid, cmd.into()) {
-            Ok(response_bytes) => ResponseMessage::parse(response_bytes)?,
-            Err(e) => {
-                self.close_secure_channel();
-                return Err(e.into());
-            }
-        };
-
-        debug!(
-            "(session: {}) uuid={} response={:?} length={}",
-            session_id,
-            &uuid,
-            response.code,
-            response.data.len()
-        );
-
-        if response.is_err() {
-            error!(
-                "(session: {}) uuid={} HSM error: {:?}",
-                session_id,
-                &uuid,
-                response.data.len()
-            );
-
-            fail!(
-                ResponseError,
-                "(session: {}) HSM error: {:?}",
-                session_id,
-                response.code
-            );
-        }
-
-        if response.command().unwrap() != cmd_type {
-            self.close_secure_channel();
-
-            fail!(
-                ProtocolError,
-                "(session: {}) command type mismatch: expected {:?}, got {:?}",
-                session_id,
-                cmd_type,
-                response.command().unwrap()
-            );
-        }
-
-        Ok(response)
-    }
-
-    /// Open the underlying adapter, either using our existing connection or
-    /// creating a new one
-    pub fn open_adapter(&mut self) -> Result<&A, SessionError> {
-        if let Some(ref adapter) = self.adapter {
-            return Ok(adapter);
-        }
-
-        let adapter = A::open(&self.config)?;
+    /// Connect to the HSM using the given configuration and credentials
+    pub(super) fn open(
+        config: &A::Config,
+        credentials: &Credentials,
+    ) -> Result<Self, SessionError> {
+        let adapter = A::open(config)?;
 
         // Ensure the new connection is healthy
         if let Err(e) = adapter.healthcheck() {
             fail!(CreateFailed, e);
         }
 
-        self.adapter = Some(adapter);
-        Ok(self.adapter.as_ref().unwrap())
+        let host_challenge = Challenge::random();
+
+        let (session_id, session_response) =
+            create_session(&adapter, credentials.auth_key_id, host_challenge)?;
+
+        let channel = SecureChannel::new(
+            session_id,
+            &credentials.auth_key,
+            host_challenge,
+            session_response.card_challenge,
+        );
+
+        if channel
+            .card_cryptogram()
+            .ct_eq(&session_response.card_cryptogram)
+            .unwrap_u8()
+            != 1
+        {
+            fail!(
+                AuthFailed,
+                "(session: {}) card cryptogram mismatch!",
+                channel.id().to_u8()
+            );
+        }
+
+        let mut connection = Connection {
+            adapter,
+            secure_channel: Some(channel),
+        };
+        connection.authenticate(credentials)?;
+        Ok(connection)
+    }
+
+    /// Get the current session ID (if we have an open session)
+    #[inline]
+    pub(super) fn id(&self) -> Option<SessionId> {
+        self.secure_channel.as_ref().map(|c| c.id())
+    }
+
+    /// Borrow the underlying adapter
+    pub(super) fn adapter(&self) -> &A {
+        &self.adapter
+    }
+
+    /// Encrypt a command, send it to the HSM, then read and decrypt the response
+    pub(super) fn send_command<T: Command>(
+        &mut self,
+        command: T,
+    ) -> Result<T::ResponseType, SessionError> {
+        let plaintext_cmd: CommandMessage = command.into();
+        let cmd_type = plaintext_cmd.command_type;
+        let encrypted_cmd = self.secure_channel()?.encrypt_command(plaintext_cmd)?;
+        let uuid = encrypted_cmd.uuid;
+
+        session_debug!(self, "uuid={} cmd={:?}", uuid, T::COMMAND_TYPE);
+
+        let encrypted_response = self.send_message(encrypted_cmd)?;
+
+        // For decryption we go straight to the connection's secure channel,
+        // skipping checks of whether or not the connection is open, as we
+        // have already completed all I/O.
+        let response = self
+            .secure_channel()?
+            .decrypt_response(encrypted_response)
+            .map_err(|e| {
+                self.secure_channel = None;
+                e
+            })?;
+
+        if response.is_err() || response.command().unwrap() != T::COMMAND_TYPE {
+            session_debug!(
+                self,
+                "uuid={} failed={:?} code={:?}",
+                uuid,
+                cmd_type,
+                response.code.to_u8()
+            );
+
+            fail!(
+                ResponseError,
+                "HSM error (session: {})",
+                self.id().unwrap().to_u8(),
+            );
+        }
+
+        deserialize(response.data.as_ref()).map_err(|e| e.into())
+    }
+
+    /// Send a command message to the HSM and parse the response
+    fn send_message(&mut self, cmd: CommandMessage) -> Result<ResponseMessage, SessionError> {
+        let cmd_type = cmd.command_type;
+        let uuid = cmd.uuid;
+
+        session_debug!(self, "uuid={} command={:?}", &uuid, cmd_type);
+
+        let response = match self.adapter.send_message(uuid, cmd.into()) {
+            Ok(response_bytes) => ResponseMessage::parse(response_bytes)?,
+            Err(e) => {
+                self.secure_channel = None;
+                return Err(e.into());
+            }
+        };
+
+        if response.is_err() || response.command().unwrap() != cmd_type {
+            session_error!(self, "uuid={} error={:?}", &uuid, response.code);
+
+            fail!(
+                ResponseError,
+                "HSM error (session: {})",
+                self.id().unwrap().to_u8(),
+            );
+        }
+
+        Ok(response)
     }
 
     /// Authenticate the current session with the HSM
-    fn authenticate_channel(&mut self, credentials: &Credentials) -> Result<(), SessionError> {
-        let session_id = self.secure_channel()?.id().to_u8();
-
-        debug!(
-            "(session: {}) authenticating with key: {}",
-            session_id, credentials.auth_key_id
+    fn authenticate(&mut self, credentials: &Credentials) -> Result<(), SessionError> {
+        session_debug!(
+            self,
+            "command={:?} key={}",
+            CommandType::AuthSession,
+            credentials.auth_key_id
         );
 
         let command = self.secure_channel()?.authenticate_session()?;
@@ -198,16 +165,25 @@ impl<A: Adapter> Connection<A> {
             .secure_channel()?
             .finish_authenticate_session(&response)
         {
-            error!(
-                "(session: {}) error authenticating with key: {} ({})",
-                session_id, credentials.auth_key_id, e
+            session_error!(
+                self,
+                "failed={:?} key={} err={:?}",
+                CommandType::AuthSession,
+                credentials.auth_key_id,
+                e.to_string()
             );
-            self.close_secure_channel();
+
             return Err(e.into());
         }
 
-        debug!("(session: {}) authenticated successfully", session_id);
-
+        session_debug!(self, "auth=OK key={}", credentials.auth_key_id);
         Ok(())
+    }
+
+    /// Get the underlying channel or return an error
+    fn secure_channel(&mut self) -> Result<&mut SecureChannel, SessionError> {
+        self.secure_channel
+            .as_mut()
+            .ok_or_else(|| err!(ClosedSessionError, "session is already closed"))
     }
 }
