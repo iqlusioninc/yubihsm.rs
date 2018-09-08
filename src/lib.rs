@@ -46,6 +46,7 @@
 
 #![crate_name = "yubihsm"]
 #![crate_type = "rlib"]
+#![cfg_attr(clippy, feature(tool_lints))]
 #![deny(warnings, missing_docs, trivial_casts, trivial_numeric_casts)]
 #![deny(unsafe_code, unused_import_braces, unused_qualifications)]
 #![doc(

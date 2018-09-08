@@ -73,7 +73,8 @@ impl Adapter for HttpAdapter {
     }
 }
 
-#[allow(unknown_lints, write_with_newline)]
+// TODO: use clippy's scoped lints once they work on stable
+#[allow(unknown_lints, renamed_and_removed_lints, write_with_newline)]
 impl HttpAdapter {
     /// GET `/connector/status` returning `adapters::http::ConnectorStatus`
     pub fn status(&self) -> Result<ConnectorStatus, AdapterError> {

@@ -14,12 +14,11 @@ jobs:
           command: |
             cargo +$RUST_NIGHTLY_VERSION fmt --version
             cargo +$RUST_NIGHTLY_VERSION fmt -- --check
-      # Wait for the dust to settle around scoped lints
-      #- run:
-      #    name: clippy
-      #    command: |
-      #      cargo +$RUST_NIGHTLY_VERSION clippy --version
-      #      cargo +$RUST_NIGHTLY_VERSION clippy --features=mockhsm
+      - run:
+          name: clippy
+          command: |
+            cargo +$RUST_NIGHTLY_VERSION clippy --features=rsa,usb --version
+            cargo +$RUST_NIGHTLY_VERSION clippy --features=mockhsm
       - run:
           name: build --no-default-features
           command: |

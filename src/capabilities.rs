@@ -1,5 +1,5 @@
 // Apparently bitflags isn't clippy-safe
-#![allow(unknown_lints, redundant_field_names, suspicious_arithmetic_impl)]
+#![cfg_attr(clippy, allow(clippy::redundant_field_names, clippy::suspicious_arithmetic_impl))]
 
 use std::fmt;
 

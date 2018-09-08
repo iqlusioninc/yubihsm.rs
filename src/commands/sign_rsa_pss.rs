@@ -73,7 +73,7 @@ impl Response for RSAPSSSignature {
     const COMMAND_TYPE: CommandType = CommandType::SignDataPSS;
 }
 
-#[allow(unknown_lints, len_without_is_empty)]
+#[cfg_attr(clippy, allow(clippy::len_without_is_empty))]
 impl RSAPSSSignature {
     /// Unwrap inner byte vector
     pub fn into_vec(self) -> Vec<u8> {

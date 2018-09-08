@@ -43,7 +43,12 @@ impl Response for HMACTag {
     const COMMAND_TYPE: CommandType = CommandType::HMACData;
 }
 
-#[allow(unknown_lints, len_without_is_empty)]
+// TODO: use clippy's scoped lints once they work on stable
+#[allow(
+    unknown_lints,
+    renamed_and_removed_lints,
+    len_without_is_empty
+)]
 impl HMACTag {
     /// Create a new HMAC tag
     pub fn new<V: Into<Vec<u8>>>(vec: V) -> HMACTag {

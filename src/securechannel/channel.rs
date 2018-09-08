@@ -70,11 +70,10 @@ pub const MAX_ID: Id = Id(16);
 pub const MAX_COMMANDS_PER_SESSION: u32 = 0x10_0000;
 
 /// Current Security Level: protocol state
-#[allow(unknown_lints, enum_variant_names)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum SecurityLevel {
     /// 'NO_SECURITY_LEVEL' i.e. session is terminated or not fully initialized
-    NoSecurityLevel,
+    None,
 
     /// 'AUTHENTICATED' i.e. the EXTERNAL_AUTHENTICATE command has completed
     Authenticated,
@@ -127,7 +126,7 @@ impl SecureChannel {
         Self {
             id,
             counter: 0,
-            security_level: SecurityLevel::NoSecurityLevel,
+            security_level: SecurityLevel::None,
             context,
             enc_key,
             mac_key,
@@ -202,7 +201,7 @@ impl SecureChannel {
 
     /// Compute a message for authenticating the host to the card
     pub fn authenticate_session(&mut self) -> Result<CommandMessage, SecureChannelError> {
-        assert_eq!(self.security_level, SecurityLevel::NoSecurityLevel);
+        assert_eq!(self.security_level, SecurityLevel::None);
         assert_eq!(self.mac_chaining_value, [0u8; MAC_SIZE * 2]);
 
         let host_cryptogram = self.host_cryptogram();
@@ -338,7 +337,7 @@ impl SecureChannel {
         &mut self,
         command: &CommandMessage,
     ) -> Result<ResponseMessage, SecureChannelError> {
-        assert_eq!(self.security_level, SecurityLevel::NoSecurityLevel);
+        assert_eq!(self.security_level, SecurityLevel::None);
         assert_eq!(self.mac_chaining_value, [0u8; MAC_SIZE * 2]);
 
         if command.data.len() != CRYPTOGRAM_SIZE {

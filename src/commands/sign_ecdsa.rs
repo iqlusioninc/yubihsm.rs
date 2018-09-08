@@ -107,7 +107,12 @@ impl Response for ECDSASignature {
     const COMMAND_TYPE: CommandType = CommandType::SignDataECDSA;
 }
 
-#[allow(unknown_lints, len_without_is_empty)]
+// TODO: use clippy's scoped lints once they work on stable
+#[allow(
+    unknown_lints,
+    renamed_and_removed_lints,
+    len_without_is_empty
+)]
 impl ECDSASignature {
     /// Unwrap inner byte vector
     pub fn into_vec(self) -> Vec<u8> {

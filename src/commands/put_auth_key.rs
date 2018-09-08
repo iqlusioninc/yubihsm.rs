@@ -10,7 +10,8 @@ use {
 };
 
 /// Put an existing auth key into the `YubiHSM2`
-#[allow(unknown_lints, too_many_arguments)]
+// TODO: use clippy's scoped lints once they work on stable
+#[allow(unknown_lints, renamed_and_removed_lints, too_many_arguments)]
 pub fn put_auth_key<A: Adapter, K: Into<AuthKey>>(
     session: &mut Session<A>,
     key_id: ObjectId,
