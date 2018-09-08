@@ -3,62 +3,66 @@ version: 2
 jobs:
   build:
     docker:
-      - image: iqlusion/rust-ci:20180905.2 # bump cache keys when modifying this
+    - image: iqlusion/rust-ci:20180905.2 # bump cache keys when modifying this
 
     steps:
-      - checkout
-      - restore_cache:
-          key: cache-20180905.2 # bump save_cache key below too
-      - run:
-          name: rustfmt
-          command: |
-            cargo +$RUST_NIGHTLY_VERSION fmt --version
-            cargo +$RUST_NIGHTLY_VERSION fmt -- --check
-      - run:
-          name: clippy
-          command: |
-            cargo +$RUST_NIGHTLY_VERSION clippy --features=rsa,usb --version
-            cargo +$RUST_NIGHTLY_VERSION clippy --features=mockhsm
-      - run:
-          name: build --no-default-features
-          command: |
-            rustc --version
-            cargo --version
-            cargo build --no-default-features
-            cargo build --no-default-features --release
-      - run:
-          name: build
-          command: |
-            rustc --version
-            cargo --version
-            cargo build
-            cargo build --release
-      - run:
-          name: build --features=rsa,usb
-          command: |
-            rustc --version
-            cargo --version
-            cargo build --features=rsa,usb
-            cargo build --features=rsa,usb --release
-      - run:
-          name: build --features=doc
-          command: |
-            rustc --version
-            cargo --version
-            cargo build --features=doc
-      - run:
-          name: test
-          command: |
-            rustc --version
-            cargo --version
-            cargo test --features=mockhsm,rsa
-      - run:
-          name: audit
-          command: |
-            cargo audit --version
-            cargo audit
-      - save_cache:
-          key: cache-20180905.2 # bump restore_cache key above too
-          paths:
-            - "~/.cargo"
-            - "./target"
+    - checkout
+    - restore_cache:
+        key: cache-20180905.2 # bump save_cache key below too
+    - run:
+        name: rustfmt
+        command: |
+          cargo +$RUST_NIGHTLY_VERSION fmt --version
+          cargo +$RUST_NIGHTLY_VERSION fmt -- --check
+    - run:
+        name: clippy
+        command: |
+          cargo +$RUST_NIGHTLY_VERSION clippy --version
+          cargo +$RUST_NIGHTLY_VERSION clippy --features=rsa,usb
+          cargo +$RUST_NIGHTLY_VERSION clippy --features=mockhsm
+    - run:
+        name: build --no-default-features
+        command: |
+          rustc --version
+          cargo --version
+          cargo build --no-default-features
+    - run:
+        name: build --benches
+        command: |
+          rustc --version
+          cargo --version
+          cargo build --benches
+    - run:
+        name: build --features=rsa,usb
+        command: |
+          rustc --version
+          cargo --version
+          cargo build --features=rsa,usb
+    - run:
+        name: build --features=rsa,usb --release
+        command: |
+          rustc --version
+          cargo --version
+          cargo build --features=rsa,usb --release
+    - run:
+        name: build --features=doc
+        command: |
+          rustc --version
+          cargo --version
+          cargo build --features=doc
+    - run:
+        name: test
+        command: |
+          rustc --version
+          cargo --version
+          cargo test --features=mockhsm,rsa
+    - run:
+        name: audit
+        command: |
+          cargo audit --version
+          cargo audit
+    - save_cache:
+        key: cache-20180905.2 # bump restore_cache key above too
+        paths:
+        - "~/.cargo"
+        - "./target"
