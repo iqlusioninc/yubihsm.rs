@@ -92,7 +92,7 @@ pub enum CommandType {
     DeviceInfo = 0x06,
     BSL = 0x07,
     Reset = 0x08,
-    Command0x09 = 0x09, // Unknown command: appears in audit options
+    Command9 = 0x09, // What is Command 9???
     CloseSession = 0x40,
     StorageStatus = 0x41,
     PutOpaqueObject = 0x42,
@@ -152,7 +152,7 @@ impl CommandType {
             0x06 => CommandType::DeviceInfo,
             0x07 => CommandType::BSL,
             0x08 => CommandType::Reset,
-            0x09 => CommandType::Command0x09,
+            0x09 => CommandType::Command9,
             0x40 => CommandType::CloseSession,
             0x41 => CommandType::StorageStatus,
             0x42 => CommandType::PutOpaqueObject,
