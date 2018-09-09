@@ -2,7 +2,7 @@ use super::{ObjectId, ObjectType};
 
 /// Objects in the HSM are keyed by a tuple of their type an ObjectId
 /// (i.e. multiple objects of different types can have the same ObjectId)
-#[derive(Clone, Eq, PartialEq, Hash, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, PartialOrd, Ord, Serialize)]
 pub(crate) struct Handle {
     /// ID of the object
     pub object_id: ObjectId,

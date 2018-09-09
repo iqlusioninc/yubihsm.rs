@@ -91,7 +91,7 @@ or open an issue requesting support.
 | [Put Auth Key]         | ✅     | ✅        | Put AES-128x2 preshared authentication key into HSM |
 | [Put HMAC Key]         | ✅     | ✅        | Put an HMAC key into the HSM |
 | [Put Opaque]           | ✅     | ✅        | Put an opaque bytestring into the HSM |
-| [Put Option]           | ⛔     | ⛔        | Change HSM auditing settings |
+| [Put Option]           | ✅     | ✅        | Change HSM auditing settings |
 | [Put OTP AEAD Key]     | ✅     | ⛔        | Put a Yubico OTP key into the HSM |
 | [Put Wrap Key]         | ✅     | ✅        | Put an AES keywrapping key into the HSM |
 | [Reset]                | ✅     | ✅        | Reset the HSM back to factory default settings |
@@ -131,7 +131,7 @@ or open an issue requesting support.
 [Get Logs]: https://docs.rs/yubihsm/latest/yubihsm/commands/get_logs/fn.get_logs.html
 [Get Object Info]: https://docs.rs/yubihsm/latest/yubihsm/commands/get_object_info/fn.get_object_info.html
 [Get Opaque]: https://docs.rs/yubihsm/latest/yubihsm/commands/get_opaque/fn.get_opaque.html
-[Get Option]: https://developers.yubico.com/YubiHSM2/Commands/Get_Option.html
+[Get Option]: https://docs.rs/yubihsm/latest/yubihsm/commands/get_option/
 [Get Pseudo Random]: https://docs.rs/yubihsm/latest/yubihsm/commands/get_pseudo_random/fn.get_pseudo_random.html
 [Get Pubkey]: https://docs.rs/yubihsm/latest/yubihsm/commands/get_pubkey/fn.get_pubkey.html
 [HMAC Data]: https://docs.rs/yubihsm/latest/yubihsm/commands/hmac/fn.hmac.html

@@ -164,8 +164,9 @@ pub use commands::{
     generate_asymmetric_key::*, generate_hmac_key::*, generate_wrap_key::*, get_logs::*,
     get_object_info::*, get_opaque::*, get_option::*, get_pseudo_random::*, get_pubkey::*, hmac::*,
     import_wrapped::*, list_objects::*, put_asymmetric_key::*, put_auth_key::*, put_hmac_key::*,
-    put_opaque::*, put_otp_aead_key::*, put_wrap_key::*, reset::*, set_log_index::*, sign_ecdsa::*,
-    sign_eddsa::*, storage_status::*, unwrap_data::*, verify_hmac::*, wrap_data::*, CommandType,
+    put_opaque::*, put_option::*, put_otp_aead_key::*, put_wrap_key::*, reset::*, set_log_index::*,
+    sign_ecdsa::*, sign_eddsa::*, storage_status::*, unwrap_data::*, verify_hmac::*, wrap_data::*,
+    CommandType,
 };
 #[cfg(feature = "rsa")]
 pub use commands::{sign_rsa_pkcs1v15::*, sign_rsa_pss::*};

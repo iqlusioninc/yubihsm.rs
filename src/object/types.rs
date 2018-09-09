@@ -6,7 +6,7 @@ use serde::{
 use std::fmt;
 
 /// Types of objects
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
 pub enum Type {
     /// Raw data
     Opaque = 0x01,
