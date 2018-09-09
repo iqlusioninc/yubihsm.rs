@@ -115,8 +115,6 @@ impl<A: Adapter> Session<A> {
     /// Initialize a new encrypted session, deferring actually establishing
     /// a session until `connect()` is called
     pub fn new(config: A::Config, credentials: Credentials) -> Result<Self, SessionError> {
-        debug!("yubihsm: creating new session");
-
         let session = Self {
             config,
             connection: None,

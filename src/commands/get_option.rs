@@ -12,12 +12,13 @@ use {Adapter, CommandType};
 pub fn get_command_audit_option<A: Adapter>(
     session: &mut Session<A>,
     command: CommandType,
-) -> Result<Option<AuditOption>, SessionError> {
+) -> Result<AuditOption, SessionError> {
     let command_audit_options = get_all_command_audit_options(session)?;
     Ok(command_audit_options
         .iter()
-        .find(|opt| opt.command == command)
-        .map(|opt| opt.audit))
+        .find(|opt| opt.command_type() == command)
+        .map(|opt| opt.audit_option())
+        .unwrap_or(AuditOption::Off))
 }
 
 /// Get the audit policy settings for all commands

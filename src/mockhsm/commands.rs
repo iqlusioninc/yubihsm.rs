@@ -20,7 +20,7 @@ use commands::{
     generate_asymmetric_key::{GenAsymmetricKeyCommand, GenAsymmetricKeyResponse},
     generate_hmac_key::{GenHMACKeyCommand, GenHMACKeyResponse},
     generate_wrap_key::{GenWrapKeyCommand, GenWrapKeyResponse},
-    get_logs::GetLogsResponse,
+    get_logs::AuditLogs,
     get_object_info::{GetObjectInfoCommand, GetObjectInfoResponse},
     get_opaque::{GetOpaqueCommand, GetOpaqueResponse},
     get_option::{GetOptionCommand, GetOptionResponse},
@@ -33,6 +33,7 @@ use commands::{
     put_auth_key::{PutAuthKeyCommand, PutAuthKeyResponse},
     put_hmac_key::{PutHMACKeyCommand, PutHMACKeyResponse},
     put_opaque::{PutOpaqueCommand, PutOpaqueResponse},
+    put_option::{PutOptionCommand, PutOptionResponse},
     put_wrap_key::{PutWrapKeyCommand, PutWrapKeyResponse},
     reset::ResetResponse,
     set_log_index::SetLogIndexResponse,
@@ -43,7 +44,7 @@ use commands::{
     CommandType, Response,
 };
 use securechannel::{CommandMessage, ResponseMessage};
-use serializers::{deserialize, serialize};
+use serializers::deserialize;
 use {Capability, ObjectType, SessionId, WrapMessage, WrapNonce};
 
 use super::objects::Payload;
@@ -124,6 +125,7 @@ pub(crate) fn session_message(
         CommandType::PutAuthKey => put_auth_key(state, &command.data),
         CommandType::PutHMACKey => put_hmac_key(state, &command.data),
         CommandType::PutOpaqueObject => put_opaque(state, &command.data),
+        CommandType::PutOption => put_option(state, &command.data),
         CommandType::PutWrapKey => put_wrap_key(state, &command.data),
         CommandType::Reset => return Ok(reset(state, session_id)),
         CommandType::SetLogIndex => SetLogIndexResponse {}.serialize(),
@@ -318,7 +320,7 @@ fn gen_wrap_key(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
 /// Get mock log information
 fn get_logs() -> ResponseMessage {
     // TODO: mimic the YubiHSM's actual audit log
-    GetLogsResponse {
+    AuditLogs {
         unlogged_boot_events: 0,
         unlogged_auth_events: 0,
         num_entries: 0,
@@ -357,228 +359,13 @@ fn get_opaque(state: &State, cmd_data: &[u8]) -> ResponseMessage {
 }
 
 /// Get an auditing option
-fn get_option(_state: &State, cmd_data: &[u8]) -> ResponseMessage {
+fn get_option(state: &State, cmd_data: &[u8]) -> ResponseMessage {
     let command: GetOptionCommand = deserialize(cmd_data)
         .unwrap_or_else(|e| panic!("error parsing CommandType::GetOpaqueObject: {:?}", e));
 
     let results = match command.tag {
-        AuditTag::Command => {
-            // TODO: actually enforce these, and represent them in a better way
-            // than a gigantic `vec!` literal
-            let commands = vec![
-                AuditCommand {
-                    command: CommandType::Echo,
-                    audit: AuditOption::Off,
-                },
-                AuditCommand {
-                    command: CommandType::CreateSession,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::AuthSession,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::SessionMessage,
-                    audit: AuditOption::Off,
-                },
-                AuditCommand {
-                    command: CommandType::DeviceInfo,
-                    audit: AuditOption::Off,
-                },
-                AuditCommand {
-                    command: CommandType::BSL,
-                    audit: AuditOption::Off,
-                },
-                AuditCommand {
-                    command: CommandType::Command9,
-                    audit: AuditOption::Off,
-                },
-                AuditCommand {
-                    command: CommandType::Reset,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::CloseSession,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::StorageStatus,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::PutOpaqueObject,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::GetOpaqueObject,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::PutAuthKey,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::PutAsymmetricKey,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::GenerateAsymmetricKey,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::SignDataPKCS1,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::SignDataPSS,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::SignDataECDSA,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::ListObjects,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::DecryptPKCS1,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::DecryptECDH,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::ExportWrapped,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::ImportWrapped,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::PutWrapKey,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::GetLogs,
-                    audit: AuditOption::Off,
-                },
-                AuditCommand {
-                    command: CommandType::SetLogIndex,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::GetObjectInfo,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::PutOption,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::GetOption,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::GetPseudoRandom,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::PutHMACKey,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::HMACData,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::GetPubKey,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::DeleteObject,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::DecryptOAEP,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::GenerateHMACKey,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::GenerateWrapKey,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::VerifyHMAC,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::SSHCertify,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::PutTemplate,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::GetTemplate,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::DecryptOTP,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::CreateOTPAEAD,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::RandomOTPAEAD,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::RewrapOTPAEAD,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::AttestAsymmetric,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::PutOTPAEAD,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::GenerateOTPAEAD,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::WrapData,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::UnwrapData,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::SignDataEdDSA,
-                    audit: AuditOption::On,
-                },
-                AuditCommand {
-                    command: CommandType::Blink,
-                    audit: AuditOption::On,
-                },
-            ];
-
-            serialize(&commands).unwrap()
-        }
-        AuditTag::Force => vec![AuditOption::Off.to_u8()],
+        AuditTag::Command => state.command_audit_options.serialize(),
+        AuditTag::Force => vec![state.force_audit.to_u8()],
     };
 
     GetOptionResponse(results).serialize()
@@ -709,7 +496,7 @@ fn put_auth_key(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
     PutAuthKeyResponse { key_id: params.id }.serialize()
 }
 
-/// Put a new hmacentication key into the HSM
+/// Put a new HMAC key into the HSM
 fn put_hmac_key(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
     let PutHMACKeyCommand { params, hmac_key } = deserialize(cmd_data)
         .unwrap_or_else(|e| panic!("error parsing CommandType::PutHMACKey: {:?}", e));
@@ -747,6 +534,30 @@ fn put_opaque(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
     PutOpaqueResponse {
         object_id: params.id,
     }.serialize()
+}
+
+/// Change an HSM auditing setting
+fn put_option(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
+    let PutOptionCommand { tag, length, value } = deserialize(cmd_data)
+        .unwrap_or_else(|e| panic!("error parsing CommandType::PutOption: {:?}", e));
+
+    match tag {
+        AuditTag::Force => {
+            assert_eq!(length, 1);
+            state.force_audit = AuditOption::from_u8(value[0]).unwrap()
+        }
+        AuditTag::Command => {
+            assert_eq!(length, 2);
+            let audit_cmd: AuditCommand = deserialize(&value)
+                .unwrap_or_else(|e| panic!("error parsing AuditCommand: {:?}", e));
+
+            state
+                .command_audit_options
+                .put(audit_cmd.command_type(), audit_cmd.audit_option());
+        }
+    }
+
+    PutOptionResponse {}.serialize()
 }
 
 /// Put an existing wrap (i.e. AES-CCM) key into the HSM

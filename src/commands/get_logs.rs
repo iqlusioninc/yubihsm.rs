@@ -9,7 +9,7 @@ use securechannel::ResponseCode;
 use {Adapter, CommandType, ObjectId, Session, SessionError};
 
 /// Get audit logs from the YubiHSM2 device
-pub fn get_logs<A: Adapter>(session: &mut Session<A>) -> Result<GetLogsResponse, SessionError> {
+pub fn get_audit_logs<A: Adapter>(session: &mut Session<A>) -> Result<AuditLogs, SessionError> {
     session.send_command(GetLogsCommand {})
 }
 
@@ -18,12 +18,12 @@ pub fn get_logs<A: Adapter>(session: &mut Session<A>) -> Result<GetLogsResponse,
 pub(crate) struct GetLogsCommand {}
 
 impl Command for GetLogsCommand {
-    type ResponseType = GetLogsResponse;
+    type ResponseType = AuditLogs;
 }
 
 /// Response from `commands::get_logs`
 #[derive(Serialize, Deserialize, Debug)]
-pub struct GetLogsResponse {
+pub struct AuditLogs {
     /// Number of boot events which weren't logged (if buffer is full and audit enforce is set)
     pub unlogged_boot_events: u16,
 
@@ -37,7 +37,7 @@ pub struct GetLogsResponse {
     pub entries: Vec<LogEntry>,
 }
 
-impl Response for GetLogsResponse {
+impl Response for AuditLogs {
     const COMMAND_TYPE: CommandType = CommandType::GetLogs;
 }
 

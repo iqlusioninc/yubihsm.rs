@@ -7,12 +7,18 @@ use commands::CommandType;
 
 /// Audit settings for a particular command
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct AuditCommand {
-    /// Command being audited
-    pub command: CommandType,
+pub struct AuditCommand(pub CommandType, pub AuditOption);
 
-    /// Audit settings for this command
-    pub audit: AuditOption,
+impl AuditCommand {
+    /// Get the command type
+    pub fn command_type(&self) -> CommandType {
+        self.0
+    }
+
+    /// Get the audit option
+    pub fn audit_option(&self) -> AuditOption {
+        self.1
+    }
 }
 
 /// Auditing policy options

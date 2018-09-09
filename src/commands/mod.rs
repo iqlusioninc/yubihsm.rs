@@ -34,6 +34,7 @@ pub mod put_auth_key;
 pub mod put_hmac_key;
 mod put_object;
 pub mod put_opaque;
+pub mod put_option;
 pub mod put_otp_aead_key;
 pub mod put_wrap_key;
 pub mod reset;
@@ -80,7 +81,7 @@ pub(crate) trait Response: Serialize + DeserializeOwned + Sized {
 }
 
 /// Command IDs for `YubiHSM2` operations
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 #[allow(missing_docs)]
 #[repr(u8)]
 pub enum CommandType {

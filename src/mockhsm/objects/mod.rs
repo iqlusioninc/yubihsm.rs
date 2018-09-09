@@ -7,8 +7,8 @@ mod payload;
 
 use failure::Error;
 use ring::aead::{self, OpeningKey, SealingKey, AES_128_GCM, AES_256_GCM};
-use std::collections::hash_map::Iter as HashMapIter;
-use std::collections::HashMap;
+use std::collections::btree_map::Iter as BTreeMapIter;
+use std::collections::BTreeMap;
 
 pub(crate) use self::payload::Payload;
 use auth_key::{AuthKey, AUTH_KEY_SIZE};
@@ -27,15 +27,15 @@ const WRAPPED_DATA_MAC_SIZE: usize = 16;
 const DEFAULT_AUTH_KEY_LABEL: &str = "DEFAULT AUTHKEY CHANGE THIS ASAP";
 
 /// Iterator over objects
-pub(crate) type Iter<'a> = HashMapIter<'a, ObjectHandle, Object>;
+pub(crate) type Iter<'a> = BTreeMapIter<'a, ObjectHandle, Object>;
 
 /// Objects stored in the `MockHSM`
 #[derive(Debug)]
-pub(crate) struct Objects(HashMap<ObjectHandle, Object>);
+pub(crate) struct Objects(BTreeMap<ObjectHandle, Object>);
 
 impl Default for Objects {
     fn default() -> Self {
-        let mut objects = HashMap::new();
+        let mut objects = BTreeMap::new();
 
         // Insert default authentication key
         let auth_key_handle = ObjectHandle::new(DEFAULT_AUTH_KEY_ID, ObjectType::AuthKey);

@@ -4,23 +4,35 @@
 use std::collections::BTreeMap;
 
 use adapters::{AdapterError, AdapterErrorKind};
+use audit::AuditOption;
 use object::{ObjectId, ObjectType};
 use securechannel::{Challenge, SecureChannel, SessionId};
 
-use super::objects::Objects;
-use super::session::Session;
+use super::{audit::CommandAuditOptions, objects::Objects, session::Session};
 
 /// Mutable interior state of the `MockHSM`
 #[derive(Debug)]
 pub(crate) struct State {
+    /// Command-specific audit options
+    pub(super) command_audit_options: CommandAuditOptions,
+
+    /// Don't allow commands to be performed until log data has been consumed
+    /// via the `SetLogIndex` command.
+    pub(super) force_audit: AuditOption,
+
+    /// Active sessions with the MockHSM
     sessions: BTreeMap<SessionId, Session>,
-    pub objects: Objects,
+
+    /// Objects within the MockHSM (i.e. keys)
+    pub(super) objects: Objects,
 }
 
 impl State {
     /// Create a new instance of the server's mutable interior state
     pub fn new() -> Self {
         Self {
+            command_audit_options: CommandAuditOptions::default(),
+            force_audit: AuditOption::Off,
             sessions: BTreeMap::new(),
             objects: Objects::default(),
         }
@@ -75,6 +87,7 @@ impl State {
 
     /// Reset the internal HSM state, closing all connections
     pub fn reset(&mut self) {
+        self.command_audit_options = CommandAuditOptions::default();
         self.sessions = BTreeMap::new();
         self.objects = Objects::default();
     }
