@@ -391,7 +391,7 @@ fn get_option(_state: &State, cmd_data: &[u8]) -> ResponseMessage {
                     audit: AuditOption::Off,
                 },
                 AuditCommand {
-                    command: CommandType::Command0x09,
+                    command: CommandType::Command9,
                     audit: AuditOption::Off,
                 },
                 AuditCommand {
