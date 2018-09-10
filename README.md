@@ -217,7 +217,7 @@ a [MockHSM] service which reimplements some YubiHSM2 functionality in software.
 
 [MockHSM]: https://docs.rs/yubihsm/latest/yubihsm/mockhsm/struct.MockHSM.html
 
-### `cargo test --features=integration`: test YubiHSM2 live via `yubihsm-connector`
+### `cargo test`: test YubiHSM2 live via `yubihsm-connector`
 
 This mode assumes you have a YubiHSM2 hardware device, have downloaded the
 [YubiHSM2 SDK] for your platform, and are running a **yubihsm-connector**
@@ -233,7 +233,7 @@ blinking rapidly for 1 second.
 **NOTE THAT THESE TESTS ARE DESTRUCTIVE: DO NOT RUN THEM AGAINST A YUBIHSM2
 WHICH CONTAINS KEYS YOU CARE ABOUT**
 
-### `cargo test --features=usb,integration`: test YubiHSM2 live via USB
+### `cargo test --features=usb`: test YubiHSM2 live via USB
 
 Adding the `usb` cargo feature builds the `UsbAdapter` backend in addition
 to the `HttpAdapter`, and also runs the test suite live via USB rather than
