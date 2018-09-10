@@ -3,12 +3,10 @@
 #[cfg(feature = "mockhsm")]
 use byteorder::WriteBytesExt;
 use byteorder::{BigEndian, ByteOrder};
-use serde::de::{self, Deserialize, Deserializer, Visitor};
-use serde::ser::{Serialize, Serializer};
-use std::fmt;
 
 use super::{Mac, SecureChannelError, SecureChannelErrorKind::ProtocolError, SessionId, MAC_SIZE};
 use commands::CommandType;
+use response::ResponseCode;
 
 /// Command responses
 #[derive(Debug)]
@@ -37,7 +35,7 @@ impl ResponseMessage {
             );
         }
 
-        let code = ResponseCode::from_u8(bytes[0])?;
+        let code = ResponseCode::from_u8(bytes[0]).map_err(|e| err!(ProtocolError, "{}", e))?;
         let length = BigEndian::read_u16(&bytes[1..3]) as usize;
 
         if length + 3 != bytes.len() {
@@ -51,27 +49,19 @@ impl ResponseMessage {
 
         bytes.drain(..3);
 
-        let session_id = if code.has_session_id() {
+        let session_id = if has_session_id(code) {
             if bytes.is_empty() {
-                fail!(
-                    ProtocolError,
-                    "expected session ID but response data is empty"
-                );
+                fail!(ProtocolError, "session ID missing");
+            } else {
+                Some(SessionId::new(bytes.remove(0))?)
             }
-
-            Some(SessionId::new(bytes.remove(0))?)
         } else {
             None
         };
 
-        let mac = if code.has_rmac() {
+        let mac = if has_rmac(code) {
             if bytes.len() < MAC_SIZE {
-                fail!(
-                    ProtocolError,
-                    "expected R-MAC for {:?} but response data is too short: {}",
-                    code,
-                    bytes.len(),
-                );
+                fail!(ProtocolError, "missing R-MAC for {:?}", code,);
             }
 
             let mac_index = bytes.len() - MAC_SIZE;
@@ -131,12 +121,6 @@ impl ResponseMessage {
         Self::new(ResponseCode::Success(command_type), response_data)
     }
 
-    /// Create an error response
-    #[cfg(feature = "mockhsm")]
-    pub fn error(message: &str) -> ResponseMessage {
-        ResponseMessage::new(ResponseCode::MemoryError, message.as_bytes())
-    }
-
     /// Did an error occur?
     pub fn is_err(&self) -> bool {
         match self.code {
@@ -170,6 +154,13 @@ impl ResponseMessage {
 }
 
 #[cfg(feature = "mockhsm")]
+impl From<ResponseCode> for ResponseMessage {
+    fn from(code: ResponseCode) -> Self {
+        Self::new(ResponseCode::MemoryError, vec![code.to_device_code()])
+    }
+}
+
+#[cfg(feature = "mockhsm")]
 impl Into<Vec<u8>> for ResponseMessage {
     /// Serialize this response, consuming it and producing a Vec<u8>
     fn into(mut self) -> Vec<u8> {
@@ -191,181 +182,24 @@ impl Into<Vec<u8>> for ResponseMessage {
     }
 }
 
-/// Codes associated with `YubiHSM2` responses
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub enum ResponseCode {
-    Success(CommandType),
-    MemoryError,
-    InitError,
-    NetError,
-    ConnectorNotFound,
-    InvalidParams,
-    WrongLength,
-    BufferTooSmall,
-    CryptogramMismatch,
-    AuthSessionError,
-    MACMismatch,
-    DeviceOK,
-    DeviceInvalidCommand,
-    DeviceInvalidData,
-    DeviceInvalidSession,
-    DeviceAuthFail,
-    DeviceSessionsFull,
-    DeviceSessionFailed,
-    DeviceStorageFailed,
-    DeviceWrongLength,
-    DeviceInvalidPermission,
-    DeviceLogFull,
-    DeviceObjNotFound,
-    DeviceIDIllegal,
-    DeviceInvalidOTP,
-    DeviceDemoMode,
-    DeviceCmdUnexecuted,
-    GenericError,
-    DeviceObjectExists,
-    ConnectorError,
-}
-
-impl ResponseCode {
-    /// Convert an unsigned byte into a ResponseCode (if valid)
-    pub fn from_u8(byte: u8) -> Result<Self, SecureChannelError> {
-        let code = (i16::from(byte) - 0x80) as i8;
-
-        if code >= 0 {
-            let command_type =
-                CommandType::from_u8(code as u8).map_err(|e| err!(ProtocolError, "{}", e))?;
-
-            return Ok(ResponseCode::Success(command_type));
-        }
-
-        Ok(match code {
-            -1 => ResponseCode::MemoryError,
-            -2 => ResponseCode::InitError,
-            -3 => ResponseCode::NetError,
-            -4 => ResponseCode::ConnectorNotFound,
-            -5 => ResponseCode::InvalidParams,
-            -6 => ResponseCode::WrongLength,
-            -7 => ResponseCode::BufferTooSmall,
-            -8 => ResponseCode::CryptogramMismatch,
-            -9 => ResponseCode::AuthSessionError,
-            -10 => ResponseCode::MACMismatch,
-            -11 => ResponseCode::DeviceOK,
-            -12 => ResponseCode::DeviceInvalidCommand,
-            -13 => ResponseCode::DeviceInvalidData,
-            -14 => ResponseCode::DeviceInvalidSession,
-            -15 => ResponseCode::DeviceAuthFail,
-            -16 => ResponseCode::DeviceSessionsFull,
-            -17 => ResponseCode::DeviceSessionFailed,
-            -18 => ResponseCode::DeviceStorageFailed,
-            -19 => ResponseCode::DeviceWrongLength,
-            -20 => ResponseCode::DeviceInvalidPermission,
-            -21 => ResponseCode::DeviceLogFull,
-            -22 => ResponseCode::DeviceObjNotFound,
-            -23 => ResponseCode::DeviceIDIllegal,
-            -24 => ResponseCode::DeviceInvalidOTP,
-            -25 => ResponseCode::DeviceDemoMode,
-            -26 => ResponseCode::DeviceCmdUnexecuted,
-            -27 => ResponseCode::GenericError,
-            -28 => ResponseCode::DeviceObjectExists,
-            -29 => ResponseCode::ConnectorError,
-            _ => fail!(ProtocolError, "invalid response code: {}", code),
-        })
-    }
-
-    /// Convert a ResponseCode back into its original byte form
-    pub fn to_u8(self) -> u8 {
-        let code: i8 = match self {
-            ResponseCode::Success(cmd_type) => cmd_type as i8,
-            ResponseCode::MemoryError => -1,
-            ResponseCode::InitError => -2,
-            ResponseCode::NetError => -3,
-            ResponseCode::ConnectorNotFound => -4,
-            ResponseCode::InvalidParams => -5,
-            ResponseCode::WrongLength => -6,
-            ResponseCode::BufferTooSmall => -7,
-            ResponseCode::CryptogramMismatch => -8,
-            ResponseCode::AuthSessionError => -9,
-            ResponseCode::MACMismatch => -10,
-            ResponseCode::DeviceOK => -11,
-            ResponseCode::DeviceInvalidCommand => -12,
-            ResponseCode::DeviceInvalidData => -13,
-            ResponseCode::DeviceInvalidSession => -14,
-            ResponseCode::DeviceAuthFail => -15,
-            ResponseCode::DeviceSessionsFull => -16,
-            ResponseCode::DeviceSessionFailed => -17,
-            ResponseCode::DeviceStorageFailed => -18,
-            ResponseCode::DeviceWrongLength => -19,
-            ResponseCode::DeviceInvalidPermission => -20,
-            ResponseCode::DeviceLogFull => -21,
-            ResponseCode::DeviceObjNotFound => -22,
-            ResponseCode::DeviceIDIllegal => -23,
-            ResponseCode::DeviceInvalidOTP => -24,
-            ResponseCode::DeviceDemoMode => -25,
-            ResponseCode::DeviceCmdUnexecuted => -26,
-            ResponseCode::GenericError => -27,
-            ResponseCode::DeviceObjectExists => -28,
-            ResponseCode::ConnectorError => -29,
-        };
-
-        (i16::from(code) + 0x80) as u8
-    }
-
-    /// Does this response include a session ID?
-    pub fn has_session_id(self) -> bool {
-        match self {
-            ResponseCode::Success(cmd_type) => match cmd_type {
-                CommandType::CreateSession | CommandType::SessionMessage => true,
-                _ => false,
-            },
+/// Do responses with the given code include a session ID?
+fn has_session_id(code: ResponseCode) -> bool {
+    match code {
+        ResponseCode::Success(cmd_type) => match cmd_type {
+            CommandType::CreateSession | CommandType::SessionMessage => true,
             _ => false,
-        }
+        },
+        _ => false,
     }
+}
 
-    /// Does this response have a Response-MAC (R-MAC) value on the end?
-    pub fn has_rmac(self) -> bool {
-        match self {
-            ResponseCode::Success(cmd_type) => match cmd_type {
-                CommandType::SessionMessage => true,
-                _ => false,
-            },
+/// Do responses with the given code have a Response-MAC (R-MAC) value?
+fn has_rmac(code: ResponseCode) -> bool {
+    match code {
+        ResponseCode::Success(cmd_type) => match cmd_type {
+            CommandType::SessionMessage => true,
             _ => false,
-        }
-    }
-}
-
-impl Serialize for ResponseCode {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_u8(self.to_u8())
-    }
-}
-
-impl<'de> Deserialize<'de> for ResponseCode {
-    fn deserialize<D>(deserializer: D) -> Result<ResponseCode, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        struct ResponseCodeVisitor;
-
-        impl<'de> Visitor<'de> for ResponseCodeVisitor {
-            type Value = ResponseCode;
-
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                formatter.write_str("an unsigned byte between 0x01 and 0x07")
-            }
-
-            fn visit_u8<E>(self, value: u8) -> Result<ResponseCode, E>
-            where
-                E: de::Error,
-            {
-                ResponseCode::from_u8(value)
-                    .or_else(|_| ResponseCode::from_u8(ResponseCode::DeviceOK.to_u8() - value))
-                    .or_else(|e| Err(E::custom(format!("{}", e))))
-            }
-        }
-
-        deserializer.deserialize_u8(ResponseCodeVisitor)
+        },
+        _ => false,
     }
 }

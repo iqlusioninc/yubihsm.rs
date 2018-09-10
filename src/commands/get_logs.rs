@@ -5,7 +5,7 @@
 use std::fmt::{self, Debug};
 
 use super::{Command, Response};
-use securechannel::ResponseCode;
+use response::ResponseCode;
 use {Adapter, CommandType, ObjectId, Session, SessionError};
 
 /// Get audit logs from the YubiHSM2 device

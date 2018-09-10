@@ -1,4 +1,6 @@
-//! Set the index of the last consumed index of the `YubiHSM2` audit log
+//! Set the index of the last consumed entry in the `YubiHSM2` audit log.
+//! Useful in conjunction with the force audit option, which blocks HSM
+//! commands until audit data has been consumed from the device.
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Set_Log_Index.html>
 
@@ -18,7 +20,7 @@ pub fn set_log_index<A: Adapter>(
 /// Request parameters for `commands::set_log_index`
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct SetLogIndexCommand {
-    /// Number of seconds to set_log_index for
+    /// Index of the last log entry seen
     pub log_index: u16,
 }
 

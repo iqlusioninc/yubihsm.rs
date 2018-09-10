@@ -137,6 +137,9 @@ pub mod mockhsm;
 /// <https://developers.yubico.com/YubiHSM2/Concepts/Object.html>
 pub mod object;
 
+/// Responses to commands sent from the HSM
+pub mod response;
+
 /// Encrypted communication channel to the `YubiHSM2` hardware
 mod securechannel;
 
@@ -173,6 +176,7 @@ pub use commands::{sign_rsa_pkcs1v15::*, sign_rsa_pss::*};
 pub use credentials::Credentials;
 pub use domains::Domain;
 pub use object::*;
+pub use response::ResponseCode;
 pub use securechannel::SessionId;
 pub use serial::SerialNumber;
 #[cfg(feature = "usb")]
