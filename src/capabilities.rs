@@ -149,42 +149,59 @@ bitflags! {
         /// wrap_data: wrap user-provided data
         const WRAP_DATA = 0x20_0000_0000;
 
-        /// Unknown Capability bit 46
-        const UNKNOWN_BIT46 = 0x4000_0000_0000;
-        /// Unknown Capability bit 47
-        const UNKNOWN_BIT47 = 0x8000_0000_0000;
-        /// Unknown Capability bit 48
-        const UNKNOWN_BIT48 = 0x1_0000_0000_0000;
-        /// Unknown Capability bit 49
-        const UNKNOWN_BIT49 = 0x2_0000_0000_0000;
-        /// Unknown Capability bit 50
-        const UNKNOWN_BIT50 = 0x4_0000_0000_0000;
-        /// Unknown Capability bit 51
-        const UNKNOWN_BIT51 = 0x8_0000_0000_0000;
-        /// Unknown Capability bit 52
-        const UNKNOWN_BIT52 = 0x10_0000_0000_0000;
-        /// Unknown Capability bit 53
-        const UNKNOWN_BIT53 = 0x20_0000_0000_0000;
-        /// Unknown Capability bit 54
-        const UNKNOWN_BIT54 = 0x40_0000_0000_0000;
-        /// Unknown Capability bit 55
-        const UNKNOWN_BIT55 = 0x80_0000_0000_0000;
-        /// Unknown Capability bit 56
-        const UNKNOWN_BIT56 = 0x100_0000_0000_0000;
-        /// Unknown Capability bit 57
-        const UNKNOWN_BIT57 = 0x200_0000_0000_0000;
-        /// Unknown Capability bit 58
-        const UNKNOWN_BIT58 = 0x400_0000_0000_0000;
-        /// Unknown Capability bit 59
-        const UNKNOWN_BIT59 = 0x800_0000_0000_0000;
-        /// Unknown Capability bit 60
-        const UNKNOWN_BIT60 = 0x1000_0000_0000_0000;
-        /// Unknown Capability bit 61
-        const UNKNOWN_BIT61 = 0x2000_0000_0000_0000;
-        /// Unknown Capability bit 62
-        const UNKNOWN_BIT62 = 0x4000_0000_0000_0000;
-        /// Unknown Capability bit 63
-        const UNKNOWN_BIT63 = 0x8000_0000_0000_0000;
+        /// Unknown Capability (Bit 46)
+        const CAP46 = 0x4000_0000_0000;
+
+        /// Unknown Capability (Bit 47)
+        const CAP47 = 0x8000_0000_0000;
+
+        /// Unknown Capability (Bit 48)
+        const CAP48 = 0x1_0000_0000_0000;
+
+        /// Unknown Capability (Bit 49)
+        const CAP49 = 0x2_0000_0000_0000;
+
+        /// Unknown Capability (Bit 50)
+        const CAP50 = 0x4_0000_0000_0000;
+
+        /// Unknown Capability (Bit 51)
+        const CAP51 = 0x8_0000_0000_0000;
+
+        /// Unknown Capability (Bit 52)
+        const CAP52 = 0x10_0000_0000_0000;
+
+        /// Unknown Capability (Bit 53)
+        const CAP53 = 0x20_0000_0000_0000;
+
+        /// Unknown Capability (Bit 54)
+        const CAP54 = 0x40_0000_0000_0000;
+
+        /// Unknown Capability (Bit 55)
+        const CAP55 = 0x80_0000_0000_0000;
+
+        /// Unknown Capability (Bit 56)
+        const CAP56 = 0x100_0000_0000_0000;
+
+        /// Unknown Capability (Bit 57)
+        const CAP57 = 0x200_0000_0000_0000;
+
+        /// Unknown Capability (Bit 58)
+        const CAP58 = 0x400_0000_0000_0000;
+
+        /// Unknown Capability (Bit 59)
+        const CAP59 = 0x800_0000_0000_0000;
+
+        /// Unknown Capability (Bit 60)
+        const CAP60 = 0x1000_0000_0000_0000;
+
+        /// Unknown Capability (Bit 61)
+        const CAP61 = 0x2000_0000_0000_0000;
+
+        /// Unknown Capability (Bit 62)
+        const CAP62 = 0x4000_0000_0000_0000;
+
+        /// Unknown Capability (Bit 63)
+        const CAP63 = 0x8000_0000_0000_0000;
     }
 }
 

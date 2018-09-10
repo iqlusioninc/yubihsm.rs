@@ -40,13 +40,14 @@ uuid = { version = "0.6", default-features = false }
 [dev-dependencies]
 criterion = "0.2"
 lazy_static = "1"
+ring = "0.13"
+untrusted = "0.6"
 
 [features]
 aes-soft = ["aes/force_soft"]
 doc = ["mockhsm", "rsa", "usb"]
 default = ["passwords"]
-integration = ["ring", "untrusted"]
-mockhsm = ["integration", "passwords"]
+mockhsm = ["passwords", "ring", "untrusted"]
 nightly = ["clear_on_drop/nightly", "subtle/nightly"]
 passwords = ["hmac", "pbkdf2", "sha2"]
 rsa = ["sha2"]
