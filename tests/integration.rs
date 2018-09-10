@@ -367,10 +367,9 @@ fn get_object_info_default_authkey() {
 #[test]
 fn get_command_audit_options_test() {
     let mut session = create_session!();
+
     let results = yubihsm::get_all_command_audit_options(&mut session)
         .unwrap_or_else(|err| panic!("error getting force option: {}", err));
-
-    println!("results: {:?}", &results);
 
     assert!(results.len() > 1);
 }
@@ -379,6 +378,7 @@ fn get_command_audit_options_test() {
 #[test]
 fn get_force_audit_option_test() {
     let mut session = create_session!();
+
     yubihsm::get_force_audit_option(&mut session)
         .unwrap_or_else(|err| panic!("error getting force option: {}", err));
 }

@@ -13,14 +13,13 @@ use cmac::Cmac;
 use subtle::ConstantTimeEq;
 
 use super::kdf;
-#[cfg(feature = "mockhsm")]
-use super::ResponseCode;
 use super::{
     Challenge, CommandMessage, Context, Cryptogram, ResponseMessage, SecureChannelError,
     SecureChannelErrorKind::*, CRYPTOGRAM_SIZE, KEY_SIZE, MAC_SIZE,
 };
 use auth_key::AuthKey;
 use commands::CommandType;
+use response::ResponseCode;
 
 // Size of an AES block
 const AES_BLOCK_SIZE: usize = 16;
@@ -280,6 +279,14 @@ impl SecureChannel {
         response_message.truncate(response_len);
         let mut decrypted_response = ResponseMessage::parse(response_message)?;
         decrypted_response.session_id = encrypted_response.session_id;
+
+        if decrypted_response.code.is_err() && decrypted_response.data.len() == 1 {
+            // Parse device response code from the response body
+            match ResponseCode::from_device_code(decrypted_response.data[0]) {
+                Ok(code) => decrypted_response.code = code,
+                Err(e) => debug!("{}", e),
+            }
+        }
 
         Ok(decrypted_response)
     }

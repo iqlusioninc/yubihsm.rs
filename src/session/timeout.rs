@@ -4,7 +4,7 @@ use std::time::Duration;
 /// <https://developers.yubico.com/YubiHSM2/Concepts/Session.html>
 pub const SESSION_INACTIVITY_TIMEOUT: Duration = Duration::from_secs(30);
 
-/// Timeouts when performing USB operations
+/// Session timeouts (i.e. YubiHSM's session inactivity timeout)
 #[derive(Copy, Clone, Debug, Deserialize, Serialize)]
 pub struct SessionTimeout(Duration);
 
@@ -25,8 +25,8 @@ impl SessionTimeout {
     }
 }
 
-/// Default timeout
 impl Default for SessionTimeout {
+    /// Default timeout: 30 seconds
     fn default() -> Self {
         Self::new(SESSION_INACTIVITY_TIMEOUT)
     }

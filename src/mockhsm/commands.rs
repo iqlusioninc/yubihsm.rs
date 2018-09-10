@@ -43,6 +43,7 @@ use commands::{
     verify_hmac::{VerifyHMACCommand, VerifyHMACResponse},
     CommandType, Response,
 };
+use response::ResponseCode;
 use securechannel::{CommandMessage, ResponseMessage};
 use serializers::deserialize;
 use {Capability, ObjectType, SessionId, WrapMessage, WrapNonce};
@@ -164,7 +165,8 @@ fn delete_object(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
     {
         DeleteObjectResponse {}.serialize()
     } else {
-        ResponseMessage::error(&format!("no such object ID: {:?}", command.object_id))
+        debug!("no such object ID: {:?}", command.object_id);
+        ResponseCode::DeviceObjNotFound.into()
     }
 }
 
@@ -250,7 +252,10 @@ fn export_wrapped(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
         .wrap(wrap_key_id, object_id, object_type, &nonce)
     {
         Ok(ciphertext) => ExportWrappedResponse(WrapMessage { nonce, ciphertext }).serialize(),
-        Err(e) => ResponseMessage::error(&format!("error wrapping object: {}", e)),
+        Err(e) => {
+            debug!("error wrapping object: {}", e);
+            ResponseCode::DeviceInvalidCommand.into()
+        }
     }
 }
 
@@ -339,7 +344,8 @@ fn get_object_info(state: &State, cmd_data: &[u8]) -> ResponseMessage {
     {
         GetObjectInfoResponse(obj.object_info.clone()).serialize()
     } else {
-        ResponseMessage::error(&format!("no such object ID: {:?}", command.0.object_id))
+        debug!("no such object ID: {:?}", command.0.object_id);
+        ResponseCode::DeviceObjNotFound.into()
     }
 }
 
@@ -351,10 +357,8 @@ fn get_opaque(state: &State, cmd_data: &[u8]) -> ResponseMessage {
     if let Some(obj) = state.objects.get(command.object_id, ObjectType::Opaque) {
         GetOpaqueResponse(obj.payload.as_ref().into()).serialize()
     } else {
-        ResponseMessage::error(&format!(
-            "no such opaque object ID: {:?}",
-            command.object_id
-        ))
+        debug!("no such opaque object ID: {:?}", command.object_id);
+        ResponseCode::DeviceObjNotFound.into()
     }
 }
 
@@ -394,7 +398,8 @@ fn get_pubkey(state: &State, cmd_data: &[u8]) -> ResponseMessage {
             bytes: obj.payload.public_key_bytes().unwrap(),
         }.serialize()
     } else {
-        ResponseMessage::error(&format!("no such object ID: {:?}", command.key_id))
+        debug!("no such object ID: {:?}", command.key_id);
+        ResponseCode::DeviceObjNotFound.into()
     }
 }
 
@@ -411,10 +416,12 @@ fn hmac_data(state: &State, cmd_data: &[u8]) -> ResponseMessage {
             let tag = mac.result();
             HMACTag(tag.code().as_ref().into()).serialize()
         } else {
-            ResponseMessage::error(&format!("not an HMAC key: {:?}", obj.algorithm()))
+            debug!("not an HMAC key: {:?}", obj.algorithm());
+            ResponseCode::DeviceInvalidCommand.into()
         }
     } else {
-        ResponseMessage::error(&format!("no such object ID: {:?}", command.key_id))
+        debug!("no such object ID: {:?}", command.key_id);
+        ResponseCode::DeviceObjNotFound.into()
     }
 }
 
@@ -432,7 +439,10 @@ fn import_wrapped(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
             object_type: obj.object_type,
             object_id: obj.object_id,
         }.serialize(),
-        Err(e) => ResponseMessage::error(&format!("error unwrapping object: {}", e)),
+        Err(e) => {
+            debug!("error unwrapping object: {}", e);
+            ResponseCode::DeviceInvalidCommand.into()
+        }
     }
 }
 
@@ -604,10 +614,12 @@ fn sign_data_ecdsa(state: &State, cmd_data: &[u8]) -> ResponseMessage {
         if let Payload::ECDSAKeyPair(ref key) = obj.payload {
             ECDSASignature(key.sign(command.digest).as_ref().into()).serialize()
         } else {
-            ResponseMessage::error(&format!("not an ECDSA key: {:?}", obj.algorithm()))
+            debug!("not an ECDSA key: {:?}", obj.algorithm());
+            ResponseCode::DeviceInvalidCommand.into()
         }
     } else {
-        ResponseMessage::error(&format!("no such object ID: {:?}", command.key_id))
+        debug!("no such object ID: {:?}", command.key_id);
+        ResponseCode::DeviceObjNotFound.into()
     }
 }
 
@@ -626,10 +638,12 @@ fn sign_data_eddsa(state: &State, cmd_data: &[u8]) -> ResponseMessage {
 
             Ed25519Signature(signature_bytes).serialize()
         } else {
-            ResponseMessage::error(&format!("not an Ed25519 key: {:?}", obj.algorithm()))
+            debug!("not an Ed25519 key: {:?}", obj.algorithm());
+            ResponseCode::DeviceInvalidCommand.into()
         }
     } else {
-        ResponseMessage::error(&format!("no such object ID: {:?}", command.key_id))
+        debug!("no such object ID: {:?}", command.key_id);
+        ResponseCode::DeviceObjNotFound.into()
     }
 }
 
@@ -664,9 +678,11 @@ fn verify_hmac(state: &State, cmd_data: &[u8]) -> ResponseMessage {
 
             VerifyHMACResponse(is_ok as u8).serialize()
         } else {
-            ResponseMessage::error(&format!("not an HMAC key: {:?}", obj.algorithm()))
+            debug!("not an HMAC key: {:?}", obj.algorithm());
+            ResponseCode::DeviceInvalidCommand.into()
         }
     } else {
-        ResponseMessage::error(&format!("no such object ID: {:?}", command.key_id))
+        debug!("no such object ID: {:?}", command.key_id);
+        ResponseCode::DeviceObjNotFound.into()
     }
 }

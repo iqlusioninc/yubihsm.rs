@@ -52,7 +52,7 @@ impl<A: Adapter> Connection<A> {
             != 1
         {
             fail!(
-                AuthFailed,
+                AuthFail,
                 "(session: {}) card cryptogram mismatch!",
                 channel.id().to_u8()
             );
@@ -102,19 +102,24 @@ impl<A: Adapter> Connection<A> {
                 e
             })?;
 
-        if response.is_err() || response.command().unwrap() != T::COMMAND_TYPE {
+        if response.is_err() {
             session_debug!(
                 self,
                 "uuid={} failed={:?} code={:?}",
                 uuid,
                 cmd_type,
-                response.code.to_u8()
+                response.code
             );
 
+            return Err(response.code.into());
+        }
+
+        if response.command() != Some(T::COMMAND_TYPE) {
             fail!(
                 ResponseError,
-                "HSM error (session: {})",
-                self.id().unwrap().to_u8(),
+                "bad command type in response: {:?} (expected {:?})",
+                response.command(),
+                T::COMMAND_TYPE,
             );
         }
 
@@ -136,7 +141,7 @@ impl<A: Adapter> Connection<A> {
             }
         };
 
-        if response.is_err() || response.command().unwrap() != cmd_type {
+        if response.is_err() || response.command() != Some(cmd_type) {
             session_error!(self, "uuid={} error={:?}", &uuid, response.code);
 
             fail!(

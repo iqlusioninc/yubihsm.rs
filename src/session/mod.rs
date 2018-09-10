@@ -189,7 +189,7 @@ impl<A: Adapter> Session<A> {
             &self.config,
             self.credentials
                 .as_ref()
-                .ok_or_else(|| err!(AuthFailed, "session reconnection disabled"))?,
+                .ok_or_else(|| err!(AuthFail, "session reconnection disabled"))?,
         )?;
 
         self.connection = Some(connection);
