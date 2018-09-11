@@ -19,6 +19,7 @@ use super::{
 };
 use auth_key::AuthKey;
 use commands::CommandType;
+#[cfg(feature = "mockhsm")]
 use response::ResponseCode;
 
 // Size of an AES block
@@ -279,14 +280,6 @@ impl SecureChannel {
         response_message.truncate(response_len);
         let mut decrypted_response = ResponseMessage::parse(response_message)?;
         decrypted_response.session_id = encrypted_response.session_id;
-
-        if decrypted_response.code.is_err() && decrypted_response.data.len() == 1 {
-            // Parse device response code from the response body
-            match ResponseCode::from_device_code(decrypted_response.data[0]) {
-                Ok(code) => decrypted_response.code = code,
-                Err(e) => debug!("{}", e),
-            }
-        }
 
         Ok(decrypted_response)
     }
