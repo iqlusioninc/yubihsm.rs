@@ -4,18 +4,18 @@
 
 [![crate][crate-image]][crate-link]
 [![Docs][docs-image]][docs-link]
-[![Build Status][build-image]][build-link]
 ![MIT/Apache2 licensed][license-image]
+[![Build Status][build-image]][build-link]
 
 [crate-image]: https://img.shields.io/crates/v/yubihsm.svg
 [crate-link]: https://crates.io/crates/yubihsm
 [docs-image]: https://docs.rs/yubihsm/badge.svg
 [docs-link]: https://docs.rs/yubihsm/
+[license-image]: https://img.shields.io/badge/license-MIT/Apache2.0-blue.svg
 [build-image]: https://circleci.com/gh/tendermint/yubihsm-rs.svg?style=shield
 [build-link]: https://circleci.com/gh/tendermint/yubihsm-rs
-[license-image]: https://img.shields.io/badge/license-MIT/Apache2.0-blue.svg
 
-A pure-Rust client for [YubiHSM 2] devices from [Yubico].
+Pure Rust client for [YubiHSM 2] devices from [Yubico].
 
 [Documentation][docs-link]
 
