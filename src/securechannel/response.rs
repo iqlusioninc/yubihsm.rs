@@ -6,6 +6,8 @@ use byteorder::{BigEndian, ByteOrder};
 
 use super::{Mac, SecureChannelError, SecureChannelErrorKind::ProtocolError, SessionId, MAC_SIZE};
 use commands::CommandType;
+#[cfg(feature = "mockhsm")]
+use error::HsmErrorKind;
 use response::ResponseCode;
 
 /// Command responses
@@ -38,11 +40,11 @@ impl ResponseMessage {
         let code = ResponseCode::from_u8(bytes[0]).map_err(|e| err!(ProtocolError, "{}", e))?;
         let length = BigEndian::read_u16(&bytes[1..3]) as usize;
 
-        if length + 3 != bytes.len() {
+        if length.checked_add(3).unwrap() != bytes.len() {
             fail!(
                 ProtocolError,
                 "unexpected response length {} (expecting {})",
-                bytes.len() - 3,
+                bytes.len().checked_sub(3).unwrap(),
                 length
             );
         }
@@ -154,9 +156,9 @@ impl ResponseMessage {
 }
 
 #[cfg(feature = "mockhsm")]
-impl From<ResponseCode> for ResponseMessage {
-    fn from(code: ResponseCode) -> Self {
-        Self::new(ResponseCode::MemoryError, vec![code.to_device_code()])
+impl From<HsmErrorKind> for ResponseMessage {
+    fn from(kind: HsmErrorKind) -> Self {
+        Self::new(ResponseCode::MemoryError, vec![kind.to_u8()])
     }
 }
 

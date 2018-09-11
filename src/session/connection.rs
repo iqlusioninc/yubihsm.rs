@@ -6,6 +6,7 @@ use super::{SessionError, SessionErrorKind::*};
 use adapters::Adapter;
 use commands::{create_session::create_session, Command, CommandType};
 use credentials::Credentials;
+use error::HsmErrorKind;
 use securechannel::{Challenge, CommandMessage, ResponseMessage, SecureChannel, SessionId};
 use serializers::deserialize;
 
@@ -103,15 +104,15 @@ impl<A: Adapter> Connection<A> {
             })?;
 
         if response.is_err() {
-            session_debug!(
-                self,
-                "uuid={} failed={:?} code={:?}",
-                uuid,
-                cmd_type,
-                response.code
-            );
+            if let Some(kind) = HsmErrorKind::from_response_message(&response) {
+                session_debug!(self, "uuid={} failed={:?} error={:?}", uuid, cmd_type, kind);
 
-            return Err(response.code.into());
+                return Err(kind.into());
+            } else {
+                session_debug!(self, "uuid={} failed={:?} error=unknown", uuid, cmd_type);
+
+                fail!(ResponseError, "{:?} failed: HSM error", cmd_type);
+            }
         }
 
         if response.command() != Some(T::COMMAND_TYPE) {

@@ -139,30 +139,6 @@ impl ResponseCode {
         })
     }
 
-    /// Create a ResponseCode from the code found in an encrypted error
-    /// response body
-    pub fn from_device_code(byte: u8) -> Result<Self, Error> {
-        Ok(match byte {
-            0x00 => ResponseCode::DeviceOK,
-            0x01 => ResponseCode::DeviceInvalidCommand,
-            0x02 => ResponseCode::DeviceInvalidData,
-            0x03 => ResponseCode::DeviceInvalidSession,
-            0x04 => ResponseCode::DeviceAuthFail,
-            0x05 => ResponseCode::DeviceSessionsFull,
-            0x06 => ResponseCode::DeviceSessionFailed,
-            0x07 => ResponseCode::DeviceStorageFailed,
-            0x08 => ResponseCode::DeviceWrongLength,
-            0x09 => ResponseCode::DeviceInvalidPermission,
-            0x0a => ResponseCode::DeviceLogFull,
-            0x0b => ResponseCode::DeviceObjNotFound,
-            0x0c => ResponseCode::DeviceIDIllegal,
-            0x0d => ResponseCode::DeviceInvalidOTP,
-            0x0e => ResponseCode::DeviceDemoMode,
-            0x0f => ResponseCode::DeviceCmdUnexecuted,
-            other => bail!("unknown device code: {}", other),
-        })
-    }
-
     /// Convert a ResponseCode back into its original byte form
     pub fn to_u8(self) -> u8 {
         let code: i8 = match self {
@@ -199,31 +175,6 @@ impl ResponseCode {
         };
 
         (i16::from(code) + 0x80) as u8
-    }
-
-    /// Convert this response code to a device response code for inclusion
-    /// in an error response message body
-    #[cfg(feature = "mockhsm")]
-    pub fn to_device_code(self) -> u8 {
-        match self {
-            ResponseCode::DeviceOK => 0x00,
-            ResponseCode::DeviceInvalidCommand => 0x01,
-            ResponseCode::DeviceInvalidData => 0x02,
-            ResponseCode::DeviceInvalidSession => 0x03,
-            ResponseCode::DeviceAuthFail => 0x04,
-            ResponseCode::DeviceSessionsFull => 0x05,
-            ResponseCode::DeviceSessionFailed => 0x06,
-            ResponseCode::DeviceStorageFailed => 0x07,
-            ResponseCode::DeviceWrongLength => 0x08,
-            ResponseCode::DeviceInvalidPermission => 0x09,
-            ResponseCode::DeviceLogFull => 0x0a,
-            ResponseCode::DeviceObjNotFound => 0x0b,
-            ResponseCode::DeviceIDIllegal => 0x0c,
-            ResponseCode::DeviceInvalidOTP => 0x0d,
-            ResponseCode::DeviceDemoMode => 0x0e,
-            ResponseCode::DeviceCmdUnexecuted => 0x0f,
-            other => panic!("not a valid device code: {:?}", other),
-        }
     }
 
     /// Is this a successful response?
