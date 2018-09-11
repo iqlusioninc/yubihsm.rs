@@ -1,4 +1,4 @@
-use yubihsm::{self, Capability, ObjectOrigin, ObjectType, WrapAlgorithm};
+use yubihsm::{self, Capability, ObjectOrigin, ObjectType, WrapAlg};
 
 use {clear_test_key_slot, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL};
 
@@ -7,7 +7,7 @@ use {clear_test_key_slot, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL};
 fn wrap_key_test() {
     let mut session = create_session!();
 
-    let algorithm = WrapAlgorithm::AES256_CCM_WRAP;
+    let algorithm = WrapAlg::AES256_CCM;
     let capabilities = Capability::EXPORT_WRAPPED
         | Capability::IMPORT_WRAPPED
         | Capability::UNWRAP_DATA

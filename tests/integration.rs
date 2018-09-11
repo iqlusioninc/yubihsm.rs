@@ -7,7 +7,7 @@ extern crate ring;
 extern crate sha2;
 extern crate untrusted;
 extern crate yubihsm;
-use yubihsm::{AsymmetricAlgorithm, Capability, Domain, ObjectId, ObjectType, Session};
+use yubihsm::{AsymmetricAlg, Capability, Domain, ObjectId, ObjectType, Session};
 
 /// Perform a live integration test against yubihsm-connector and a real `YubiHSM2`
 #[cfg(not(feature = "mockhsm"))]
@@ -109,7 +109,7 @@ pub fn clear_test_key_slot(session: &mut TestSession, object_type: ObjectType) {
 /// Create a public key for use in a test
 pub fn generate_asymmetric_key(
     session: &mut TestSession,
-    algorithm: AsymmetricAlgorithm,
+    algorithm: AsymmetricAlg,
     capabilities: Capability,
 ) {
     clear_test_key_slot(session, ObjectType::AsymmetricKey);
@@ -129,7 +129,7 @@ pub fn generate_asymmetric_key(
 /// Put an asymmetric private key into the HSM
 pub fn put_asymmetric_key<T: Into<Vec<u8>>>(
     session: &mut TestSession,
-    algorithm: AsymmetricAlgorithm,
+    algorithm: AsymmetricAlg,
     capabilities: Capability,
     data: T,
 ) {

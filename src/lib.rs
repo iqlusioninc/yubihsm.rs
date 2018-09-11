@@ -1,4 +1,4 @@
-//! yubihsm.rs: pure Rust client for `YubiHSM2` hardware security modules
+//! yubihsm.rs: pure Rust client for YubiHSM2 hardware security modules
 //!
 //! ## Prerequisites
 //!
@@ -77,7 +77,7 @@ extern crate log;
 #[cfg(feature = "pbkdf2")]
 extern crate pbkdf2;
 extern crate rand;
-#[cfg(feature = "ring")]
+#[cfg(feature = "mockhsm")]
 extern crate ring;
 extern crate serde;
 #[macro_use]
@@ -93,26 +93,26 @@ extern crate uuid;
 #[macro_use]
 pub mod error;
 
-/// Serde-powered serializers for the `YubiHSM2` wire format
+/// Serde-powered serializers for the HSM wire format
 #[macro_use]
 mod serializers;
 
-/// Adapters for connecting to the `YubiHSM2`
+/// Adapters for connecting to the HSM
 pub mod adapters;
 
-/// Cryptographic algorithms supported by the `YubiHSM2`
+/// Cryptographic algorithms supported by the HSM
 pub mod algorithm;
 
 /// Auditing options (for use with the `get_option` and `put_option` commands)
 pub(crate) mod audit;
 
-/// Authentication keys used to establish encrypted sessions with the `YubiHSM2`
+/// Authentication keys used to establish encrypted sessions with the HSM
 pub mod auth_key;
 
 /// Object attributes specifying which operations are allowed to be performed
 pub mod capabilities;
 
-/// Commands supported by the `YubiHSM2`
+/// Commands supported by the HSM
 ///
 /// Functions defined in the `yubihsm::commands` module are reimported
 /// and available from the toplevel `yubihsm` module as well.
@@ -121,17 +121,17 @@ pub mod capabilities;
 /// <https://developers.yubico.com/YubiHSM2/Commands/>
 pub mod commands;
 
-/// Credentials used to authenticate to the `YubiHSM2` (key ID + `AuthKey`)
+/// Credentials used to authenticate to the HSM (key ID + `AuthKey`)
 pub mod credentials;
 
-/// Logical partitions within the `YubiHSM2`, allowing several applications to share the device
+/// Logical partitions within the HSM, allowing several applications to share the device
 pub mod domains;
 
 #[cfg(feature = "mockhsm")]
-/// Software simulation of the `YubiHSM2` for integration testing
+/// Software simulation of the HSM for integration testing
 pub mod mockhsm;
 
-/// Objects stored in the `YubiHSM2`
+/// Objects stored in the HSM
 ///
 /// For more information, see:
 /// <https://developers.yubico.com/YubiHSM2/Concepts/Object.html>
@@ -140,16 +140,19 @@ pub mod object;
 /// Responses to commands sent from the HSM
 pub mod response;
 
-/// Encrypted communication channel to the `YubiHSM2` hardware
+/// Encrypted communication channel to the HSM hardware
 mod securechannel;
 
-/// `YubiHSM2` serial numbers
-mod serial;
+/// HSM serial numbers
+mod serial_number;
 
-/// `YubiHSM2` sessions: primary API for performing HSM operations
+/// Encrypted sessions with the HSM
 ///
 /// See <https://developers.yubico.com/YubiHSM2/Concepts/Session.html>
 pub mod session;
+
+/// Object wrapping support, i.e. encrypt objects from one HSM to another
+pub mod wrap;
 
 #[cfg(feature = "usb")]
 pub use adapters::usb::{UsbAdapter, UsbDevices, UsbTimeout};
@@ -178,8 +181,9 @@ pub use domains::Domain;
 pub use object::*;
 pub use response::ResponseCode;
 pub use securechannel::SessionId;
-pub use serial::SerialNumber;
+pub use serial_number::SerialNumber;
 #[cfg(feature = "usb")]
 pub use session::UsbSession;
 pub use session::{HttpSession, Session, SessionError};
 pub use uuid::Uuid;
+pub use wrap::{WrapMessage, WrapNonce};

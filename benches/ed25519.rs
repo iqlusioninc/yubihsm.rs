@@ -48,7 +48,7 @@ where
         "ed25519 benchmark key".into(),
         yubihsm::Domain::DOM1,
         yubihsm::Capability::ASYMMETRIC_SIGN_EDDSA,
-        yubihsm::AsymmetricAlgorithm::EC_ED25519,
+        yubihsm::AsymmetricAlg::Ed25519,
     ).unwrap_or_else(|e| panic!("error generating asymmetric key: {}", e));
 
     assert_eq!(key_id, BENCH_KEY_ID);

@@ -1,4 +1,4 @@
-use yubihsm::{self, AsymmetricAlgorithm, Capability, ObjectOrigin, ObjectType, WrapAlgorithm};
+use yubihsm::{self, AsymmetricAlg, Capability, ObjectOrigin, ObjectType, WrapAlg};
 
 use test_vectors::AESCCM_TEST_VECTORS;
 use {
@@ -11,7 +11,7 @@ use {
 #[test]
 fn wrap_key_test() {
     let mut session = create_session!();
-    let algorithm = WrapAlgorithm::AES128_CCM_WRAP;
+    let algorithm = WrapAlg::AES128_CCM;
     let capabilities = Capability::EXPORT_WRAPPED | Capability::IMPORT_WRAPPED;
     let delegated_capabilities = Capability::all();
 
@@ -34,7 +34,7 @@ fn wrap_key_test() {
     let exported_key_type = ObjectType::AsymmetricKey;
     let exported_key_capabilities =
         Capability::ASYMMETRIC_SIGN_EDDSA | Capability::EXPORT_UNDER_WRAP;
-    let exported_key_algorithm = AsymmetricAlgorithm::EC_ED25519;
+    let exported_key_algorithm = AsymmetricAlg::Ed25519;
 
     let _ = yubihsm::delete_object(&mut session, TEST_EXPORTED_KEY_ID, exported_key_type);
     yubihsm::generate_asymmetric_key(

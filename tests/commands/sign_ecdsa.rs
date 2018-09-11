@@ -1,6 +1,6 @@
 use ring;
 use untrusted;
-use yubihsm::{self, AsymmetricAlgorithm, Capability};
+use yubihsm::{self, AsymmetricAlg, Capability};
 
 use {generate_asymmetric_key, TEST_KEY_ID, TEST_MESSAGE};
 
@@ -11,14 +11,14 @@ fn generated_nistp256_key_test() {
 
     generate_asymmetric_key(
         &mut session,
-        AsymmetricAlgorithm::EC_P256,
+        AsymmetricAlg::EC_P256,
         Capability::ASYMMETRIC_SIGN_ECDSA,
     );
 
     let pubkey_response = yubihsm::get_pubkey(&mut session, TEST_KEY_ID)
         .unwrap_or_else(|err| panic!("error getting public key: {}", err));
 
-    assert_eq!(pubkey_response.algorithm, AsymmetricAlgorithm::EC_P256);
+    assert_eq!(pubkey_response.algorithm, AsymmetricAlg::EC_P256);
     assert_eq!(pubkey_response.bytes.len(), 64);
 
     let mut pubkey = [0u8; 65];

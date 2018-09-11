@@ -1,6 +1,6 @@
 use ring;
 use untrusted;
-use yubihsm::{self, AsymmetricAlgorithm, Capability};
+use yubihsm::{self, AsymmetricAlg, Capability};
 
 use test_vectors::ED25519_TEST_VECTORS;
 use {generate_asymmetric_key, put_asymmetric_key, TEST_KEY_ID, TEST_MESSAGE};
@@ -13,7 +13,7 @@ fn test_vectors() {
     for vector in ED25519_TEST_VECTORS {
         put_asymmetric_key(
             &mut session,
-            AsymmetricAlgorithm::EC_ED25519,
+            AsymmetricAlg::Ed25519,
             Capability::ASYMMETRIC_SIGN_EDDSA,
             vector.sk,
         );
@@ -21,7 +21,7 @@ fn test_vectors() {
         let pubkey_response = yubihsm::get_pubkey(&mut session, TEST_KEY_ID)
             .unwrap_or_else(|err| panic!("error getting public key: {}", err));
 
-        assert_eq!(pubkey_response.algorithm, AsymmetricAlgorithm::EC_ED25519);
+        assert_eq!(pubkey_response.algorithm, AsymmetricAlg::Ed25519);
         assert_eq!(pubkey_response.bytes, vector.pk);
 
         let signature = yubihsm::sign_ed25519(&mut session, TEST_KEY_ID, vector.msg)
@@ -38,14 +38,14 @@ fn generated_key_test() {
 
     generate_asymmetric_key(
         &mut session,
-        AsymmetricAlgorithm::EC_ED25519,
+        AsymmetricAlg::Ed25519,
         Capability::ASYMMETRIC_SIGN_EDDSA,
     );
 
     let pubkey = yubihsm::get_pubkey(&mut session, TEST_KEY_ID)
         .unwrap_or_else(|err| panic!("error getting public key: {}", err));
 
-    assert_eq!(pubkey.algorithm, AsymmetricAlgorithm::EC_ED25519);
+    assert_eq!(pubkey.algorithm, AsymmetricAlg::Ed25519);
 
     let signature = yubihsm::sign_ed25519(&mut session, TEST_KEY_ID, TEST_MESSAGE)
         .unwrap_or_else(|err| panic!("error performing Ed25519 signature: {}", err));

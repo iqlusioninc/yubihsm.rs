@@ -6,8 +6,7 @@ use super::put_object::PutObjectParams;
 use super::{Command, Response};
 use session::SessionErrorKind::ProtocolError;
 use {
-    Adapter, Capability, CommandType, Domain, ObjectId, ObjectLabel, Session, SessionError,
-    WrapAlgorithm,
+    Adapter, Capability, CommandType, Domain, ObjectId, ObjectLabel, Session, SessionError, WrapAlg,
 };
 
 /// Put an existing wrap key into the `YubiHSM2`
@@ -20,7 +19,7 @@ pub fn put_wrap_key<A: Adapter, T: Into<Vec<u8>>>(
     domains: Domain,
     capabilities: Capability,
     delegated_capabilities: Capability,
-    algorithm: WrapAlgorithm,
+    algorithm: WrapAlg,
     key_bytes: T,
 ) -> Result<ObjectId, SessionError> {
     let data = key_bytes.into();

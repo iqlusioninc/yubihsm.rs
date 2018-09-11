@@ -5,7 +5,7 @@
 use super::generate_key::GenerateKeyParams;
 use super::{Command, Response};
 use {
-    Adapter, AsymmetricAlgorithm, Capability, CommandType, Domain, ObjectId, ObjectLabel, Session,
+    Adapter, AsymmetricAlg, Capability, CommandType, Domain, ObjectId, ObjectLabel, Session,
     SessionError,
 };
 
@@ -16,7 +16,7 @@ pub fn generate_asymmetric_key<A: Adapter>(
     label: ObjectLabel,
     domains: Domain,
     capabilities: Capability,
-    algorithm: AsymmetricAlgorithm,
+    algorithm: AsymmetricAlg,
 ) -> Result<ObjectId, SessionError> {
     session
         .send_command(GenAsymmetricKeyCommand(GenerateKeyParams {

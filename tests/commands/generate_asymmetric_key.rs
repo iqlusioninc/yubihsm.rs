@@ -1,4 +1,4 @@
-use yubihsm::{self, AsymmetricAlgorithm, Capability, ObjectOrigin, ObjectType};
+use yubihsm::{self, AsymmetricAlg, Capability, ObjectOrigin, ObjectType};
 
 use {generate_asymmetric_key, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL};
 
@@ -7,7 +7,7 @@ use {generate_asymmetric_key, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL};
 fn ed25519_key_test() {
     let mut session = create_session!();
 
-    let algorithm = AsymmetricAlgorithm::EC_ED25519;
+    let algorithm = AsymmetricAlg::Ed25519;
     let capabilities = Capability::ASYMMETRIC_SIGN_EDDSA;
 
     generate_asymmetric_key(&mut session, algorithm, capabilities);
@@ -29,7 +29,7 @@ fn ed25519_key_test() {
 #[test]
 fn nistp256_key_test() {
     let mut session = create_session!();
-    let algorithm = AsymmetricAlgorithm::EC_P256;
+    let algorithm = AsymmetricAlg::EC_P256;
     let capabilities = Capability::ASYMMETRIC_SIGN_EDDSA;
 
     generate_asymmetric_key(&mut session, algorithm, capabilities);

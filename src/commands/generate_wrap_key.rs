@@ -5,8 +5,7 @@
 use super::generate_key::GenerateKeyParams;
 use super::{Command, Response};
 use {
-    Adapter, Capability, CommandType, Domain, ObjectId, ObjectLabel, Session, SessionError,
-    WrapAlgorithm,
+    Adapter, Capability, CommandType, Domain, ObjectId, ObjectLabel, Session, SessionError, WrapAlg,
 };
 
 /// Generate a new wrap key within the `YubiHSM2`
@@ -20,7 +19,7 @@ pub fn generate_wrap_key<A: Adapter>(
     domains: Domain,
     capabilities: Capability,
     delegated_capabilities: Capability,
-    algorithm: WrapAlgorithm,
+    algorithm: WrapAlg,
 ) -> Result<ObjectId, SessionError> {
     session
         .send_command(GenWrapKeyCommand {

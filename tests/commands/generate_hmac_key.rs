@@ -1,4 +1,4 @@
-use yubihsm::{self, Capability, HMACAlgorithm, ObjectOrigin, ObjectType};
+use yubihsm::{self, Capability, HmacAlg, ObjectOrigin, ObjectType};
 
 use {clear_test_key_slot, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL};
 
@@ -7,7 +7,7 @@ use {clear_test_key_slot, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL};
 fn hmac_key_test() {
     let mut session = create_session!();
 
-    let algorithm = HMACAlgorithm::HMAC_SHA256;
+    let algorithm = HmacAlg::SHA256;
     let capabilities = Capability::HMAC_DATA | Capability::HMAC_VERIFY;
 
     clear_test_key_slot(&mut session, ObjectType::HMACKey);

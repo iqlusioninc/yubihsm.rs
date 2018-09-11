@@ -8,7 +8,7 @@ pub type AlgorithmError = Error<AlgorithmErrorKind>;
 /// Kinds of `Algorithm`-related errors
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
 pub enum AlgorithmErrorKind {
-    /// Size is invalid
-    #[fail(display = "invalid size")]
-    SizeInvalid,
+    /// Invalid algorithm tag
+    #[fail(display = "invalid tag")]
+    TagInvalid,
 }

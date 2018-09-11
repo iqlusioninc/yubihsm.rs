@@ -5,7 +5,7 @@
 use super::put_object::PutObjectParams;
 use super::{Command, Response};
 use {
-    Adapter, Capability, CommandType, Domain, ObjectId, ObjectLabel, OpaqueAlgorithm, Session,
+    Adapter, Capability, CommandType, Domain, ObjectId, ObjectLabel, OpaqueAlg, Session,
     SessionError,
 };
 
@@ -16,7 +16,7 @@ pub fn put_opaque<A: Adapter, T: Into<Vec<u8>>>(
     label: ObjectLabel,
     domains: Domain,
     capabilities: Capability,
-    algorithm: OpaqueAlgorithm,
+    algorithm: OpaqueAlg,
     bytes: T,
 ) -> Result<ObjectId, SessionError> {
     session

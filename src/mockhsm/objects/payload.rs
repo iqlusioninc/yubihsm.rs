@@ -6,7 +6,7 @@ use ring::signature::Ed25519KeyPair;
 use untrusted;
 
 use super::ecdsa::{ECDSAKeyPair, ECDSA_KEY_PAIR_SIZE};
-use algorithm::{Algorithm, AsymmetricAlgorithm, HMACAlgorithm, OpaqueAlgorithm, WrapAlgorithm};
+use algorithm::{Algorithm, AsymmetricAlg, AuthAlg, HmacAlg, OpaqueAlg, WrapAlg};
 use auth_key::{AuthKey, AUTH_KEY_SIZE};
 
 /// Size of an Ed25519 seed
@@ -19,49 +19,36 @@ pub(crate) enum Payload {
     AuthKey(AuthKey),
 
     /// ECDSA signing keys
-    ECDSAKeyPair(ECDSAKeyPair),
+    EcdsaKeyPair(ECDSAKeyPair),
 
     /// Ed25519 signing keys
     Ed25519KeyPair([u8; ED25519_SEED_SIZE]),
 
     /// HMAC key
-    HMACKey(HMACAlgorithm, Vec<u8>),
+    HmacKey(HmacAlg, Vec<u8>),
 
     /// Opaque data
-    Opaque(OpaqueAlgorithm, Vec<u8>),
+    Opaque(OpaqueAlg, Vec<u8>),
 
     /// Wrapping (i.e. symmetric encryption keys)
     // TODO: actually simulate AES-CCM. Instead we use GCM because *ring* has it
-    WrapKey(WrapAlgorithm, Vec<u8>),
+    WrapKey(WrapAlg, Vec<u8>),
 }
 
 impl Payload {
     /// Create a new payload from the given algorithm and data
     pub fn new(algorithm: Algorithm, data: &[u8]) -> Self {
         match algorithm {
-            Algorithm::AES128_CCM_WRAP | Algorithm::AES256_CCM_WRAP => Payload::WrapKey(
-                WrapAlgorithm::from_algorithm(algorithm).unwrap(),
-                data.into(),
-            ),
-            Algorithm::AES192_CCM_WRAP => panic!("friends don't let friends use AES-192"),
-            Algorithm::EC_ED25519 => {
+            Algorithm::Wrap(alg) => Payload::WrapKey(alg, data.into()),
+            Algorithm::Asymmetric(AsymmetricAlg::Ed25519) => {
                 assert_eq!(data.len(), ED25519_SEED_SIZE);
                 let mut bytes = [0u8; ED25519_SEED_SIZE];
                 bytes.copy_from_slice(data);
                 Payload::Ed25519KeyPair(bytes)
             }
-            Algorithm::HMAC_SHA1
-            | Algorithm::HMAC_SHA256
-            | Algorithm::HMAC_SHA384
-            | Algorithm::HMAC_SHA512 => Payload::HMACKey(
-                HMACAlgorithm::from_algorithm(algorithm).unwrap(),
-                data.into(),
-            ),
-            Algorithm::OPAQUE_DATA | Algorithm::OPAQUE_X509_CERT => Payload::Opaque(
-                OpaqueAlgorithm::from_algorithm(algorithm).unwrap(),
-                data.into(),
-            ),
-            Algorithm::YUBICO_AES_AUTH => Payload::AuthKey(AuthKey::from_slice(data).unwrap()),
+            Algorithm::Hmac(alg) => Payload::HmacKey(alg, data.into()),
+            Algorithm::Opaque(alg) => Payload::Opaque(alg, data.into()),
+            Algorithm::Auth(_) => Payload::AuthKey(AuthKey::from_slice(data).unwrap()),
             _ => panic!("MockHSM does not support putting {:?} objects", algorithm),
         }
     }
@@ -71,32 +58,30 @@ impl Payload {
         let csprng = SystemRandom::new();
 
         match algorithm {
-            Algorithm::AES128_CCM_WRAP | Algorithm::AES256_CCM_WRAP => {
-                let wrap_alg = WrapAlgorithm::from_algorithm(algorithm).unwrap();
+            Algorithm::Wrap(wrap_alg) => {
                 let mut bytes = vec![0u8; wrap_alg.key_len()];
                 csprng.fill(&mut bytes).unwrap();
                 Payload::WrapKey(wrap_alg, bytes)
             }
-            Algorithm::EC_P256 => {
-                let keypair = ECDSAKeyPair::generate(
-                    AsymmetricAlgorithm::from_algorithm(algorithm).unwrap(),
-                    &csprng,
-                );
-                Payload::ECDSAKeyPair(keypair)
-            }
-            Algorithm::EC_ED25519 => {
-                let mut bytes = [0u8; ED25519_SEED_SIZE];
-                csprng.fill(&mut bytes).unwrap();
-                Payload::Ed25519KeyPair(bytes)
-            }
-            Algorithm::HMAC_SHA1
-            | Algorithm::HMAC_SHA256
-            | Algorithm::HMAC_SHA384
-            | Algorithm::HMAC_SHA512 => {
-                let hmac_alg = HMACAlgorithm::from_algorithm(algorithm).unwrap();
+            Algorithm::Asymmetric(asymmetric_alg) => match asymmetric_alg {
+                AsymmetricAlg::EC_P256 => {
+                    let keypair = ECDSAKeyPair::generate(asymmetric_alg, &csprng);
+                    Payload::EcdsaKeyPair(keypair)
+                }
+                AsymmetricAlg::Ed25519 => {
+                    let mut bytes = [0u8; ED25519_SEED_SIZE];
+                    csprng.fill(&mut bytes).unwrap();
+                    Payload::Ed25519KeyPair(bytes)
+                }
+                _ => panic!(
+                    "MockHSM doesn't support this asymmetric algorithm: {:?}",
+                    asymmetric_alg
+                ),
+            },
+            Algorithm::Hmac(hmac_alg) => {
                 let mut bytes = vec![0u8; hmac_alg.key_len()];
                 csprng.fill(&mut bytes).unwrap();
-                Payload::HMACKey(hmac_alg, bytes)
+                Payload::HmacKey(hmac_alg, bytes)
             }
             _ => panic!(
                 "MockHSM does not support generating {:?} objects",
@@ -108,10 +93,10 @@ impl Payload {
     /// Get the algorithm type for this payload
     pub fn algorithm(&self) -> Algorithm {
         match *self {
-            Payload::AuthKey(_) => Algorithm::YUBICO_AES_AUTH,
-            Payload::ECDSAKeyPair(_) => Algorithm::EC_P256,
-            Payload::Ed25519KeyPair(_) => Algorithm::EC_ED25519,
-            Payload::HMACKey(alg, _) => alg.into(),
+            Payload::AuthKey(_) => Algorithm::Auth(AuthAlg::YUBICO_AES),
+            Payload::EcdsaKeyPair(_) => Algorithm::Asymmetric(AsymmetricAlg::EC_P256),
+            Payload::Ed25519KeyPair(_) => Algorithm::Asymmetric(AsymmetricAlg::Ed25519),
+            Payload::HmacKey(alg, _) => alg.into(),
             Payload::Opaque(alg, _) => alg.into(),
             Payload::WrapKey(alg, _) => alg.into(),
         }
@@ -121,9 +106,9 @@ impl Payload {
     pub fn len(&self) -> u16 {
         let l = match *self {
             Payload::AuthKey(_) => AUTH_KEY_SIZE,
-            Payload::ECDSAKeyPair(_) => ECDSA_KEY_PAIR_SIZE,
+            Payload::EcdsaKeyPair(_) => ECDSA_KEY_PAIR_SIZE,
             Payload::Ed25519KeyPair(_) => ED25519_SEED_SIZE,
-            Payload::HMACKey(_, ref data) => data.len(),
+            Payload::HmacKey(_, ref data) => data.len(),
             Payload::Opaque(_, ref data) => data.len(),
             Payload::WrapKey(_, ref data) => data.len(),
         };
@@ -133,7 +118,7 @@ impl Payload {
     /// If this object is a public key, return its byte serialization
     pub fn public_key_bytes(&self) -> Option<Vec<u8>> {
         match *self {
-            Payload::ECDSAKeyPair(ref k) => Some(k.public_key_bytes.clone()),
+            Payload::EcdsaKeyPair(ref k) => Some(k.public_key_bytes.clone()),
             Payload::Ed25519KeyPair(ref k) => Some(
                 Ed25519KeyPair::from_seed_unchecked(untrusted::Input::from(k))
                     .unwrap()
@@ -157,9 +142,9 @@ impl AsRef<[u8]> for Payload {
     fn as_ref(&self) -> &[u8] {
         match *self {
             Payload::AuthKey(ref k) => k.0.as_ref(),
-            Payload::ECDSAKeyPair(ref k) => &k.private_key_bytes,
+            Payload::EcdsaKeyPair(ref k) => &k.private_key_bytes,
             Payload::Ed25519KeyPair(ref k) => k.as_ref(),
-            Payload::HMACKey(_, ref data) => data,
+            Payload::HmacKey(_, ref data) => data,
             Payload::Opaque(_, ref data) => data,
             Payload::WrapKey(_, ref data) => data,
         }

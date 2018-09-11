@@ -1,4 +1,4 @@
-use yubihsm::{self, AsymmetricAlgorithm, Capability, ObjectType};
+use yubihsm::{self, AsymmetricAlg, Capability, ObjectType};
 
 use {generate_asymmetric_key, TEST_KEY_ID};
 
@@ -9,7 +9,7 @@ fn delete_object_test() {
 
     generate_asymmetric_key(
         &mut session,
-        AsymmetricAlgorithm::EC_ED25519,
+        AsymmetricAlg::Ed25519,
         Capability::ASYMMETRIC_SIGN_EDDSA,
     );
 
