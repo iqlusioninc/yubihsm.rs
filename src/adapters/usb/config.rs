@@ -1,4 +1,4 @@
-use serial::SerialNumber;
+use serial_number::SerialNumber;
 
 /// Default timeouts for reading and writing (1 second)
 pub const DEFAULT_TIMEOUT_MILLIS: u64 = 1000;

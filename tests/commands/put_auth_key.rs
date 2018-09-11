@@ -1,4 +1,4 @@
-use yubihsm::{self, AuthAlgorithm, AuthKey, Capability, ObjectOrigin, ObjectType};
+use yubihsm::{self, AuthAlg, AuthKey, Capability, ObjectOrigin, ObjectType};
 
 use {clear_test_key_slot, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL, TEST_MESSAGE};
 
@@ -6,7 +6,7 @@ use {clear_test_key_slot, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL, TEST_MESSAG
 #[test]
 fn put_auth_key() {
     let mut session = create_session!();
-    let algorithm = AuthAlgorithm::YUBICO_AES_AUTH;
+    let algorithm = AuthAlg::YUBICO_AES;
     let capabilities = Capability::all();
     let delegated_capabilities = Capability::all();
 

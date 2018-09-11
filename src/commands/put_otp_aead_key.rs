@@ -6,8 +6,7 @@ use super::put_object::PutObjectParams;
 use super::{Command, Response};
 use session::SessionErrorKind::ProtocolError;
 use {
-    Adapter, Capability, CommandType, Domain, OTPAlgorithm, ObjectId, ObjectLabel, Session,
-    SessionError,
+    Adapter, Capability, CommandType, Domain, ObjectId, ObjectLabel, OtpAlg, Session, SessionError,
 };
 
 /// Put an existing OTP AEAD key into the `YubiHSM2`
@@ -19,7 +18,7 @@ pub fn put_otp_aead_key<A: Adapter, T: Into<Vec<u8>>>(
     label: ObjectLabel,
     domains: Domain,
     capabilities: Capability,
-    algorithm: OTPAlgorithm,
+    algorithm: OtpAlg,
     key_bytes: T,
 ) -> Result<ObjectId, SessionError> {
     let data = key_bytes.into();

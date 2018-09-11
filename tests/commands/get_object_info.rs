@@ -1,5 +1,5 @@
 use yubihsm::credentials::DEFAULT_AUTH_KEY_ID;
-use yubihsm::{self, AuthAlgorithm, Capability, Domain, ObjectOrigin, ObjectType};
+use yubihsm::{self, AuthAlg, Capability, Domain, ObjectOrigin, ObjectType};
 
 use DEFAULT_AUTH_KEY_LABEL;
 
@@ -16,7 +16,7 @@ fn default_authkey_test() {
     assert_eq!(object_info.object_id, DEFAULT_AUTH_KEY_ID);
     assert_eq!(object_info.domains, Domain::all());
     assert_eq!(object_info.object_type, ObjectType::AuthKey);
-    assert_eq!(object_info.algorithm, AuthAlgorithm::YUBICO_AES_AUTH.into());
+    assert_eq!(object_info.algorithm, AuthAlg::YUBICO_AES.into());
     assert_eq!(object_info.origin, ObjectOrigin::Imported);
     assert_eq!(
         &object_info.label.to_string().unwrap(),

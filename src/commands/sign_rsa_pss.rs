@@ -8,7 +8,7 @@ use super::{Command, Response};
 use session::{Session, SessionError, SessionErrorKind::ProtocolError};
 use sha2::{Digest, Sha256};
 use Adapter;
-use {Algorithm, CommandType, ObjectId};
+use {Algorithm, CommandType, MgfAlg, ObjectId};
 
 /// Maximum message size supported for RSASSA-PSS
 pub const RSA_PSS_MAX_MESSAGE_SIZE: usize = 0xFFFF;
@@ -39,7 +39,7 @@ pub fn sign_rsa_pss_sha256<A: Adapter>(
 
     session.send_command(SignDataPSSCommand {
         key_id,
-        mgf1_hash_alg: Algorithm::MGF1_SHA256,
+        mgf1_hash_alg: Algorithm::Mgf(MgfAlg::SHA256),
         salt_len: digest.as_slice().len() as u16,
         digest: digest.as_slice().into(),
     })

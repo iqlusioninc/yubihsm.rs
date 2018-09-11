@@ -1,4 +1,4 @@
-use yubihsm::{self, AsymmetricAlgorithm, Capability, ObjectOrigin, ObjectType};
+use yubihsm::{self, AsymmetricAlg, Capability, ObjectOrigin, ObjectType};
 
 use test_vectors::ED25519_TEST_VECTORS;
 use {put_asymmetric_key, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL};
@@ -7,7 +7,7 @@ use {put_asymmetric_key, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL};
 #[test]
 fn ed25519_key_test() {
     let mut session = create_session!();
-    let algorithm = AsymmetricAlgorithm::EC_ED25519;
+    let algorithm = AsymmetricAlg::Ed25519;
     let capabilities = Capability::ASYMMETRIC_SIGN_EDDSA;
     let example_private_key = ED25519_TEST_VECTORS[0].sk;
 

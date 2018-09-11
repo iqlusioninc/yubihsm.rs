@@ -9,7 +9,7 @@ use ring::signature::ECDSAKeyPair as ECDSAPrivateKey;
 use ring::signature::{Signature, ECDSA_P256_SHA256_ASN1_SIGNING};
 use untrusted;
 
-use AsymmetricAlgorithm;
+use AsymmetricAlg;
 
 /// Size of a NIST P-256 keypair
 pub(crate) const ECDSA_KEY_PAIR_SIZE: usize = 96;
@@ -20,7 +20,7 @@ pub(crate) const ECDSA_PUBLIC_KEY_SIZE: usize = 64;
 /// ECDSA keypairs (TODO: use upstream *ring* functionality for this when it becomes available)
 pub(crate) struct ECDSAKeyPair {
     /// *ring* SigningAlgorithm
-    pub algorithm: AsymmetricAlgorithm,
+    pub algorithm: AsymmetricAlg,
 
     /// PKCS#8 private key
     pub private_key_bytes: Vec<u8>,
@@ -31,9 +31,9 @@ pub(crate) struct ECDSAKeyPair {
 
 impl ECDSAKeyPair {
     /// Generate a new ECDSA keypair
-    pub fn generate(algorithm: AsymmetricAlgorithm, csprng: &SecureRandom) -> Self {
+    pub fn generate(algorithm: AsymmetricAlg, csprng: &SecureRandom) -> Self {
         let signing_algorithm = match algorithm {
-            AsymmetricAlgorithm::EC_P256 => &ECDSA_P256_SHA256_ASN1_SIGNING,
+            AsymmetricAlg::EC_P256 => &ECDSA_P256_SHA256_ASN1_SIGNING,
             _ => panic!("unsupported ECDSA algorithm: {:?}", algorithm),
         };
 
@@ -57,7 +57,7 @@ impl ECDSAKeyPair {
     /// Sign a message with this key, returning an ASN.1 DER encoded signature
     pub fn sign<T: AsRef<[u8]>>(&self, message: T) -> Signature {
         let signing_algorithm = match self.algorithm {
-            AsymmetricAlgorithm::EC_P256 => &ECDSA_P256_SHA256_ASN1_SIGNING,
+            AsymmetricAlg::EC_P256 => &ECDSA_P256_SHA256_ASN1_SIGNING,
             _ => panic!("unsupported ECDSA algorithm: {:?}", self.algorithm),
         };
 

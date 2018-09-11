@@ -1,4 +1,4 @@
-use yubihsm::{self, Capability, HMACAlgorithm, ObjectType};
+use yubihsm::{self, Capability, HmacAlg, ObjectType};
 
 use test_vectors::HMAC_SHA256_TEST_VECTORS;
 use {clear_test_key_slot, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL};
@@ -7,7 +7,7 @@ use {clear_test_key_slot, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL};
 #[test]
 fn hmac_test_vectors() {
     let mut session = create_session!();
-    let algorithm = HMACAlgorithm::HMAC_SHA256;
+    let algorithm = HmacAlg::SHA256;
     let capabilities = Capability::HMAC_DATA | Capability::HMAC_VERIFY;
 
     for vector in HMAC_SHA256_TEST_VECTORS {

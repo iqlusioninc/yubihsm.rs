@@ -1,4 +1,4 @@
-use yubihsm::{self, AsymmetricAlgorithm, Capability};
+use yubihsm::{self, AsymmetricAlg, Capability};
 
 use {generate_asymmetric_key, EC_P256_PUBLIC_KEY_SIZE, TEST_KEY_ID};
 
@@ -9,7 +9,7 @@ fn attest_asymmetric_test() {
 
     generate_asymmetric_key(
         &mut session,
-        AsymmetricAlgorithm::EC_P256,
+        AsymmetricAlg::EC_P256,
         Capability::ASYMMETRIC_SIGN_ECDSA,
     );
 

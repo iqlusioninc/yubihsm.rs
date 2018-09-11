@@ -6,7 +6,7 @@ use super::put_object::PutObjectParams;
 use super::{Command, Response};
 use session::SessionErrorKind::ProtocolError;
 use {
-    Adapter, AsymmetricAlgorithm, Capability, CommandType, Domain, ObjectId, ObjectLabel, Session,
+    Adapter, AsymmetricAlg, Capability, CommandType, Domain, ObjectId, ObjectLabel, Session,
     SessionError,
 };
 
@@ -17,7 +17,7 @@ pub fn put_asymmetric_key<A: Adapter, T: Into<Vec<u8>>>(
     label: ObjectLabel,
     domains: Domain,
     capabilities: Capability,
-    algorithm: AsymmetricAlgorithm,
+    algorithm: AsymmetricAlg,
     key_bytes: T,
 ) -> Result<ObjectId, SessionError> {
     let data = key_bytes.into();

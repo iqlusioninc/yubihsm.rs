@@ -3,7 +3,7 @@
 use std::str::FromStr;
 
 use adapters::{AdapterError, AdapterErrorKind::ResponseError};
-use serial::SerialNumber;
+use serial_number::SerialNumber;
 
 /// `yubihsm-connector` status message when healthy
 pub(super) const CONNECTOR_STATUS_OK: &str = "OK";

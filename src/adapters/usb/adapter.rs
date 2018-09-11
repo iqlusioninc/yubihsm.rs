@@ -8,7 +8,7 @@ use std::{
 use super::{UsbConfig, UsbDevices, UsbTimeout};
 use adapters::{Adapter, AdapterError, AdapterErrorKind::UsbError};
 use securechannel::MAX_MSG_SIZE;
-use serial::SerialNumber;
+use serial_number::SerialNumber;
 use uuid::Uuid;
 
 /// YubiHSM 2 USB interface number

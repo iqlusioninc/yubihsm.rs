@@ -1,4 +1,4 @@
-use yubihsm::{self, Capability, ObjectType, OpaqueAlgorithm};
+use yubihsm::{self, Capability, ObjectType, OpaqueAlg};
 
 use {clear_test_key_slot, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL, TEST_MESSAGE};
 
@@ -15,7 +15,7 @@ fn opaque_object_test() {
         TEST_KEY_LABEL.into(),
         TEST_DOMAINS,
         Capability::default(),
-        OpaqueAlgorithm::OPAQUE_DATA,
+        OpaqueAlg::DATA,
         TEST_MESSAGE,
     ).unwrap_or_else(|err| panic!("error putting opaque object: {}", err));
 

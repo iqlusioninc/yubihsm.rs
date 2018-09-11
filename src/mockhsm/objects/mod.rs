@@ -15,8 +15,8 @@ use auth_key::{AuthKey, AUTH_KEY_SIZE};
 use credentials::DEFAULT_AUTH_KEY_ID;
 use serializers::{deserialize, serialize};
 use {
-    Algorithm, Capability, Domain, ObjectHandle, ObjectId, ObjectInfo, ObjectLabel, ObjectOrigin,
-    ObjectType, WrapNonce,
+    Algorithm, AuthAlg, Capability, Domain, ObjectHandle, ObjectId, ObjectInfo, ObjectLabel,
+    ObjectOrigin, ObjectType, WrapAlg, WrapNonce,
 };
 
 /// Size of the wrap algorithm's MAC tag. The MockHSM uses AES-GCM instead of
@@ -43,7 +43,7 @@ impl Default for Objects {
         let auth_key_info = ObjectInfo {
             object_id: DEFAULT_AUTH_KEY_ID,
             object_type: ObjectType::AuthKey,
-            algorithm: Algorithm::YUBICO_AES_AUTH,
+            algorithm: Algorithm::Auth(AuthAlg::YUBICO_AES),
             capabilities: Capability::all(),
             delegated_capabilities: Capability::all(),
             domains: Domain::all(),
@@ -166,10 +166,10 @@ impl Objects {
             None => bail!("no such wrap key: {:?}", wrap_key_id),
         };
 
-        let sealing_key = match wrap_key.algorithm() {
+        let sealing_key = match wrap_key.algorithm().wrap().unwrap() {
             // TODO: actually use AES-CCM
-            Algorithm::AES128_CCM_WRAP => SealingKey::new(&AES_128_GCM, wrap_key.payload.as_ref()),
-            Algorithm::AES256_CCM_WRAP => SealingKey::new(&AES_256_GCM, wrap_key.payload.as_ref()),
+            WrapAlg::AES128_CCM => SealingKey::new(&AES_128_GCM, wrap_key.payload.as_ref()),
+            WrapAlg::AES256_CCM => SealingKey::new(&AES_256_GCM, wrap_key.payload.as_ref()),
             unsupported => bail!("unsupported wrap key algorithm: {:?}", unsupported),
         }.unwrap();
 
@@ -225,9 +225,9 @@ impl Objects {
         ciphertext: V,
     ) -> Result<ObjectHandle, Error> {
         let opening_key = match self.get(wrap_key_id, ObjectType::WrapKey) {
-            Some(k) => match k.algorithm() {
-                Algorithm::AES128_CCM_WRAP => OpeningKey::new(&AES_128_GCM, k.payload.as_ref()),
-                Algorithm::AES256_CCM_WRAP => OpeningKey::new(&AES_256_GCM, k.payload.as_ref()),
+            Some(k) => match k.algorithm().wrap().unwrap() {
+                WrapAlg::AES128_CCM => OpeningKey::new(&AES_128_GCM, k.payload.as_ref()),
+                WrapAlg::AES256_CCM => OpeningKey::new(&AES_256_GCM, k.payload.as_ref()),
                 unsupported => bail!("unsupported wrap key algorithm: {:?}", unsupported),
             }.unwrap(),
             None => bail!("no such wrap key: {:?}", wrap_key_id),

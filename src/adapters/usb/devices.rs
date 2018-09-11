@@ -6,7 +6,7 @@ use adapters::{
     AdapterError,
     AdapterErrorKind::{DeviceBusyError, UsbError},
 };
-use serial::SerialNumber;
+use serial_number::SerialNumber;
 
 /// USB vendor ID for Yubico
 pub const YUBICO_VENDOR_ID: u16 = 0x1050;
