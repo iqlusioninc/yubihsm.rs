@@ -1,9 +1,37 @@
+## [0.16.0] (2018-09-12)
+
+[0.16.0]: https://github.com/tendermint/yubihsm-rs/compare/v0.15.1...v0.16.0
+
+* [#112](https://github.com/tendermint/yubihsm-rs/pull/112)
+  Make 'http' a cargo feature.
+
+* [#111](https://github.com/tendermint/yubihsm-rs/pull/111)
+  Rename `MockHSM` => `MockHsm`; export from crate root.
+
+* [#110](https://github.com/tendermint/yubihsm-rs/pull/110)
+  Factor HSM error handling into `HsmErrorKind`.
+
+* [#109](https://github.com/tendermint/yubihsm-rs/pull/109)
+  Refactor Algorithm and related types.
+  
+* [#107](https://github.com/tendermint/yubihsm-rs/pull/107)
+  Decode detailed HSM errors from responses.
+
+* [#106](https://github.com/tendermint/yubihsm-rs/pull/106)
+  Implement Put Option commands.
+
+* [#101](https://github.com/tendermint/yubihsm-rs/pull/101)
+  Implement Get Option commands.
+
+* [#97](https://github.com/tendermint/yubihsm-rs/pull/97)
+  USB support. Rename `Connector` => `Adapter`.
+
 ## [0.15.1] (2018-08-24)
 
 [0.15.1]: https://github.com/tendermint/yubihsm-rs/compare/v0.15.0...v0.15.1
 
 * [#93](https://github.com/tendermint/yubihsm-rs/pull/93)
-  `http_connector.rs`: Derive Clone on HttpConfig,
+  `http_connector.rs`: Derive Clone on HttpConfig.
 
 ## [0.15.0] (2018-08-19)
 
