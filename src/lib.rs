@@ -51,7 +51,7 @@
 #![deny(unsafe_code, unused_import_braces, unused_qualifications)]
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/tendermint/yubihsm-rs/master/img/logo.png",
-    html_root_url = "https://docs.rs/yubihsm/0.16.0-alpha3"
+    html_root_url = "https://docs.rs/yubihsm/0.16.0"
 )]
 
 extern crate aes;
