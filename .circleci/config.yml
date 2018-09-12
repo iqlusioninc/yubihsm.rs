@@ -33,17 +33,29 @@ jobs:
           cargo --version
           cargo build --benches
     - run:
-        name: build --features=rsa,usb
+        name: build --release
         command: |
           rustc --version
           cargo --version
-          cargo build --features=rsa,usb
+          cargo build --release
     - run:
-        name: build --features=rsa,usb --release
+        name: build --features=rsa
         command: |
           rustc --version
           cargo --version
-          cargo build --features=rsa,usb --release
+          cargo build --features=rsa
+    - run:
+        name: build --features=usb
+        command: |
+          rustc --version
+          cargo --version
+          cargo build --features=usb
+    - run:
+        name: build --features=usb --release
+        command: |
+          rustc --version
+          cargo --version
+          cargo build --features=usb --release
     - run:
         name: build --features=doc
         command: |

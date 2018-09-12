@@ -1,5 +1,6 @@
 #[macro_use]
 mod error;
+#[cfg(feature = "http")]
 pub mod http;
 #[cfg(feature = "usb")]
 pub mod usb;

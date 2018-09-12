@@ -154,12 +154,11 @@ pub mod session;
 /// Object wrapping support, i.e. encrypt objects from one HSM to another
 pub mod wrap;
 
+#[cfg(feature = "http")]
+pub use adapters::http::{HttpAdapter, HttpConfig};
 #[cfg(feature = "usb")]
 pub use adapters::usb::{UsbAdapter, UsbDevices, UsbTimeout};
-pub use adapters::{
-    http::{HttpAdapter, HttpConfig},
-    Adapter,
-};
+pub use adapters::Adapter;
 pub use algorithm::*;
 pub use audit::AuditOption;
 pub use auth_key::{AuthKey, AUTH_KEY_SIZE};
@@ -185,8 +184,10 @@ pub use object::*;
 pub use response::ResponseCode;
 pub use securechannel::SessionId;
 pub use serial_number::SerialNumber;
+#[cfg(feature = "http")]
+pub use session::HttpSession;
 #[cfg(feature = "usb")]
 pub use session::UsbSession;
-pub use session::{HttpSession, Session, SessionError};
+pub use session::{Session, SessionError};
 pub use uuid::Uuid;
 pub use wrap::{WrapMessage, WrapNonce};
