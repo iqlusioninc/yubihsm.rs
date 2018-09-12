@@ -1,4 +1,4 @@
-//! Commands supported by the `MockHSM`
+//! Commands supported by the `MockHsm`
 
 use hmac::{Hmac, Mac};
 use rand::{OsRng, RngCore};
@@ -593,7 +593,7 @@ fn put_wrap_key(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
     PutWrapKeyResponse { key_id: params.id }.serialize()
 }
 
-/// Reset the MockHSM back to its default state
+/// Reset the MockHsm back to its default state
 fn reset(state: &mut State, session_id: SessionId) -> Vec<u8> {
     let response = state
         .get_session(session_id)

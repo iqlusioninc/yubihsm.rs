@@ -1,5 +1,5 @@
 #[cfg(not(debug_assertions))]
-compile_error!("MockHSM is not intended for use in release builds");
+compile_error!("MockHsm is not intended for use in release builds");
 
 use serde::{
     de::{Deserialize, Deserializer},
@@ -16,6 +16,7 @@ mod state;
 
 pub use self::adapter::MockAdapter;
 use self::state::State;
+use session::Session;
 
 /// Software simulation of a `YubiHSM2` intended for testing
 /// implemented as a `yubihsm::Adapter`.
@@ -26,31 +27,34 @@ use self::state::State;
 ///
 /// To enable, make sure to build yubihsm.rs with the `mockhsm` cargo feature
 #[derive(Debug)]
-pub struct MockHSM(Arc<Mutex<State>>);
+pub struct MockHsm(Arc<Mutex<State>>);
 
-impl MockHSM {
-    /// Create a new MockHSM
+impl MockHsm {
+    /// Create a new MockHsm
     pub fn new() -> Self {
-        MockHSM(Arc::new(Mutex::new(State::new())))
+        MockHsm(Arc::new(Mutex::new(State::new())))
     }
 }
 
-impl Default for MockHSM {
+impl Default for MockHsm {
     fn default() -> Self {
         Self::new()
     }
 }
 
 // This is required by the `Adapter` trait
-impl Serialize for MockHSM {
+impl Serialize for MockHsm {
     fn serialize<S: Serializer>(&self, _serializer: S) -> Result<S::Ok, S::Error> {
         panic!("unimplemented");
     }
 }
 
 // This is required by the `Adapter` trait
-impl<'de> Deserialize<'de> for MockHSM {
-    fn deserialize<D: Deserializer<'de>>(_deserializer: D) -> Result<MockHSM, D::Error> {
+impl<'de> Deserialize<'de> for MockHsm {
+    fn deserialize<D: Deserializer<'de>>(_deserializer: D) -> Result<MockHsm, D::Error> {
         panic!("unimplemented");
     }
 }
+
+/// Drop-in replacement `Session` type which uses `MockHsm`
+pub type MockSession = Session<MockAdapter>;

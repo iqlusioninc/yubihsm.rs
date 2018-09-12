@@ -179,6 +179,8 @@ pub use commands::{sign_rsa_pkcs1v15::*, sign_rsa_pss::*};
 pub use credentials::Credentials;
 pub use domains::Domain;
 pub use error::*;
+#[cfg(feature = "mockhsm")]
+pub use mockhsm::{MockAdapter, MockSession};
 pub use object::*;
 pub use response::ResponseCode;
 pub use securechannel::SessionId;

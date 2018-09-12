@@ -1,4 +1,4 @@
-//! Integration tests (using live YubiHSM2 or MockHSM)
+//! Integration tests (using live YubiHSM2 or MockHsm)
 
 #[cfg(not(feature = "mockhsm"))]
 #[macro_use]
@@ -17,11 +17,11 @@ macro_rules! create_session {
     };
 }
 
-/// Perform an integration test against the MockHSM (useful for CI)
+/// Perform an integration test against the MockHsm (useful for CI)
 #[cfg(feature = "mockhsm")]
 macro_rules! create_session {
     () => {
-        $crate::TestSession::create(::yubihsm::mockhsm::MockHSM::new(), Default::default(), true)
+        $crate::TestSession::create(::yubihsm::mockhsm::MockHsm::new(), Default::default(), true)
             .unwrap()
     };
 }

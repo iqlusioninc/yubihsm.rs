@@ -12,7 +12,7 @@ pub use self::error::{AdapterError, AdapterErrorKind};
 /// Adapters for communicating with the YubiHSM2
 pub trait Adapter: Sized + Send + Sync {
     /// Configuration options for this adapter
-    type Config: Debug + Default;
+    type Config: Debug + Default + Send + Sync;
 
     /// Open a connection to this adapter
     fn open(config: &Self::Config) -> Result<Self, AdapterError>;
