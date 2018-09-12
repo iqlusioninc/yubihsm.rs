@@ -3,9 +3,11 @@ use std::time::{Duration, Instant};
 #[macro_use]
 mod error;
 
+#[cfg(feature = "http")]
+use adapters::http::HttpAdapter;
 #[cfg(feature = "usb")]
 use adapters::usb::UsbAdapter;
-use adapters::{http::HttpAdapter, Adapter};
+use adapters::Adapter;
 use commands::{close_session::CloseSessionCommand, Command};
 use credentials::Credentials;
 use securechannel::SessionId;
@@ -62,6 +64,7 @@ pub use self::{
 const TIMEOUT_SKEW_INTERVAL: Duration = Duration::from_secs(1);
 
 /// Session with a YubiHSM connected through `yubihsm-connector`
+#[cfg(feature = "http")]
 pub type HttpSession = Session<HttpAdapter>;
 
 /// Session with a YubiHSM

@@ -19,7 +19,7 @@
 //! [signatory-yubihsm]: https://docs.rs/signatory-yubihsm/latest/signatory_yubihsm/ecdsa/struct.ECDSASigner.html
 
 use super::{Command, Response};
-#[cfg(not(feature = "usb"))]
+#[cfg(all(feature = "http", not(feature = "usb")))]
 use adapters::http::HttpAdapter;
 #[cfg(feature = "usb")]
 use adapters::usb::UsbAdapter;
@@ -33,16 +33,6 @@ use session::{Session, SessionError};
 ))]
 use sha2::{Digest, Sha256};
 use {CommandType, ObjectId};
-
-// Hax: specialize `sign_ecdsa_sha256` to a particular adapter type
-// as a workaround for the MockHsm presenting a different API than the YubiHSM2
-// TODO: find a better solution than this
-#[cfg(not(feature = "usb"))]
-#[allow(dead_code)]
-type AdapterType = HttpAdapter;
-#[cfg(feature = "usb")]
-#[allow(dead_code)]
-type AdapterType = UsbAdapter;
 
 /// Compute an ECDSA signature of the given raw digest (i.e. a precomputed SHA-256 digest)
 pub fn sign_ecdsa_raw_digest<A, T>(
@@ -60,9 +50,20 @@ where
     })
 }
 
+// Hax: specialize `sign_ecdsa_sha256` to a particular adapter type
+// as a workaround for the MockHsm presenting a different API than the YubiHSM2
+// TODO: find a better solution than this
+#[cfg(all(feature = "http", not(feature = "usb")))]
+#[allow(dead_code)]
+type AdapterType = HttpAdapter;
+#[cfg(feature = "usb")]
+#[allow(dead_code)]
+type AdapterType = UsbAdapter;
+
 /// Compute an ECDSA signature of the SHA-256 hash of the given data with the given key ID
 #[cfg(all(
     feature = "sha2",
+    any(feature = "http", feature = "usb"),
     any(feature = "doc", not(feature = "mockhsm"))
 ))]
 pub fn sign_ecdsa_sha256(
