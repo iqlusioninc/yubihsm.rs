@@ -1,19 +1,19 @@
 use std::sync::{Arc, Mutex};
 use uuid::Uuid;
 
-use super::{commands, state::State, MockHSM};
+use super::{commands, state::State, MockHsm};
 use adapters::{Adapter, AdapterError, AdapterErrorKind::ConnectionFailed};
 use commands::CommandType;
 use securechannel::CommandMessage;
 
-/// A mocked connection to the MockHSM
+/// A mocked connection to the MockHsm
 pub struct MockAdapter(Arc<Mutex<State>>);
 
 impl Adapter for MockAdapter {
-    type Config = MockHSM;
+    type Config = MockHsm;
 
-    /// Create a new adapter with a clone of the MockHSM state
-    fn open(hsm: &MockHSM) -> Result<Self, AdapterError> {
+    /// Create a new adapter with a clone of the MockHsm state
+    fn open(hsm: &MockHsm) -> Result<Self, AdapterError> {
         Ok(MockAdapter(hsm.0.clone()))
     }
 
@@ -22,7 +22,7 @@ impl Adapter for MockAdapter {
         Ok(())
     }
 
-    /// Send a message to the MockHSM
+    /// Send a message to the MockHsm
     fn send_message(&self, _uuid: Uuid, body: Vec<u8>) -> Result<Vec<u8>, AdapterError> {
         let command = CommandMessage::parse(body)
             .map_err(|e| err!(ConnectionFailed, "error parsing command: {}", e))?;

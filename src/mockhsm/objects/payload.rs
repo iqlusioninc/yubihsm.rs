@@ -1,4 +1,4 @@
-//! Object "payloads" in the MockHSM are instances of software implementations
+//! Object "payloads" in the MockHsm are instances of software implementations
 //! of supported cryptographic primitives, already initialized with a private key
 
 use ring::rand::{SecureRandom, SystemRandom};
@@ -12,7 +12,7 @@ use auth_key::{AuthKey, AUTH_KEY_SIZE};
 /// Size of an Ed25519 seed
 pub(crate) const ED25519_SEED_SIZE: usize = 32;
 
-/// Loaded instances of a cryptographic primitives in the MockHSM
+/// Loaded instances of a cryptographic primitives in the MockHsm
 #[derive(Debug)]
 pub(crate) enum Payload {
     /// Authentication keys
@@ -49,7 +49,7 @@ impl Payload {
             Algorithm::Hmac(alg) => Payload::HmacKey(alg, data.into()),
             Algorithm::Opaque(alg) => Payload::Opaque(alg, data.into()),
             Algorithm::Auth(_) => Payload::AuthKey(AuthKey::from_slice(data).unwrap()),
-            _ => panic!("MockHSM does not support putting {:?} objects", algorithm),
+            _ => panic!("MockHsm does not support putting {:?} objects", algorithm),
         }
     }
 
@@ -74,7 +74,7 @@ impl Payload {
                     Payload::Ed25519KeyPair(bytes)
                 }
                 _ => panic!(
-                    "MockHSM doesn't support this asymmetric algorithm: {:?}",
+                    "MockHsm doesn't support this asymmetric algorithm: {:?}",
                     asymmetric_alg
                 ),
             },
@@ -84,7 +84,7 @@ impl Payload {
                 Payload::HmacKey(hmac_alg, bytes)
             }
             _ => panic!(
-                "MockHSM does not support generating {:?} objects",
+                "MockHsm does not support generating {:?} objects",
                 algorithm
             ),
         }

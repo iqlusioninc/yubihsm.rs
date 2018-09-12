@@ -1,12 +1,12 @@
-//! Sessions with the `MockHSM`
+//! Sessions with the `MockHsm`
 
 use std::fmt::{self, Debug};
 
 use securechannel::{Challenge, CommandMessage, Cryptogram, ResponseMessage, SecureChannel};
 use SessionId;
 
-/// Session with the `MockHSM`
-pub(crate) struct Session {
+/// Session with the `MockHsm`
+pub(crate) struct HsmSession {
     /// ID of the session
     pub id: SessionId,
 
@@ -17,7 +17,7 @@ pub(crate) struct Session {
     pub channel: SecureChannel,
 }
 
-impl Session {
+impl HsmSession {
     /// Create a new session
     pub fn new(id: SessionId, card_challenge: Challenge, channel: SecureChannel) -> Self {
         Self {
@@ -48,7 +48,7 @@ impl Session {
     }
 }
 
-impl Debug for Session {
+impl Debug for HsmSession {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "mockhsm::Session {{ id: {} }}", self.id.to_u8())
     }

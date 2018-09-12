@@ -23,6 +23,7 @@ use super::{Command, Response};
 use adapters::http::HttpAdapter;
 #[cfg(feature = "usb")]
 use adapters::usb::UsbAdapter;
+use adapters::Adapter;
 #[cfg(all(feature = "mockhsm", not(feature = "doc")))]
 use mockhsm::MockAdapter;
 use session::{Session, SessionError};
@@ -34,20 +35,23 @@ use sha2::{Digest, Sha256};
 use {CommandType, ObjectId};
 
 // Hax: specialize `sign_ecdsa_sha256` to a particular adapter type
-// as a workaround for the MockHSM presenting a different API than the YubiHSM2
+// as a workaround for the MockHsm presenting a different API than the YubiHSM2
 // TODO: find a better solution than this
 #[cfg(not(feature = "usb"))]
+#[allow(dead_code)]
 type AdapterType = HttpAdapter;
 #[cfg(feature = "usb")]
+#[allow(dead_code)]
 type AdapterType = UsbAdapter;
 
 /// Compute an ECDSA signature of the given raw digest (i.e. a precomputed SHA-256 digest)
-pub fn sign_ecdsa_raw_digest<T>(
-    session: &mut Session<AdapterType>,
+pub fn sign_ecdsa_raw_digest<A, T>(
+    session: &mut Session<A>,
     key_id: ObjectId,
     digest: T,
 ) -> Result<ECDSASignature, SessionError>
 where
+    A: Adapter,
     T: Into<Vec<u8>>,
 {
     session.send_command(SignDataECDSACommand {
@@ -70,14 +74,14 @@ pub fn sign_ecdsa_sha256(
 }
 
 /// Compute an ECDSA signature of the SHA-256 hash of the given data with the given key ID
-// NOTE: this version is enabled when we compile with MockHSM support
+// NOTE: this version is enabled when we compile with MockHsm support
 #[cfg(all(feature = "mockhsm", not(feature = "doc")))]
 pub fn sign_ecdsa_sha256(
     session: &mut Session<MockAdapter>,
     key_id: ObjectId,
     data: &[u8],
 ) -> Result<ECDSASignature, SessionError> {
-    // When using the MockHSM, pass the unhashed raw message. This is because *ring* does not (yet)
+    // When using the MockHsm, pass the unhashed raw message. This is because *ring* does not (yet)
     // provide an API for signing a raw digest. See: https://github.com/briansmith/ring/issues/253
     session.send_command(SignDataECDSACommand {
         key_id,

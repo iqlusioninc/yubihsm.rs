@@ -1,4 +1,4 @@
-//! `MockHSM` presents a thread-safe API by locking interior mutable state,
+//! `MockHsm` presents a thread-safe API by locking interior mutable state,
 //! contained in the `State` struct defined in this module.
 
 use std::collections::BTreeMap;
@@ -8,9 +8,9 @@ use audit::AuditOption;
 use object::{ObjectId, ObjectType};
 use securechannel::{Challenge, SecureChannel, SessionId};
 
-use super::{audit::CommandAuditOptions, objects::Objects, session::Session};
+use super::{audit::CommandAuditOptions, objects::Objects, session::HsmSession};
 
-/// Mutable interior state of the `MockHSM`
+/// Mutable interior state of the `MockHsm`
 #[derive(Debug)]
 pub(crate) struct State {
     /// Command-specific audit options
@@ -20,10 +20,10 @@ pub(crate) struct State {
     /// via the `SetLogIndex` command.
     pub(super) force_audit: AuditOption,
 
-    /// Active sessions with the MockHSM
-    sessions: BTreeMap<SessionId, Session>,
+    /// Active sessions with the MockHsm
+    sessions: BTreeMap<SessionId, HsmSession>,
 
-    /// Objects within the MockHSM (i.e. keys)
+    /// Objects within the MockHsm (i.e. keys)
     pub(super) objects: Objects,
 }
 
@@ -38,8 +38,12 @@ impl State {
         }
     }
 
-    /// Create a new session with the MockHSM
-    pub fn create_session(&mut self, auth_key_id: ObjectId, host_challenge: Challenge) -> &Session {
+    /// Create a new session with the MockHsm
+    pub fn create_session(
+        &mut self,
+        auth_key_id: ObjectId,
+        host_challenge: Challenge,
+    ) -> &HsmSession {
         // Generate a random card challenge to send back to the client
         let card_challenge = Challenge::random();
 
@@ -54,7 +58,7 @@ impl State {
             let auth_key_obj = self
                 .objects
                 .get(auth_key_id, ObjectType::AuthKey)
-                .unwrap_or_else(|| panic!("MockHSM has no AuthKey in slot {:?}", auth_key_id));
+                .unwrap_or_else(|| panic!("MockHsm has no AuthKey in slot {:?}", auth_key_id));
 
             SecureChannel::new(
                 session_id,
@@ -64,14 +68,14 @@ impl State {
             )
         };
 
-        let session = Session::new(session_id, card_challenge, channel);
+        let session = HsmSession::new(session_id, card_challenge, channel);
         assert!(self.sessions.insert(session_id, session).is_none());
 
         self.get_session(session_id).unwrap()
     }
 
     /// Obtain the channel for a session by its ID
-    pub fn get_session(&mut self, id: SessionId) -> Result<&mut Session, AdapterError> {
+    pub fn get_session(&mut self, id: SessionId) -> Result<&mut HsmSession, AdapterError> {
         self.sessions.get_mut(&id).ok_or_else(|| {
             AdapterError::new(
                 AdapterErrorKind::RequestError,

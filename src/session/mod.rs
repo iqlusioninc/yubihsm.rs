@@ -72,7 +72,7 @@ pub type UsbSession = Session<UsbAdapter>;
 /// A session is needed to perform any commands.
 ///
 /// Sessions are eneric over `Adapter` types in case a different one needs to
-/// be swapped in, which is primarily useful for substituting the `MockHSM`.
+/// be swapped in, which is primarily useful for substituting the `MockHsm`.
 ///
 /// Sessions are automatically closed on `Drop`, releasing `YubiHSM2` session
 /// resources and wiping the ephemeral keys used to encrypt the session.
@@ -104,7 +104,7 @@ impl<A: Adapter> Session<A> {
         let mut session = Self::new(config, credentials)?;
         session.open()?;
 
-        // Clear credenials if reconnecting has been disabled
+        // Clear credentials if reconnecting has been disabled
         if !reconnect {
             session.credentials = None;
         }

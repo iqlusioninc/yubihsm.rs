@@ -1,4 +1,4 @@
-//! (Partial) support for audit logging within the MockHSM
+//! (Partial) support for audit logging within the MockHsm
 //!
 //! No logging is performed and these settings are not yet enforced
 

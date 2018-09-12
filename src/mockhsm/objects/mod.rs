@@ -1,4 +1,4 @@
-//! Objects stored inside of the `MockHSM`
+//! Objects stored inside of the `MockHsm`
 
 #![allow(unknown_lints, renamed_and_removed_lints, too_many_arguments)]
 
@@ -19,7 +19,7 @@ use {
     ObjectOrigin, ObjectType, WrapAlg, WrapNonce,
 };
 
-/// Size of the wrap algorithm's MAC tag. The MockHSM uses AES-GCM instead of
+/// Size of the wrap algorithm's MAC tag. The MockHsm uses AES-GCM instead of
 /// AES-CCM as there isn't a readily available Rust implementation
 const WRAPPED_DATA_MAC_SIZE: usize = 16;
 
@@ -29,7 +29,7 @@ const DEFAULT_AUTH_KEY_LABEL: &str = "DEFAULT AUTHKEY CHANGE THIS ASAP";
 /// Iterator over objects
 pub(crate) type Iter<'a> = BTreeMapIter<'a, ObjectHandle, Object>;
 
-/// Objects stored in the `MockHSM`
+/// Objects stored in the `MockHsm`
 #[derive(Debug)]
 pub(crate) struct Objects(BTreeMap<ObjectHandle, Object>);
 
@@ -68,7 +68,7 @@ impl Default for Objects {
 }
 
 impl Objects {
-    /// Generate a new object in the MockHSM
+    /// Generate a new object in the MockHsm
     pub fn generate(
         &mut self,
         object_id: ObjectId,
@@ -110,7 +110,7 @@ impl Objects {
         self.0.get(&ObjectHandle::new(object_id, object_type))
     }
 
-    /// Put a new object in the MockHSM
+    /// Put a new object in the MockHsm
     pub fn put(
         &mut self,
         object_id: ObjectId,
@@ -279,7 +279,7 @@ impl Objects {
     }
 }
 
-/// An individual object in the `MockHSM`, specialized for a given object type
+/// An individual object in the `MockHsm`, specialized for a given object type
 #[derive(Debug)]
 pub(crate) struct Object {
     pub object_info: ObjectInfo,
