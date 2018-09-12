@@ -29,6 +29,7 @@ use mockhsm::MockAdapter;
 use session::{Session, SessionError};
 #[cfg(all(
     feature = "sha2",
+    any(feature = "http", feature = "usb"),
     any(feature = "doc", not(feature = "mockhsm"))
 ))]
 use sha2::{Digest, Sha256};

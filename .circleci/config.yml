@@ -27,6 +27,12 @@ jobs:
           cargo --version
           cargo build --no-default-features
     - run:
+        name: build --no-default-features --features=passwords
+        command: |
+          rustc --version
+          cargo --version
+          cargo build --no-default-features --features=passwords
+    - run:
         name: build --benches
         command: |
           rustc --version
