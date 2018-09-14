@@ -21,8 +21,11 @@ macro_rules! create_session {
 #[cfg(feature = "mockhsm")]
 macro_rules! create_session {
     () => {
-        $crate::TestSession::create(::yubihsm::mockhsm::MockHsm::new(), Default::default(), true)
-            .unwrap()
+        $crate::TestSession::create(
+            ::yubihsm::mockhsm::MockHsm::new(),
+            Default::default(),
+            true,
+        ).unwrap()
     };
 }
 
