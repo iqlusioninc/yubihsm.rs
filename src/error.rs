@@ -114,6 +114,30 @@ pub enum HsmErrorKind {
     /// Object not found
     #[fail(display = "object not found")]
     ObjectNotFound,
+
+    /// ID illegal
+    #[fail(display = "ID illegal")]
+    IDIllegal,
+
+    /// Invalid OTP
+    #[fail(display = "invalid OTP")]
+    InvalidOTP,
+
+    /// Demo mode(?)
+    #[fail(display = "demo mode")]
+    DemoMode,
+
+    /// Command unexecuted
+    #[fail(display = "command unexecuted")]
+    CmdUnexecuted,
+
+    /// Generic error
+    #[fail(display = "generic error")]
+    GenericError,
+
+    /// Object already exists
+    #[fail(display = "object already exists")]
+    ObjectExists,
 }
 
 impl HsmErrorKind {
@@ -131,6 +155,12 @@ impl HsmErrorKind {
             0x09 => HsmErrorKind::PermissionInvalid,
             0x0a => HsmErrorKind::LogFull,
             0x0b => HsmErrorKind::ObjectNotFound,
+            0x0c => HsmErrorKind::IDIllegal,
+            0x0d => HsmErrorKind::InvalidOTP,
+            0x0e => HsmErrorKind::DemoMode,
+            0x0f => HsmErrorKind::CmdUnexecuted,
+            0x10 => HsmErrorKind::GenericError,
+            0x11 => HsmErrorKind::ObjectExists,
             code => HsmErrorKind::Unknown { code },
         }
     }
@@ -150,6 +180,12 @@ impl HsmErrorKind {
             HsmErrorKind::PermissionInvalid => 0x09,
             HsmErrorKind::LogFull => 0x0a,
             HsmErrorKind::ObjectNotFound => 0x0b,
+            HsmErrorKind::IDIllegal => 0x0c,
+            HsmErrorKind::InvalidOTP => 0x0d,
+            HsmErrorKind::DemoMode => 0x0e,
+            HsmErrorKind::CmdUnexecuted => 0x0f,
+            HsmErrorKind::GenericError => 0x10,
+            HsmErrorKind::ObjectExists => 0x11,
         }
     }
 
@@ -167,6 +203,12 @@ impl HsmErrorKind {
             ResponseCode::DeviceInvalidPermission => HsmErrorKind::PermissionInvalid,
             ResponseCode::DeviceLogFull => HsmErrorKind::LogFull,
             ResponseCode::DeviceObjNotFound => HsmErrorKind::ObjectNotFound,
+            ResponseCode::DeviceIDIllegal => HsmErrorKind::IDIllegal,
+            ResponseCode::DeviceInvalidOTP => HsmErrorKind::InvalidOTP,
+            ResponseCode::DeviceDemoMode => HsmErrorKind::DemoMode,
+            ResponseCode::DeviceCmdUnexecuted => HsmErrorKind::CmdUnexecuted,
+            ResponseCode::GenericError => HsmErrorKind::GenericError,
+            ResponseCode::DeviceObjectExists => HsmErrorKind::ObjectExists,
             _ => return None,
         })
     }
