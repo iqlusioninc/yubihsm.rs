@@ -117,7 +117,7 @@ impl<A: Adapter> Session<A> {
     }
 
     /// Initialize a new encrypted session, deferring actually establishing
-    /// a session until `connect()` is called
+    /// a session until `open()` is called
     pub fn new(config: A::Config, credentials: Credentials) -> Result<Self, SessionError> {
         let session = Self {
             config,
@@ -130,7 +130,7 @@ impl<A: Adapter> Session<A> {
         Ok(session)
     }
 
-    /// Connect to the YubiHSM
+    /// Connect to the YubiHSM (if we aren't already connected)
     pub fn open(&mut self) -> Result<(), SessionError> {
         self.connection()?;
         Ok(())
