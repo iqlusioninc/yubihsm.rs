@@ -16,10 +16,10 @@ pub struct UsbAdapter {
     handle: Mutex<libusb::DeviceHandle<'static>>,
 
     /// YubiHSM2 USB device this adapter is connected to
-    pub device: HsmDevice,
+    device: HsmDevice,
 
     /// Timeout for reading from / writing to the YubiHSM2
-    pub timeout: UsbTimeout,
+    timeout: UsbTimeout,
 }
 
 impl UsbAdapter {
@@ -34,6 +34,11 @@ impl UsbAdapter {
         };
 
         Ok(adapter)
+    }
+
+    /// Borrow the `HsmDevice` for this adapter
+    pub fn device(&self) -> &HsmDevice {
+        &self.device
     }
 }
 
