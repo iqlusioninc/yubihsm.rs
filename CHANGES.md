@@ -1,13 +1,29 @@
+## [0.17.0] (2018-09-19)
+
+[0.17.0]: https://github.com/tendermint/yubihsm-rs/pull/122
+
+* [#121](https://github.com/tendermint/yubihsm-rs/pull/121)
+  Cargo.toml: update dependencies (aes, subtle, uuid).
+
+* [#120](https://github.com/tendermint/yubihsm-rs/pull/120)
+  Make all names singular.
+
+* [#119](https://github.com/tendermint/yubihsm-rs/pull/119)
+  Expose more information about USB devices.
+
+* [#118](https://github.com/tendermint/yubihsm-rs/pull/118)
+  Add `serial_number()` method to `Session` and `Adapter` trait.
+
 ## [0.16.1] (2018-09-17)
 
-[0.16.1]: https://github.com/tendermint/yubihsm-rs/compare/v0.16.0...v0.16.1
+[0.16.1]: https://github.com/tendermint/yubihsm-rs/pull/117
 
 * [#116](https://github.com/tendermint/yubihsm-rs/pull/116)
   Expand HSM error code support.
 
 ## [0.16.0] (2018-09-12)
 
-[0.16.0]: https://github.com/tendermint/yubihsm-rs/compare/v0.15.1...v0.16.0
+[0.16.0]: https://github.com/tendermint/yubihsm-rs/pull/114
 
 * [#112](https://github.com/tendermint/yubihsm-rs/pull/112)
   Make 'http' a cargo feature.
