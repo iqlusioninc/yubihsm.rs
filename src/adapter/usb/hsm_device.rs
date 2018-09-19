@@ -11,25 +11,43 @@ use serial_number::SerialNumber;
 
 /// A USB device we've identified as a YubiHSM2
 pub struct HsmDevice {
-    /// Serial number of the YubiHSM2 device
-    pub serial_number: SerialNumber,
-
     /// Underlying `libusb` device
     pub(super) device: libusb::Device<'static>,
+
+    /// Product vendor and name
+    pub product_name: String,
+
+    /// Serial number of the YubiHSM2 device
+    pub serial_number: SerialNumber,
 }
 
 impl HsmDevice {
     /// Create a new device
-    pub(super) fn new(device: libusb::Device<'static>, serial_number: SerialNumber) -> Self {
+    pub(super) fn new(
+        device: libusb::Device<'static>,
+        product_name: String,
+        serial_number: SerialNumber,
+    ) -> Self {
         Self {
             serial_number,
+            product_name,
             device,
         }
     }
 
     /// Open this device, consuming it and creating a `UsbAdapter`
     pub fn open(self, timeout: UsbTimeout) -> Result<UsbAdapter, AdapterError> {
-        UsbAdapter::new(self, timeout)
+        let adapter = UsbAdapter::new(self, timeout)?;
+
+        info!(
+            "USB(bus={},addr={}): successfully opened {} (serial #{})",
+            adapter.device.bus_number(),
+            adapter.device.address(),
+            &adapter.device.product_name,
+            adapter.device.serial_number.as_str(),
+        );
+
+        Ok(adapter)
     }
 
     /// Get the bus number for this device
