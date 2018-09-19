@@ -1,14 +1,16 @@
 //! Secure Channels using the SCP03 encrypted channel protocol
 
-use aes::block_cipher_trait::generic_array::typenum::U16;
-use aes::block_cipher_trait::generic_array::GenericArray;
-use aes::{Aes128, BlockCipher};
-use block_modes::block_padding::Iso7816;
-use block_modes::{BlockMode, BlockModeIv, Cbc};
+use aes::{
+    block_cipher_trait::{
+        generic_array::{typenum::U16, GenericArray},
+        BlockCipher,
+    },
+    Aes128,
+};
+use block_modes::{block_padding::Iso7816, BlockMode, BlockModeIv, Cbc};
 use byteorder::{BigEndian, ByteOrder};
 use clear_on_drop::clear::Clear;
-use cmac::crypto_mac::Mac as CryptoMac;
-use cmac::Cmac;
+use cmac::{crypto_mac::Mac as CryptoMac, Cmac};
 #[cfg(feature = "mockhsm")]
 use subtle::ConstantTimeEq;
 
