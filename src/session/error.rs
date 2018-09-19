@@ -1,9 +1,9 @@
 //! Errors that occur during sessions
 
-use adapters::AdapterError;
+use adapter::AdapterError;
 use error::{Error, HsmErrorKind};
 use securechannel::SecureChannelError;
-use serializers::SerializationError;
+use serialization::SerializationError;
 
 /// Session errors
 pub type SessionError = Error<SessionErrorKind>;

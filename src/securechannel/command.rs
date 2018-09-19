@@ -1,7 +1,7 @@
 //! Commands sent to/from the `YubiHSM2`. The protocol resembles but is (or
 //! appears to be?) distinct from Application Protocol Data Units (APDU)
 //!
-//! Documentation for the available commands and their message structure
+//! Documentation for the available command and their message structure
 //! is available on Yubico's `YubiHSM2` web site:
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/>
@@ -14,7 +14,7 @@ use uuid::Uuid;
 
 use super::SecureChannelErrorKind::ProtocolError;
 use super::{Mac, SecureChannelError, SessionId, MAC_SIZE, MAX_MSG_SIZE};
-use commands::CommandType;
+use command::CommandType;
 
 /// A command sent from the host to the `YubiHSM2`. May or may not be
 /// authenticated using SCP03's chained/evolving MAC protocol.

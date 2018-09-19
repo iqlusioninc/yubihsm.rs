@@ -9,8 +9,8 @@ use std::sync::{Arc, Mutex};
 
 mod adapter;
 mod audit;
-mod commands;
-mod objects;
+mod command;
+mod object;
 mod session;
 mod state;
 

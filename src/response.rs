@@ -3,7 +3,7 @@ use serde::de::{self, Deserialize, Deserializer, Visitor};
 use serde::ser::{Serialize, Serializer};
 use std::fmt;
 
-use commands::CommandType;
+use command::CommandType;
 
 /// Codes associated with `YubiHSM2` responses
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]

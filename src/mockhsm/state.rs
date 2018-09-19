@@ -3,12 +3,12 @@
 
 use std::collections::BTreeMap;
 
-use adapters::{AdapterError, AdapterErrorKind};
+use adapter::{AdapterError, AdapterErrorKind};
 use audit::AuditOption;
 use object::{ObjectId, ObjectType};
 use securechannel::{Challenge, SecureChannel, SessionId};
 
-use super::{audit::CommandAuditOptions, objects::Objects, session::HsmSession};
+use super::{audit::CommandAuditOptions, object::Objects, session::HsmSession};
 
 /// Mutable interior state of the `MockHsm`
 #[derive(Debug)]
@@ -16,7 +16,7 @@ pub(crate) struct State {
     /// Command-specific audit options
     pub(super) command_audit_options: CommandAuditOptions,
 
-    /// Don't allow commands to be performed until log data has been consumed
+    /// Don't allow command to be performed until log data has been consumed
     /// via the `SetLogIndex` command.
     pub(super) force_audit: AuditOption,
 

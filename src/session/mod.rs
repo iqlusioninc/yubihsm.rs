@@ -4,11 +4,11 @@ use std::time::{Duration, Instant};
 mod error;
 
 #[cfg(feature = "http")]
-use adapters::http::HttpAdapter;
+use adapter::http::HttpAdapter;
 #[cfg(feature = "usb")]
-use adapters::usb::UsbAdapter;
-use adapters::Adapter;
-use commands::{close_session::CloseSessionCommand, Command};
+use adapter::usb::UsbAdapter;
+use adapter::Adapter;
+use command::{close_session::CloseSessionCommand, Command};
 use credentials::Credentials;
 use securechannel::SessionId;
 use serial_number::SerialNumber;
@@ -73,7 +73,7 @@ pub type HttpSession = Session<HttpAdapter>;
 pub type UsbSession = Session<UsbAdapter>;
 
 /// Encrypted session with a YubiHSM.
-/// A session is needed to perform any commands.
+/// A session is needed to perform any command.
 ///
 /// Sessions are eneric over `Adapter` types in case a different one needs to
 /// be swapped in, which is primarily useful for substituting the `MockHsm`.

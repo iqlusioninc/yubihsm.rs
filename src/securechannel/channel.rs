@@ -18,7 +18,7 @@ use super::{
     SecureChannelErrorKind::*, CRYPTOGRAM_SIZE, KEY_SIZE, MAC_SIZE,
 };
 use auth_key::AuthKey;
-use commands::CommandType;
+use command::CommandType;
 #[cfg(feature = "mockhsm")]
 use response::ResponseCode;
 
@@ -87,7 +87,7 @@ pub(crate) struct SecureChannel {
     /// ID of this channel (a.k.a. session ID)
     id: Id,
 
-    /// Counter of total commands performed in this session
+    /// Counter of total command performed in this session
     counter: u32,
 
     /// External authentication state
@@ -173,7 +173,7 @@ impl SecureChannel {
             self.terminate();
             fail!(
                 SessionLimitReached,
-                "max of {} commands per session exceeded",
+                "max of {} command per session exceeded",
                 MAX_COMMANDS_PER_SESSION
             );
         }
@@ -545,7 +545,7 @@ fn compute_icv(cipher: &Aes128, counter: u32) -> GenericArray<u8, U16> {
 mod tests {
     use super::SecurityLevel;
     use auth_key::AuthKey;
-    use commands::CommandType;
+    use command::CommandType;
     use securechannel::{
         Challenge, CommandMessage, Mac, ResponseMessage, SecureChannel, SessionId,
     };

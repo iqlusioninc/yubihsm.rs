@@ -3,16 +3,22 @@
 use subtle::ConstantTimeEq;
 
 use super::{SessionError, SessionErrorKind::*};
-use adapters::Adapter;
-use commands::{create_session::create_session, Command, CommandType};
+use adapter::Adapter;
+use command::{create_session::create_session, Command, CommandType};
 use credentials::Credentials;
 use error::HsmErrorKind;
 use securechannel::{Challenge, CommandMessage, ResponseMessage, SecureChannel, SessionId};
-use serializers::deserialize;
+use serialization::deserialize;
 
 /// Encrypted connection to the HSM made through a particular adapter.
-/// This type handles opening/closing adapters and creating encrypted
-/// (SCP03) channels.
+/// This type handles opening/closing the underlying adapter and creating
+/// encrypted (SCP03) channels.
+///
+/// This type provides one-shot behavior: the adapter is opened, a session
+/// is authenticated, and remains open until an error occurs. Once an error
+/// has occurred this connection is aborted, and a new one must be created
+/// to restore communication with the HSM (which is handled by the higher-level
+/// `Session` type, which is intended to be the user-facing one)
 pub(super) struct Connection<A: Adapter> {
     /// Adapter which communicates with the HSM (HTTP or USB)
     adapter: A,

@@ -1,6 +1,6 @@
 //! Error types for Secure Channel communications
 
-use adapters::AdapterError;
+use adapter::AdapterError;
 use error::Error;
 
 /// Secure Channel errors
@@ -13,7 +13,7 @@ pub enum SecureChannelErrorKind {
     #[fail(display = "protocol error")]
     ProtocolError,
 
-    /// Max commands per session exceeded and a new session should be created
+    /// Max command per session exceeded and a new session should be created
     #[fail(display = "session limit reached")]
     SessionLimitReached,
 
