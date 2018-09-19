@@ -1,3 +1,13 @@
+## [0.17.1] (2018-09-19)
+
+[0.17.1]: https://github.com/tendermint/yubihsm-rs/pull/125
+
+* [#124](https://github.com/tendermint/yubihsm-rs/pull/124)
+  UsbDevices: add `len()`, `is_empty()`, `as_slice()`, and `into_iter()`.
+
+* [#123](https://github.com/tendermint/yubihsm-rs/pull/123)
+  adapter/usb: Don't verbosely log every discovered YubiHSM2.
+
 ## [0.17.0] (2018-09-19)
 
 [0.17.0]: https://github.com/tendermint/yubihsm-rs/pull/122
