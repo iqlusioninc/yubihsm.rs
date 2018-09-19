@@ -108,19 +108,21 @@ impl UsbDevices {
             let manufacturer = handle.read_manufacturer_string(language, &desc, t)?;
             let product = handle.read_product_string(language, &desc, t)?;
             let serial_number = handle.read_serial_number_string(language, &desc, t)?;
+            let product_name = format!("{} {}", manufacturer, product);
 
-            let device = HsmDevice::new(device, SerialNumber::from_str(&serial_number)?);
-
-            info!(
-                "USB(bus={},addr={}): successfully opened {} {} (serial #{})",
+            debug!(
+                "USB(bus={},addr={}): found {} (serial #{})",
                 device.bus_number(),
                 device.address(),
-                manufacturer,
-                product,
-                device.serial_number.as_str(),
+                &product_name,
+                serial_number.as_str(),
             );
 
-            devices.push(device);
+            devices.push(HsmDevice::new(
+                device,
+                product_name,
+                SerialNumber::from_str(&serial_number)?,
+            ));
         }
 
         if devices.is_empty() {
