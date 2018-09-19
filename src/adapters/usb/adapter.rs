@@ -1,38 +1,22 @@
 use libusb;
-use std::{
-    fmt::{self, Debug},
-    sync::Mutex,
-    time::Duration,
-};
+use std::sync::Mutex;
 
-use super::{UsbConfig, UsbDevices, UsbTimeout};
+use super::{
+    HsmDevice, UsbConfig, UsbDevices, UsbTimeout, YUBIHSM2_BULK_IN_ENDPOINT,
+    YUBIHSM2_BULK_OUT_ENDPOINT,
+};
 use adapters::{Adapter, AdapterError, AdapterErrorKind::UsbError};
 use securechannel::MAX_MSG_SIZE;
 use serial_number::SerialNumber;
 use uuid::Uuid;
-
-/// YubiHSM 2 USB interface number
-const YUBIHSM2_INTERFACE_NUM: u8 = 0;
-
-/// YubiHSM 2 bulk out endpoint
-const YUBIHSM2_BULK_OUT_ENDPOINT: u8 = 1;
-
-/// YubiHSM 2 bulk in endpoint
-const YUBIHSM2_BULK_IN_ENDPOINT: u8 = 0x81;
 
 /// `libusb`-based adapter which communicates directly with the YubiHSM2
 pub struct UsbAdapter {
     /// Handle to the underlying USB device
     handle: Mutex<libusb::DeviceHandle<'static>>,
 
-    /// USB bus number for this device
-    pub bus_number: u8,
-
-    /// USB device address for this device
-    pub device_address: u8,
-
-    /// Serial number of the device
-    pub serial_number: SerialNumber,
+    /// YubiHSM2 USB device this adapter is connected to
+    pub device: HsmDevice,
 
     /// Timeout for reading from / writing to the YubiHSM2
     pub timeout: UsbTimeout,
@@ -40,22 +24,11 @@ pub struct UsbAdapter {
 
 impl UsbAdapter {
     /// Create a new YubiHSM device from a libusb device
-    pub(super) fn new(
-        device: &libusb::Device<'static>,
-        serial_number: SerialNumber,
-        timeout: UsbTimeout,
-    ) -> Result<Self, AdapterError> {
-        let mut handle = device.open()?;
-        handle.reset()?;
-        handle.claim_interface(YUBIHSM2_INTERFACE_NUM)?;
-
-        // Flush any unconsumed messages still in the buffer
-        flush(&mut handle)?;
+    pub(super) fn new(device: HsmDevice, timeout: UsbTimeout) -> Result<Self, AdapterError> {
+        let handle = device.open_handle()?;
 
         let adapter = UsbAdapter {
-            bus_number: device.bus_number(),
-            device_address: device.address(),
-            serial_number,
+            device,
             timeout,
             handle: Mutex::new(handle),
         };
@@ -86,7 +59,7 @@ impl Adapter for UsbAdapter {
 
     /// Get the serial number for the current YubiHSM2 (if available)
     fn serial_number(&self) -> Result<SerialNumber, AdapterError> {
-        Ok(self.serial_number)
+        Ok(self.device.serial_number)
     }
 
     /// Send a command to the YubiHSM and read its response
@@ -97,37 +70,9 @@ impl Adapter for UsbAdapter {
     }
 }
 
-impl Debug for UsbAdapter {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "yubihsm::UsbAdapter(bus={} addr={} serial=#{:?} timeout={:?})",
-            self.bus_number,
-            self.device_address,
-            self.serial_number.as_str(),
-            self.timeout.duration()
-        )
-    }
-}
-
 impl Default for UsbAdapter {
     fn default() -> Self {
         UsbDevices::open(None, UsbTimeout::default()).unwrap()
-    }
-}
-
-/// Flush any unconsumed messages still in the buffer to get the connection
-/// back into a clean state
-fn flush(handle: &mut libusb::DeviceHandle) -> Result<(), AdapterError> {
-    let mut buffer = [0u8; MAX_MSG_SIZE];
-
-    // Use a near instantaneous (but non-zero) timeout to drain the buffer.
-    // Zero is interpreted as wait forever.
-    let timeout = Duration::from_millis(1);
-
-    match handle.read_bulk(YUBIHSM2_BULK_IN_ENDPOINT, &mut buffer, timeout) {
-        Ok(_) | Err(libusb::Error::Timeout) => Ok(()),
-        Err(e) => Err(e.into()),
     }
 }
 

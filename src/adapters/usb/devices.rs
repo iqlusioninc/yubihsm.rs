@@ -1,59 +1,12 @@
 use libusb;
 use std::{process::exit, slice::Iter, str::FromStr};
 
-use super::{UsbAdapter, UsbTimeout};
+use super::{HsmDevice, UsbAdapter, UsbTimeout, YUBICO_VENDOR_ID, YUBIHSM2_PRODUCT_ID};
 use adapters::{
     AdapterError,
     AdapterErrorKind::{DeviceBusyError, UsbError},
 };
 use serial_number::SerialNumber;
-
-/// USB vendor ID for Yubico
-pub const YUBICO_VENDOR_ID: u16 = 0x1050;
-
-/// USB product ID for the YubiHSM2
-pub const YUBIHSM2_PRODUCT_ID: u16 = 0x0030;
-
-/// Write consistent `debug!(...) lines for `UsbAdapter`
-macro_rules! usb_debug {
-    ($device:expr, $msg:expr) => {
-        debug!(
-            concat!("USB(bus={},addr={}): ", $msg),
-            $device.bus_number(),
-            $device.address(),
-        );
-    };
-    ($device:expr, $fmt:expr, $($arg:tt)+) => {
-        debug!(
-            concat!("USB(bus={},addr={}): ", $fmt),
-            $device.bus_number(),
-            $device.address(),
-            $($arg)+
-        );
-    };
-}
-
-/// Create `UsbError`s that include bus and address information
-macro_rules! usb_err {
-    ($device:expr, $msg:expr) => {
-        err!(
-            UsbError,
-            "USB(bus={},addr={}): {}",
-            $device.bus_number(),
-            $device.address(),
-            $msg
-        );
-    };
-    ($device:expr, $fmt:expr, $($arg:tt)+) => {
-        err!(
-            UsbError,
-            concat!("USB(bus={},addr={}): ", $fmt),
-            $device.bus_number(),
-            $device.address(),
-            $($arg)+
-        );
-    };
-}
 
 lazy_static! {
     /// Global USB context for accessing YubiHSM2s
@@ -154,9 +107,9 @@ impl UsbDevices {
             let t = timeout.duration();
             let manufacturer = handle.read_manufacturer_string(language, &desc, t)?;
             let product = handle.read_product_string(language, &desc, t)?;
+            let serial_number = handle.read_serial_number_string(language, &desc, t)?;
 
-            let serial_number =
-                SerialNumber::from_str(&handle.read_serial_number_string(language, &desc, t)?)?;
+            let device = HsmDevice::new(device, SerialNumber::from_str(&serial_number)?);
 
             info!(
                 "USB(bus={},addr={}): successfully opened {} {} (serial #{})",
@@ -164,13 +117,10 @@ impl UsbDevices {
                 device.address(),
                 manufacturer,
                 product,
-                serial_number.as_str(),
+                device.serial_number.as_str(),
             );
 
-            devices.push(HsmDevice {
-                serial_number,
-                device,
-            });
+            devices.push(device);
         }
 
         if devices.is_empty() {
@@ -183,21 +133,5 @@ impl UsbDevices {
     /// Iterate over the detected YubiHSM 2s
     pub fn iter(&self) -> Iter<HsmDevice> {
         self.0.iter()
-    }
-}
-
-/// A device which has been detected to be a YubiHSM2
-pub struct HsmDevice {
-    /// Serial number of the device
-    pub serial_number: SerialNumber,
-
-    /// Underlying `libusb` device
-    pub(super) device: libusb::Device<'static>,
-}
-
-impl HsmDevice {
-    /// Open this device, consuming it and creating a `UsbAdapter`
-    pub fn open(self, timeout: UsbTimeout) -> Result<UsbAdapter, AdapterError> {
-        UsbAdapter::new(&self.device, self.serial_number, timeout)
     }
 }

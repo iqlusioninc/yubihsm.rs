@@ -9,15 +9,8 @@
 //! in environments (e.g. Intel SGX) where it might be difficult to use a
 //! full-fledged HTTP crate (e.g. hyper).
 
-/// Write consistent `debug!(...) lines for adapters
-macro_rules! http_debug {
-    ($adapter:expr, $msg:expr) => {
-        debug!("yubihsm-connector({}) {}", $adapter.host, $msg);
-    };
-    ($adapter:expr, $fmt:expr, $($arg:tt)+) => {
-        debug!(concat!("yubihsm-connector({}) ", $fmt), $adapter.host, $($arg)+);
-    };
-}
+#[macro_use]
+mod macros;
 
 mod adapter;
 mod config;
