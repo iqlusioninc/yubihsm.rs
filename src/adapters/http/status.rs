@@ -17,7 +17,7 @@ pub struct ConnectorStatus {
 
     /// Serial number of `YubiHSM2` device. Only available if `yubihsm-connector`
     /// has been started with the --serial option
-    pub serial: Option<SerialNumber>,
+    pub serial_number: Option<SerialNumber>,
 
     /// `YubiHSM2` SDK version for `yubihsm-connector`
     pub version: String,
@@ -66,7 +66,7 @@ impl ConnectorStatus {
             .ok_or_else(|| err!(ResponseError, "missing status"))?
             .to_owned();
 
-        let serial = match response_serial {
+        let serial_number = match response_serial {
             Some("*") => None,
             Some(s) => Some(SerialNumber::from_str(s)?),
             None => fail!(ResponseError, "missing serial"),
@@ -83,7 +83,7 @@ impl ConnectorStatus {
 
         Ok(Self {
             message,
-            serial,
+            serial_number,
             version,
             pid,
         })

@@ -37,30 +37,6 @@ pub enum SessionErrorKind {
     /// Error response from HSM we can't further specify
     #[fail(display = "HSM error")]
     ResponseError,
-
-    /// Session with HSM failed
-    #[fail(display = "session failed")]
-    SessionFailed,
-
-    /// Session with HSM invalid
-    #[fail(display = "invalid session")]
-    SessionInvalid,
-
-    /// HSM exceeded maximum number of sessions (16)
-    #[fail(display = "HSM sessions full (max 16)")]
-    SessionsFull,
-
-    /// HSM storage failure
-    #[fail(display = "HSM storage failure")]
-    StorageFailed,
-
-    /// Session with the YubiHSM2 timed out
-    #[fail(display = "session timeout")]
-    TimeoutError,
-
-    /// Length incorrect for operation
-    #[fail(display = "wrong length")]
-    WrongLength,
 }
 
 impl From<AdapterError> for SessionError {

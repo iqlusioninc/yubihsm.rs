@@ -1,4 +1,7 @@
-use std::str;
+use std::{
+    fmt::{self, Display},
+    str::{self, FromStr},
+};
 
 use adapters::{AdapterError, AdapterErrorKind::AddrInvalid};
 
@@ -22,7 +25,13 @@ impl AsRef<str> for SerialNumber {
     }
 }
 
-impl str::FromStr for SerialNumber {
+impl Display for SerialNumber {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+impl FromStr for SerialNumber {
     type Err = AdapterError;
 
     fn from_str(s: &str) -> Result<SerialNumber, AdapterError> {

@@ -11,8 +11,9 @@ use uuid::Uuid;
 use super::{status::CONNECTOR_STATUS_OK, ConnectorStatus, HttpConfig, ResponseReader, USER_AGENT};
 use adapters::{
     Adapter, AdapterError,
-    AdapterErrorKind::{AddrInvalid, ConnectionFailed},
+    AdapterErrorKind::{AddrInvalid, ConnectionFailed, ResponseError},
 };
+use serial_number::SerialNumber;
 
 /// HTTP(-ish) adapter which supports the minimal parts of the protocol
 /// required to communicate with the yubihsm-connector service.
@@ -65,6 +66,16 @@ impl Adapter for HttpAdapter {
                 &status.message
             );
         }
+    }
+
+    /// Get the serial number for the current YubiHSM2 (if available)
+    fn serial_number(&self) -> Result<SerialNumber, AdapterError> {
+        self.status()?.serial_number.ok_or_else(|| {
+            err!(
+                ResponseError,
+                "no serial available. Launch yubihsm-connector with the --serial option"
+            )
+        })
     }
 
     /// `POST /connector/api` with a given command message
