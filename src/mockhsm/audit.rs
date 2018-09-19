@@ -5,8 +5,8 @@
 use std::collections::BTreeMap;
 
 use audit::*;
-use commands::CommandType;
-use serializers;
+use command::CommandType;
+use serialization::serialize;
 
 /// Default per-command auditing options
 pub const DEFAULT_COMMAND_AUDIT_OPTIONS: &[AuditCommand] = &[
@@ -71,13 +71,13 @@ pub struct CommandAuditOptions(BTreeMap<CommandType, AuditOption>);
 impl CommandAuditOptions {
     /// Serialize these audit options for use as a `GetObjects` response
     pub fn serialize(&self) -> Vec<u8> {
-        let audit_commands: Vec<_> = self
+        let audit_command: Vec<_> = self
             .0
             .iter()
             .map(|(cmd, opt)| AuditCommand(*cmd, *opt))
             .collect();
 
-        serializers::serialize(&audit_commands).unwrap()
+        serialize(&audit_command).unwrap()
     }
 
     /// Change a setting for a particular command

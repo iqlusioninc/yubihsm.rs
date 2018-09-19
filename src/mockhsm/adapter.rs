@@ -4,9 +4,9 @@ use std::{
 };
 use uuid::Uuid;
 
-use super::{commands, state::State, MockHsm};
-use adapters::{Adapter, AdapterError, AdapterErrorKind::ConnectionFailed};
-use commands::CommandType;
+use super::{command, state::State, MockHsm};
+use adapter::{Adapter, AdapterError, AdapterErrorKind::ConnectionFailed};
+use command::CommandType;
 use securechannel::CommandMessage;
 use serial_number::SerialNumber;
 
@@ -45,9 +45,9 @@ impl Adapter for MockAdapter {
             .map_err(|e| err!(ConnectionFailed, "error obtaining state lock: {}", e))?;
 
         match command.command_type {
-            CommandType::CreateSession => commands::create_session(&mut state, &command),
-            CommandType::AuthSession => commands::authenticate_session(&mut state, &command),
-            CommandType::SessionMessage => commands::session_message(&mut state, command),
+            CommandType::CreateSession => command::create_session(&mut state, &command),
+            CommandType::AuthSession => command::authenticate_session(&mut state, &command),
+            CommandType::SessionMessage => command::session_message(&mut state, command),
             unsupported => fail!(ConnectionFailed, "unsupported command: {:?}", unsupported),
         }
     }

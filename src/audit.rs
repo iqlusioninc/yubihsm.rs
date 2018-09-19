@@ -3,7 +3,7 @@ use serde::de::{self, Deserialize, Deserializer, Visitor};
 use serde::ser::{Serialize, Serializer};
 use std::fmt;
 
-use commands::CommandType;
+use command::CommandType;
 
 /// Audit settings for a particular command
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]

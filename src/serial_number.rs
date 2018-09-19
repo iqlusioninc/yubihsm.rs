@@ -3,7 +3,7 @@ use std::{
     str::{self, FromStr},
 };
 
-use adapters::{AdapterError, AdapterErrorKind::AddrInvalid};
+use adapter::{AdapterError, AdapterErrorKind::AddrInvalid};
 
 /// Length of a YubiHSM2 serial number
 pub const SERIAL_SIZE: usize = 10;

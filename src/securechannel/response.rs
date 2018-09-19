@@ -5,7 +5,7 @@ use byteorder::WriteBytesExt;
 use byteorder::{BigEndian, ByteOrder};
 
 use super::{Mac, SecureChannelError, SecureChannelErrorKind::ProtocolError, SessionId, MAC_SIZE};
-use commands::CommandType;
+use command::CommandType;
 #[cfg(feature = "mockhsm")]
 use error::HsmErrorKind;
 use response::ResponseCode;

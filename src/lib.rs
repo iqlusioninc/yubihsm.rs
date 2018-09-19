@@ -18,16 +18,14 @@
 //!
 //! The following documentation describes the most important parts of this crate's API:
 //!
+//! * [Adapters]: methods of connecting to a YubiHSM (USB or HTTP via [yubihsm-connector])
 //! * [Session]: end-to-end encrypted connection with the YubiHSM. You'll need an active one to do anything.
-//! * [commands]: commands supported by the YubiHSM2 (i.e. main functionality)
+//! * [commands]: commands supported by the YubiHSM (i.e. main functionality)
 //!
-//! [Session]: https://docs.rs/yubihsm/latest/yubihsm/session/struct.Session.html
-//! [commands]: https://docs.rs/yubihsm/latest/yubihsm/commands/index.html
+//! # Example
 //!
 //! The following is an example of how to create a `Session` by connecting to a
 //! [yubihsm-connector] process, and then performing an Ed25519 signature:
-//!
-//! [yubihsm-connector]: https://developers.yubico.com/YubiHSM2/Component_Reference/yubihsm-connector/
 //!
 //! ```no_run
 //! extern crate yubihsm;
@@ -43,6 +41,11 @@
 //! let signature = yubihsm::sign_ed25519(&mut session, 100, "Hello, world!").unwrap();
 //! println!("Ed25519 signature: {:?}", signature);
 //! ```
+//!
+//! [Adapters]: https://docs.rs/yubihsm/latest/yubihsm/adapter/index.html
+//! [Session]: https://docs.rs/yubihsm/latest/yubihsm/session/struct.Session.html
+//! [commands]: https://docs.rs/yubihsm/latest/yubihsm/command/index.html
+//! [yubihsm-connector]: https://developers.yubico.com/YubiHSM2/Component_Reference/yubihsm-connector/
 
 #![crate_name = "yubihsm"]
 #![crate_type = "rlib"]
@@ -95,37 +98,41 @@ pub mod error;
 
 /// Serde-powered serializers for the HSM wire format
 #[macro_use]
-mod serializers;
+mod serialization;
 
-/// Adapters for connecting to the HSM
-pub mod adapters;
+/// Adapters for connecting to the HSM. There are two main adapters supported:
+///
+/// - `HttpAdapter`: communicates with the YubiHSM via the `yubihsm-connector`
+///   network service, which provides an HTTP API
+/// - `UsbAdapter`: communicates with the YubiHSM directly via USB.
+pub mod adapter;
 
 /// Cryptographic algorithms supported by the HSM
 pub mod algorithm;
 
-/// Auditing options (for use with the `get_option` and `put_option` commands)
+/// Auditing options (for use with the `get_option` and `put_option` command)
 pub(crate) mod audit;
 
 /// Authentication keys used to establish encrypted sessions with the HSM
 pub mod auth_key;
 
 /// Object attributes specifying which operations are allowed to be performed
-pub mod capabilities;
+pub mod capability;
 
 /// Commands supported by the HSM
 ///
-/// Functions defined in the `yubihsm::commands` module are reimported
+/// Functions defined in the `yubihsm::command` module are reimported
 /// and available from the toplevel `yubihsm` module as well.
 ///
 /// For more information, see:
 /// <https://developers.yubico.com/YubiHSM2/Commands/>
-pub mod commands;
+pub mod command;
 
 /// Credentials used to authenticate to the HSM (key ID + `AuthKey`)
 pub mod credentials;
 
 /// Logical partitions within the HSM, allowing several applications to share the device
-pub mod domains;
+pub mod domain;
 
 #[cfg(feature = "mockhsm")]
 /// Software simulation of the HSM for integration testing
@@ -137,7 +144,7 @@ pub mod mockhsm;
 /// <https://developers.yubico.com/YubiHSM2/Concepts/Object.html>
 pub mod object;
 
-/// Responses to commands sent from the HSM
+/// Responses to command sent from the HSM
 pub mod response;
 
 /// Encrypted communication channel to the HSM hardware
@@ -155,16 +162,16 @@ pub mod session;
 pub mod wrap;
 
 #[cfg(feature = "http")]
-pub use adapters::http::{HttpAdapter, HttpConfig};
+pub use adapter::http::{HttpAdapter, HttpConfig};
 #[cfg(feature = "usb")]
-pub use adapters::usb::{UsbAdapter, UsbDevices, UsbTimeout};
-pub use adapters::Adapter;
+pub use adapter::usb::{UsbAdapter, UsbDevices, UsbTimeout};
+pub use adapter::Adapter;
 pub use algorithm::*;
 pub use audit::AuditOption;
 pub use auth_key::{AuthKey, AUTH_KEY_SIZE};
-pub use capabilities::Capability;
+pub use capability::Capability;
 // Import command functions from all submodules
-pub use commands::{
+pub use command::{
     attest_asymmetric::*, blink::*, delete_object::*, device_info::*, echo::*, export_wrapped::*,
     generate_asymmetric_key::*, generate_hmac_key::*, generate_wrap_key::*, get_logs::*,
     get_object_info::*, get_opaque::*, get_option::*, get_pseudo_random::*, get_pubkey::*, hmac::*,
@@ -174,9 +181,9 @@ pub use commands::{
     CommandType,
 };
 #[cfg(feature = "rsa")]
-pub use commands::{sign_rsa_pkcs1v15::*, sign_rsa_pss::*};
+pub use command::{sign_rsa_pkcs1v15::*, sign_rsa_pss::*};
 pub use credentials::Credentials;
-pub use domains::Domain;
+pub use domain::Domain;
 pub use error::*;
 #[cfg(feature = "mockhsm")]
 pub use mockhsm::{MockAdapter, MockSession};

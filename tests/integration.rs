@@ -48,7 +48,7 @@ lazy_static! {
 }
 
 /// Integration tests for individual YubiHSM2 commands
-pub mod commands;
+pub mod command;
 
 /// Cryptographic test vectors taken from standards documents
 mod test_vectors;
