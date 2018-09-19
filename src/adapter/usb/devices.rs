@@ -1,5 +1,5 @@
 use libusb;
-use std::{process::exit, slice::Iter, str::FromStr};
+use std::{process::exit, slice::Iter, str::FromStr, vec::IntoIter};
 
 use super::{HsmDevice, UsbAdapter, UsbTimeout, YUBICO_VENDOR_ID, YUBIHSM2_PRODUCT_ID};
 use adapter::{
@@ -132,8 +132,32 @@ impl UsbDevices {
         Ok(UsbDevices(devices))
     }
 
+    /// Number of detected devices
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    /// Did we fail to find any YubiHSM2 devices?
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    /// Borrow the detected devices as a slice
+    pub fn as_slice(&self) -> &[HsmDevice] {
+        self.0.as_slice()
+    }
+
     /// Iterate over the detected YubiHSM 2s
     pub fn iter(&self) -> Iter<HsmDevice> {
         self.0.iter()
+    }
+}
+
+impl IntoIterator for UsbDevices {
+    type Item = HsmDevice;
+    type IntoIter = IntoIter<HsmDevice>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
     }
 }

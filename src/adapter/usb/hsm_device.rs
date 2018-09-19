@@ -41,10 +41,10 @@ impl HsmDevice {
 
         info!(
             "USB(bus={},addr={}): successfully opened {} (serial #{})",
-            adapter.device.bus_number(),
-            adapter.device.address(),
-            &adapter.device.product_name,
-            adapter.device.serial_number.as_str(),
+            adapter.device().bus_number(),
+            adapter.device().address(),
+            adapter.device().product_name.as_str(),
+            adapter.device().serial_number.as_str(),
         );
 
         Ok(adapter)
