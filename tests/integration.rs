@@ -95,6 +95,16 @@ const TEST_MESSAGE: &[u8] = b"The YubiHSM2 is a simple, affordable, and secure H
 /// Size of a NIST P-256 public key
 pub const EC_P256_PUBLIC_KEY_SIZE: usize = 64;
 
+/// Ensure we can read the YubiHSM2's serial number
+#[test]
+fn get_yubihsm_serial_number() {
+    let mut session = create_session!();
+    #[allow(unused_variables)]
+    let serial_result = session.serial_number();
+    #[cfg(any(feature = "usb", feature = "mockhsm"))]
+    assert!(serial_result.is_ok());
+}
+
 //
 // Helper Functions
 //

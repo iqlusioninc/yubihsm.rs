@@ -84,6 +84,11 @@ impl Adapter for UsbAdapter {
         Ok(())
     }
 
+    /// Get the serial number for the current YubiHSM2 (if available)
+    fn serial_number(&self) -> Result<SerialNumber, AdapterError> {
+        Ok(self.serial_number)
+    }
+
     /// Send a command to the YubiHSM and read its response
     fn send_message(&self, _uuid: Uuid, cmd: Vec<u8>) -> Result<Vec<u8>, AdapterError> {
         let mut handle = self.handle.lock().unwrap();

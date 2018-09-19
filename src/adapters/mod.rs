@@ -9,6 +9,7 @@ use std::fmt::Debug;
 use uuid::Uuid;
 
 pub use self::error::{AdapterError, AdapterErrorKind};
+use serial_number::SerialNumber;
 
 /// Adapters for communicating with the YubiHSM2
 pub trait Adapter: Sized + Send + Sync {
@@ -20,6 +21,9 @@ pub trait Adapter: Sized + Send + Sync {
 
     /// Are we able to send/receive messages to/from the HSM?
     fn healthcheck(&self) -> Result<(), AdapterError>;
+
+    /// Get the serial number for the current YubiHSM2 (if available)
+    fn serial_number(&self) -> Result<SerialNumber, AdapterError>;
 
     /// Send a command message to the HSM, then read and return the response
     fn send_message(&self, uuid: Uuid, msg: Vec<u8>) -> Result<Vec<u8>, AdapterError>;

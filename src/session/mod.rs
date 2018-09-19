@@ -11,6 +11,7 @@ use adapters::Adapter;
 use commands::{close_session::CloseSessionCommand, Command};
 use credentials::Credentials;
 use securechannel::SessionId;
+use serial_number::SerialNumber;
 
 /// Write consistent `debug!(...) lines for sessions
 macro_rules! session_debug {
@@ -166,6 +167,11 @@ impl<A: Adapter> Session<A> {
     /// Borrow the adapter for this session (if available)
     pub fn adapter(&mut self) -> Result<&A, SessionError> {
         Ok(self.connection()?.adapter())
+    }
+
+    /// Get the serial number of the underlying HSM, if it's available
+    pub fn serial_number(&mut self) -> Result<SerialNumber, SessionError> {
+        Ok(self.adapter()?.serial_number()?)
     }
 
     /// Encrypt a command, send it to the HSM, then read and decrypt the response
