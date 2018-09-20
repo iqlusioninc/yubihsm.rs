@@ -1,5 +1,6 @@
+use serde::{de::Error as DeError, Deserialize, Deserializer, Serialize, Serializer};
 use std::{
-    fmt::{self, Display},
+    fmt::{self, Debug, Display},
     str::{self, FromStr},
 };
 
@@ -9,7 +10,7 @@ use adapter::{AdapterError, AdapterErrorKind::AddrInvalid};
 pub const SERIAL_SIZE: usize = 10;
 
 /// YubiHSM serial numbers
-#[derive(Copy, Clone, Debug, Deserialize, Eq, Hash, PartialEq, PartialOrd, Ord, Serialize)]
+#[derive(Copy, Clone, Eq, Hash, PartialEq, PartialOrd, Ord)]
 pub struct SerialNumber([u8; SERIAL_SIZE]);
 
 impl SerialNumber {
@@ -22,6 +23,12 @@ impl SerialNumber {
 impl AsRef<str> for SerialNumber {
     fn as_ref(&self) -> &str {
         self.as_str()
+    }
+}
+
+impl Debug for SerialNumber {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "SerialNumber(\"{}\")", self.as_str())
     }
 }
 
@@ -62,5 +69,18 @@ impl FromStr for SerialNumber {
         bytes.copy_from_slice(s.as_bytes());
 
         Ok(SerialNumber(bytes))
+    }
+}
+
+impl Serialize for SerialNumber {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        self.0.serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for SerialNumber {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        Self::from_str(&String::deserialize(deserializer)?)
+            .map_err(|e| D::Error::custom(format!("{}", e)))
     }
 }
