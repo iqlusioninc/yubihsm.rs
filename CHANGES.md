@@ -1,3 +1,10 @@
+## [0.17.2] (2018-09-20)
+
+[0.17.2]: https://github.com/tendermint/yubihsm-rs/pull/127
+
+* [#126](https://github.com/tendermint/yubihsm-rs/pull/126)
+  Export UsbConfig from crate root (when available).
+
 ## [0.17.1] (2018-09-19)
 
 [0.17.1]: https://github.com/tendermint/yubihsm-rs/pull/125
