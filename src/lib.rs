@@ -164,7 +164,7 @@ pub mod wrap;
 #[cfg(feature = "http")]
 pub use adapter::http::{HttpAdapter, HttpConfig};
 #[cfg(feature = "usb")]
-pub use adapter::usb::{UsbAdapter, UsbDevices, UsbTimeout};
+pub use adapter::usb::{UsbAdapter, UsbConfig, UsbDevices, UsbTimeout};
 pub use adapter::Adapter;
 pub use algorithm::*;
 pub use audit::AuditOption;
