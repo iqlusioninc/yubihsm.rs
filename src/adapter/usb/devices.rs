@@ -21,7 +21,7 @@ pub struct UsbDevices(Vec<HsmDevice>);
 
 impl UsbDevices {
     /// Return the serial numbers of all connected YubiHSM2s
-    pub fn serials() -> Result<Vec<SerialNumber>, AdapterError> {
+    pub fn serial_numbers() -> Result<Vec<SerialNumber>, AdapterError> {
         let devices = Self::new(UsbTimeout::default())?;
         let serials: Vec<_> = devices.iter().map(|a| a.serial_number).collect();
         Ok(serials)
