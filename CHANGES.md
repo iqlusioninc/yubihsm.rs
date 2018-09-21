@@ -1,3 +1,14 @@
+## [0.17.3] (2018-09-21)
+
+[0.17.3]: https://github.com/tendermint/yubihsm-rs/pull/130
+
+* [#129](https://github.com/tendermint/yubihsm-rs/pull/129)
+  `UsbDevices`: rename `serials()` to `serial_numbers()`
+
+* [#128](https://github.com/tendermint/yubihsm-rs/pull/128)
+  `serial_number.rs`: Manually impl `Serialize`, `Deserialize`, `Debug`, and
+  `Display`.
+
 ## [0.17.2] (2018-09-20)
 
 [0.17.2]: https://github.com/tendermint/yubihsm-rs/pull/127
