@@ -5,7 +5,7 @@
 use super::generate_key::GenerateKeyParams;
 use super::{Command, Response};
 use {
-    Adapter, Capability, CommandType, Domain, ObjectId, ObjectLabel, Session, SessionError, WrapAlg,
+    Adapter, Capability, Client, CommandType, Domain, ObjectId, ObjectLabel, SessionError, WrapAlg,
 };
 
 /// Generate a new wrap key within the `YubiHSM2`
@@ -13,7 +13,7 @@ use {
 /// Delegated capabilities are the set of `Capability` bits that an object is allowed to have
 /// when imported or exported using the wrap key
 pub fn generate_wrap_key<A: Adapter>(
-    session: &mut Session<A>,
+    session: &mut Client<A>,
     key_id: ObjectId,
     label: ObjectLabel,
     domains: Domain,

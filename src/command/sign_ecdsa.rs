@@ -24,9 +24,9 @@ use adapter::http::HttpAdapter;
 #[cfg(feature = "usb")]
 use adapter::usb::UsbAdapter;
 use adapter::Adapter;
+use client::{Client, SessionError};
 #[cfg(all(feature = "mockhsm", not(feature = "doc")))]
 use mockhsm::MockAdapter;
-use session::{Session, SessionError};
 #[cfg(
     all(
         feature = "sha2",
@@ -39,7 +39,7 @@ use {CommandType, ObjectId};
 
 /// Compute an ECDSA signature of the given raw digest (i.e. a precomputed SHA-256 digest)
 pub fn sign_ecdsa_raw_digest<A, T>(
-    session: &mut Session<A>,
+    session: &mut Client<A>,
     key_id: ObjectId,
     digest: T,
 ) -> Result<ECDSASignature, SessionError>
@@ -72,7 +72,7 @@ type AdapterType = UsbAdapter;
     )
 )]
 pub fn sign_ecdsa_sha256(
-    session: &mut Session<AdapterType>,
+    session: &mut Client<AdapterType>,
     key_id: ObjectId,
     data: &[u8],
 ) -> Result<ECDSASignature, SessionError> {
@@ -83,7 +83,7 @@ pub fn sign_ecdsa_sha256(
 // NOTE: this version is enabled when we compile with MockHsm support
 #[cfg(all(feature = "mockhsm", not(feature = "doc")))]
 pub fn sign_ecdsa_sha256(
-    session: &mut Session<MockAdapter>,
+    session: &mut Client<MockAdapter>,
     key_id: ObjectId,
     data: &[u8],
 ) -> Result<ECDSASignature, SessionError> {

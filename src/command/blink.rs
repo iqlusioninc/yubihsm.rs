@@ -4,10 +4,10 @@
 
 use super::{Command, CommandType, Response};
 use adapter::Adapter;
-use session::{Session, SessionError};
+use client::{Client, SessionError};
 
 /// Blink the YubiHSM2's LEDs (to identify it) for the given number of seconds
-pub fn blink<A: Adapter>(session: &mut Session<A>, num_seconds: u8) -> Result<(), SessionError> {
+pub fn blink<A: Adapter>(session: &mut Client<A>, num_seconds: u8) -> Result<(), SessionError> {
     session.send_command(BlinkCommand { num_seconds })?;
     Ok(())
 }

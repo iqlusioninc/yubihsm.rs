@@ -3,11 +3,11 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/Get_Object_Info.html>
 //!
 use super::{Command, Response};
-use {Adapter, CommandType, ObjectHandle, ObjectId, ObjectInfo, ObjectType, Session, SessionError};
+use {Adapter, Client, CommandType, ObjectHandle, ObjectId, ObjectInfo, ObjectType, SessionError};
 
 /// Get information about an object
 pub fn get_object_info<A: Adapter>(
-    session: &mut Session<A>,
+    session: &mut Client<A>,
     object_id: ObjectId,
     object_type: ObjectType,
 ) -> Result<ObjectInfo, SessionError> {

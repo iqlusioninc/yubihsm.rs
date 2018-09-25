@@ -16,7 +16,7 @@ mod state;
 
 pub use self::adapter::MockAdapter;
 use self::state::State;
-use session::Session;
+use client::Client;
 
 /// Software simulation of a `YubiHSM2` intended for testing
 /// implemented as a `yubihsm::Adapter`.
@@ -57,4 +57,4 @@ impl<'de> Deserialize<'de> for MockHsm {
 }
 
 /// Drop-in replacement `Session` type which uses `MockHsm`
-pub type MockSession = Session<MockAdapter>;
+pub type MockSession = Client<MockAdapter>;

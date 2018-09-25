@@ -29,16 +29,16 @@
 //!
 //! ```no_run
 //! extern crate yubihsm;
-//! use yubihsm::HttpSession;
+//! use yubihsm::HttpClient;
 //!
 //! // Default yubihsm-connector URI, auth key ID, and password for yubihsm-connector
 //! // NOTE: DON'T USE THIS IN PRODUCTION!
-//! let mut session =
-//!     HttpSession::create(Default::default(), Default::default(), true).unwrap();
+//! let mut client =
+//!     HttpClient::create(Default::default(), Default::default(), true).unwrap();
 //!
 //! // Note: You'll need to create this key first. Run the following from yubihsm-shell:
 //! // `generate asymmetric 0 100 ed25519_test_key 1 asymmetric_sign_eddsa ed25519`
-//! let signature = yubihsm::sign_ed25519(&mut session, 100, "Hello, world!").unwrap();
+//! let signature = yubihsm::sign_ed25519(&mut client, 100, "Hello, world!").unwrap();
 //! println!("Ed25519 signature: {:?}", signature);
 //! ```
 //!
@@ -119,6 +119,9 @@ pub mod auth_key;
 /// Object attributes specifying which operations are allowed to be performed
 pub mod capability;
 
+/// YubiHSM client: main functionality of this crate
+pub mod client;
+
 /// Commands supported by the HSM
 ///
 /// Functions defined in the `yubihsm::command` module are reimported
@@ -153,11 +156,6 @@ mod securechannel;
 /// HSM serial numbers
 mod serial_number;
 
-/// Encrypted sessions with the HSM
-///
-/// See <https://developers.yubico.com/YubiHSM2/Concepts/Session.html>
-pub mod session;
-
 /// Object wrapping support, i.e. encrypt objects from one HSM to another
 pub mod wrap;
 
@@ -170,6 +168,11 @@ pub use algorithm::*;
 pub use audit::AuditOption;
 pub use auth_key::{AuthKey, AUTH_KEY_SIZE};
 pub use capability::Capability;
+#[cfg(feature = "http")]
+pub use client::HttpClient;
+#[cfg(feature = "usb")]
+pub use client::UsbClient;
+pub use client::{Client, SessionError};
 // Import command functions from all submodules
 pub use command::{
     attest_asymmetric::*, blink::*, delete_object::*, device_info::*, echo::*, export_wrapped::*,
@@ -191,10 +194,5 @@ pub use object::*;
 pub use response::ResponseCode;
 pub use securechannel::SessionId;
 pub use serial_number::SerialNumber;
-#[cfg(feature = "http")]
-pub use session::HttpSession;
-#[cfg(feature = "usb")]
-pub use session::UsbSession;
-pub use session::{Session, SessionError};
 pub use uuid::Uuid;
 pub use wrap::{WrapMessage, WrapNonce};

@@ -4,14 +4,14 @@
 
 use super::{Command, Response};
 use audit::*;
+use client::{Client, SessionError};
 use serialization::serialize;
-use session::{Session, SessionError};
 use {Adapter, CommandType};
 
 /// Configure the audit policy settings for a particular command, e.g. auditing
 /// should be `On`, `Off`, or `Fix` (i.e. fixed permanently on)
 pub fn put_command_audit_option<A>(
-    session: &mut Session<A>,
+    session: &mut Client<A>,
     command: CommandType,
     audit_option: AuditOption,
 ) -> Result<(), SessionError>
@@ -34,7 +34,7 @@ where
 ///
 /// [log store]: https://developers.yubico.com/YubiHSM2/Concepts/Logs.html
 pub fn put_force_audit_option<A: Adapter>(
-    session: &mut Session<A>,
+    session: &mut Client<A>,
     option: AuditOption,
 ) -> Result<(), SessionError> {
     session.send_command(PutOptionCommand {

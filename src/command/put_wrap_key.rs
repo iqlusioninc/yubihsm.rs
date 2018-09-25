@@ -4,16 +4,16 @@
 
 use super::put_object::PutObjectParams;
 use super::{Command, Response};
-use session::SessionErrorKind::ProtocolError;
+use client::SessionErrorKind::ProtocolError;
 use {
-    Adapter, Capability, CommandType, Domain, ObjectId, ObjectLabel, Session, SessionError, WrapAlg,
+    Adapter, Capability, Client, CommandType, Domain, ObjectId, ObjectLabel, SessionError, WrapAlg,
 };
 
 /// Put an existing wrap key into the `YubiHSM2`
 // TODO: use clippy's scoped lints once they work on stable
 #[allow(unknown_lints, renamed_and_removed_lints, too_many_arguments)]
 pub fn put_wrap_key<A: Adapter, T: Into<Vec<u8>>>(
-    session: &mut Session<A>,
+    session: &mut Client<A>,
     key_id: ObjectId,
     label: ObjectLabel,
     domains: Domain,

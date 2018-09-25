@@ -5,7 +5,7 @@
 use byteorder::{BigEndian, ByteOrder};
 
 use super::{Command, Response};
-use session::{Session, SessionError, SessionErrorKind::ProtocolError};
+use client::{Client, SessionError, SessionErrorKind::ProtocolError};
 use sha2::{Digest, Sha256};
 use Adapter;
 use {Algorithm, CommandType, MgfAlg, ObjectId};
@@ -18,7 +18,7 @@ pub const RSA_PSS_MAX_MESSAGE_SIZE: usize = 0xFFFF;
 /// WARNING: This method has not been tested and is not confirmed to actually work! Use at your
 /// own risk!
 pub fn sign_rsa_pss_sha256<A: Adapter>(
-    session: &mut Session<A>,
+    session: &mut Client<A>,
     key_id: ObjectId,
     data: &[u8],
 ) -> Result<RSAPSSSignature, SessionError> {

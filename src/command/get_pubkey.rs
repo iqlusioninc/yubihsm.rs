@@ -3,11 +3,11 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/Get_Pubkey.html>
 
 use super::{Command, Response};
-use {Adapter, AsymmetricAlg, CommandType, ObjectId, Session, SessionError};
+use {Adapter, AsymmetricAlg, Client, CommandType, ObjectId, SessionError};
 
 /// Get the public key for an asymmetric key stored on the device
 pub fn get_pubkey<A: Adapter>(
-    session: &mut Session<A>,
+    session: &mut Client<A>,
     key_id: ObjectId,
 ) -> Result<PublicKey, SessionError> {
     session.send_command(GetPubKeyCommand { key_id })

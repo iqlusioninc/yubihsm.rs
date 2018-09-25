@@ -66,11 +66,11 @@ const TIMEOUT_SKEW_INTERVAL: Duration = Duration::from_secs(1);
 
 /// Session with a YubiHSM connected through `yubihsm-connector`
 #[cfg(feature = "http")]
-pub type HttpSession = Session<HttpAdapter>;
+pub type HttpClient = Client<HttpAdapter>;
 
 /// Session with a YubiHSM
 #[cfg(feature = "usb")]
-pub type UsbSession = Session<UsbAdapter>;
+pub type UsbClient = Client<UsbAdapter>;
 
 /// Encrypted session with a YubiHSM.
 /// A session is needed to perform any command.
@@ -80,7 +80,7 @@ pub type UsbSession = Session<UsbAdapter>;
 ///
 /// Sessions are automatically closed on `Drop`, releasing `YubiHSM2` session
 /// resources and wiping the ephemeral keys used to encrypt the session.
-pub struct Session<A: Adapter> {
+pub struct Client<A: Adapter> {
     /// Configuration for connecting to the HSM
     config: A::Config,
 
@@ -98,7 +98,7 @@ pub struct Session<A: Adapter> {
     timeout: SessionTimeout,
 }
 
-impl<A: Adapter> Session<A> {
+impl<A: Adapter> Client<A> {
     /// Create a new session, eagerly connecting to the YubiHSM
     pub fn create(
         config: A::Config,
@@ -208,7 +208,7 @@ impl<A: Adapter> Session<A> {
 }
 
 /// Close session automatically on drop
-impl<A: Adapter> Drop for Session<A> {
+impl<A: Adapter> Drop for Client<A> {
     /// Make a best effort to close the session
     ///
     /// NOTE: this runs the potential of panicking in a drop handler, which

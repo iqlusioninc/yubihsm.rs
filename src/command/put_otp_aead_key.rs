@@ -4,16 +4,16 @@
 
 use super::put_object::PutObjectParams;
 use super::{Command, Response};
-use session::SessionErrorKind::ProtocolError;
+use client::SessionErrorKind::ProtocolError;
 use {
-    Adapter, Capability, CommandType, Domain, ObjectId, ObjectLabel, OtpAlg, Session, SessionError,
+    Adapter, Capability, Client, CommandType, Domain, ObjectId, ObjectLabel, OtpAlg, SessionError,
 };
 
 /// Put an existing OTP AEAD key into the `YubiHSM2`
 ///
 /// Valid algorithms
 pub fn put_otp_aead_key<A: Adapter, T: Into<Vec<u8>>>(
-    session: &mut Session<A>,
+    session: &mut Client<A>,
     key_id: ObjectId,
     label: ObjectLabel,
     domains: Domain,

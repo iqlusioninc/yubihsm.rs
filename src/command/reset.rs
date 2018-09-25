@@ -5,10 +5,10 @@
 
 use super::{Command, CommandType, Response};
 use adapter::Adapter;
-use session::{Session, SessionError, SessionErrorKind};
+use client::{Client, SessionError, SessionErrorKind};
 
 /// Reset the `YubiHSM2` to a factory default state and reboot
-pub fn reset<A: Adapter>(mut session: Session<A>) -> Result<(), SessionError> {
+pub fn reset<A: Adapter>(mut session: Client<A>) -> Result<(), SessionError> {
     // Resetting the session does not send a valid response
     if let Err(e) = session.send_command(ResetCommand {}) {
         match e.kind() {

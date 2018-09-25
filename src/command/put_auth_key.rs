@@ -5,7 +5,7 @@
 use super::put_object::PutObjectParams;
 use super::{Command, Response};
 use {
-    Adapter, AuthAlg, AuthKey, Capability, CommandType, Domain, ObjectId, ObjectLabel, Session,
+    Adapter, AuthAlg, AuthKey, Capability, Client, CommandType, Domain, ObjectId, ObjectLabel,
     SessionError,
 };
 
@@ -13,7 +13,7 @@ use {
 // TODO: use clippy's scoped lints once they work on stable
 #[allow(unknown_lints, renamed_and_removed_lints, too_many_arguments)]
 pub fn put_auth_key<A: Adapter, K: Into<AuthKey>>(
-    session: &mut Session<A>,
+    session: &mut Client<A>,
     key_id: ObjectId,
     label: ObjectLabel,
     domains: Domain,

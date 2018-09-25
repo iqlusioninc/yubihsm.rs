@@ -3,11 +3,11 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/Hmac_Data.html>
 
 use super::{Command, Response};
-use {Adapter, CommandType, ObjectId, Session, SessionError};
+use {Adapter, Client, CommandType, ObjectId, SessionError};
 
 /// Compute an HMAC tag of the given data with the given key ID
 pub fn hmac<A, D>(
-    session: &mut Session<A>,
+    session: &mut Client<A>,
     key_id: ObjectId,
     data: D,
 ) -> Result<HMACTag, SessionError>

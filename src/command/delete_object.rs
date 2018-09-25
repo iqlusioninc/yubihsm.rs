@@ -3,11 +3,11 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/Blink.html>
 
 use super::{Command, Response};
-use {Adapter, CommandType, ObjectId, ObjectType, Session, SessionError};
+use {Adapter, Client, CommandType, ObjectId, ObjectType, SessionError};
 
 /// Delete an object of the given ID and type
 pub fn delete_object<A: Adapter>(
-    session: &mut Session<A>,
+    session: &mut Client<A>,
     object_id: ObjectId,
     object_type: ObjectType,
 ) -> Result<(), SessionError> {

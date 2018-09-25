@@ -5,13 +5,13 @@
 use super::put_object::PutObjectParams;
 use super::{Command, Response};
 use {
-    Adapter, Capability, CommandType, Domain, ObjectId, ObjectLabel, OpaqueAlg, Session,
+    Adapter, Capability, Client, CommandType, Domain, ObjectId, ObjectLabel, OpaqueAlg,
     SessionError,
 };
 
 /// Put an opaque object (X.509 certificate or other bytestring) into the `YubiHSM2`
 pub fn put_opaque<A: Adapter, T: Into<Vec<u8>>>(
-    session: &mut Session<A>,
+    session: &mut Client<A>,
     object_id: ObjectId,
     label: ObjectLabel,
     domains: Domain,

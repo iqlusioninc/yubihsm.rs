@@ -3,11 +3,11 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/Device_Info.html>
 
 use super::{Command, Response};
-use {Adapter, Algorithm, CommandType, Session, SessionError};
+use {Adapter, Algorithm, Client, CommandType, SessionError};
 
 /// Get information about the YubiHSM2 device
 pub fn device_info<A: Adapter>(
-    session: &mut Session<A>,
+    session: &mut Client<A>,
 ) -> Result<DeviceInfoResponse, SessionError> {
     session.send_command(DeviceInfoCommand {})
 }

@@ -4,12 +4,12 @@
 
 use super::hmac::HMACTag;
 use super::{Command, Response};
-use session::SessionErrorKind::ResponseError;
-use {Adapter, CommandType, ObjectId, Session, SessionError};
+use client::SessionErrorKind::ResponseError;
+use {Adapter, Client, CommandType, ObjectId, SessionError};
 
 /// Verify an HMAC tag of the given data with the given key ID
 pub fn verify_hmac<A, D, T>(
-    session: &mut Session<A>,
+    session: &mut Client<A>,
     key_id: ObjectId,
     data: D,
     tag: T,

@@ -3,9 +3,9 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/Create_Session.html>
 
 use super::{Command, Response};
+use client::{SessionError, SessionErrorKind::*};
 use securechannel::{Challenge, CommandMessage, Cryptogram, ResponseMessage};
 use serialization::deserialize;
-use session::{SessionError, SessionErrorKind::*};
 use {Adapter, CommandType, ObjectId, SessionId};
 
 /// Create a new encrypted session with the YubiHSM2 using the given connector

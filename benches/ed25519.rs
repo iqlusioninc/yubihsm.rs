@@ -15,16 +15,16 @@ const EXAMPLE_MESSAGE: &[u8] =
 const BENCH_KEY_ID: yubihsm::ObjectId = 999;
 
 #[cfg(not(feature = "usb"))]
-fn init_yubihsm_session() -> yubihsm::HttpSession {
-    yubihsm::HttpSession::create(Default::default(), Default::default(), true).unwrap()
+fn init_yubihsm_session() -> yubihsm::HttpClient {
+    yubihsm::HttpClient::create(Default::default(), Default::default(), true).unwrap()
 }
 
 #[cfg(feature = "usb")]
-fn init_yubihsm_session() -> yubihsm::UsbSession {
-    yubihsm::UsbSession::create(Default::default(), Default::default(), true).unwrap()
+fn init_yubihsm_session() -> yubihsm::UsbClient {
+    yubihsm::UsbClient::create(Default::default(), Default::default(), true).unwrap()
 }
 
-fn clear_key_slot<A>(session: &mut yubihsm::Session<A>)
+fn clear_key_slot<A>(session: &mut yubihsm::Client<A>)
 where
     A: yubihsm::Adapter,
 {
@@ -36,7 +36,7 @@ where
 }
 
 /// Create a public key for use in a test
-fn generate_key<A>(session: &mut yubihsm::Session<A>)
+fn generate_key<A>(session: &mut yubihsm::Client<A>)
 where
     A: yubihsm::Adapter,
 {
