@@ -4,9 +4,9 @@
 
 use super::put_object::PutObjectParams;
 use super::{Command, Response};
-use client::SessionErrorKind::ProtocolError;
+use client::ClientErrorKind::ProtocolError;
 use {
-    Adapter, Capability, Client, CommandType, Domain, HmacAlg, ObjectId, ObjectLabel, SessionError,
+    Adapter, Capability, Client, ClientError, CommandType, Domain, HmacAlg, ObjectId, ObjectLabel,
 };
 
 /// Minimum allowed size of an HMAC key (64-bits)
@@ -21,7 +21,7 @@ pub fn put_hmac_key<A: Adapter, T: Into<Vec<u8>>>(
     capabilities: Capability,
     algorithm: HmacAlg,
     key_bytes: T,
-) -> Result<ObjectId, SessionError> {
+) -> Result<ObjectId, ClientError> {
     let hmac_key = key_bytes.into();
 
     if hmac_key.len() < HMAC_MIN_KEY_SIZE || hmac_key.len() > algorithm.max_key_len() {

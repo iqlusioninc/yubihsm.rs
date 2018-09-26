@@ -2,15 +2,16 @@
 
 use adapter::AdapterError;
 use error::{Error, HsmErrorKind};
-use securechannel::SecureChannelError;
 use serialization::SerializationError;
+use session::{SessionError, SessionErrorKind};
+use std::error::Error as StdError;
 
 /// Session errors
-pub type SessionError = Error<SessionErrorKind>;
+pub type ClientError = Error<ClientErrorKind>;
 
 /// Session error kinds
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
-pub enum SessionErrorKind {
+pub enum ClientErrorKind {
     /// Couldn't authenticate session
     #[fail(display = "authentication failed")]
     AuthFail,
@@ -39,26 +40,35 @@ pub enum SessionErrorKind {
     ResponseError,
 }
 
-impl From<AdapterError> for SessionError {
+// TODO: adapter (nee connection) error variant
+impl From<AdapterError> for ClientError {
     fn from(err: AdapterError) -> Self {
-        err!(SessionErrorKind::ProtocolError, err.to_string())
+        // TODO: protocol error is probably not the best variant here
+        err!(ClientErrorKind::ProtocolError, err.to_string())
     }
 }
 
-impl From<HsmErrorKind> for SessionError {
-    fn from(kind: HsmErrorKind) -> Self {
-        SessionError::new(SessionErrorKind::DeviceError { kind }, None)
+impl From<SessionError> for ClientError {
+    fn from(err: SessionError) -> Self {
+        let kind = match err.kind() {
+            SessionErrorKind::AuthFail => ClientErrorKind::AuthFail,
+            SessionErrorKind::ClosedSessionError => ClientErrorKind::ClosedSessionError,
+            SessionErrorKind::CreateFailed => ClientErrorKind::CreateFailed,
+            SessionErrorKind::DeviceError { kind } => ClientErrorKind::DeviceError { kind },
+            SessionErrorKind::ProtocolError
+            | SessionErrorKind::CommandLimitExceeded
+            | SessionErrorKind::MismatchError
+            | SessionErrorKind::VerifyFailed => ClientErrorKind::ProtocolError,
+            SessionErrorKind::ResponseError => ClientErrorKind::ResponseError,
+        };
+
+        err!(kind, err.description())
     }
 }
 
-impl From<SecureChannelError> for SessionError {
-    fn from(err: SecureChannelError) -> Self {
-        err!(SessionErrorKind::ProtocolError, err.to_string())
-    }
-}
-
-impl From<SerializationError> for SessionError {
+// TODO: capture causes?
+impl From<SerializationError> for ClientError {
     fn from(err: SerializationError) -> Self {
-        err!(SessionErrorKind::ProtocolError, err.to_string())
+        err!(ClientErrorKind::ProtocolError, err.to_string())
     }
 }

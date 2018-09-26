@@ -5,8 +5,8 @@
 use super::put_object::PutObjectParams;
 use super::{Command, Response};
 use {
-    Adapter, AuthAlg, AuthKey, Capability, Client, CommandType, Domain, ObjectId, ObjectLabel,
-    SessionError,
+    Adapter, AuthAlg, AuthKey, Capability, Client, ClientError, CommandType, Domain, ObjectId,
+    ObjectLabel,
 };
 
 /// Put an existing auth key into the `YubiHSM2`
@@ -21,7 +21,7 @@ pub fn put_auth_key<A: Adapter, K: Into<AuthKey>>(
     delegated_capabilities: Capability,
     algorithm: AuthAlg,
     auth_key: K,
-) -> Result<ObjectId, SessionError> {
+) -> Result<ObjectId, ClientError> {
     session
         .send_command(PutAuthKeyCommand {
             params: PutObjectParams {

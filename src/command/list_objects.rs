@@ -3,12 +3,12 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/List_Objects.html>
 
 use super::{Command, Response};
-use {Adapter, Client, CommandType, ObjectId, ObjectType, SequenceId, SessionError};
+use {Adapter, Client, ClientError, CommandType, ObjectId, ObjectType, SequenceId};
 
 /// List objects visible from the current session
 pub fn list_objects<A: Adapter>(
     session: &mut Client<A>,
-) -> Result<Vec<ListObjectsEntry>, SessionError> {
+) -> Result<Vec<ListObjectsEntry>, ClientError> {
     // TODO: support for filtering objects
     session
         .send_command(ListObjectsCommand {})

@@ -7,8 +7,8 @@ use uuid::Uuid;
 use super::{command, state::State, MockHsm};
 use adapter::{Adapter, AdapterError, AdapterErrorKind::ConnectionFailed};
 use command::CommandType;
-use securechannel::CommandMessage;
 use serial_number::SerialNumber;
+use session::CommandMessage;
 
 /// A mocked connection to the MockHsm
 pub struct MockAdapter(Arc<Mutex<State>>);

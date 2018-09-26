@@ -12,7 +12,7 @@ use cmac::crypto_mac::generic_array::GenericArray;
 use std::fmt;
 use subtle::{Choice, ConstantTimeEq};
 
-use super::{SecureChannelError, SecureChannelErrorKind::VerifyFailed};
+use session::{SessionError, SessionErrorKind::VerifyFailed};
 
 /// Size of the MAC in bytes: SCP03 truncates it to 8-bytes
 pub const MAC_SIZE: usize = 8;
@@ -38,7 +38,7 @@ impl Mac {
     }
 
     /// Verify a 16-byte GenericArray against this MAC tag
-    pub fn verify<M>(&self, other: M) -> Result<(), SecureChannelError>
+    pub fn verify<M>(&self, other: M) -> Result<(), SessionError>
     where
         M: Into<Mac>,
     {

@@ -5,8 +5,7 @@
 use super::put_object::PutObjectParams;
 use super::{Command, Response};
 use {
-    Adapter, Capability, Client, CommandType, Domain, ObjectId, ObjectLabel, OpaqueAlg,
-    SessionError,
+    Adapter, Capability, Client, ClientError, CommandType, Domain, ObjectId, ObjectLabel, OpaqueAlg,
 };
 
 /// Put an opaque object (X.509 certificate or other bytestring) into the `YubiHSM2`
@@ -18,7 +17,7 @@ pub fn put_opaque<A: Adapter, T: Into<Vec<u8>>>(
     capabilities: Capability,
     algorithm: OpaqueAlg,
     bytes: T,
-) -> Result<ObjectId, SessionError> {
+) -> Result<ObjectId, ClientError> {
     session
         .send_command(PutOpaqueCommand {
             params: PutObjectParams {

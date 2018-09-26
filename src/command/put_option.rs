@@ -4,7 +4,7 @@
 
 use super::{Command, Response};
 use audit::*;
-use client::{Client, SessionError};
+use client::{Client, ClientError};
 use serialization::serialize;
 use {Adapter, CommandType};
 
@@ -14,7 +14,7 @@ pub fn put_command_audit_option<A>(
     session: &mut Client<A>,
     command: CommandType,
     audit_option: AuditOption,
-) -> Result<(), SessionError>
+) -> Result<(), ClientError>
 where
     A: Adapter,
 {
@@ -36,7 +36,7 @@ where
 pub fn put_force_audit_option<A: Adapter>(
     session: &mut Client<A>,
     option: AuditOption,
-) -> Result<(), SessionError> {
+) -> Result<(), ClientError> {
     session.send_command(PutOptionCommand {
         tag: AuditTag::Force,
         length: 1,

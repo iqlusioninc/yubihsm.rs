@@ -3,14 +3,14 @@
 //! https://developers.yubico.com/YubiHSM2/Commands/Wrap_Data.html
 
 use super::{Command, Response};
-use {Adapter, Client, CommandType, ObjectId, SessionError, WrapMessage};
+use {Adapter, Client, ClientError, CommandType, ObjectId, WrapMessage};
 
 /// Export an encrypted object from the `YubiHSM2` using the given key-wrapping key
 pub fn wrap_data<A: Adapter>(
     session: &mut Client<A>,
     wrap_key_id: ObjectId,
     plaintext: Vec<u8>,
-) -> Result<WrapMessage, SessionError> {
+) -> Result<WrapMessage, ClientError> {
     session
         .send_command(WrapDataCommand {
             wrap_key_id,

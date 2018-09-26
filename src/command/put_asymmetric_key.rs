@@ -4,10 +4,10 @@
 
 use super::put_object::PutObjectParams;
 use super::{Command, Response};
-use client::SessionErrorKind::ProtocolError;
+use client::ClientErrorKind::ProtocolError;
 use {
-    Adapter, AsymmetricAlg, Capability, Client, CommandType, Domain, ObjectId, ObjectLabel,
-    SessionError,
+    Adapter, AsymmetricAlg, Capability, Client, ClientError, CommandType, Domain, ObjectId,
+    ObjectLabel,
 };
 
 /// Put an existing asymmetric key into the `YubiHSM2`
@@ -19,7 +19,7 @@ pub fn put_asymmetric_key<A: Adapter, T: Into<Vec<u8>>>(
     capabilities: Capability,
     algorithm: AsymmetricAlg,
     key_bytes: T,
-) -> Result<ObjectId, SessionError> {
+) -> Result<ObjectId, ClientError> {
     let data = key_bytes.into();
 
     if data.len() != algorithm.key_len() {

@@ -44,8 +44,8 @@ use command::{
     CommandType, Response,
 };
 use error::HsmErrorKind;
-use securechannel::{CommandMessage, ResponseMessage};
 use serialization::deserialize;
+use session::{CommandMessage, ResponseMessage};
 use {Capability, ObjectType, SessionId, WrapMessage, WrapNonce};
 
 use super::object::Payload;

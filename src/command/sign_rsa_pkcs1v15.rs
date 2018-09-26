@@ -3,7 +3,7 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/Sign_Data_Pkcs1.html>
 
 use super::{Command, Response};
-use client::{Client, SessionError};
+use client::{Client, ClientError};
 use sha2::{Digest, Sha256};
 use Adapter;
 use {CommandType, ObjectId};
@@ -16,7 +16,7 @@ pub fn sign_rsa_pkcs1v15_sha256<A: Adapter>(
     session: &mut Client<A>,
     key_id: ObjectId,
     data: &[u8],
-) -> Result<RSAPKCS1Signature, SessionError> {
+) -> Result<RSAPKCS1Signature, ClientError> {
     session.send_command(SignDataPKCS1Command {
         key_id,
         digest: Sha256::digest(data).as_slice().into(),

@@ -6,8 +6,8 @@ use std::{
 
 use super::{UsbAdapter, UsbTimeout, YUBIHSM2_BULK_IN_ENDPOINT, YUBIHSM2_INTERFACE_NUM};
 use adapter::AdapterError;
-use securechannel::MAX_MSG_SIZE;
 use serial_number::SerialNumber;
+use session::MAX_MSG_SIZE;
 
 /// A USB device we've identified as a YubiHSM2
 pub struct HsmDevice {

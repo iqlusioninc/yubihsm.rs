@@ -6,8 +6,8 @@ use super::{
     YUBIHSM2_BULK_OUT_ENDPOINT,
 };
 use adapter::{Adapter, AdapterError, AdapterErrorKind::UsbError};
-use securechannel::MAX_MSG_SIZE;
 use serial_number::SerialNumber;
+use session::MAX_MSG_SIZE;
 use uuid::Uuid;
 
 /// `libusb`-based adapter which communicates directly with the YubiHSM2

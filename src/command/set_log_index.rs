@@ -6,13 +6,13 @@
 
 use super::{Command, CommandType, Response};
 use adapter::Adapter;
-use client::{Client, SessionError};
+use client::{Client, ClientError};
 
 /// Set the index of the last consumed index of the `YubiHSM2` audit log
 pub fn set_log_index<A: Adapter>(
     session: &mut Client<A>,
     log_index: u16,
-) -> Result<(), SessionError> {
+) -> Result<(), ClientError> {
     session.send_command(SetLogIndexCommand { log_index })?;
     Ok(())
 }

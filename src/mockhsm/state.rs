@@ -6,7 +6,10 @@ use std::collections::BTreeMap;
 use adapter::{AdapterError, AdapterErrorKind};
 use audit::AuditOption;
 use object::{ObjectId, ObjectType};
-use securechannel::{Challenge, SecureChannel, SessionId};
+use session::{
+    securechannel::{Challenge, SecureChannel},
+    SessionId,
+};
 
 use super::{audit::CommandAuditOptions, object::Objects, session::HsmSession};
 

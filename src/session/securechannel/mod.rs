@@ -1,5 +1,42 @@
-//! Secure Channels using the SCP03 encrypted channel protocol
+//! Implementation of the GlobalPlatform Secure Channel Protocol '03' (SCP03)
+//!
+//! See GPC_SPE_014: GlobalPlatform Card Technology Secure Channel Protocol '03' at:
+//! <https://www.globalplatform.org/specificationscard.asp>
+//!
+//! SCP03 provides an encrypted channel using symmetric encryption alone.
+//! AES-128-CBC is used for encryption, and AES-128-CMAC for authentication.
+//!
+//! While SCP03 is a multipurpose protocol, this implementation has been
+//! written with the specific intention of communicating with Yubico's
+//! YubiHSM2 devices and therefore omits certain features (e.g. additional
+//! key sizes besides 128-bit) which are not relevant to the YubiHSM2 use case.
+//!
+//! It also follows the APDU format as described in Yubico's YubiHSM2
+//! documentation as opposed to the one specified in GPC_SPE_014.
+//!
+//! For more information on the YubiHSM2 command format, see:
+//!
+//! <https://developers.yubico.com/YubiHSM2/Commands/>
 
+mod challenge;
+mod context;
+mod cryptogram;
+mod kdf;
+mod mac;
+
+/// AES key size in bytes. SCP03 theoretically supports other key sizes, but
+/// the YubiHSM2 does not. Since this crate is somewhat specialized to the `YubiHSM2` (at least for now)
+/// we hardcode to 128-bit for simplicity.
+pub const KEY_SIZE: usize = 16;
+
+pub(crate) use self::mac::{Mac, MAC_SIZE};
+pub use self::{
+    challenge::{Challenge, CHALLENGE_SIZE},
+    context::{Context, CONTEXT_SIZE},
+    cryptogram::{Cryptogram, CRYPTOGRAM_SIZE},
+};
+
+use super::{CommandMessage, ResponseMessage, SessionError, SessionErrorKind::*, SessionId};
 use aes::{
     block_cipher_trait::{
         generic_array::{typenum::U16, GenericArray},
@@ -7,87 +44,27 @@ use aes::{
     },
     Aes128,
 };
+use auth_key::AuthKey;
 use block_modes::{block_padding::Iso7816, BlockMode, BlockModeIv, Cbc};
 use byteorder::{BigEndian, ByteOrder};
 use clear_on_drop::clear::Clear;
 use cmac::{crypto_mac::Mac as CryptoMac, Cmac};
-#[cfg(feature = "mockhsm")]
-use subtle::ConstantTimeEq;
-
-use super::kdf;
-use super::{
-    Challenge, CommandMessage, Context, Cryptogram, ResponseMessage, SecureChannelError,
-    SecureChannelErrorKind::*, CRYPTOGRAM_SIZE, KEY_SIZE, MAC_SIZE,
-};
-use auth_key::AuthKey;
 use command::CommandType;
 #[cfg(feature = "mockhsm")]
 use response::ResponseCode;
+#[cfg(feature = "mockhsm")]
+use subtle::ConstantTimeEq;
 
-// Size of an AES block
+/// Size of an AES block
 const AES_BLOCK_SIZE: usize = 16;
 
-// SCP03 uses AES-128 encryption in CBC mode with ISO 7816 padding
+/// SCP03 uses AES-128 encryption in CBC mode with ISO 7816 padding
 type Aes128Cbc = Cbc<Aes128, Iso7816>;
-
-/// Session/Channel IDs
-#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
-pub struct Id(u8);
-
-impl Id {
-    /// Create a new session ID from a byte value
-    pub fn new(id: u8) -> Result<Self, SecureChannelError> {
-        if id > MAX_ID.0 {
-            fail!(
-                ProtocolError,
-                "session ID exceeds the maximum allowed: {} (max {})",
-                id,
-                MAX_ID.0
-            );
-        }
-
-        Ok(Id(id))
-    }
-
-    /// Obtain the next session ID
-    pub fn succ(self) -> Result<Self, SecureChannelError> {
-        Self::new(self.0 + 1)
-    }
-
-    /// Obtain session ID as a u8
-    pub fn to_u8(self) -> u8 {
-        self.0
-    }
-}
-
-/// Maximum session identifier
-pub const MAX_ID: Id = Id(16);
-
-/// Maximum number of messages allowed in a single session: 2^20.
-///
-/// This is a conservative number chosen due to the small MAC size used by
-/// the SCP03 protocol: 8-bytes. This small tag has an even smaller birthday
-/// bound on collisions, so to avoid these we force generation of fresh
-/// session keys after the following number of messages have been sent.
-pub const MAX_COMMANDS_PER_SESSION: u32 = 0x10_0000;
-
-/// Current Security Level: protocol state
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) enum SecurityLevel {
-    /// 'NO_SECURITY_LEVEL' i.e. session is terminated or not fully initialized
-    None,
-
-    /// 'AUTHENTICATED' i.e. the EXTERNAL_AUTHENTICATE command has completed
-    Authenticated,
-
-    /// Terminated: either explicitly closed or due to protocol error
-    Terminated,
-}
 
 /// SCP03 Secure Channel
 pub(crate) struct SecureChannel {
     /// ID of this channel (a.k.a. session ID)
-    id: Id,
+    id: SessionId,
 
     /// Counter of total command performed in this session
     counter: u32,
@@ -114,7 +91,7 @@ pub(crate) struct SecureChannel {
 impl SecureChannel {
     /// Create a new channel with the given ID, auth key, and host/card challenges
     pub fn new(
-        id: Id,
+        id: SessionId,
         auth_key: &AuthKey,
         host_challenge: Challenge,
         card_challenge: Challenge,
@@ -139,7 +116,7 @@ impl SecureChannel {
 
     /// Get the channel (i.e. session) ID
     #[inline]
-    pub fn id(&self) -> Id {
+    pub fn id(&self) -> SessionId {
         self.id
     }
 
@@ -170,11 +147,11 @@ impl SecureChannel {
         &mut self,
         command_type: CommandType,
         command_data: &[u8],
-    ) -> Result<CommandMessage, SecureChannelError> {
+    ) -> Result<CommandMessage, SessionError> {
         if self.counter >= MAX_COMMANDS_PER_SESSION {
             self.terminate();
             fail!(
-                SessionLimitReached,
+                CommandLimitExceeded,
                 "max of {} command per session exceeded",
                 MAX_COMMANDS_PER_SESSION
             );
@@ -202,7 +179,7 @@ impl SecureChannel {
     }
 
     /// Compute a message for authenticating the host to the card
-    pub fn authenticate_session(&mut self) -> Result<CommandMessage, SecureChannelError> {
+    pub fn authenticate_session(&mut self) -> Result<CommandMessage, SessionError> {
         assert_eq!(self.security_level, SecurityLevel::None);
         assert_eq!(self.mac_chaining_value, [0u8; MAC_SIZE * 2]);
 
@@ -214,7 +191,7 @@ impl SecureChannel {
     pub fn finish_authenticate_session(
         &mut self,
         response: &ResponseMessage,
-    ) -> Result<(), SecureChannelError> {
+    ) -> Result<(), SessionError> {
         // The EXTERNAL_AUTHENTICATE command does not send an R-MAC value
         if !response.data.is_empty() {
             self.terminate();
@@ -239,7 +216,7 @@ impl SecureChannel {
     pub fn encrypt_command(
         &mut self,
         command: CommandMessage,
-    ) -> Result<CommandMessage, SecureChannelError> {
+    ) -> Result<CommandMessage, SessionError> {
         assert_eq!(self.security_level, SecurityLevel::Authenticated);
 
         let mut message: Vec<u8> = command.into();
@@ -260,7 +237,7 @@ impl SecureChannel {
     pub fn decrypt_response(
         &mut self,
         encrypted_response: ResponseMessage,
-    ) -> Result<ResponseMessage, SecureChannelError> {
+    ) -> Result<ResponseMessage, SessionError> {
         assert_eq!(self.security_level, SecurityLevel::Authenticated);
 
         let cipher = Aes128::new_varkey(&self.enc_key).unwrap();
@@ -287,10 +264,7 @@ impl SecureChannel {
     }
 
     /// Ensure message authenticity by verifying the response MAC (R-MAC) sent from the card
-    pub fn verify_response_mac(
-        &mut self,
-        response: &ResponseMessage,
-    ) -> Result<(), SecureChannelError> {
+    pub fn verify_response_mac(&mut self, response: &ResponseMessage) -> Result<(), SessionError> {
         assert_eq!(self.security_level, SecurityLevel::Authenticated);
 
         let session_id = response.session_id.ok_or_else(|| {
@@ -301,7 +275,7 @@ impl SecureChannel {
         if self.id != session_id {
             self.terminate();
             fail!(
-                SessionMismatch,
+                MismatchError,
                 "message has session ID {} (expected {})",
                 session_id.to_u8(),
                 self.id.to_u8(),
@@ -338,7 +312,7 @@ impl SecureChannel {
     pub fn verify_authenticate_session(
         &mut self,
         command: &CommandMessage,
-    ) -> Result<ResponseMessage, SecureChannelError> {
+    ) -> Result<ResponseMessage, SessionError> {
         assert_eq!(self.security_level, SecurityLevel::None);
         assert_eq!(self.mac_chaining_value, [0u8; MAC_SIZE * 2]);
 
@@ -380,7 +354,7 @@ impl SecureChannel {
     pub fn decrypt_command(
         &mut self,
         encrypted_command: CommandMessage,
-    ) -> Result<CommandMessage, SecureChannelError> {
+    ) -> Result<CommandMessage, SessionError> {
         assert_eq!(self.security_level, SecurityLevel::Authenticated);
 
         let cipher = Aes128::new_varkey(&self.enc_key).unwrap();
@@ -408,10 +382,7 @@ impl SecureChannel {
 
     /// Verify a Command MAC (C-MAC) value, updating the internal session state
     #[cfg(feature = "mockhsm")]
-    pub fn verify_command_mac(
-        &mut self,
-        command: &CommandMessage,
-    ) -> Result<(), SecureChannelError> {
+    pub fn verify_command_mac(&mut self, command: &CommandMessage) -> Result<(), SessionError> {
         assert_eq!(
             command.session_id.unwrap(),
             self.id,
@@ -451,7 +422,7 @@ impl SecureChannel {
     pub fn encrypt_response(
         &mut self,
         response: ResponseMessage,
-    ) -> Result<ResponseMessage, SecureChannelError> {
+    ) -> Result<ResponseMessage, SessionError> {
         assert_eq!(self.security_level, SecurityLevel::Authenticated);
 
         let mut message: Vec<u8> = response.into();
@@ -476,7 +447,7 @@ impl SecureChannel {
         &mut self,
         code: ResponseCode,
         response_data: T,
-    ) -> Result<ResponseMessage, SecureChannelError>
+    ) -> Result<ResponseMessage, SessionError>
     where
         T: Into<Vec<u8>>,
     {
@@ -527,6 +498,27 @@ impl Drop for SecureChannel {
     }
 }
 
+/// Maximum number of messages allowed in a single session: 2^20.
+///
+/// This is a conservative number chosen due to the small MAC size used by
+/// the SCP03 protocol: 8-bytes. This small tag has an even smaller birthday
+/// bound on collisions, so to avoid these we force generation of fresh
+/// session keys after the following number of messages have been sent.
+pub const MAX_COMMANDS_PER_SESSION: u32 = 0x10_0000;
+
+/// Current Security Level: protocol state
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum SecurityLevel {
+    /// 'NO_SECURITY_LEVEL' i.e. session is terminated or not fully initialized
+    None,
+
+    /// 'AUTHENTICATED' i.e. the EXTERNAL_AUTHENTICATE command has completed
+    Authenticated,
+
+    /// Terminated: either explicitly closed or due to protocol error
+    Terminated,
+}
+
 /// Derive a key using the SCP03 KDF
 fn derive_key(parent_key: &[u8], derivation_constant: u8, context: &Context) -> [u8; KEY_SIZE] {
     let mut key = [0u8; KEY_SIZE];
@@ -545,12 +537,9 @@ fn compute_icv(cipher: &Aes128, counter: u32) -> GenericArray<u8, U16> {
 
 #[cfg(all(test, feature = "mockhsm"))]
 mod tests {
-    use super::SecurityLevel;
+    use super::*;
     use auth_key::AuthKey;
     use command::CommandType;
-    use securechannel::{
-        Challenge, CommandMessage, Mac, ResponseMessage, SecureChannel, SessionId,
-    };
 
     const PASSWORD: &[u8] = b"password";
     const HOST_CHALLENGE: &[u8] = &[0u8; 8];

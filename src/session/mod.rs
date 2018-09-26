@@ -1,14 +1,44 @@
 //! Encrypted connection to the HSM through a particular adapter
 
+use std::time::{Duration, Instant};
 use subtle::ConstantTimeEq;
 
-use super::{SessionError, SessionErrorKind::*};
 use adapter::Adapter;
-use command::{create_session::create_session, Command, CommandType};
+use command::{
+    //close_session::CloseSessionCommand,
+    create_session::create_session,
+    Command,
+    CommandType,
+};
 use credentials::Credentials;
 use error::HsmErrorKind;
-use securechannel::{Challenge, CommandMessage, ResponseMessage, SecureChannel, SessionId};
 use serialization::deserialize;
+
+#[macro_use]
+mod macros;
+
+mod error;
+mod id;
+mod message;
+pub(crate) mod securechannel;
+mod timeout;
+
+pub use self::id::SessionId;
+pub(crate) use self::message::{CommandMessage, ResponseMessage};
+use self::securechannel::{Challenge, SecureChannel};
+use self::SessionErrorKind::*;
+pub use self::{
+    error::{SessionError, SessionErrorKind},
+    message::MAX_MSG_SIZE,
+    timeout::SessionTimeout,
+};
+
+/// Timeout fuzz factor: to avoid races/skew with the YubiHSM's clock,
+/// we consider sessions to be timed out slightly earlier than the actual
+/// timeout. This should (hopefully) ensure we always time out first,
+/// and therefore generate appropriate timeout-related errors rather
+/// than opaque "lost connection to HSM"-style errors.
+const TIMEOUT_FUZZ_FACTOR: Duration = Duration::from_secs(1);
 
 /// Encrypted connection to the HSM made through a particular adapter.
 /// This type handles opening/closing the underlying adapter and creating
@@ -19,20 +49,39 @@ use serialization::deserialize;
 /// has occurred this connection is aborted, and a new one must be created
 /// to restore communication with the HSM (which is handled by the higher-level
 /// `Session` type, which is intended to be the user-facing one)
-pub(super) struct Connection<A: Adapter> {
+pub struct Session<A: Adapter> {
+    /// ID for this session
+    id: SessionId,
+
     /// Adapter which communicates with the HSM (HTTP or USB)
     adapter: A,
 
-    /// Encrypted (SCP03) channel to the HSM
+    /// Encrypted channel (SCP03) to the HSM
     secure_channel: Option<SecureChannel>,
+
+    /// Session creation timestamp
+    created_at: Instant,
+
+    /// Timestamp when this session was last active
+    last_active: Instant,
+
+    /// Inactivity timeout for this session
+    timeout: SessionTimeout,
 }
 
-impl<A: Adapter> Connection<A> {
+impl<A: Adapter> Session<A> {
     /// Connect to the HSM using the given configuration and credentials
     pub(super) fn open(
         config: &A::Config,
         credentials: &Credentials,
+        timeout: SessionTimeout,
     ) -> Result<Self, SessionError> {
+        ensure!(
+            timeout.duration() > TIMEOUT_FUZZ_FACTOR,
+            CreateFailed,
+            "timeout too low: must be longer than {:?}",
+            TIMEOUT_FUZZ_FACTOR
+        );
         let adapter = A::open(config)?;
 
         // Ensure the new connection is healthy
@@ -65,23 +114,37 @@ impl<A: Adapter> Connection<A> {
             );
         }
 
-        let mut connection = Connection {
+        let id = channel.id();
+        let now = Instant::now();
+
+        let mut connection = Session {
+            id,
             adapter,
             secure_channel: Some(channel),
+            created_at: now,
+            last_active: now,
+            timeout,
         };
+
         connection.authenticate(credentials)?;
         Ok(connection)
     }
 
-    /// Get the current session ID (if we have an open session)
-    #[inline]
-    pub(super) fn id(&self) -> Option<SessionId> {
-        self.secure_channel.as_ref().map(|c| c.id())
+    /// Session ID value (1-16)
+    pub fn id(&self) -> SessionId {
+        self.id
     }
 
-    /// Borrow the underlying adapter
-    pub(super) fn adapter(&self) -> &A {
-        &self.adapter
+    /// How long has this session been open?
+    pub fn duration(&self) -> Duration {
+        Instant::now().duration_since(self.created_at)
+    }
+
+    /// Has this session timed out?
+    pub fn timed_out(&self) -> bool {
+        let idle_time = Instant::now().duration_since(self.last_active);
+        let timeout_with_fuzz = self.timeout.duration() - TIMEOUT_FUZZ_FACTOR;
+        idle_time >= timeout_with_fuzz
     }
 
     /// Encrypt a command, send it to the HSM, then read and decrypt the response
@@ -137,6 +200,7 @@ impl<A: Adapter> Connection<A> {
     fn send_message(&mut self, cmd: CommandMessage) -> Result<ResponseMessage, SessionError> {
         let cmd_type = cmd.command_type;
         let uuid = cmd.uuid;
+        self.last_active = Instant::now();
 
         session_debug!(self, "uuid={} command={:?}", &uuid, cmd_type);
 
@@ -151,11 +215,7 @@ impl<A: Adapter> Connection<A> {
         if response.is_err() || response.command() != Some(cmd_type) {
             session_error!(self, "uuid={} error={:?}", &uuid, response.code);
 
-            fail!(
-                ResponseError,
-                "HSM error (session: {})",
-                self.id().unwrap().to_u8(),
-            );
+            fail!(ResponseError, "HSM error (session: {})", self.id().to_u8(),);
         }
 
         Ok(response)
@@ -185,7 +245,7 @@ impl<A: Adapter> Connection<A> {
                 e.to_string()
             );
 
-            return Err(e.into());
+            return Err(e);
         }
 
         session_debug!(self, "auth=OK key={}", credentials.auth_key_id);
@@ -197,5 +257,30 @@ impl<A: Adapter> Connection<A> {
         self.secure_channel
             .as_mut()
             .ok_or_else(|| err!(ClosedSessionError, "session is already closed"))
+    }
+}
+
+/// Close session automatically on drop
+impl<A: Adapter> Drop for Session<A> {
+    /// Make a best effort to close the session
+    ///
+    /// NOTE: this runs the potential of panicking in a drop handler, which
+    /// results in the following when it occurs (Aieee!):
+    ///
+    /// "thread panicked while panicking. aborting"
+    ///
+    /// Because of this, it's very important `send_encrypted_command` and
+    /// everything it calls be panic-free.
+    fn drop(&mut self) {
+        // Don't do anything if the session is presumed unhealthy
+        //if !self.is_open() {
+        //    return;
+        //}
+
+        session_debug!(self, "closing dropped session");
+
+        //if let Err(e) = self.send_command(CloseSessionCommand {}) {
+        //    session_debug!(self, "error closing dropped session: {}", e);
+        //}
     }
 }

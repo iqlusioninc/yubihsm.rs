@@ -3,10 +3,10 @@ use serde::de::{self, Deserialize, DeserializeOwned, Deserializer, Visitor};
 use serde::ser::{Serialize, Serializer};
 use std::fmt;
 
-use securechannel::CommandMessage;
-#[cfg(feature = "mockhsm")]
-use securechannel::ResponseMessage;
 use serialization::serialize;
+use session::CommandMessage;
+#[cfg(feature = "mockhsm")]
+use session::ResponseMessage;
 
 pub mod attest_asymmetric;
 pub mod blink;

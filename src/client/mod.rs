@@ -1,68 +1,16 @@
-use std::time::{Duration, Instant};
-
 #[macro_use]
 mod error;
 
+use self::error::ClientErrorKind::*;
+pub use self::error::{ClientError, ClientErrorKind};
 #[cfg(feature = "http")]
 use adapter::http::HttpAdapter;
 #[cfg(feature = "usb")]
 use adapter::usb::UsbAdapter;
 use adapter::Adapter;
-use command::{close_session::CloseSessionCommand, Command};
+use command::Command;
 use credentials::Credentials;
-use securechannel::SessionId;
-use serial_number::SerialNumber;
-
-/// Write consistent `debug!(...) lines for sessions
-macro_rules! session_debug {
-    ($session:expr, $msg:expr) => {
-        if let Some(session) = $session.id() {
-            debug!("session={} {}", session.to_u8(), $msg);
-        } else {
-            debug!("session=none {}", $msg);
-        }
-    };
-    ($session:expr, $fmt:expr, $($arg:tt)+) => {
-        if let Some(session) = $session.id() {
-            debug!(concat!("session={} ", $fmt), session.to_u8(), $($arg)+);
-        } else {
-            debug!(concat!("session=none ", $fmt), $($arg)+);
-        }
-    };
-}
-
-/// Write consistent `error!(...) lines for sessions
-macro_rules! session_error {
-    ($session:expr, $msg:expr) => {
-        if let Some(session) = $session.id() {
-            error!("session={} {}", session.to_u8(), $msg);
-        } else {
-            error!("session=none {}", $msg);
-        }
-    };
-    ($session:expr, $fmt:expr, $($arg:tt)+) => {
-        if let Some(session) = $session.id() {
-            error!(concat!("session={} ", $fmt), session.to_u8(), $($arg)+);
-        } else {
-            error!(concat!("session=none ", $fmt), $($arg)+);
-        }
-    };
-}
-
-pub(crate) mod connection;
-mod timeout;
-
-use self::connection::Connection;
-use self::error::SessionErrorKind::*;
-pub use self::{
-    error::{SessionError, SessionErrorKind},
-    timeout::SessionTimeout,
-};
-
-/// Timeout fuzz factor: to avoid races/skew with the YubiHSM's clock,
-/// we consider sessions to be timed out slightly earlier than the actual
-/// timeout. This should (hopefully) ensure we always time out first.
-const TIMEOUT_SKEW_INTERVAL: Duration = Duration::from_secs(1);
+use session::{Session, SessionId, SessionTimeout};
 
 /// Session with a YubiHSM connected through `yubihsm-connector`
 #[cfg(feature = "http")]
@@ -84,18 +32,11 @@ pub struct Client<A: Adapter> {
     /// Configuration for connecting to the HSM
     config: A::Config,
 
-    /// Connection to the HSM (low-level session state)
-    connection: Option<Connection<A>>,
+    /// Encrypted session with the HSM (if we have one open)
+    session: Option<Session<A>>,
 
-    /// Cached `Credentials`
+    /// Cached `Credentials` for reconnecting closed sessions
     credentials: Option<Credentials>,
-
-    /// Instant when the last command with the HSM was sent. Used for
-    /// tracking session inactivity timeouts
-    last_command_timestamp: Instant,
-
-    /// Timeout to use for session inactivity
-    timeout: SessionTimeout,
 }
 
 impl<A: Adapter> Client<A> {
@@ -104,7 +45,7 @@ impl<A: Adapter> Client<A> {
         config: A::Config,
         credentials: Credentials,
         reconnect: bool,
-    ) -> Result<Self, SessionError> {
+    ) -> Result<Self, ClientError> {
         let mut session = Self::new(config, credentials)?;
         session.open()?;
 
@@ -118,116 +59,61 @@ impl<A: Adapter> Client<A> {
 
     /// Initialize a new encrypted session, deferring actually establishing
     /// a session until `open()` is called
-    pub fn new(config: A::Config, credentials: Credentials) -> Result<Self, SessionError> {
+    pub fn new(config: A::Config, credentials: Credentials) -> Result<Self, ClientError> {
         let session = Self {
             config,
-            connection: None,
+            session: None,
             credentials: Some(credentials),
-            last_command_timestamp: Instant::now(),
-            timeout: SessionTimeout::default(),
         };
 
         Ok(session)
     }
 
     /// Connect to the YubiHSM (if we aren't already connected)
-    pub fn open(&mut self) -> Result<(), SessionError> {
-        self.connection()?;
+    pub fn open(&mut self) -> Result<(), ClientError> {
+        self.session()?;
         Ok(())
     }
 
     /// Get the current session ID
     #[inline]
     pub fn id(&self) -> Option<SessionId> {
-        self.connection.as_ref().and_then(|ref c| c.id())
+        self.session.as_ref().and_then(|s| Some(s.id()))
     }
 
     /// Do we currently have an open session with the HSM?
     pub fn is_open(&self) -> bool {
-        if self.connection.is_none() {
-            return false;
-        }
-
-        let time_since_last_command = Instant::now().duration_since(self.last_command_timestamp);
-
-        // Make sure the session hasn't timed out
-        if time_since_last_command > (self.timeout.duration() - TIMEOUT_SKEW_INTERVAL) {
-            session_debug!(
-                self,
-                "session timed out after {} seconds (max {})",
-                time_since_last_command.as_secs(),
-                self.timeout.duration().as_secs()
-            );
-            return false;
-        }
-
-        true
+        // TODO: ensure session hasn't timed out
+        self.session.is_some()
     }
 
-    /// Borrow the adapter for this session (if available)
-    pub fn adapter(&mut self) -> Result<&A, SessionError> {
-        Ok(self.connection()?.adapter())
-    }
+    /// Borrow the underlying connection (lazily initializing it) or return an error
+    pub fn session(&mut self) -> Result<&mut Session<A>, ClientError> {
+        if self.is_open() {
+            return Ok(self.session.as_mut().unwrap());
+        }
 
-    /// Get the serial number of the underlying HSM, if it's available
-    pub fn serial_number(&mut self) -> Result<SerialNumber, SessionError> {
-        Ok(self.adapter()?.serial_number()?)
+        // Clear any existing connection (i.e. make sure old connections are
+        // dropped before opening new ones)
+        self.session = None;
+
+        let connection = Session::open(
+            &self.config,
+            self.credentials
+                .as_ref()
+                .ok_or_else(|| err!(AuthFail, "session reconnection disabled"))?,
+            SessionTimeout::default(),
+        )?;
+
+        self.session = Some(connection);
+        Ok(self.session.as_mut().unwrap())
     }
 
     /// Encrypt a command, send it to the HSM, then read and decrypt the response
     pub(crate) fn send_command<T: Command>(
         &mut self,
         command: T,
-    ) -> Result<T::ResponseType, SessionError> {
-        let response = self.connection()?.send_command(command)?;
-        self.last_command_timestamp = Instant::now();
-        Ok(response)
-    }
-
-    /// Get the underlying connection or return an error
-    fn connection(&mut self) -> Result<&mut Connection<A>, SessionError> {
-        if self.is_open() {
-            return Ok(self.connection.as_mut().unwrap());
-        }
-
-        // Clear any existing connection (i.e. make sure old connections are
-        // dropped before opening new ones)
-        self.connection = None;
-
-        let connection = Connection::open(
-            &self.config,
-            self.credentials
-                .as_ref()
-                .ok_or_else(|| err!(AuthFail, "session reconnection disabled"))?,
-        )?;
-
-        self.connection = Some(connection);
-        self.last_command_timestamp = Instant::now();
-        Ok(self.connection.as_mut().unwrap())
-    }
-}
-
-/// Close session automatically on drop
-impl<A: Adapter> Drop for Client<A> {
-    /// Make a best effort to close the session
-    ///
-    /// NOTE: this runs the potential of panicking in a drop handler, which
-    /// results in the following when it occurs (Aieee!):
-    ///
-    /// "thread panicked while panicking. aborting"
-    ///
-    /// Because of this, it's very important `send_encrypted_command` and
-    /// everything it calls be panic-free.
-    fn drop(&mut self) {
-        // Don't do anything if the session is presumed unhealthy
-        if !self.is_open() {
-            return;
-        }
-
-        session_debug!(self, "closing dropped session");
-
-        if let Err(e) = self.send_command(CloseSessionCommand {}) {
-            session_debug!(self, "error closing dropped session: {}", e);
-        }
+    ) -> Result<T::ResponseType, ClientError> {
+        Ok(self.session()?.send_command(command)?)
     }
 }

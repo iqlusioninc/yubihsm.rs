@@ -4,7 +4,7 @@
 
 use super::{Command, Response};
 use audit::*;
-use client::{Client, SessionError, SessionErrorKind::ProtocolError};
+use client::{Client, ClientError, ClientErrorKind::ProtocolError};
 use serialization::deserialize;
 use {Adapter, CommandType};
 
@@ -12,7 +12,7 @@ use {Adapter, CommandType};
 pub fn get_command_audit_option<A: Adapter>(
     session: &mut Client<A>,
     command: CommandType,
-) -> Result<AuditOption, SessionError> {
+) -> Result<AuditOption, ClientError> {
     let command_audit_options = get_all_command_audit_options(session)?;
     Ok(command_audit_options
         .iter()
@@ -24,7 +24,7 @@ pub fn get_command_audit_option<A: Adapter>(
 /// Get the audit policy settings for all command
 pub fn get_all_command_audit_options<A>(
     session: &mut Client<A>,
-) -> Result<Vec<AuditCommand>, SessionError>
+) -> Result<Vec<AuditCommand>, ClientError>
 where
     A: Adapter,
 {
@@ -41,7 +41,7 @@ where
 /// [log store]: https://developers.yubico.com/YubiHSM2/Concepts/Logs.html
 pub fn get_force_audit_option<A: Adapter>(
     session: &mut Client<A>,
-) -> Result<AuditOption, SessionError> {
+) -> Result<AuditOption, ClientError> {
     let response = session.send_command(GetOptionCommand {
         tag: AuditTag::Force,
     })?;

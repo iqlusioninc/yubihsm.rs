@@ -3,7 +3,7 @@ use std::error::Error as StdError;
 use std::fmt::{self, Display};
 
 use response::ResponseCode;
-use securechannel::ResponseMessage;
+use session::ResponseMessage;
 
 /// Error types used by this library
 #[derive(Debug)]

@@ -6,10 +6,10 @@ use std::fmt::{self, Debug};
 
 use super::{Command, Response};
 use response::ResponseCode;
-use {Adapter, Client, CommandType, ObjectId, SessionError};
+use {Adapter, Client, ClientError, CommandType, ObjectId};
 
 /// Get audit logs from the YubiHSM2 device
-pub fn get_audit_logs<A: Adapter>(session: &mut Client<A>) -> Result<AuditLogs, SessionError> {
+pub fn get_audit_logs<A: Adapter>(session: &mut Client<A>) -> Result<AuditLogs, ClientError> {
     session.send_command(GetLogsCommand {})
 }
 

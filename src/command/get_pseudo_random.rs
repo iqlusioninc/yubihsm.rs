@@ -3,8 +3,8 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/Get_Pseudo_Random.html>
 //!
 use super::{Command, Response};
-use client::SessionErrorKind::ProtocolError;
-use {Adapter, Client, CommandType, SessionError};
+use client::ClientErrorKind::ProtocolError;
+use {Adapter, Client, ClientError, CommandType};
 
 pub(crate) const MAX_RAND_BYTES: u16 = 2048 // packet size
     - 1 // response type byte
@@ -14,7 +14,7 @@ pub(crate) const MAX_RAND_BYTES: u16 = 2048 // packet size
 pub fn get_pseudo_random<A: Adapter>(
     session: &mut Client<A>,
     bytes: u16,
-) -> Result<Vec<u8>, SessionError> {
+) -> Result<Vec<u8>, ClientError> {
     if bytes >= MAX_RAND_BYTES {
         fail!(
             ProtocolError,

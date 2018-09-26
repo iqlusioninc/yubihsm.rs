@@ -5,7 +5,7 @@
 use super::generate_key::GenerateKeyParams;
 use super::{Command, Response};
 use {
-    Adapter, Capability, Client, CommandType, Domain, HmacAlg, ObjectId, ObjectLabel, SessionError,
+    Adapter, Capability, Client, ClientError, CommandType, Domain, HmacAlg, ObjectId, ObjectLabel,
 };
 
 /// Generate a new HMAC key within the `YubiHSM2`
@@ -16,7 +16,7 @@ pub fn generate_hmac_key<A: Adapter>(
     domains: Domain,
     capabilities: Capability,
     algorithm: HmacAlg,
-) -> Result<ObjectId, SessionError> {
+) -> Result<ObjectId, ClientError> {
     session
         .send_command(GenHMACKeyCommand(GenerateKeyParams {
             key_id,

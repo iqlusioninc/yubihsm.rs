@@ -141,6 +141,12 @@ pub mod domain;
 /// Software simulation of the HSM for integration testing
 pub mod mockhsm;
 
+/// Authenticated/encrypted sessions with the HSM
+///
+/// For more information, see:
+/// <https://developers.yubico.com/YubiHSM2/Concepts/Session.html>
+pub mod session;
+
 /// Objects stored in the HSM
 ///
 /// For more information, see:
@@ -149,9 +155,6 @@ pub mod object;
 
 /// Responses to command sent from the HSM
 pub mod response;
-
-/// Encrypted communication channel to the HSM hardware
-mod securechannel;
 
 /// HSM serial numbers
 mod serial_number;
@@ -172,7 +175,7 @@ pub use capability::Capability;
 pub use client::HttpClient;
 #[cfg(feature = "usb")]
 pub use client::UsbClient;
-pub use client::{Client, SessionError};
+pub use client::{Client, ClientError};
 // Import command functions from all submodules
 pub use command::{
     attest_asymmetric::*, blink::*, delete_object::*, device_info::*, echo::*, export_wrapped::*,
@@ -192,7 +195,7 @@ pub use error::*;
 pub use mockhsm::{MockAdapter, MockSession};
 pub use object::*;
 pub use response::ResponseCode;
-pub use securechannel::SessionId;
 pub use serial_number::SerialNumber;
+pub use session::SessionId;
 pub use uuid::Uuid;
 pub use wrap::{WrapMessage, WrapNonce};

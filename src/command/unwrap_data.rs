@@ -3,14 +3,14 @@
 //! https://developers.yubico.com/YubiHSM2/Commands/Unwrap_Data.html
 
 use super::{Command, Response};
-use {Adapter, Client, CommandType, ObjectId, SessionError, WrapMessage, WrapNonce};
+use {Adapter, Client, ClientError, CommandType, ObjectId, WrapMessage, WrapNonce};
 
 /// Decrypt data which was encrypted (using AES-CCM) under a wrap key
 pub fn unwrap_data<A, M>(
     session: &mut Client<A>,
     wrap_key_id: ObjectId,
     wrap_message: M,
-) -> Result<Vec<u8>, SessionError>
+) -> Result<Vec<u8>, ClientError>
 where
     A: Adapter,
     M: Into<WrapMessage>,
