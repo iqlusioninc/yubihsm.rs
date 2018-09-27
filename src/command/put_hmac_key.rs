@@ -6,14 +6,15 @@ use super::put_object::PutObjectParams;
 use super::{Command, Response};
 use client::ClientErrorKind::ProtocolError;
 use {
-    Adapter, Capability, Client, ClientError, CommandType, Domain, HmacAlg, ObjectId, ObjectLabel,
+    Capability, Client, ClientError, CommandType, Connection, Domain, HmacAlg, ObjectId,
+    ObjectLabel,
 };
 
 /// Minimum allowed size of an HMAC key (64-bits)
 pub const HMAC_MIN_KEY_SIZE: usize = 8;
 
 /// Put an existing auth key into the `YubiHSM2`
-pub fn put_hmac_key<A: Adapter, T: Into<Vec<u8>>>(
+pub fn put_hmac_key<A: Connection, T: Into<Vec<u8>>>(
     session: &mut Client<A>,
     key_id: ObjectId,
     label: ObjectLabel,

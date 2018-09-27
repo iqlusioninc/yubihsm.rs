@@ -5,37 +5,37 @@ use std::{
 use uuid::Uuid;
 
 use super::{command, state::State, MockHsm};
-use adapter::{Adapter, AdapterError, AdapterErrorKind::ConnectionFailed};
 use command::CommandType;
+use connection::{Connection, ConnectionError, ConnectionErrorKind::ConnectionFailed};
 use serial_number::SerialNumber;
 use session::CommandMessage;
 
 /// A mocked connection to the MockHsm
-pub struct MockAdapter(Arc<Mutex<State>>);
+pub struct MockConnection(Arc<Mutex<State>>);
 
 /// Mock serial number for the MockHsm
 pub const MOCK_SERIAL_NUMBER: &str = "0123456789";
 
-impl Adapter for MockAdapter {
+impl Connection for MockConnection {
     type Config = MockHsm;
 
-    /// Create a new adapter with a clone of the MockHsm state
-    fn open(hsm: &MockHsm) -> Result<Self, AdapterError> {
-        Ok(MockAdapter(hsm.0.clone()))
+    /// Create a new connection with a clone of the MockHsm state
+    fn open(hsm: &MockHsm) -> Result<Self, ConnectionError> {
+        Ok(MockConnection(hsm.0.clone()))
     }
 
     /// Rust never sleeps
-    fn healthcheck(&self) -> Result<(), AdapterError> {
+    fn healthcheck(&self) -> Result<(), ConnectionError> {
         Ok(())
     }
 
     /// Get the serial number for the current YubiHSM2 (if available)
-    fn serial_number(&self) -> Result<SerialNumber, AdapterError> {
+    fn serial_number(&self) -> Result<SerialNumber, ConnectionError> {
         Ok(SerialNumber::from_str(MOCK_SERIAL_NUMBER).unwrap())
     }
 
     /// Send a message to the MockHsm
-    fn send_message(&self, _uuid: Uuid, body: Vec<u8>) -> Result<Vec<u8>, AdapterError> {
+    fn send_message(&self, _uuid: Uuid, body: Vec<u8>) -> Result<Vec<u8>, ConnectionError> {
         let command = CommandMessage::parse(body)
             .map_err(|e| err!(ConnectionFailed, "error parsing command: {}", e))?;
 

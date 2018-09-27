@@ -2,7 +2,7 @@
 
 use std::str::FromStr;
 
-use adapter::{AdapterError, AdapterErrorKind::ResponseError};
+use connection::{ConnectionError, ConnectionErrorKind::ResponseError};
 use serial_number::SerialNumber;
 
 /// `yubihsm-connector` status message when healthy
@@ -28,7 +28,7 @@ pub struct ConnectorStatus {
 
 impl ConnectorStatus {
     /// Parse the `yubihsm-connector` status response into a status struct
-    pub fn parse(response_body: &str) -> Result<Self, AdapterError> {
+    pub fn parse(response_body: &str) -> Result<Self, ConnectionError> {
         let mut response_message: Option<&str> = None;
         let mut response_serial: Option<&str> = None;
         let mut response_version: Option<&str> = None;

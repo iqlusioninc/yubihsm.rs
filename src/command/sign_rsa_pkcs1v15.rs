@@ -5,14 +5,14 @@
 use super::{Command, Response};
 use client::{Client, ClientError};
 use sha2::{Digest, Sha256};
-use Adapter;
+use Connection;
 use {CommandType, ObjectId};
 
 /// Compute an RSASSA-PKCS#1v1.5 signature of the SHA-256 hash of the given data.
 ///
 /// WARNING: This method has not been tested and is not confirmed to actually work! Use at your
 /// own risk!
-pub fn sign_rsa_pkcs1v15_sha256<A: Adapter>(
+pub fn sign_rsa_pkcs1v15_sha256<A: Connection>(
     session: &mut Client<A>,
     key_id: ObjectId,
     data: &[u8],

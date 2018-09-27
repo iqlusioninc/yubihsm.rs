@@ -9,11 +9,11 @@ use std::{fmt, io};
 use error::Error;
 
 /// `yubihsm-connector` related errors
-pub type AdapterError = Error<AdapterErrorKind>;
+pub type ConnectionError = Error<ConnectionErrorKind>;
 
 /// `yubihsm-connector` related error kinds
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
-pub enum AdapterErrorKind {
+pub enum ConnectionErrorKind {
     /// Address provided was not valid
     #[fail(display = "invalid address")]
     AddrInvalid,
@@ -48,37 +48,37 @@ pub enum AdapterErrorKind {
     UsbError,
 }
 
-impl From<fmt::Error> for AdapterError {
+impl From<fmt::Error> for ConnectionError {
     fn from(err: fmt::Error) -> Self {
-        err!(AdapterErrorKind::IoError, err.to_string())
+        err!(ConnectionErrorKind::IoError, err.to_string())
     }
 }
 
-impl From<io::Error> for AdapterError {
+impl From<io::Error> for ConnectionError {
     fn from(err: io::Error) -> Self {
-        err!(AdapterErrorKind::IoError, err.to_string())
+        err!(ConnectionErrorKind::IoError, err.to_string())
     }
 }
 
 #[cfg(feature = "usb")]
-impl From<libusb::Error> for AdapterError {
-    fn from(err: libusb::Error) -> AdapterError {
+impl From<libusb::Error> for ConnectionError {
+    fn from(err: libusb::Error) -> ConnectionError {
         match err {
-            libusb::Error::Access => err!(AdapterErrorKind::AccessDenied, "{}", err),
-            libusb::Error::Io => err!(AdapterErrorKind::IoError, "{}", err),
-            _ => err!(AdapterErrorKind::UsbError, "{}", err),
+            libusb::Error::Access => err!(ConnectionErrorKind::AccessDenied, "{}", err),
+            libusb::Error::Io => err!(ConnectionErrorKind::IoError, "{}", err),
+            _ => err!(ConnectionErrorKind::UsbError, "{}", err),
         }
     }
 }
 
-impl From<ParseIntError> for AdapterError {
+impl From<ParseIntError> for ConnectionError {
     fn from(err: ParseIntError) -> Self {
-        err!(AdapterErrorKind::ResponseError, err.to_string())
+        err!(ConnectionErrorKind::ResponseError, err.to_string())
     }
 }
 
-impl From<Utf8Error> for AdapterError {
+impl From<Utf8Error> for ConnectionError {
     fn from(err: Utf8Error) -> Self {
-        err!(AdapterErrorKind::ResponseError, err.to_string())
+        err!(ConnectionErrorKind::ResponseError, err.to_string())
     }
 }

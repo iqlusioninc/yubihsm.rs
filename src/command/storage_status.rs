@@ -3,10 +3,10 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/Storage_Status.html>
 
 use super::{Command, Response};
-use {Adapter, Client, ClientError, CommandType};
+use {Client, ClientError, CommandType, Connection};
 
 /// Get storage status (i.e. currently free storage) from the `YubiHSM2` device
-pub fn storage_status<A: Adapter>(
+pub fn storage_status<A: Connection>(
     session: &mut Client<A>,
 ) -> Result<StorageStatusResponse, ClientError> {
     session.send_command(StorageStatusCommand {})

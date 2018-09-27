@@ -5,11 +5,11 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/Set_Log_Index.html>
 
 use super::{Command, CommandType, Response};
-use adapter::Adapter;
 use client::{Client, ClientError};
+use connection::Connection;
 
 /// Set the index of the last consumed index of the `YubiHSM2` audit log
-pub fn set_log_index<A: Adapter>(
+pub fn set_log_index<A: Connection>(
     session: &mut Client<A>,
     log_index: u16,
 ) -> Result<(), ClientError> {

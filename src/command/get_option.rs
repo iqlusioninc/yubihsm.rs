@@ -6,10 +6,10 @@ use super::{Command, Response};
 use audit::*;
 use client::{Client, ClientError, ClientErrorKind::ProtocolError};
 use serialization::deserialize;
-use {Adapter, CommandType};
+use {CommandType, Connection};
 
 /// Get the audit policy setting for a particular command
-pub fn get_command_audit_option<A: Adapter>(
+pub fn get_command_audit_option<A: Connection>(
     session: &mut Client<A>,
     command: CommandType,
 ) -> Result<AuditOption, ClientError> {
@@ -26,7 +26,7 @@ pub fn get_all_command_audit_options<A>(
     session: &mut Client<A>,
 ) -> Result<Vec<AuditCommand>, ClientError>
 where
-    A: Adapter,
+    A: Connection,
 {
     let response = session.send_command(GetOptionCommand {
         tag: AuditTag::Command,
@@ -39,7 +39,7 @@ where
 /// refuse operations if the [log store] becomes full.
 ///
 /// [log store]: https://developers.yubico.com/YubiHSM2/Concepts/Logs.html
-pub fn get_force_audit_option<A: Adapter>(
+pub fn get_force_audit_option<A: Connection>(
     session: &mut Client<A>,
 ) -> Result<AuditOption, ClientError> {
     let response = session.send_command(GetOptionCommand {

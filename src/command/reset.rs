@@ -4,11 +4,11 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/Reset.html>
 
 use super::{Command, CommandType, Response};
-use adapter::Adapter;
 use client::{Client, ClientError, ClientErrorKind};
+use connection::Connection;
 
 /// Reset the `YubiHSM2` to a factory default state and reboot
-pub fn reset<A: Adapter>(mut session: Client<A>) -> Result<(), ClientError> {
+pub fn reset<A: Connection>(mut session: Client<A>) -> Result<(), ClientError> {
     // Resetting the session does not send a valid response
     if let Err(e) = session.send_command(ResetCommand {}) {
         match e.kind() {

@@ -1,7 +1,7 @@
 use std::{io::Read, net::TcpStream, str};
 
 use super::MAX_RESPONSE_SIZE;
-use adapter::{AdapterError, AdapterErrorKind::ResponseError};
+use connection::{ConnectionError, ConnectionErrorKind::ResponseError};
 
 /// The Transfer-Encoding Header
 const TRANSFER_ENCODING_HEADER: &str = "Transfer-Encoding: ";
@@ -32,7 +32,7 @@ pub(super) struct ResponseReader {
 
 impl ResponseReader {
     /// Create a new response buffer
-    pub fn read(socket: &mut TcpStream) -> Result<Self, AdapterError> {
+    pub fn read(socket: &mut TcpStream) -> Result<Self, ConnectionError> {
         let mut buffer = Self {
             buffer: [0u8; MAX_RESPONSE_SIZE],
             pos: 0,
@@ -47,14 +47,14 @@ impl ResponseReader {
     }
 
     /// Read some data into the internal buffer
-    fn fill_buffer(&mut self, socket: &mut TcpStream) -> Result<usize, AdapterError> {
+    fn fill_buffer(&mut self, socket: &mut TcpStream) -> Result<usize, ConnectionError> {
         let nbytes = socket.read(&mut self.buffer[..])?;
         self.pos += nbytes;
         Ok(nbytes)
     }
 
     /// Read the HTTP response headers
-    fn read_headers(&mut self, socket: &mut TcpStream) -> Result<(), AdapterError> {
+    fn read_headers(&mut self, socket: &mut TcpStream) -> Result<(), ConnectionError> {
         assert!(self.body_offset.is_none(), "already read headers!");
 
         loop {
@@ -87,7 +87,7 @@ impl ResponseReader {
     }
 
     /// Parse the HTTP headers, extracting the Content-Length
-    fn parse_headers(&mut self) -> Result<(), AdapterError> {
+    fn parse_headers(&mut self) -> Result<(), ConnectionError> {
         let body_offset = self.body_offset.unwrap();
         let header_str = str::from_utf8(&self.buffer[..body_offset])?;
 
@@ -121,7 +121,7 @@ impl ResponseReader {
                 let transfer_encoding = &header[TRANSFER_ENCODING_HEADER.len()..];
                 fail!(
                     ResponseError,
-                    "adapter sent unsupported transfer encoding: {}",
+                    "connection sent unsupported transfer encoding: {}",
                     transfer_encoding
                 );
             }
@@ -131,7 +131,7 @@ impl ResponseReader {
     }
 
     /// Read the response body into the internal buffer
-    fn read_body(&mut self, socket: &mut TcpStream) -> Result<(), AdapterError> {
+    fn read_body(&mut self, socket: &mut TcpStream) -> Result<(), ConnectionError> {
         let body_end =
             self.content_length + self.body_offset.expect("not ready to read the body yet");
 

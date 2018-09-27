@@ -5,11 +5,12 @@
 use super::generate_key::GenerateKeyParams;
 use super::{Command, Response};
 use {
-    Adapter, Capability, Client, ClientError, CommandType, Domain, HmacAlg, ObjectId, ObjectLabel,
+    Capability, Client, ClientError, CommandType, Connection, Domain, HmacAlg, ObjectId,
+    ObjectLabel,
 };
 
 /// Generate a new HMAC key within the `YubiHSM2`
-pub fn generate_hmac_key<A: Adapter>(
+pub fn generate_hmac_key<A: Connection>(
     session: &mut Client<A>,
     key_id: ObjectId,
     label: ObjectLabel,

@@ -3,7 +3,7 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/Hmac_Data.html>
 
 use super::{Command, Response};
-use {Adapter, Client, ClientError, CommandType, ObjectId};
+use {Client, ClientError, CommandType, Connection, ObjectId};
 
 /// Compute an HMAC tag of the given data with the given key ID
 pub fn hmac<A, D>(
@@ -12,7 +12,7 @@ pub fn hmac<A, D>(
     data: D,
 ) -> Result<HMACTag, ClientError>
 where
-    A: Adapter,
+    A: Connection,
     D: Into<Vec<u8>>,
 {
     session.send_command(HMACDataCommand {

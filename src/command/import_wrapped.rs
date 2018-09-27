@@ -3,7 +3,7 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/Import_Wrap_Key.html>
 
 use super::{Command, Response};
-use {Adapter, Client, ClientError, CommandType, ObjectId, ObjectType, WrapMessage, WrapNonce};
+use {Client, ClientError, CommandType, Connection, ObjectId, ObjectType, WrapMessage, WrapNonce};
 
 /// Import an encrypted object from the `YubiHSM2` using the given key-wrapping key
 pub fn import_wrapped<A, M>(
@@ -12,7 +12,7 @@ pub fn import_wrapped<A, M>(
     wrap_message: M,
 ) -> Result<ImportWrappedResponse, ClientError>
 where
-    A: Adapter,
+    A: Connection,
     M: Into<WrapMessage>,
 {
     let WrapMessage { nonce, ciphertext } = wrap_message.into();

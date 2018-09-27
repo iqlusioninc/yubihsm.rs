@@ -6,7 +6,6 @@ use ring::signature::Ed25519KeyPair;
 use sha2::Sha256;
 use untrusted;
 
-use adapter::AdapterError;
 use algorithm::*;
 use audit::{AuditCommand, AuditOption, AuditTag};
 use command::{
@@ -43,6 +42,7 @@ use command::{
     verify_hmac::{VerifyHMACCommand, VerifyHMACResponse},
     CommandType, Response,
 };
+use connection::ConnectionError;
 use error::HsmErrorKind;
 use serialization::deserialize;
 use session::{CommandMessage, ResponseMessage};
@@ -55,7 +55,7 @@ use super::state::State;
 pub(crate) fn create_session(
     state: &mut State,
     cmd_message: &CommandMessage,
-) -> Result<Vec<u8>, AdapterError> {
+) -> Result<Vec<u8>, ConnectionError> {
     let cmd: CreateSessionCommand = deserialize(cmd_message.data.as_ref())
         .unwrap_or_else(|e| panic!("error parsing CreateSession command data: {:?}", e));
 
@@ -74,7 +74,7 @@ pub(crate) fn create_session(
 pub(crate) fn authenticate_session(
     state: &mut State,
     command: &CommandMessage,
-) -> Result<Vec<u8>, AdapterError> {
+) -> Result<Vec<u8>, ConnectionError> {
     let session_id = command
         .session_id
         .unwrap_or_else(|| panic!("no session ID in command: {:?}", command.command_type));
@@ -91,7 +91,7 @@ pub(crate) fn authenticate_session(
 pub(crate) fn session_message(
     state: &mut State,
     encrypted_command: CommandMessage,
-) -> Result<Vec<u8>, AdapterError> {
+) -> Result<Vec<u8>, ConnectionError> {
     let session_id = encrypted_command.session_id.unwrap_or_else(|| {
         panic!(
             "no session ID in command: {:?}",
@@ -144,7 +144,7 @@ pub(crate) fn session_message(
 }
 
 /// Close an active session
-fn close_session(state: &mut State, session_id: SessionId) -> Result<Vec<u8>, AdapterError> {
+fn close_session(state: &mut State, session_id: SessionId) -> Result<Vec<u8>, ConnectionError> {
     let response = state
         .get_session(session_id)?
         .encrypt_response(CloseSessionResponse {}.serialize());

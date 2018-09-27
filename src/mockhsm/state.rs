@@ -3,8 +3,8 @@
 
 use std::collections::BTreeMap;
 
-use adapter::{AdapterError, AdapterErrorKind};
 use audit::AuditOption;
+use connection::{ConnectionError, ConnectionErrorKind};
 use object::{ObjectId, ObjectType};
 use session::{
     securechannel::{Challenge, SecureChannel},
@@ -78,10 +78,10 @@ impl State {
     }
 
     /// Obtain the channel for a session by its ID
-    pub fn get_session(&mut self, id: SessionId) -> Result<&mut HsmSession, AdapterError> {
+    pub fn get_session(&mut self, id: SessionId) -> Result<&mut HsmSession, ConnectionError> {
         self.sessions.get_mut(&id).ok_or_else(|| {
-            AdapterError::new(
-                AdapterErrorKind::RequestError,
+            ConnectionError::new(
+                ConnectionErrorKind::RequestError,
                 Some(format!("invalid session ID: {:?}", id)),
             )
         })

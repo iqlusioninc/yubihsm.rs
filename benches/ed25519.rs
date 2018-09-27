@@ -26,7 +26,7 @@ fn init_yubihsm_session() -> yubihsm::UsbClient {
 
 fn clear_key_slot<A>(session: &mut yubihsm::Client<A>)
 where
-    A: yubihsm::Adapter,
+    A: yubihsm::Connection,
 {
     let _ = yubihsm::delete_object(session, BENCH_KEY_ID, yubihsm::ObjectType::AsymmetricKey);
     assert!(
@@ -38,7 +38,7 @@ where
 /// Create a public key for use in a test
 fn generate_key<A>(session: &mut yubihsm::Client<A>)
 where
-    A: yubihsm::Adapter,
+    A: yubihsm::Connection,
 {
     clear_key_slot(session);
 

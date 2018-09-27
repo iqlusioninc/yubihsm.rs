@@ -4,14 +4,14 @@
 //!
 use super::{Command, Response};
 use client::ClientErrorKind::ProtocolError;
-use {Adapter, Client, ClientError, CommandType};
+use {Client, ClientError, CommandType, Connection};
 
 pub(crate) const MAX_RAND_BYTES: u16 = 2048 // packet size
     - 1 // response type byte
     - 2; // length of response data
 
 /// Get some number of bytes of pseudo random data generated on the device
-pub fn get_pseudo_random<A: Adapter>(
+pub fn get_pseudo_random<A: Connection>(
     session: &mut Client<A>,
     bytes: u16,
 ) -> Result<Vec<u8>, ClientError> {

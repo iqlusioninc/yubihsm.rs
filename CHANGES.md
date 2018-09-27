@@ -24,7 +24,7 @@
   UsbDevices: add `len()`, `is_empty()`, `as_slice()`, and `into_iter()`.
 
 * [#123](https://github.com/tendermint/yubihsm-rs/pull/123)
-  adapter/usb: Don't verbosely log every discovered YubiHSM2.
+  connection/usb: Don't verbosely log every discovered YubiHSM2.
 
 ## [0.17.0] (2018-09-19)
 

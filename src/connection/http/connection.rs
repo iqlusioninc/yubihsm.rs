@@ -15,22 +15,22 @@ use std::{
 use uuid::Uuid;
 
 use super::{status::CONNECTOR_STATUS_OK, ConnectorStatus, HttpConfig, ResponseReader, USER_AGENT};
-use adapter::{
-    Adapter, AdapterError,
-    AdapterErrorKind::{AddrInvalid, ConnectionFailed, ResponseError},
+use connection::{
+    Connection, ConnectionError,
+    ConnectionErrorKind::{AddrInvalid, ConnectionFailed, ResponseError},
 };
 use serial_number::SerialNumber;
 
-/// Adapter for `yubihsm-connector` which communicates using HTTP.
+/// Connection to YubiHSM via HTTP requests to `yubihsm-connector`.
 ///
 /// The `yubihsm-connector` service is a small HTTP(S) service which exposes a
 /// YubiHSM2 to a network, allowing several clients using it concurrently.
 ///
-/// This adapter communicates with a YubiHSM2 via `yubihsm-connector`. For
+/// This connection communicates with a YubiHSM2 via `yubihsm-connector`. For
 /// more information on `yubihsm-connector`, see:
 ///
 /// <https://developers.yubico.com/YubiHSM2/Component_Reference/yubihsm-connector/>
-pub struct HttpAdapter {
+pub struct HttpConnection {
     /// Host we're configured to connect to (i.e. the "Host" HTTP header)
     host: String,
 
@@ -38,11 +38,11 @@ pub struct HttpAdapter {
     socket: Mutex<TcpStream>,
 }
 
-impl Adapter for HttpAdapter {
+impl Connection for HttpConnection {
     type Config = HttpConfig;
 
     /// Open a connection to a `yubihsm-connector` process
-    fn open(config: &Self::Config) -> Result<Self, AdapterError> {
+    fn open(config: &Self::Config) -> Result<Self, ConnectionError> {
         let host = format!("{}:{}", config.addr, config.port);
         let timeout = Duration::from_millis(config.timeout_ms);
 
@@ -67,7 +67,7 @@ impl Adapter for HttpAdapter {
     }
 
     /// Check that `yubihsm-connector` is available and returning status `OK`
-    fn healthcheck(&self) -> Result<(), AdapterError> {
+    fn healthcheck(&self) -> Result<(), ConnectionError> {
         let status = self.status()?;
 
         if status.message == CONNECTOR_STATUS_OK {
@@ -82,7 +82,7 @@ impl Adapter for HttpAdapter {
     }
 
     /// Get the serial number for the current YubiHSM2 (if available)
-    fn serial_number(&self) -> Result<SerialNumber, AdapterError> {
+    fn serial_number(&self) -> Result<SerialNumber, ConnectionError> {
         self.status()?.serial_number.ok_or_else(|| {
             err!(
                 ResponseError,
@@ -92,22 +92,22 @@ impl Adapter for HttpAdapter {
     }
 
     /// `POST /connector/api` with a given command message
-    fn send_message(&self, uuid: Uuid, cmd: Vec<u8>) -> Result<Vec<u8>, AdapterError> {
+    fn send_message(&self, uuid: Uuid, cmd: Vec<u8>) -> Result<Vec<u8>, ConnectionError> {
         self.post("/connector/api", uuid, cmd)
     }
 }
 
 // TODO: use clippy's scoped lints once they work on stable
 #[allow(unknown_lints, renamed_and_removed_lints, write_with_newline)]
-impl HttpAdapter {
-    /// GET `/connector/status` returning `adapter::http::ConnectorStatus`
-    pub fn status(&self) -> Result<ConnectorStatus, AdapterError> {
+impl HttpConnection {
+    /// GET `/connector/status` returning `connection::http::ConnectorStatus`
+    pub fn status(&self) -> Result<ConnectorStatus, ConnectionError> {
         let http_response = self.get("/connector/status")?;
         ConnectorStatus::parse(str::from_utf8(&http_response)?)
     }
 
     /// Make an HTTP GET request to the yubihsm-connector
-    fn get(&self, path: &str) -> Result<Vec<u8>, AdapterError> {
+    fn get(&self, path: &str) -> Result<Vec<u8>, ConnectionError> {
         let mut request = String::new();
 
         write!(request, "GET {} HTTP/1.1\r\n", path)?;
@@ -134,7 +134,7 @@ impl HttpAdapter {
     }
 
     /// Make an HTTP POST request to the yubihsm-connector
-    fn post(&self, path: &str, uuid: Uuid, mut body: Vec<u8>) -> Result<Vec<u8>, AdapterError> {
+    fn post(&self, path: &str, uuid: Uuid, mut body: Vec<u8>) -> Result<Vec<u8>, ConnectionError> {
         let mut headers = String::new();
 
         write!(headers, "POST {} HTTP/1.1\r\n", path)?;

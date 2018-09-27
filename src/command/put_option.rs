@@ -6,7 +6,7 @@ use super::{Command, Response};
 use audit::*;
 use client::{Client, ClientError};
 use serialization::serialize;
-use {Adapter, CommandType};
+use {CommandType, Connection};
 
 /// Configure the audit policy settings for a particular command, e.g. auditing
 /// should be `On`, `Off`, or `Fix` (i.e. fixed permanently on)
@@ -16,7 +16,7 @@ pub fn put_command_audit_option<A>(
     audit_option: AuditOption,
 ) -> Result<(), ClientError>
 where
-    A: Adapter,
+    A: Connection,
 {
     session.send_command(PutOptionCommand {
         tag: AuditTag::Command,
@@ -33,7 +33,7 @@ where
 /// Options are `On`, `Off`, or `Fix` (i.e. fixed permanently on)
 ///
 /// [log store]: https://developers.yubico.com/YubiHSM2/Concepts/Logs.html
-pub fn put_force_audit_option<A: Adapter>(
+pub fn put_force_audit_option<A: Connection>(
     session: &mut Client<A>,
     option: AuditOption,
 ) -> Result<(), ClientError> {

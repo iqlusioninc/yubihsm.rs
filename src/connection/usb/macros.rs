@@ -1,4 +1,4 @@
-/// Write consistent `debug!(...) lines for `UsbAdapter`
+/// Write consistent `debug!(...) lines for `UsbConnection`
 macro_rules! usb_debug {
     ($device:expr, $msg:expr) => {
         debug!(

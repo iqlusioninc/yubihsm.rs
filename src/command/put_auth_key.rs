@@ -5,14 +5,14 @@
 use super::put_object::PutObjectParams;
 use super::{Command, Response};
 use {
-    Adapter, AuthAlg, AuthKey, Capability, Client, ClientError, CommandType, Domain, ObjectId,
+    AuthAlg, AuthKey, Capability, Client, ClientError, CommandType, Connection, Domain, ObjectId,
     ObjectLabel,
 };
 
 /// Put an existing auth key into the `YubiHSM2`
 // TODO: use clippy's scoped lints once they work on stable
 #[allow(unknown_lints, renamed_and_removed_lints, too_many_arguments)]
-pub fn put_auth_key<A: Adapter, K: Into<AuthKey>>(
+pub fn put_auth_key<A: Connection, K: Into<AuthKey>>(
     session: &mut Client<A>,
     key_id: ObjectId,
     label: ObjectLabel,

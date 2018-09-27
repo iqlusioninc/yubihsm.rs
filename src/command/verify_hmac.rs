@@ -5,7 +5,7 @@
 use super::hmac::HMACTag;
 use super::{Command, Response};
 use client::ClientErrorKind::ResponseError;
-use {Adapter, Client, ClientError, CommandType, ObjectId};
+use {Client, ClientError, CommandType, Connection, ObjectId};
 
 /// Verify an HMAC tag of the given data with the given key ID
 pub fn verify_hmac<A, D, T>(
@@ -15,7 +15,7 @@ pub fn verify_hmac<A, D, T>(
     tag: T,
 ) -> Result<(), ClientError>
 where
-    A: Adapter,
+    A: Connection,
     D: Into<Vec<u8>>,
     T: Into<HMACTag>,
 {

@@ -3,10 +3,10 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/Get_Opaque.html>
 
 use super::{Command, Response};
-use {Adapter, Client, ClientError, CommandType, ObjectId};
+use {Client, ClientError, CommandType, Connection, ObjectId};
 
 /// Get the public key for an asymmetric key stored on the device
-pub fn get_opaque<A: Adapter>(
+pub fn get_opaque<A: Connection>(
     session: &mut Client<A>,
     object_id: ObjectId,
 ) -> Result<Vec<u8>, ClientError> {

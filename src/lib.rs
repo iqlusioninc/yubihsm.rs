@@ -18,7 +18,7 @@
 //!
 //! The following documentation describes the most important parts of this crate's API:
 //!
-//! * [Adapters]: methods of connecting to a YubiHSM (USB or HTTP via [yubihsm-connector])
+//! * [Connections]: methods of connecting to a YubiHSM (USB or HTTP via [yubihsm-connector])
 //! * [Session]: end-to-end encrypted connection with the YubiHSM. You'll need an active one to do anything.
 //! * [commands]: commands supported by the YubiHSM (i.e. main functionality)
 //!
@@ -42,7 +42,7 @@
 //! println!("Ed25519 signature: {:?}", signature);
 //! ```
 //!
-//! [Adapters]: https://docs.rs/yubihsm/latest/yubihsm/adapter/index.html
+//! [Connections]: https://docs.rs/yubihsm/latest/yubihsm/connection/index.html
 //! [Session]: https://docs.rs/yubihsm/latest/yubihsm/session/struct.Session.html
 //! [commands]: https://docs.rs/yubihsm/latest/yubihsm/command/index.html
 //! [yubihsm-connector]: https://developers.yubico.com/YubiHSM2/Component_Reference/yubihsm-connector/
@@ -100,12 +100,12 @@ pub mod error;
 #[macro_use]
 mod serialization;
 
-/// Adapters for connecting to the HSM. There are two main adapters supported:
+/// Connections for connecting to the HSM. There are two main connections supported:
 ///
-/// - `HttpAdapter`: communicates with the YubiHSM via the `yubihsm-connector`
+/// - `HttpConnection`: communicates with the YubiHSM via the `yubihsm-connector`
 ///   network service, which provides an HTTP API
-/// - `UsbAdapter`: communicates with the YubiHSM directly via USB.
-pub mod adapter;
+/// - `UsbConnection`: communicates with the YubiHSM directly via USB.
+pub mod connection;
 
 /// Cryptographic algorithms supported by the HSM
 pub mod algorithm;
@@ -162,11 +162,6 @@ mod serial_number;
 /// Object wrapping support, i.e. encrypt objects from one HSM to another
 pub mod wrap;
 
-#[cfg(feature = "http")]
-pub use adapter::http::{HttpAdapter, HttpConfig};
-#[cfg(feature = "usb")]
-pub use adapter::usb::{UsbAdapter, UsbConfig, UsbDevices, UsbTimeout};
-pub use adapter::Adapter;
 pub use algorithm::*;
 pub use audit::AuditOption;
 pub use auth_key::{AuthKey, AUTH_KEY_SIZE};
@@ -176,6 +171,11 @@ pub use client::HttpClient;
 #[cfg(feature = "usb")]
 pub use client::UsbClient;
 pub use client::{Client, ClientError};
+#[cfg(feature = "http")]
+pub use connection::http::{HttpConfig, HttpConnection};
+#[cfg(feature = "usb")]
+pub use connection::usb::{UsbConfig, UsbConnection, UsbDevices, UsbTimeout};
+pub use connection::Connection;
 // Import command functions from all submodules
 pub use command::{
     attest_asymmetric::*, blink::*, delete_object::*, device_info::*, echo::*, export_wrapped::*,
@@ -192,7 +192,7 @@ pub use credentials::Credentials;
 pub use domain::Domain;
 pub use error::*;
 #[cfg(feature = "mockhsm")]
-pub use mockhsm::{MockAdapter, MockSession};
+pub use mockhsm::{MockConnection, MockSession};
 pub use object::*;
 pub use response::ResponseCode;
 pub use serial_number::SerialNumber;

@@ -5,7 +5,7 @@
 use std::fmt::{self, Debug};
 
 use super::{Command, Response};
-use {Adapter, Client, ClientError, CommandType, ObjectId};
+use {Client, ClientError, CommandType, Connection, ObjectId};
 
 /// Size of an Ed25519 signature
 pub const ED25519_SIGNATURE_SIZE: usize = 64;
@@ -17,7 +17,7 @@ pub fn sign_ed25519<A, T>(
     data: T,
 ) -> Result<Ed25519Signature, ClientError>
 where
-    A: Adapter,
+    A: Connection,
     T: Into<Vec<u8>>,
 {
     session.send_command(SignDataEdDSACommand {

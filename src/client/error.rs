@@ -1,6 +1,6 @@
 //! Errors that occur during sessions
 
-use adapter::AdapterError;
+use connection::ConnectionError;
 use error::{Error, HsmErrorKind};
 use serialization::SerializationError;
 use session::{SessionError, SessionErrorKind};
@@ -40,9 +40,9 @@ pub enum ClientErrorKind {
     ResponseError,
 }
 
-// TODO: adapter (nee connection) error variant
-impl From<AdapterError> for ClientError {
-    fn from(err: AdapterError) -> Self {
+// TODO: connection (nee connection) error variant
+impl From<ConnectionError> for ClientError {
+    fn from(err: ConnectionError) -> Self {
         // TODO: protocol error is probably not the best variant here
         err!(ClientErrorKind::ProtocolError, err.to_string())
     }

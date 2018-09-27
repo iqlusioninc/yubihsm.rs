@@ -3,11 +3,11 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/Blink.html>
 
 use super::{Command, CommandType, Response};
-use adapter::Adapter;
 use client::{Client, ClientError};
+use connection::Connection;
 
 /// Blink the YubiHSM2's LEDs (to identify it) for the given number of seconds
-pub fn blink<A: Adapter>(session: &mut Client<A>, num_seconds: u8) -> Result<(), ClientError> {
+pub fn blink<A: Connection>(session: &mut Client<A>, num_seconds: u8) -> Result<(), ClientError> {
     session.send_command(BlinkCommand { num_seconds })?;
     Ok(())
 }

@@ -6,12 +6,12 @@ use super::put_object::PutObjectParams;
 use super::{Command, Response};
 use client::ClientErrorKind::ProtocolError;
 use {
-    Adapter, AsymmetricAlg, Capability, Client, ClientError, CommandType, Domain, ObjectId,
+    AsymmetricAlg, Capability, Client, ClientError, CommandType, Connection, Domain, ObjectId,
     ObjectLabel,
 };
 
 /// Put an existing asymmetric key into the `YubiHSM2`
-pub fn put_asymmetric_key<A: Adapter, T: Into<Vec<u8>>>(
+pub fn put_asymmetric_key<A: Connection, T: Into<Vec<u8>>>(
     session: &mut Client<A>,
     key_id: ObjectId,
     label: ObjectLabel,

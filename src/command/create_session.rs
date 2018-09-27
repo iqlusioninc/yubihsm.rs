@@ -9,11 +9,11 @@ use session::{
     CommandMessage, ResponseMessage,
 };
 use session::{SessionError, SessionErrorKind::*};
-use {Adapter, CommandType, ObjectId, SessionId};
+use {CommandType, Connection, ObjectId, SessionId};
 
 /// Create a new encrypted session with the YubiHSM2 using the given connector
-pub(crate) fn create_session<A: Adapter>(
-    adapter: &A,
+pub(crate) fn create_session<A: Connection>(
+    connection: &A,
     auth_key_id: ObjectId,
     host_challenge: Challenge,
 ) -> Result<(SessionId, CreateSessionResponse), SessionError> {
@@ -23,7 +23,7 @@ pub(crate) fn create_session<A: Adapter>(
     }.into();
 
     let uuid = command_message.uuid;
-    let response_body = adapter.send_message(uuid, command_message.into())?;
+    let response_body = connection.send_message(uuid, command_message.into())?;
     let response_message = ResponseMessage::parse(response_body)?;
 
     if response_message.is_err() {

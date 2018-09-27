@@ -19,14 +19,14 @@
 //! [signatory-yubihsm]: https://docs.rs/signatory-yubihsm/latest/signatory_yubihsm/ecdsa/struct.ECDSASigner.html
 
 use super::{Command, Response};
-#[cfg(all(feature = "http", not(feature = "usb")))]
-use adapter::http::HttpAdapter;
-#[cfg(feature = "usb")]
-use adapter::usb::UsbAdapter;
-use adapter::Adapter;
 use client::{Client, ClientError};
+#[cfg(all(feature = "http", not(feature = "usb")))]
+use connection::http::HttpConnection;
+#[cfg(feature = "usb")]
+use connection::usb::UsbConnection;
+use connection::Connection;
 #[cfg(all(feature = "mockhsm", not(feature = "doc")))]
-use mockhsm::MockAdapter;
+use mockhsm::MockConnection;
 #[cfg(
     all(
         feature = "sha2",
@@ -44,7 +44,7 @@ pub fn sign_ecdsa_raw_digest<A, T>(
     digest: T,
 ) -> Result<ECDSASignature, ClientError>
 where
-    A: Adapter,
+    A: Connection,
     T: Into<Vec<u8>>,
 {
     session.send_command(SignDataECDSACommand {
@@ -53,15 +53,15 @@ where
     })
 }
 
-// Hax: specialize `sign_ecdsa_sha256` to a particular adapter type
+// Hax: specialize `sign_ecdsa_sha256` to a particular connection type
 // as a workaround for the MockHsm presenting a different API than the YubiHSM2
 // TODO: find a better solution than this
 #[cfg(all(feature = "http", not(feature = "usb")))]
 #[allow(dead_code)]
-type AdapterType = HttpAdapter;
+type ConnectionType = HttpConnection;
 #[cfg(feature = "usb")]
 #[allow(dead_code)]
-type AdapterType = UsbAdapter;
+type ConnectionType = UsbConnection;
 
 /// Compute an ECDSA signature of the SHA-256 hash of the given data with the given key ID
 #[cfg(
@@ -72,7 +72,7 @@ type AdapterType = UsbAdapter;
     )
 )]
 pub fn sign_ecdsa_sha256(
-    session: &mut Client<AdapterType>,
+    session: &mut Client<ConnectionType>,
     key_id: ObjectId,
     data: &[u8],
 ) -> Result<ECDSASignature, ClientError> {
@@ -83,7 +83,7 @@ pub fn sign_ecdsa_sha256(
 // NOTE: this version is enabled when we compile with MockHsm support
 #[cfg(all(feature = "mockhsm", not(feature = "doc")))]
 pub fn sign_ecdsa_sha256(
-    session: &mut Client<MockAdapter>,
+    session: &mut Client<MockConnection>,
     key_id: ObjectId,
     data: &[u8],
 ) -> Result<ECDSASignature, ClientError> {

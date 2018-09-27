@@ -1,15 +1,15 @@
-//! Encrypted connection to the HSM through a particular adapter
+//! Encrypted connection to the HSM through a particular connection
 
 use std::time::{Duration, Instant};
 use subtle::ConstantTimeEq;
 
-use adapter::Adapter;
 use command::{
     //close_session::CloseSessionCommand,
     create_session::create_session,
     Command,
     CommandType,
 };
+use connection::Connection;
 use credentials::Credentials;
 use error::HsmErrorKind;
 use serialization::deserialize;
@@ -40,21 +40,21 @@ pub use self::{
 /// than opaque "lost connection to HSM"-style errors.
 const TIMEOUT_FUZZ_FACTOR: Duration = Duration::from_secs(1);
 
-/// Encrypted connection to the HSM made through a particular adapter.
-/// This type handles opening/closing the underlying adapter and creating
+/// Encrypted connection to the HSM made through a particular connection.
+/// This type handles opening/closing the underlying connection and creating
 /// encrypted (SCP03) channels.
 ///
-/// This type provides one-shot behavior: the adapter is opened, a session
+/// This type provides one-shot behavior: the connection is opened, a session
 /// is authenticated, and remains open until an error occurs. Once an error
 /// has occurred this connection is aborted, and a new one must be created
 /// to restore communication with the HSM (which is handled by the higher-level
 /// `Session` type, which is intended to be the user-facing one)
-pub struct Session<A: Adapter> {
+pub struct Session<A: Connection> {
     /// ID for this session
     id: SessionId,
 
-    /// Adapter which communicates with the HSM (HTTP or USB)
-    adapter: A,
+    /// Connection which communicates with the HSM (HTTP or USB)
+    connection: A,
 
     /// Encrypted channel (SCP03) to the HSM
     secure_channel: Option<SecureChannel>,
@@ -69,7 +69,7 @@ pub struct Session<A: Adapter> {
     timeout: SessionTimeout,
 }
 
-impl<A: Adapter> Session<A> {
+impl<A: Connection> Session<A> {
     /// Connect to the HSM using the given configuration and credentials
     pub(super) fn open(
         config: &A::Config,
@@ -82,17 +82,17 @@ impl<A: Adapter> Session<A> {
             "timeout too low: must be longer than {:?}",
             TIMEOUT_FUZZ_FACTOR
         );
-        let adapter = A::open(config)?;
+        let connection = A::open(config)?;
 
         // Ensure the new connection is healthy
-        if let Err(e) = adapter.healthcheck() {
+        if let Err(e) = connection.healthcheck() {
             fail!(CreateFailed, e);
         }
 
         let host_challenge = Challenge::random();
 
         let (session_id, session_response) =
-            create_session(&adapter, credentials.auth_key_id, host_challenge)?;
+            create_session(&connection, credentials.auth_key_id, host_challenge)?;
 
         let channel = SecureChannel::new(
             session_id,
@@ -119,7 +119,7 @@ impl<A: Adapter> Session<A> {
 
         let mut connection = Session {
             id,
-            adapter,
+            connection,
             secure_channel: Some(channel),
             created_at: now,
             last_active: now,
@@ -204,7 +204,7 @@ impl<A: Adapter> Session<A> {
 
         session_debug!(self, "uuid={} command={:?}", &uuid, cmd_type);
 
-        let response = match self.adapter.send_message(uuid, cmd.into()) {
+        let response = match self.connection.send_message(uuid, cmd.into()) {
             Ok(response_bytes) => ResponseMessage::parse(response_bytes)?,
             Err(e) => {
                 self.secure_channel = None;
@@ -261,7 +261,7 @@ impl<A: Adapter> Session<A> {
 }
 
 /// Close session automatically on drop
-impl<A: Adapter> Drop for Session<A> {
+impl<A: Connection> Drop for Session<A> {
     /// Make a best effort to close the session
     ///
     /// NOTE: this runs the potential of panicking in a drop handler, which

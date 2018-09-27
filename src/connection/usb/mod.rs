@@ -3,14 +3,14 @@
 #[macro_use]
 mod macros;
 
-mod adapter;
 mod config;
+mod connection;
 mod devices;
 mod hsm_device;
 mod timeout;
 
-pub use self::adapter::UsbAdapter;
 pub use self::config::UsbConfig;
+pub use self::connection::UsbConnection;
 pub use self::devices::UsbDevices;
 pub use self::hsm_device::HsmDevice;
 pub use self::timeout::UsbTimeout;

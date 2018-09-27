@@ -51,22 +51,22 @@ pub mod command;
 mod test_vectors;
 
 #[cfg(not(any(feature = "usb", feature = "mockhsm")))]
-use yubihsm::HttpAdapter;
+use yubihsm::HttpConnection;
 
 #[cfg(all(feature = "usb", not(feature = "mockhsm")))]
-use yubihsm::UsbAdapter;
+use yubihsm::UsbConnection;
 
 #[cfg(feature = "mockhsm")]
-use yubihsm::mockhsm::MockAdapter;
+use yubihsm::mockhsm::MockConnection;
 
 #[cfg(not(any(feature = "usb", feature = "mockhsm")))]
-type TestClient = Client<HttpAdapter>;
+type TestClient = Client<HttpConnection>;
 
 #[cfg(all(feature = "usb", not(feature = "mockhsm")))]
-type TestClient = Client<UsbAdapter>;
+type TestClient = Client<UsbConnection>;
 
 #[cfg(feature = "mockhsm")]
-type TestClient = Client<MockAdapter>;
+type TestClient = Client<MockConnection>;
 
 /// Key ID to use for testing keygen/signing
 const TEST_KEY_ID: ObjectId = 100;

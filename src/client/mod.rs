@@ -3,32 +3,32 @@ mod error;
 
 use self::error::ClientErrorKind::*;
 pub use self::error::{ClientError, ClientErrorKind};
-#[cfg(feature = "http")]
-use adapter::http::HttpAdapter;
-#[cfg(feature = "usb")]
-use adapter::usb::UsbAdapter;
-use adapter::Adapter;
 use command::Command;
+#[cfg(feature = "http")]
+use connection::http::HttpConnection;
+#[cfg(feature = "usb")]
+use connection::usb::UsbConnection;
+use connection::Connection;
 use credentials::Credentials;
 use session::{Session, SessionId, SessionTimeout};
 
 /// Session with a YubiHSM connected through `yubihsm-connector`
 #[cfg(feature = "http")]
-pub type HttpClient = Client<HttpAdapter>;
+pub type HttpClient = Client<HttpConnection>;
 
 /// Session with a YubiHSM
 #[cfg(feature = "usb")]
-pub type UsbClient = Client<UsbAdapter>;
+pub type UsbClient = Client<UsbConnection>;
 
 /// Encrypted session with a YubiHSM.
 /// A session is needed to perform any command.
 ///
-/// Sessions are eneric over `Adapter` types in case a different one needs to
+/// Sessions are eneric over `Connection` types in case a different one needs to
 /// be swapped in, which is primarily useful for substituting the `MockHsm`.
 ///
 /// Sessions are automatically closed on `Drop`, releasing `YubiHSM2` session
 /// resources and wiping the ephemeral keys used to encrypt the session.
-pub struct Client<A: Adapter> {
+pub struct Client<A: Connection> {
     /// Configuration for connecting to the HSM
     config: A::Config,
 
@@ -39,7 +39,7 @@ pub struct Client<A: Adapter> {
     credentials: Option<Credentials>,
 }
 
-impl<A: Adapter> Client<A> {
+impl<A: Connection> Client<A> {
     /// Create a new session, eagerly connecting to the YubiHSM
     pub fn create(
         config: A::Config,

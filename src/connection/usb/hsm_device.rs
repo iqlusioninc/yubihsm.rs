@@ -4,8 +4,8 @@ use std::{
     time::Duration,
 };
 
-use super::{UsbAdapter, UsbTimeout, YUBIHSM2_BULK_IN_ENDPOINT, YUBIHSM2_INTERFACE_NUM};
-use adapter::AdapterError;
+use super::{UsbConnection, UsbTimeout, YUBIHSM2_BULK_IN_ENDPOINT, YUBIHSM2_INTERFACE_NUM};
+use connection::ConnectionError;
 use serial_number::SerialNumber;
 use session::MAX_MSG_SIZE;
 
@@ -35,19 +35,19 @@ impl HsmDevice {
         }
     }
 
-    /// Open this device, consuming it and creating a `UsbAdapter`
-    pub fn open(self, timeout: UsbTimeout) -> Result<UsbAdapter, AdapterError> {
-        let adapter = UsbAdapter::new(self, timeout)?;
+    /// Open this device, consuming it and creating a `UsbConnection`
+    pub fn open(self, timeout: UsbTimeout) -> Result<UsbConnection, ConnectionError> {
+        let connection = UsbConnection::new(self, timeout)?;
 
         info!(
             "USB(bus={},addr={}): successfully opened {} (serial #{})",
-            adapter.device().bus_number(),
-            adapter.device().address(),
-            adapter.device().product_name.as_str(),
-            adapter.device().serial_number.as_str(),
+            connection.device().bus_number(),
+            connection.device().address(),
+            connection.device().product_name.as_str(),
+            connection.device().serial_number.as_str(),
         );
 
-        Ok(adapter)
+        Ok(connection)
     }
 
     /// Get the bus number for this device
@@ -60,8 +60,8 @@ impl HsmDevice {
         self.device.address()
     }
 
-    /// Open a handle to the underlying device (for use by `UsbAdapter`)
-    pub(super) fn open_handle(&self) -> Result<libusb::DeviceHandle<'static>, AdapterError> {
+    /// Open a handle to the underlying device (for use by `UsbConnection`)
+    pub(super) fn open_handle(&self) -> Result<libusb::DeviceHandle<'static>, ConnectionError> {
         let mut handle = self.device.open()?;
         handle.reset()?;
         handle.claim_interface(YUBIHSM2_INTERFACE_NUM)?;
@@ -87,7 +87,7 @@ impl Debug for HsmDevice {
 
 /// Flush any unconsumed messages still in the buffer to get the connection
 /// back into a clean state
-fn flush(handle: &mut libusb::DeviceHandle) -> Result<(), AdapterError> {
+fn flush(handle: &mut libusb::DeviceHandle) -> Result<(), ConnectionError> {
     let mut buffer = [0u8; MAX_MSG_SIZE];
 
     // Use a near instantaneous (but non-zero) timeout to drain the buffer.

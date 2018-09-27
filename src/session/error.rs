@@ -1,6 +1,6 @@
 //! Session error types
 
-use adapter::AdapterError;
+use connection::ConnectionError;
 use error::{Error, HsmErrorKind};
 use serialization::SerializationError;
 
@@ -50,8 +50,8 @@ pub enum SessionErrorKind {
     VerifyFailed,
 }
 
-impl From<AdapterError> for SessionError {
-    fn from(err: AdapterError) -> Self {
+impl From<ConnectionError> for SessionError {
+    fn from(err: ConnectionError) -> Self {
         err!(SessionErrorKind::ProtocolError, err.to_string())
     }
 }

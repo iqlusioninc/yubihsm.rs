@@ -1,10 +1,10 @@
 use libusb;
 use std::{process::exit, slice::Iter, str::FromStr, vec::IntoIter};
 
-use super::{HsmDevice, UsbAdapter, UsbTimeout, YUBICO_VENDOR_ID, YUBIHSM2_PRODUCT_ID};
-use adapter::{
-    AdapterError,
-    AdapterErrorKind::{DeviceBusyError, UsbError},
+use super::{HsmDevice, UsbConnection, UsbTimeout, YUBICO_VENDOR_ID, YUBIHSM2_PRODUCT_ID};
+use connection::{
+    ConnectionError,
+    ConnectionErrorKind::{DeviceBusyError, UsbError},
 };
 use serial_number::SerialNumber;
 
@@ -21,7 +21,7 @@ pub struct UsbDevices(Vec<HsmDevice>);
 
 impl UsbDevices {
     /// Return the serial numbers of all connected YubiHSM2s
-    pub fn serial_numbers() -> Result<Vec<SerialNumber>, AdapterError> {
+    pub fn serial_numbers() -> Result<Vec<SerialNumber>, ConnectionError> {
         let devices = Self::new(UsbTimeout::default())?;
         let serials: Vec<_> = devices.iter().map(|a| a.serial_number).collect();
         Ok(serials)
@@ -32,7 +32,7 @@ impl UsbDevices {
     pub fn open(
         serial_number: Option<SerialNumber>,
         timeout: UsbTimeout,
-    ) -> Result<UsbAdapter, AdapterError> {
+    ) -> Result<UsbConnection, ConnectionError> {
         let mut devices = Self::new(timeout)?;
 
         if let Some(sn) = serial_number {
@@ -65,7 +65,7 @@ impl UsbDevices {
     }
 
     /// Detect connected YubiHSM 2s, returning a collection of them
-    pub fn new(timeout: UsbTimeout) -> Result<Self, AdapterError> {
+    pub fn new(timeout: UsbTimeout) -> Result<Self, ConnectionError> {
         let device_list = GLOBAL_USB_CONTEXT.devices()?;
         let mut devices = vec![];
 

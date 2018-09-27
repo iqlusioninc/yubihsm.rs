@@ -7,19 +7,19 @@ use serde::{
 };
 use std::sync::{Arc, Mutex};
 
-mod adapter;
 mod audit;
 mod command;
+mod connection;
 mod object;
 mod session;
 mod state;
 
-pub use self::adapter::MockAdapter;
+pub use self::connection::MockConnection;
 use self::state::State;
 use client::Client;
 
 /// Software simulation of a `YubiHSM2` intended for testing
-/// implemented as a `yubihsm::Adapter`.
+/// implemented as a `yubihsm::Connection`.
 ///
 /// This only implements a subset of the YubiHSM's functionality, and does
 /// not enforce access control. It's recommended to also test live against
@@ -42,14 +42,14 @@ impl Default for MockHsm {
     }
 }
 
-// This is required by the `Adapter` trait
+// This is required by the `Connection` trait
 impl Serialize for MockHsm {
     fn serialize<S: Serializer>(&self, _serializer: S) -> Result<S::Ok, S::Error> {
         panic!("unimplemented");
     }
 }
 
-// This is required by the `Adapter` trait
+// This is required by the `Connection` trait
 impl<'de> Deserialize<'de> for MockHsm {
     fn deserialize<D: Deserializer<'de>>(_deserializer: D) -> Result<MockHsm, D::Error> {
         panic!("unimplemented");
@@ -57,4 +57,4 @@ impl<'de> Deserialize<'de> for MockHsm {
 }
 
 /// Drop-in replacement `Session` type which uses `MockHsm`
-pub type MockSession = Client<MockAdapter>;
+pub type MockSession = Client<MockConnection>;

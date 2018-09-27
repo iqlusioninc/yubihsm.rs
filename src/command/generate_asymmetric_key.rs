@@ -5,12 +5,12 @@
 use super::generate_key::GenerateKeyParams;
 use super::{Command, Response};
 use {
-    Adapter, AsymmetricAlg, Capability, Client, ClientError, CommandType, Domain, ObjectId,
+    AsymmetricAlg, Capability, Client, ClientError, CommandType, Connection, Domain, ObjectId,
     ObjectLabel,
 };
 
 /// Generate a new asymmetric key within the `YubiHSM2`
-pub fn generate_asymmetric_key<A: Adapter>(
+pub fn generate_asymmetric_key<A: Connection>(
     session: &mut Client<A>,
     key_id: ObjectId,
     label: ObjectLabel,
