@@ -2,8 +2,12 @@
 
 use std::fmt::{self, Debug};
 
-use securechannel::{Challenge, CommandMessage, Cryptogram, ResponseMessage, SecureChannel};
-use SessionId;
+use command::CommandMessage;
+use response::ResponseMessage;
+use session::{
+    securechannel::{Challenge, Cryptogram, SecureChannel},
+    SessionId,
+};
 
 /// Session with the `MockHsm`
 pub(crate) struct HsmSession {

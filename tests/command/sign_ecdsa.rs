@@ -1,21 +1,23 @@
 use ring;
+use sha2::{Digest, Sha256};
 use untrusted;
-use yubihsm::{self, AsymmetricAlg, Capability};
+use yubihsm::{AsymmetricAlg, Capability};
 
 use {generate_asymmetric_key, TEST_KEY_ID, TEST_MESSAGE};
 
 /// Test ECDSA signatures (using NIST P-256)
 #[test]
 fn generated_nistp256_key_test() {
-    let mut session = create_session!();
+    let mut client = ::get_hsm_client();
 
     generate_asymmetric_key(
-        &mut session,
+        &mut client,
         AsymmetricAlg::EC_P256,
         Capability::ASYMMETRIC_SIGN_ECDSA,
     );
 
-    let pubkey_response = yubihsm::get_pubkey(&mut session, TEST_KEY_ID)
+    let pubkey_response = client
+        .get_pubkey(TEST_KEY_ID)
         .unwrap_or_else(|err| panic!("error getting public key: {}", err));
 
     assert_eq!(pubkey_response.algorithm, AsymmetricAlg::EC_P256);
@@ -25,7 +27,10 @@ fn generated_nistp256_key_test() {
     pubkey[0] = 0x04; // DER OCTET STRING tag
     pubkey[1..].copy_from_slice(pubkey_response.bytes.as_slice());
 
-    let signature = yubihsm::sign_ecdsa_sha256(&mut session, TEST_KEY_ID, TEST_MESSAGE)
+    let test_digest = Vec::from(Sha256::digest(TEST_MESSAGE).as_ref());
+
+    let signature = client
+        .sign_ecdsa(TEST_KEY_ID, test_digest)
         .unwrap_or_else(|err| panic!("error performing ECDSA signature: {}", err));
 
     ring::signature::verify(

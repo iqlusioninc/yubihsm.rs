@@ -1,11 +1,10 @@
-use yubihsm;
-
 /// Get stats about currently free storage
 #[test]
 fn storage_status_test() {
-    let mut session = create_session!();
+    let mut client = ::get_hsm_client();
 
-    let response = yubihsm::storage_status(&mut session)
+    let response = client
+        .storage_status()
         .unwrap_or_else(|err| panic!("error getting storage status: {}", err));
 
     // TODO: these will probably have to change if Yubico releases new models

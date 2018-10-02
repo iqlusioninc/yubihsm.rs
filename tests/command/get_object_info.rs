@@ -1,16 +1,16 @@
 use yubihsm::credentials::DEFAULT_AUTH_KEY_ID;
-use yubihsm::{self, AuthAlg, Capability, Domain, ObjectOrigin, ObjectType};
+use yubihsm::{AuthAlg, Capability, Domain, ObjectOrigin, ObjectType};
 
 use DEFAULT_AUTH_KEY_LABEL;
 
 /// Get object info on default auth key
 #[test]
 fn default_authkey_test() {
-    let mut session = create_session!();
+    let mut client = ::get_hsm_client();
 
-    let object_info =
-        yubihsm::get_object_info(&mut session, DEFAULT_AUTH_KEY_ID, ObjectType::AuthKey)
-            .unwrap_or_else(|err| panic!("error getting object info: {}", err));
+    let object_info = client
+        .get_object_info(DEFAULT_AUTH_KEY_ID, ObjectType::AuthKey)
+        .unwrap_or_else(|err| panic!("error getting object info: {}", err));
 
     assert_eq!(object_info.capabilities, Capability::all());
     assert_eq!(object_info.object_id, DEFAULT_AUTH_KEY_ID);

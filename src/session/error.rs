@@ -1,8 +1,7 @@
-//! Errors that occur during sessions
+//! Session error types
 
-use adapter::AdapterError;
+use connector::ConnectionError;
 use error::{Error, HsmErrorKind};
-use securechannel::SecureChannelError;
 use serialization::SerializationError;
 
 /// Session errors
@@ -19,6 +18,10 @@ pub enum SessionErrorKind {
     #[fail(display = "session closed")]
     ClosedSessionError,
 
+    /// Max command per session exceeded and a new session should be created
+    #[fail(display = "max commands per session exceeded")]
+    CommandLimitExceeded,
+
     /// Couldn't create session
     #[fail(display = "couldn't create session")]
     CreateFailed,
@@ -30,6 +33,10 @@ pub enum SessionErrorKind {
         kind: HsmErrorKind,
     },
 
+    /// Message was intended for a different session than the current one
+    #[fail(display = "message has differing session ID")]
+    MismatchError,
+
     /// Protocol error occurred
     #[fail(display = "protocol error")]
     ProtocolError,
@@ -37,10 +44,14 @@ pub enum SessionErrorKind {
     /// Error response from HSM we can't further specify
     #[fail(display = "HSM error")]
     ResponseError,
+
+    /// MAC or cryptogram verify failed
+    #[fail(display = "verification failed")]
+    VerifyFailed,
 }
 
-impl From<AdapterError> for SessionError {
-    fn from(err: AdapterError) -> Self {
+impl From<ConnectionError> for SessionError {
+    fn from(err: ConnectionError) -> Self {
         err!(SessionErrorKind::ProtocolError, err.to_string())
     }
 }
@@ -48,12 +59,6 @@ impl From<AdapterError> for SessionError {
 impl From<HsmErrorKind> for SessionError {
     fn from(kind: HsmErrorKind) -> Self {
         SessionError::new(SessionErrorKind::DeviceError { kind }, None)
-    }
-}
-
-impl From<SecureChannelError> for SessionError {
-    fn from(err: SecureChannelError) -> Self {
-        err!(SessionErrorKind::ProtocolError, err.to_string())
     }
 }
 

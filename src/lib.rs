@@ -18,7 +18,7 @@
 //!
 //! The following documentation describes the most important parts of this crate's API:
 //!
-//! * [Adapters]: methods of connecting to a YubiHSM (USB or HTTP via [yubihsm-connector])
+//! * [Connections]: methods of connecting to a YubiHSM (USB or HTTP via [yubihsm-connector])
 //! * [Session]: end-to-end encrypted connection with the YubiHSM. You'll need an active one to do anything.
 //! * [commands]: commands supported by the YubiHSM (i.e. main functionality)
 //!
@@ -29,20 +29,25 @@
 //!
 //! ```no_run
 //! extern crate yubihsm;
-//! use yubihsm::HttpSession;
+//! use yubihsm::{Client, Credentials, HttpConnector};
 //!
-//! // Default yubihsm-connector URI, auth key ID, and password for yubihsm-connector
+//! // Connect to default `yubihsm-connector` URI (http://127.0.0.1:1234)
+//! let connector = HttpConnector::new(&Default::default()).unwrap();
+//!
+//! // Default auth key ID, and password for yubihsm-connector
 //! // NOTE: DON'T USE THIS IN PRODUCTION!
-//! let mut session =
-//!     HttpSession::create(Default::default(), Default::default(), true).unwrap();
+//! let credentials = Credentials::default();
+//!
+//! // Connect to the HSM and authenticate with the given credentials
+//! let mut hsm_client = Client::open(connector, credentials, true).unwrap();
 //!
 //! // Note: You'll need to create this key first. Run the following from yubihsm-shell:
 //! // `generate asymmetric 0 100 ed25519_test_key 1 asymmetric_sign_eddsa ed25519`
-//! let signature = yubihsm::sign_ed25519(&mut session, 100, "Hello, world!").unwrap();
+//! let signature = hsm_client.sign_ed25519(100, "Hello, world!").unwrap();
 //! println!("Ed25519 signature: {:?}", signature);
 //! ```
 //!
-//! [Adapters]: https://docs.rs/yubihsm/latest/yubihsm/adapter/index.html
+//! [Connections]: https://docs.rs/yubihsm/latest/yubihsm/connection/index.html
 //! [Session]: https://docs.rs/yubihsm/latest/yubihsm/session/struct.Session.html
 //! [commands]: https://docs.rs/yubihsm/latest/yubihsm/command/index.html
 //! [yubihsm-connector]: https://developers.yubico.com/YubiHSM2/Component_Reference/yubihsm-connector/
@@ -100,13 +105,6 @@ pub mod error;
 #[macro_use]
 mod serialization;
 
-/// Adapters for connecting to the HSM. There are two main adapters supported:
-///
-/// - `HttpAdapter`: communicates with the YubiHSM via the `yubihsm-connector`
-///   network service, which provides an HTTP API
-/// - `UsbAdapter`: communicates with the YubiHSM directly via USB.
-pub mod adapter;
-
 /// Cryptographic algorithms supported by the HSM
 pub mod algorithm;
 
@@ -119,6 +117,9 @@ pub mod auth_key;
 /// Object attributes specifying which operations are allowed to be performed
 pub mod capability;
 
+/// YubiHSM client: main functionality of this crate
+pub mod client;
+
 /// Commands supported by the HSM
 ///
 /// Functions defined in the `yubihsm::command` module are reimported
@@ -127,6 +128,13 @@ pub mod capability;
 /// For more information, see:
 /// <https://developers.yubico.com/YubiHSM2/Commands/>
 pub mod command;
+
+/// Connections for connecting to the HSM. There are two main connections supported:
+///
+/// - `HttpConnection`: communicates with the YubiHSM via the `yubihsm-connector`
+///   network service, which provides an HTTP API
+/// - `UsbConnection`: communicates with the YubiHSM directly via USB.
+pub mod connector;
 
 /// Credentials used to authenticate to the HSM (key ID + `AuthKey`)
 pub mod credentials;
@@ -138,6 +146,12 @@ pub mod domain;
 /// Software simulation of the HSM for integration testing
 pub mod mockhsm;
 
+/// Authenticated/encrypted sessions with the HSM
+///
+/// For more information, see:
+/// <https://developers.yubico.com/YubiHSM2/Concepts/Session.html>
+pub mod session;
+
 /// Objects stored in the HSM
 ///
 /// For more information, see:
@@ -147,54 +161,31 @@ pub mod object;
 /// Responses to command sent from the HSM
 pub mod response;
 
-/// Encrypted communication channel to the HSM hardware
-mod securechannel;
-
 /// HSM serial numbers
 mod serial_number;
-
-/// Encrypted sessions with the HSM
-///
-/// See <https://developers.yubico.com/YubiHSM2/Concepts/Session.html>
-pub mod session;
 
 /// Object wrapping support, i.e. encrypt objects from one HSM to another
 pub mod wrap;
 
-#[cfg(feature = "http")]
-pub use adapter::http::{HttpAdapter, HttpConfig};
-#[cfg(feature = "usb")]
-pub use adapter::usb::{UsbAdapter, UsbConfig, UsbDevices, UsbTimeout};
-pub use adapter::Adapter;
 pub use algorithm::*;
 pub use audit::AuditOption;
 pub use auth_key::{AuthKey, AUTH_KEY_SIZE};
 pub use capability::Capability;
-// Import command functions from all submodules
-pub use command::{
-    attest_asymmetric::*, blink::*, delete_object::*, device_info::*, echo::*, export_wrapped::*,
-    generate_asymmetric_key::*, generate_hmac_key::*, generate_wrap_key::*, get_logs::*,
-    get_object_info::*, get_opaque::*, get_option::*, get_pseudo_random::*, get_pubkey::*, hmac::*,
-    import_wrapped::*, list_objects::*, put_asymmetric_key::*, put_auth_key::*, put_hmac_key::*,
-    put_opaque::*, put_option::*, put_otp_aead_key::*, put_wrap_key::*, reset::*, set_log_index::*,
-    sign_ecdsa::*, sign_eddsa::*, storage_status::*, unwrap_data::*, verify_hmac::*, wrap_data::*,
-    CommandType,
-};
-#[cfg(feature = "rsa")]
-pub use command::{sign_rsa_pkcs1v15::*, sign_rsa_pss::*};
+pub use client::{Client, ClientError};
+pub use command::CommandCode;
+#[cfg(feature = "http")]
+pub use connector::http::{HttpConfig, HttpConnector};
+#[cfg(feature = "usb")]
+pub use connector::usb::{UsbConfig, UsbConnector};
+pub use connector::{Connection, ConnectionError, Connector};
 pub use credentials::Credentials;
 pub use domain::Domain;
 pub use error::*;
 #[cfg(feature = "mockhsm")]
-pub use mockhsm::{MockAdapter, MockSession};
+pub use mockhsm::MockHsm;
 pub use object::*;
 pub use response::ResponseCode;
-pub use securechannel::SessionId;
 pub use serial_number::SerialNumber;
-#[cfg(feature = "http")]
-pub use session::HttpSession;
-#[cfg(feature = "usb")]
-pub use session::UsbSession;
-pub use session::{Session, SessionError};
+pub use session::SessionId;
 pub use uuid::Uuid;
 pub use wrap::{WrapMessage, WrapNonce};

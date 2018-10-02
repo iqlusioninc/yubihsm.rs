@@ -1,59 +1,28 @@
+//! Encrypted connection to the HSM through a particular connection
+
 use std::time::{Duration, Instant};
+use subtle::ConstantTimeEq;
+
+use command::{Command, CommandCode, CommandMessage};
+use connector::{Connection, Connector};
+use credentials::Credentials;
+use error::HsmErrorKind;
+use response::ResponseMessage;
+use serialization::deserialize;
 
 #[macro_use]
+mod macros;
+
+pub(crate) mod command;
 mod error;
-
-#[cfg(feature = "http")]
-use adapter::http::HttpAdapter;
-#[cfg(feature = "usb")]
-use adapter::usb::UsbAdapter;
-use adapter::Adapter;
-use command::{close_session::CloseSessionCommand, Command};
-use credentials::Credentials;
-use securechannel::SessionId;
-use serial_number::SerialNumber;
-
-/// Write consistent `debug!(...) lines for sessions
-macro_rules! session_debug {
-    ($session:expr, $msg:expr) => {
-        if let Some(session) = $session.id() {
-            debug!("session={} {}", session.to_u8(), $msg);
-        } else {
-            debug!("session=none {}", $msg);
-        }
-    };
-    ($session:expr, $fmt:expr, $($arg:tt)+) => {
-        if let Some(session) = $session.id() {
-            debug!(concat!("session={} ", $fmt), session.to_u8(), $($arg)+);
-        } else {
-            debug!(concat!("session=none ", $fmt), $($arg)+);
-        }
-    };
-}
-
-/// Write consistent `error!(...) lines for sessions
-macro_rules! session_error {
-    ($session:expr, $msg:expr) => {
-        if let Some(session) = $session.id() {
-            error!("session={} {}", session.to_u8(), $msg);
-        } else {
-            error!("session=none {}", $msg);
-        }
-    };
-    ($session:expr, $fmt:expr, $($arg:tt)+) => {
-        if let Some(session) = $session.id() {
-            error!(concat!("session={} ", $fmt), session.to_u8(), $($arg)+);
-        } else {
-            error!(concat!("session=none ", $fmt), $($arg)+);
-        }
-    };
-}
-
-pub(crate) mod connection;
+mod id;
+pub(crate) mod securechannel;
 mod timeout;
 
-use self::connection::Connection;
-use self::error::SessionErrorKind::*;
+use self::command::close::*;
+pub use self::id::SessionId;
+use self::securechannel::{Challenge, SecureChannel};
+use self::SessionErrorKind::*;
 pub use self::{
     error::{SessionError, SessionErrorKind},
     timeout::SessionTimeout,
@@ -61,154 +30,226 @@ pub use self::{
 
 /// Timeout fuzz factor: to avoid races/skew with the YubiHSM's clock,
 /// we consider sessions to be timed out slightly earlier than the actual
-/// timeout. This should (hopefully) ensure we always time out first.
-const TIMEOUT_SKEW_INTERVAL: Duration = Duration::from_secs(1);
+/// timeout. This should (hopefully) ensure we always time out first,
+/// and therefore generate appropriate timeout-related errors rather
+/// than opaque "lost connection to HSM"-style errors.
+const TIMEOUT_FUZZ_FACTOR: Duration = Duration::from_secs(1);
 
-/// Session with a YubiHSM connected through `yubihsm-connector`
-#[cfg(feature = "http")]
-pub type HttpSession = Session<HttpAdapter>;
-
-/// Session with a YubiHSM
-#[cfg(feature = "usb")]
-pub type UsbSession = Session<UsbAdapter>;
-
-/// Encrypted session with a YubiHSM.
-/// A session is needed to perform any command.
+/// Authenticated and encrypted (SCP03) `Session` with the HSM. A `Session` is
+/// needed to perform any command.
 ///
-/// Sessions are eneric over `Adapter` types in case a different one needs to
-/// be swapped in, which is primarily useful for substituting the `MockHsm`.
-///
-/// Sessions are automatically closed on `Drop`, releasing `YubiHSM2` session
+/// `Session`s are automatically closed on `Drop`, releasing HSM session
 /// resources and wiping the ephemeral keys used to encrypt the session.
-pub struct Session<A: Adapter> {
-    /// Configuration for connecting to the HSM
-    config: A::Config,
+pub struct Session {
+    /// ID for this session
+    id: SessionId,
 
-    /// Connection to the HSM (low-level session state)
-    connection: Option<Connection<A>>,
+    /// Connection which communicates with the HSM (HTTP or USB)
+    connection: Box<Connection>,
 
-    /// Cached `Credentials`
-    credentials: Option<Credentials>,
+    /// Encrypted channel (SCP03) to the HSM
+    secure_channel: Option<SecureChannel>,
 
-    /// Instant when the last command with the HSM was sent. Used for
-    /// tracking session inactivity timeouts
-    last_command_timestamp: Instant,
+    /// Session creation timestamp
+    created_at: Instant,
 
-    /// Timeout to use for session inactivity
+    /// Timestamp when this session was last active
+    last_active: Instant,
+
+    /// Inactivity timeout for this session
     timeout: SessionTimeout,
 }
 
-impl<A: Adapter> Session<A> {
-    /// Create a new session, eagerly connecting to the YubiHSM
-    pub fn create(
-        config: A::Config,
-        credentials: Credentials,
-        reconnect: bool,
+impl Session {
+    /// Connect to the HSM using the given configuration and credentials
+    pub(super) fn open(
+        connector: &Connector,
+        credentials: &Credentials,
+        timeout: SessionTimeout,
     ) -> Result<Self, SessionError> {
-        let mut session = Self::new(config, credentials)?;
-        session.open()?;
+        ensure!(
+            timeout.duration() > TIMEOUT_FUZZ_FACTOR,
+            CreateFailed,
+            "timeout too low: must be longer than {:?}",
+            TIMEOUT_FUZZ_FACTOR
+        );
 
-        // Clear credentials if reconnecting has been disabled
-        if !reconnect {
-            session.credentials = None;
+        // Ensure `Connector` is healthy before attempting to open `Session`
+        connector.healthcheck()?;
+
+        let connection = connector.connect()?;
+        let host_challenge = Challenge::random();
+
+        let (session_id, session_response) =
+            command::create_session(&*connection, credentials.auth_key_id, host_challenge)?;
+
+        let channel = SecureChannel::new(
+            session_id,
+            &credentials.auth_key,
+            host_challenge,
+            session_response.card_challenge,
+        );
+
+        if channel
+            .card_cryptogram()
+            .ct_eq(&session_response.card_cryptogram)
+            .unwrap_u8()
+            != 1
+        {
+            fail!(
+                AuthFail,
+                "(session: {}) card cryptogram mismatch!",
+                channel.id().to_u8()
+            );
         }
 
-        Ok(session)
-    }
+        let id = channel.id();
+        let now = Instant::now();
 
-    /// Initialize a new encrypted session, deferring actually establishing
-    /// a session until `open()` is called
-    pub fn new(config: A::Config, credentials: Credentials) -> Result<Self, SessionError> {
-        let session = Self {
-            config,
-            connection: None,
-            credentials: Some(credentials),
-            last_command_timestamp: Instant::now(),
-            timeout: SessionTimeout::default(),
+        let mut session = Session {
+            id,
+            connection,
+            secure_channel: Some(channel),
+            created_at: now,
+            last_active: now,
+            timeout,
         };
 
+        session.authenticate(credentials)?;
         Ok(session)
     }
 
-    /// Connect to the YubiHSM (if we aren't already connected)
-    pub fn open(&mut self) -> Result<(), SessionError> {
-        self.connection()?;
-        Ok(())
-    }
-
-    /// Get the current session ID
-    #[inline]
-    pub fn id(&self) -> Option<SessionId> {
-        self.connection.as_ref().and_then(|ref c| c.id())
-    }
-
-    /// Do we currently have an open session with the HSM?
+    /// Is this `Session` still open?
     pub fn is_open(&self) -> bool {
-        if self.connection.is_none() {
-            return false;
-        }
-
-        let time_since_last_command = Instant::now().duration_since(self.last_command_timestamp);
-
-        // Make sure the session hasn't timed out
-        if time_since_last_command > (self.timeout.duration() - TIMEOUT_SKEW_INTERVAL) {
-            session_debug!(
-                self,
-                "session timed out after {} seconds (max {})",
-                time_since_last_command.as_secs(),
-                self.timeout.duration().as_secs()
-            );
-            return false;
-        }
-
-        true
+        self.secure_channel.is_some() && !self.timed_out()
     }
 
-    /// Borrow the adapter for this session (if available)
-    pub fn adapter(&mut self) -> Result<&A, SessionError> {
-        Ok(self.connection()?.adapter())
+    /// Session ID value (1-16)
+    pub fn id(&self) -> SessionId {
+        self.id
     }
 
-    /// Get the serial number of the underlying HSM, if it's available
-    pub fn serial_number(&mut self) -> Result<SerialNumber, SessionError> {
-        Ok(self.adapter()?.serial_number()?)
+    /// How long has this session been open?
+    pub fn duration(&self) -> Duration {
+        Instant::now().duration_since(self.created_at)
+    }
+
+    /// Has this session timed out?
+    pub fn timed_out(&self) -> bool {
+        let idle_time = Instant::now().duration_since(self.last_active);
+        let timeout_with_fuzz = self.timeout.duration() - TIMEOUT_FUZZ_FACTOR;
+        idle_time >= timeout_with_fuzz
     }
 
     /// Encrypt a command, send it to the HSM, then read and decrypt the response
-    pub(crate) fn send_command<T: Command>(
+    pub(crate) fn send_command<C: Command>(
         &mut self,
-        command: T,
-    ) -> Result<T::ResponseType, SessionError> {
-        let response = self.connection()?.send_command(command)?;
-        self.last_command_timestamp = Instant::now();
+        command: C,
+    ) -> Result<C::ResponseType, SessionError> {
+        let plaintext_cmd: CommandMessage = command.into();
+        let cmd_type = plaintext_cmd.command_type;
+        let encrypted_cmd = self.secure_channel()?.encrypt_command(plaintext_cmd)?;
+        let uuid = encrypted_cmd.uuid;
+
+        session_debug!(self, "uuid={} cmd={:?}", uuid, C::COMMAND_CODE);
+
+        let encrypted_response = self.send_message(encrypted_cmd)?;
+
+        let response = self
+            .secure_channel()?
+            .decrypt_response(encrypted_response)
+            .map_err(|e| {
+                self.secure_channel = None;
+                e
+            })?;
+
+        if response.is_err() {
+            if let Some(kind) = HsmErrorKind::from_response_message(&response) {
+                session_debug!(self, "uuid={} failed={:?} error={:?}", uuid, cmd_type, kind);
+                return Err(kind.into());
+            } else {
+                session_debug!(self, "uuid={} failed={:?} error=unknown", uuid, cmd_type);
+                fail!(ResponseError, "{:?} failed: HSM error", cmd_type);
+            }
+        }
+
+        if response.command() != Some(C::COMMAND_CODE) {
+            fail!(
+                ResponseError,
+                "bad command type in response: {:?} (expected {:?})",
+                response.command(),
+                C::COMMAND_CODE,
+            );
+        }
+
+        deserialize(response.data.as_ref()).map_err(|e| e.into())
+    }
+
+    /// Send a command message to the HSM and parse the response
+    fn send_message(&mut self, cmd: CommandMessage) -> Result<ResponseMessage, SessionError> {
+        let cmd_type = cmd.command_type;
+        let uuid = cmd.uuid;
+        self.last_active = Instant::now();
+
+        session_debug!(self, "uuid={} command={:?}", &uuid, cmd_type);
+
+        let response = match self.connection.send_message(uuid, cmd.into()) {
+            Ok(response_bytes) => ResponseMessage::parse(response_bytes)?,
+            Err(e) => {
+                self.secure_channel = None;
+                return Err(e.into());
+            }
+        };
+
+        if response.is_err() {
+            session_error!(self, "uuid={} error={:?}", &uuid, response.code);
+            fail!(ResponseError, "HSM error (session: {})", self.id().to_u8(),);
+        }
+
         Ok(response)
     }
 
-    /// Get the underlying connection or return an error
-    fn connection(&mut self) -> Result<&mut Connection<A>, SessionError> {
-        if self.is_open() {
-            return Ok(self.connection.as_mut().unwrap());
+    /// Authenticate the current session with the HSM
+    fn authenticate(&mut self, credentials: &Credentials) -> Result<(), SessionError> {
+        session_debug!(
+            self,
+            "command={:?} key={}",
+            CommandCode::AuthSession,
+            credentials.auth_key_id
+        );
+
+        let command = self.secure_channel()?.authenticate_session()?;
+        let response = self.send_message(command)?;
+
+        if let Err(e) = self
+            .secure_channel()?
+            .finish_authenticate_session(&response)
+        {
+            session_error!(
+                self,
+                "failed={:?} key={} err={:?}",
+                CommandCode::AuthSession,
+                credentials.auth_key_id,
+                e.to_string()
+            );
+
+            return Err(e);
         }
 
-        // Clear any existing connection (i.e. make sure old connections are
-        // dropped before opening new ones)
-        self.connection = None;
+        session_debug!(self, "auth=OK key={}", credentials.auth_key_id);
+        Ok(())
+    }
 
-        let connection = Connection::open(
-            &self.config,
-            self.credentials
-                .as_ref()
-                .ok_or_else(|| err!(AuthFail, "session reconnection disabled"))?,
-        )?;
-
-        self.connection = Some(connection);
-        self.last_command_timestamp = Instant::now();
-        Ok(self.connection.as_mut().unwrap())
+    /// Get the underlying channel or return an error
+    fn secure_channel(&mut self) -> Result<&mut SecureChannel, SessionError> {
+        self.secure_channel
+            .as_mut()
+            .ok_or_else(|| err!(ClosedSessionError, "session is already closed"))
     }
 }
 
 /// Close session automatically on drop
-impl<A: Adapter> Drop for Session<A> {
+impl Drop for Session {
     /// Make a best effort to close the session
     ///
     /// NOTE: this runs the potential of panicking in a drop handler, which
@@ -219,8 +260,8 @@ impl<A: Adapter> Drop for Session<A> {
     /// Because of this, it's very important `send_encrypted_command` and
     /// everything it calls be panic-free.
     fn drop(&mut self) {
-        // Don't do anything if the session is presumed unhealthy
-        if !self.is_open() {
+        // Don't do anything if the session already timed out
+        if self.timed_out() {
             return;
         }
 

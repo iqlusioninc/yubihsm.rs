@@ -4,7 +4,7 @@ use std::{
     str::{self, FromStr},
 };
 
-use adapter::{AdapterError, AdapterErrorKind::AddrInvalid};
+use connector::{ConnectionError, ConnectionErrorKind::AddrInvalid};
 
 /// Length of a YubiHSM2 serial number
 pub const SERIAL_SIZE: usize = 10;
@@ -39,9 +39,9 @@ impl Display for SerialNumber {
 }
 
 impl FromStr for SerialNumber {
-    type Err = AdapterError;
+    type Err = ConnectionError;
 
-    fn from_str(s: &str) -> Result<SerialNumber, AdapterError> {
+    fn from_str(s: &str) -> Result<SerialNumber, ConnectionError> {
         if s.len() != SERIAL_SIZE {
             return Err(err!(
                 AddrInvalid,

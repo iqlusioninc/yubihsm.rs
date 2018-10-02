@@ -1,29 +1,30 @@
-use yubihsm::{self, Capability, HmacAlg, ObjectOrigin, ObjectType};
+use yubihsm::{Capability, HmacAlg, ObjectOrigin, ObjectType};
 
 use {clear_test_key_slot, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL};
 
 /// Generate an HMAC key
 #[test]
 fn hmac_key_test() {
-    let mut session = create_session!();
+    let mut client = ::get_hsm_client();
 
     let algorithm = HmacAlg::SHA256;
     let capabilities = Capability::HMAC_DATA | Capability::HMAC_VERIFY;
 
-    clear_test_key_slot(&mut session, ObjectType::HMACKey);
+    clear_test_key_slot(&mut client, ObjectType::HMACKey);
 
-    let key_id = yubihsm::generate_hmac_key(
-        &mut session,
-        TEST_KEY_ID,
-        TEST_KEY_LABEL.into(),
-        TEST_DOMAINS,
-        capabilities,
-        algorithm,
-    ).unwrap_or_else(|err| panic!("error generating wrap key: {}", err));
+    let key_id = client
+        .generate_hmac_key(
+            TEST_KEY_ID,
+            TEST_KEY_LABEL.into(),
+            TEST_DOMAINS,
+            capabilities,
+            algorithm,
+        ).unwrap_or_else(|err| panic!("error generating wrap key: {}", err));
 
     assert_eq!(key_id, TEST_KEY_ID);
 
-    let object_info = yubihsm::get_object_info(&mut session, TEST_KEY_ID, ObjectType::HMACKey)
+    let object_info = client
+        .get_object_info(TEST_KEY_ID, ObjectType::HMACKey)
         .unwrap_or_else(|err| panic!("error getting object info: {}", err));
 
     assert_eq!(object_info.capabilities, capabilities);

@@ -2,8 +2,10 @@ pub use failure::{Backtrace, Context, Fail};
 use std::error::Error as StdError;
 use std::fmt::{self, Display};
 
-use response::ResponseCode;
-use securechannel::ResponseMessage;
+use response::{ResponseCode, ResponseMessage};
+
+/// Placeholder for when we have no description for an error
+const NO_DESCRIPTION: &str = "(no description)";
 
 /// Error types used by this library
 #[derive(Debug)]
@@ -39,8 +41,12 @@ where
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.description {
-            Some(ref desc) => write!(f, "{}: {}", &self.inner, desc),
             None => Display::fmt(&self.inner, f),
+            Some(ref desc) => if desc == NO_DESCRIPTION {
+                Display::fmt(&self.inner, f)
+            } else {
+                write!(f, "{}: {}", &self.inner, desc)
+            },
         }
     }
 }
@@ -53,7 +59,7 @@ where
     fn description(&self) -> &str {
         match self.description {
             Some(ref s) => s,
-            None => "(no description)",
+            None => NO_DESCRIPTION,
         }
     }
 }

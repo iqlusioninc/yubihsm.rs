@@ -1,11 +1,10 @@
-use yubihsm;
-
 /// Get audit log
 #[test]
 fn get_audit_logs_test() {
-    let mut session = create_session!();
+    let mut client = ::get_hsm_client();
 
     // TODO: test audit logging functionality
-    yubihsm::get_audit_logs(&mut session)
+    client
+        .get_audit_logs()
         .unwrap_or_else(|err| panic!("error getting logs: {}", err));
 }

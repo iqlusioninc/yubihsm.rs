@@ -1,11 +1,10 @@
-use yubihsm;
-
 /// Get device information
 #[test]
 fn device_info_test() {
-    let mut session = create_session!();
+    let mut client = ::get_hsm_client();
 
-    let device_info = yubihsm::device_info(&mut session)
+    let device_info = client
+        .device_info()
         .unwrap_or_else(|err| panic!("error getting device info: {}", err));
 
     assert_eq!(device_info.major_version, 2);
