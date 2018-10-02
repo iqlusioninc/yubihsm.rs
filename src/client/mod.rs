@@ -3,7 +3,7 @@
 //! The `Client` type provides a set of methods which map to commands which
 //! interface with the HSM.
 //!
-//! <https://developers.yubico.com/HSM/Commands/>
+//! <https://developers.yubico.com/YubiHSM2/Commands/>
 
 #[macro_use]
 mod error;
@@ -191,7 +191,7 @@ impl Client {
 
     //
     // HSM Commands
-    // <https://developers.yubico.com/HSM/Commands/>
+    // <https://developers.yubico.com/YubiHSM2/Commands/>
     //
 
     /// Obtain an X.509 attestation certificate for a key within the HSM.
@@ -219,7 +219,7 @@ impl Client {
 
     /// Blink the HSM's LEDs (to identify it) for the given number of seconds.
     ///
-    /// <https://developers.yubico.com/HSM/Commands/Blink.html>
+    /// <https://developers.yubico.com/YubiHSM2/Commands/Blink.html>
     pub fn blink(&mut self, num_seconds: u8) -> Result<(), ClientError> {
         self.send_command(BlinkCommand { num_seconds })?;
         Ok(())
@@ -242,14 +242,14 @@ impl Client {
 
     /// Get information about the HSM device.
     ///
-    /// <https://developers.yubico.com/HSM/Commands/Device_Info.html>
+    /// <https://developers.yubico.com/YubiHSM2/Commands/Device_Info.html>
     pub fn device_info(&mut self) -> Result<DeviceInfoResponse, ClientError> {
         Ok(self.send_command(DeviceInfoCommand {})?)
     }
 
     /// Echo a message sent to the HSM.
     ///
-    /// <https://developers.yubico.com/HSM/Commands/Echo.html>
+    /// <https://developers.yubico.com/YubiHSM2/Commands/Echo.html>
     pub fn echo<M>(&mut self, msg: M) -> Result<Vec<u8>, ClientError>
     where
         M: Into<Vec<u8>>,
@@ -279,7 +279,7 @@ impl Client {
 
     /// Generate a new asymmetric key within the HSM.
     ///
-    /// <https://developers.yubico.com/HSM/Commands/Generate_Asymmetric_Key.html>
+    /// <https://developers.yubico.com/YubiHSM2/Commands/Generate_Asymmetric_Key.html>
     pub fn generate_asymmetric_key(
         &mut self,
         key_id: ObjectId,
@@ -300,7 +300,7 @@ impl Client {
 
     /// Generate a new HMAC key within the HSM.
     ///
-    /// <https://developers.yubico.com/HSM/Commands/Generate_Hmac_Key.html>
+    /// <https://developers.yubico.com/YubiHSM2/Commands/Generate_Hmac_Key.html>
     pub fn generate_hmac_key(
         &mut self,
         key_id: ObjectId,
@@ -406,7 +406,7 @@ impl Client {
     /// refuse operations if the [log store] becomes full.
     ///
     /// <https://developers.yubico.com/YubiHSM2/Commands/Get_Option.html>
-    /// [log store]: https://developers.yubico.com/HSM/Concepts/Logs.html
+    /// [log store]: https://developers.yubico.com/YubiHSM2/Concepts/Logs.html
     pub fn get_force_audit_option(&mut self) -> Result<AuditOption, ClientError> {
         let response = self.send_command(GetOptionCommand {
             tag: AuditTag::Force,
@@ -653,7 +653,7 @@ impl Client {
     /// Options are `On`, `Off`, or `Fix` (i.e. fixed permanently on)
     ///
     /// <https://developers.yubico.com/YubiHSM2/Commands/Put_Option.html>
-    /// [log store]: https://developers.yubico.com/HSM/Concepts/Logs.html
+    /// [log store]: https://developers.yubico.com/YubiHSM2/Concepts/Logs.html
     pub fn put_force_audit_option(&mut self, option: AuditOption) -> Result<(), ClientError> {
         self.send_command(PutOptionCommand {
             tag: AuditTag::Force,
