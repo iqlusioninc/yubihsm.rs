@@ -63,12 +63,6 @@ jobs:
           cargo --version
           cargo build --features=usb --release
     - run:
-        name: build --features=doc
-        command: |
-          rustc --version
-          cargo --version
-          cargo build --features=doc
-    - run:
         name: test
         command: |
           rustc --version

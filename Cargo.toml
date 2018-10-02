@@ -44,7 +44,6 @@ ring = "0.13"
 untrusted = "0.6"
 
 [features]
-doc = ["mockhsm", "rsa", "usb"]
 default = ["http", "passwords"]
 http = []
 mockhsm = ["passwords", "ring", "untrusted"]
@@ -54,7 +53,7 @@ rsa = ["sha2"]
 usb = ["lazy_static", "libusb"]
 
 [package.metadata.docs.rs]
-features = ["doc"]
+all-features = true
 rustc-args = ["-Ctarget-feature=+aes"]
 
 [[bench]]
