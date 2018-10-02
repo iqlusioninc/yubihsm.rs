@@ -1,6 +1,18 @@
 //! Get auditing options which have been configured on the device.
 //!
+//! The following methods of [yubihsm::Client] implement this command:
+//!
+//! - [get_command_audit_option()]: get audit setting for a particular command
+//! - [get_commands_audit_options()]: get audit settings for all command
+//! - [get_force_audit_option()]: get option for forced auditing (ensure events are logged)
+//!
+//! For more information, see:
 //! <https://developers.yubico.com/YubiHSM2/Commands/Get_Option.html>
+//!
+//! [yubihsm::Client]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html
+//! [get_command_audit_option()]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.get_command_audit_option
+//! [get_commands_audit_options()]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.get_commands_audit_options
+//! [get_force_audit_option()]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.get_force_audit_option
 
 use audit::*;
 use command::{Command, CommandCode};

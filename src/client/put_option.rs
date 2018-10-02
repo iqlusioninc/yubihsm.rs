@@ -1,6 +1,16 @@
 //! Put auditing options which have been configured on the device.
 //!
+//! The following methods of [yubihsm::Client] implement this command:
+//!
+//! - [put_command_audit_option()]: set options for a particular command
+//! - [put_force_audit_option()]: force auditing (require all events be logged)
+//!
+//! For more information, see:
 //! <https://developers.yubico.com/YubiHSM2/Commands/Put_Option.html>
+//!
+//! [yubihsm::Client]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html
+//! [put_command_audit_option()]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.put_command_audit_option
+//! [put_force_audit_option()]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.put_force_audit_option
 
 use audit::*;
 use command::{Command, CommandCode};

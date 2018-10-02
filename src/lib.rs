@@ -18,23 +18,22 @@
 //!
 //! The following documentation describes the most important parts of this crate's API:
 //!
-//! * [Connections]: methods of connecting to a YubiHSM (USB or HTTP via [yubihsm-connector])
-//! * [Session]: end-to-end encrypted connection with the YubiHSM. You'll need an active one to do anything.
-//! * [commands]: commands supported by the YubiHSM (i.e. main functionality)
+//! * [yubihsm::connector]: methods of connecting to a YubiHSM (USB or HTTP via [yubihsm-connector])
+//! * [yubihsm::Client]: client providing wrappers for YubiHSM [commands].
 //!
 //! # Example
 //!
-//! The following is an example of how to create a `Session` by connecting to a
-//! [yubihsm-connector] process, and then performing an Ed25519 signature:
+//! The following is an example of how to create a [yubihsm::Client] by
+//! connecting via USB, and then performing an Ed25519 signature:
 //!
-//! ```no_run
+//! ```no_build
 //! extern crate yubihsm;
-//! use yubihsm::{Client, Credentials, HttpConnector};
+//! use yubihsm::{Client, Credentials, UsbConnector};
 //!
-//! // Connect to default `yubihsm-connector` URI (http://127.0.0.1:1234)
-//! let connector = HttpConnector::new(&Default::default()).unwrap();
+//! // Connect to the first YubiHSM2 we detect
+//! let connector = UsbConnector::default();
 //!
-//! // Default auth key ID, and password for yubihsm-connector
+//! // Default auth key ID and password for YubiHSM2
 //! // NOTE: DON'T USE THIS IN PRODUCTION!
 //! let credentials = Credentials::default();
 //!
@@ -47,9 +46,9 @@
 //! println!("Ed25519 signature: {:?}", signature);
 //! ```
 //!
-//! [Connections]: https://docs.rs/yubihsm/latest/yubihsm/connection/index.html
-//! [Session]: https://docs.rs/yubihsm/latest/yubihsm/session/struct.Session.html
-//! [commands]: https://docs.rs/yubihsm/latest/yubihsm/command/index.html
+//! [yubihsm::connector]: https://docs.rs/yubihsm/latest/yubihsm/connector/index.html
+//! [yubihsm::Client]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html
+//! [commands]: https://developers.yubico.com/YubiHSM2/Commands/
 //! [yubihsm-connector]: https://developers.yubico.com/YubiHSM2/Component_Reference/yubihsm-connector/
 
 #![crate_name = "yubihsm"]
@@ -120,7 +119,7 @@ pub mod capability;
 /// YubiHSM client: main functionality of this crate
 pub mod client;
 
-/// Commands supported by the HSM
+/// Commands supported by the HSM.
 ///
 /// Functions defined in the `yubihsm::command` module are reimported
 /// and available from the toplevel `yubihsm` module as well.
@@ -129,42 +128,45 @@ pub mod client;
 /// <https://developers.yubico.com/YubiHSM2/Commands/>
 pub mod command;
 
-/// Connections for connecting to the HSM. There are two main connections supported:
+/// Methods of connecting to an HSM. There are two main connections supported:
 ///
-/// - `HttpConnection`: communicates with the YubiHSM via the `yubihsm-connector`
+/// - [HttpConnector]: communicates with the YubiHSM via the `yubihsm-connector`
 ///   network service, which provides an HTTP API
-/// - `UsbConnection`: communicates with the YubiHSM directly via USB.
+/// - [UsbConnector]: communicates with the YubiHSM directly via USB.
+///
+/// [HttpConnector]: https://docs.rs/yubihsm/latest/yubihsm/connector/http/struct.HttpConnector.html
+/// [UsbConnector]: https://docs.rs/yubihsm/latest/yubihsm/connector/usb/struct.UsbConnector.html
 pub mod connector;
 
-/// Credentials used to authenticate to the HSM (key ID + `AuthKey`)
+/// Credentials used to authenticate to the HSM (key ID + `AuthKey`).
 pub mod credentials;
 
-/// Logical partitions within the HSM, allowing several applications to share the device
+/// Logical partitions within the HSM, allowing several applications to share the device.
 pub mod domain;
 
+/// Simulation of the HSM for integration testing.
 #[cfg(feature = "mockhsm")]
-/// Software simulation of the HSM for integration testing
 pub mod mockhsm;
 
-/// Authenticated/encrypted sessions with the HSM
+/// Authenticated/encrypted sessions with the HSM.
 ///
 /// For more information, see:
 /// <https://developers.yubico.com/YubiHSM2/Concepts/Session.html>
 pub mod session;
 
-/// Objects stored in the HSM
+/// Objects stored in the HSM.
 ///
 /// For more information, see:
 /// <https://developers.yubico.com/YubiHSM2/Concepts/Object.html>
 pub mod object;
 
-/// Responses to command sent from the HSM
+/// Responses to command sent from the HSM.
 pub mod response;
 
-/// HSM serial numbers
+/// HSM serial numbers.
 mod serial_number;
 
-/// Object wrapping support, i.e. encrypt objects from one HSM to another
+/// Object wrapping support, i.e. encrypt objects from one HSM to another.
 pub mod wrap;
 
 pub use algorithm::*;

@@ -25,10 +25,12 @@ This is a pure-Rust client library for [YubiHSM 2] devices which implements
 most the functionality of the closed-source [libyubihsm] library from the
 Yubico SDK. It provides two backends for communicating with YubiHSMs:
 
-- [yubihsm::HttpAdapter]: communicate with YubiHSM via the
+- [yubihsm::HttpConnector]: communicate with YubiHSM via the
   `yubihsm-connector` process from the Yubico SDK.
-- [yubihsm::UsbAdapter]: communicate directly with the YubiHSM over USB using
+- [yubihsm::UsbConnector]: communicate directly with the YubiHSM over USB using
   the [libusb] crate.
+
+The [yubihsm::Client] type provides access to [HSM commands][command].
 
 Note that this is **NOT** an official Yubico project and is in no way supported
 or endorsed by Yubico (although whoever runs their Twitter account
@@ -52,11 +54,10 @@ rustflags = ["-Ctarget-feature=+aes"]
 
 ## Supported Commands
 
-NOTE: If there's a command on this list you'd like to use which isn't presently supported,
-[contributing is easy (see below)](https://github.com/tendermint/yubihsm-rs/blob/master/README.md#contributing)
-or open an issue requesting support.
+**NOTE:** If there's a command on this list you'd like to use which isn't presently
+supported, please open an issue requesting support.
 
-| Command                | Impl'd | [MockHSM] | Description |
+| [Command]              | Impl'd | [MockHSM] | Description |
 |------------------------|--------|-----------|-------------|
 | [Attest Asymmetric]    | ✅     | ⛔        | Create X.509 certificate for asymmetric key |
 | [Authenticate Session] | ✅     | ✅        | Authenticate to HSM with password or encryption key|
@@ -112,83 +113,6 @@ or open an issue requesting support.
 | ⚠️ | Partial/Untested Support |
 | ⛔ | Unsupported              |
 
-[Attest Asymmetric]: https://docs.rs/yubihsm/latest/yubihsm/command/attest_asymmetric/fn.attest_asymmetric.html
-[Authenticate Session]: https://developers.yubico.com/YubiHSM2/Commands/Authenticate_Session.html
-[Blink]: https://docs.rs/yubihsm/latest/yubihsm/command/blink/fn.blink.html
-[Close Session]: https://developers.yubico.com/YubiHSM2/Commands/Close_Session.html
-[Create Session]: https://developers.yubico.com/YubiHSM2/Commands/Create_Session.html
-[Decrypt ECDH]: https://developers.yubico.com/YubiHSM2/Commands/Decrypt_Ecdh.html
-[Decrypt OAEP]: https://developers.yubico.com/YubiHSM2/Commands/Decrypt_Oaep.html
-[Decrypt PKCS1]: https://developers.yubico.com/YubiHSM2/Commands/Decrypt_Pkcs1.html
-[Delete Object]: https://docs.rs/yubihsm/latest/yubihsm/command/delete_object/fn.delete_object.html
-[Device Info]: https://docs.rs/yubihsm/latest/yubihsm/command/device_info/fn.device_info.html
-[Echo]: https://docs.rs/yubihsm/latest/yubihsm/command/echo/fn.echo.html
-[Export Wrapped]: https://docs.rs/yubihsm/latest/yubihsm/command/export_wrapped/fn.export_wrapped.html
-[Generate Asymmetric]: https://docs.rs/yubihsm/latest/yubihsm/command/generate_asymmetric_key/fn.generate_asymmetric_key.html
-[Generate HMAC Key]: https://docs.rs/yubihsm/latest/yubihsm/command/generate_hmac_key/fn.generate_hmac_key.html
-[Generate OTP Key]: https://developers.yubico.com/YubiHSM2/Commands/Generate_Otp_Aead_Key.html
-[Generate Wrap Key]: https://docs.rs/yubihsm/latest/yubihsm/command/generate_wrap_key/fn.generate_wrap_key.html
-[Get Logs]: https://docs.rs/yubihsm/latest/yubihsm/command/get_logs/fn.get_logs.html
-[Get Object Info]: https://docs.rs/yubihsm/latest/yubihsm/command/get_object_info/fn.get_object_info.html
-[Get Opaque]: https://docs.rs/yubihsm/latest/yubihsm/command/get_opaque/fn.get_opaque.html
-[Get Option]: https://docs.rs/yubihsm/latest/yubihsm/command/get_option/
-[Get Pseudo Random]: https://docs.rs/yubihsm/latest/yubihsm/command/get_pseudo_random/fn.get_pseudo_random.html
-[Get Pubkey]: https://docs.rs/yubihsm/latest/yubihsm/command/get_pubkey/fn.get_pubkey.html
-[HMAC Data]: https://docs.rs/yubihsm/latest/yubihsm/command/hmac/fn.hmac.html
-[Import Wrapped]: https://docs.rs/yubihsm/latest/yubihsm/command/import_wrapped/fn.import_wrapped.html
-[List Objects]: https://docs.rs/yubihsm/latest/yubihsm/command/list_objects/fn.list_objects.html
-[OTP AEAD Create]: https://developers.yubico.com/YubiHSM2/Commands/Otp_Aead_Create.html
-[OTP AEAD Random]: https://developers.yubico.com/YubiHSM2/Commands/Otp_Aead_Random.html
-[OTP AEAD Rewrap]: https://developers.yubico.com/YubiHSM2/Commands/Otp_Aead_Rewrap.html
-[OTP Decrypt]: https://developers.yubico.com/YubiHSM2/Commands/Otp_Decrypt.html
-[Put Asymmetric]: https://docs.rs/yubihsm/latest/yubihsm/command/put_asymmetric_key/fn.put_asymmetric_key.html
-[Put Auth Key]: https://docs.rs/yubihsm/latest/yubihsm/command/put_auth_key/fn.put_auth_key.html
-[Put HMAC Key]: https://docs.rs/yubihsm/latest/yubihsm/command/put_hmac_key/fn.put_hmac_key.html
-[Put Opaque]: https://docs.rs/yubihsm/latest/yubihsm/command/put_opaque/fn.put_opaque.html
-[Put Option]: https://docs.rs/yubihsm/latest/yubihsm/command/put_option/
-[Put OTP AEAD Key]: https://docs.rs/yubihsm/latest/yubihsm/command/put_otp_aead_key/fn.put_otp_aead_key.html
-[Put Wrap Key]: https://docs.rs/yubihsm/latest/yubihsm/command/put_wrap_key/fn.put_wrap_key.html
-[Reset]: https://docs.rs/yubihsm/latest/yubihsm/command/reset/fn.reset.html
-[Session Message]: https://developers.yubico.com/YubiHSM2/Commands/Session_Message.html
-[Set Log Index]: https://docs.rs/yubihsm/latest/yubihsm/command/set_log_index/fn.set_log_index.html
-[Sign Data ECDSA]: https://docs.rs/yubihsm/latest/yubihsm/command/sign_ecdsa/
-[Sign Data EdDSA]: https://docs.rs/yubihsm/latest/yubihsm/command/sign_eddsa/fn.sign_ed25519.html
-[Sign Data PKCS1]: https://docs.rs/yubihsm/latest/yubihsm/command/sign_rsa_pkcs1v15/fn.sign_rsa_pkcs1v15_sha256.html
-[Sign Data PSS]: https://docs.rs/yubihsm/latest/yubihsm/command/sign_rsa_pss/fn.sign_rsa_pss_sha256.html
-[Storage Status]: https://docs.rs/yubihsm/latest/yubihsm/command/storage_status/fn.storage_status.html
-[Unwrap Data]: https://docs.rs/yubihsm/latest/yubihsm/command/unwrap_data/fn.unwrap_data.html
-[Verify HMAC]: https://docs.rs/yubihsm/latest/yubihsm/command/verify_hmac/fn.verify_hmac.html
-[Wrap Data]: https://docs.rs/yubihsm/latest/yubihsm/command/wrap_data/fn.wrap_data.html
-
-## Getting Started
-
-The following documentation describes the most important parts of this crate's API:
-
-* [Session]: end-to-end encrypted connection with the YubiHSM. You'll need an active one to do anything.
-* [commands]: commands supported by the YubiHSM2 (i.e. main functionality)
-
-Here is an example of how to create a `Session` by connecting to a [yubihsm-connector]
-process, and then performing an Ed25519 signature:
-
-```rust
-extern crate yubihsm;
-
-// Default yubihsm-connector URI, auth key ID, and password for yubihsm-connector
-// NOTE: DON'T USE THIS IN PRODUCTION!
-let mut session = yubihsm::HttpSession::create(
-    Default::default(), // `yubihsm-connector` configuration (`yubihsm::HttpConfig`)
-    Default::default(), // auth key ID and key/password (`yubihsm::Credentials`)
-    true // automatically reconnect if we get disconnected
-).unwrap();
-
-// Note: You'll need to create an Ed25519 key in slot #100 for this to work.
-// Run this from yubihsm-shell (or use `yubihsm::generate_asymmetric_key`):
-//
-// `generate asymmetric 0 100 ed25519_test_key 1 asymmetric_sign_eddsa ed25519`
-let signature = yubihsm::sign_ed25519(&session, 100, "Hello, world!").unwrap();
-println!("Ed25519 signature: {:?}", signature);
-```
-
 ## Testing
 
 This crate allows you to run the [integration test] suite in three different ways:
@@ -197,8 +121,6 @@ This crate allows you to run the [integration test] suite in three different way
   - via HTTP
   - via USB
 - simulated testing using [MockHSM] which implements some YubiHSM2 functionality
-
-[MockHSM]: https://docs.rs/yubihsm/latest/yubihsm/mockhsm/struct.MockHSM.html
 
 ### `cargo test`: test YubiHSM2 live over HTTP via `yubihsm-connector`
 
@@ -218,9 +140,9 @@ WHICH CONTAINS KEYS YOU CARE ABOUT**
 
 ### `cargo test --features=usb`: test YubiHSM2 live via USB
 
-Adding the `usb` cargo feature builds the `UsbAdapter` backend in addition
-to the `HttpAdapter`, and also runs the test suite live via USB rather than
-using the `yubihsm-connector` process.
+Adding the `usb` cargo feature builds `UsbConnector` in addition to
+`HttpConnector`, and also runs the test suite live via USB rather than using
+the `yubihsm-connector` process.
 
 **ALSO NOTE THAT THESE TESTS ARE DESTRUCTIVE: DO NOT RUN THEM AGAINST A
 YUBIHSM2 WHICH CONTAINS KEYS YOU CARE ABOUT**
@@ -241,15 +163,64 @@ See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT) for details.
 [YubiHSM 2]: https://www.yubico.com/products/yubihsm/
 [Yubico]: https://www.yubico.com/
 [yubihsm-connector]: https://developers.yubico.com/YubiHSM2/Component_Reference/yubihsm-connector/
-[yubihsm::HttpAdapter]: https://docs.rs/yubihsm/latest/yubihsm/struct.HttpAdapter.html
-[yubihsm::UsbAdapter]: https://docs.rs/yubihsm/latest/yubihsm/struct.UsbAdapter.html
+[yubihsm::HttpConnector]: https://docs.rs/yubihsm/latest/yubihsm/connector/http/struct.HttpConnector.html
+[yubihsm::UsbConnector]: https://docs.rs/yubihsm/latest/yubihsm/connector/usb/struct.UsbConnector.html
+[yubihsm::Client]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html
+[command]: https://developers.yubico.com/YubiHSM2/Commands/
 [libusb]: https://github.com/dcuddeback/libusb-rs
 [thinks it's awesome]: https://twitter.com/Yubico/status/971186516796915712
-[Session]: https://docs.rs/yubihsm/latest/yubihsm/session/struct.Session.html
-[commands]: https://docs.rs/yubihsm/latest/yubihsm/command/index.html
 [YubiHSM2 commands]: https://developers.yubico.com/YubiHSM2/Commands/
 [Serde-based message parser]: https://github.com/tendermint/yubihsm-rs/tree/master/src/serialization
 [commands]: https://github.com/tendermint/yubihsm-rs/tree/master/src/command
 [integration test]:  https://github.com/tendermint/yubihsm-rs/blob/master/tests/integration.rs
+[MockHSM]: https://docs.rs/yubihsm/latest/yubihsm/mockhsm/struct.MockHsm.html
 [YubiHSM2 SDK]: https://developers.yubico.com/YubiHSM2/Releases/
 [yubihsm-shell reset]: https://developers.yubico.com/YubiHSM2/Commands/Reset.html
+
+[Attest Asymmetric]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.attest_asymmetric
+[Authenticate Session]: https://developers.yubico.com/YubiHSM2/Commands/Authenticate_Session.html
+[Blink]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.blink
+[Close Session]: https://developers.yubico.com/YubiHSM2/Commands/Close_Session.html
+[Create Session]: https://developers.yubico.com/YubiHSM2/Commands/Create_Session.html
+[Decrypt ECDH]: https://developers.yubico.com/YubiHSM2/Commands/Decrypt_Ecdh.html
+[Decrypt OAEP]: https://developers.yubico.com/YubiHSM2/Commands/Decrypt_Oaep.html
+[Decrypt PKCS1]: https://developers.yubico.com/YubiHSM2/Commands/Decrypt_Pkcs1.html
+[Delete Object]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.delete_object
+[Device Info]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.device_info
+[Echo]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.echo
+[Export Wrapped]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.export_wrapped
+[Generate Asymmetric]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.generate_asymmetric_key
+[Generate HMAC Key]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.generate_hmac_key
+[Generate OTP Key]: https://developers.yubico.com/YubiHSM2/Commands/Generate_Otp_Aead_Key.html
+[Generate Wrap Key]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.generate_wrap_key
+[Get Logs]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.get_audit_logs
+[Get Object Info]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.get_object_info
+[Get Opaque]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.get_opaque
+[Get Option]: https://docs.rs/yubihsm/latest/yubihsm/client/get_option/index.html
+[Get Pseudo Random]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.get_pseudo_random
+[Get Pubkey]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.get_pubkey
+[HMAC Data]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.hmac
+[Import Wrapped]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.import_wrapped
+[List Objects]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.list_objects
+[OTP AEAD Create]: https://developers.yubico.com/YubiHSM2/Commands/Otp_Aead_Create.html
+[OTP AEAD Random]: https://developers.yubico.com/YubiHSM2/Commands/Otp_Aead_Random.html
+[OTP AEAD Rewrap]: https://developers.yubico.com/YubiHSM2/Commands/Otp_Aead_Rewrap.html
+[OTP Decrypt]: https://developers.yubico.com/YubiHSM2/Commands/Otp_Decrypt.html
+[Put Asymmetric]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.put_asymmetric_key
+[Put Auth Key]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.put_auth_key
+[Put HMAC Key]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.put_hmac_key
+[Put Opaque]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.put_opaque
+[Put Option]: https://docs.rs/yubihsm/latest/yubihsm/client/put_option/index.html
+[Put OTP AEAD Key]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.put_otp_aead_key
+[Put Wrap Key]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.put_wrap_key
+[Reset]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.reset
+[Session Message]: https://developers.yubico.com/YubiHSM2/Commands/Session_Message.html
+[Set Log Index]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.set_log_index
+[Sign Data ECDSA]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.set_log_index
+[Sign Data EdDSA]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.sign_ed25519
+[Sign Data PKCS1]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.sign_rsa_pkcs1v15_sha256
+[Sign Data PSS]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.sign_rsa_pss_sha256
+[Storage Status]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.storage_status
+[Unwrap Data]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.unwrap_data
+[Verify HMAC]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.verify_hmac
+[Wrap Data]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.wrap_data
