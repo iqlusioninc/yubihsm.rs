@@ -4,7 +4,7 @@ use std::{
     str::{self, FromStr},
 };
 
-use connection::{ConnectionError, ConnectionErrorKind::AddrInvalid};
+use connector::{ConnectionError, ConnectionErrorKind::AddrInvalid};
 
 /// Length of a YubiHSM2 serial number
 pub const SERIAL_SIZE: usize = 10;

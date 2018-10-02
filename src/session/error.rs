@@ -1,6 +1,6 @@
 //! Session error types
 
-use connection::ConnectionError;
+use connector::ConnectionError;
 use error::{Error, HsmErrorKind};
 use serialization::SerializationError;
 

@@ -14,52 +14,47 @@ const EXAMPLE_MESSAGE: &[u8] =
 
 const BENCH_KEY_ID: yubihsm::ObjectId = 999;
 
-#[cfg(not(feature = "usb"))]
-fn init_yubihsm_session() -> yubihsm::HttpClient {
-    yubihsm::HttpClient::create(Default::default(), Default::default(), true).unwrap()
-}
+fn clear_key_slot(hsm: &mut yubihsm::Client) {
+    let _ = hsm.delete_object(BENCH_KEY_ID, yubihsm::ObjectType::AsymmetricKey);
 
-#[cfg(feature = "usb")]
-fn init_yubihsm_session() -> yubihsm::UsbClient {
-    yubihsm::UsbClient::create(Default::default(), Default::default(), true).unwrap()
-}
-
-fn clear_key_slot<A>(session: &mut yubihsm::Client<A>)
-where
-    A: yubihsm::Connection,
-{
-    let _ = yubihsm::delete_object(session, BENCH_KEY_ID, yubihsm::ObjectType::AsymmetricKey);
     assert!(
-        yubihsm::get_object_info(session, BENCH_KEY_ID, yubihsm::ObjectType::AsymmetricKey)
+        hsm.get_object_info(BENCH_KEY_ID, yubihsm::ObjectType::AsymmetricKey)
             .is_err()
     );
 }
 
 /// Create a public key for use in a test
-fn generate_key<A>(session: &mut yubihsm::Client<A>)
-where
-    A: yubihsm::Connection,
-{
-    clear_key_slot(session);
+fn generate_key(hsm: &mut yubihsm::Client) {
+    clear_key_slot(hsm);
 
-    let key_id = yubihsm::generate_asymmetric_key(
-        session,
-        BENCH_KEY_ID,
-        "ed25519 benchmark key".into(),
-        yubihsm::Domain::DOM1,
-        yubihsm::Capability::ASYMMETRIC_SIGN_EDDSA,
-        yubihsm::AsymmetricAlg::Ed25519,
-    ).unwrap_or_else(|e| panic!("error generating asymmetric key: {}", e));
+    let key_id = hsm
+        .generate_asymmetric_key(
+            BENCH_KEY_ID,
+            "ed25519 benchmark key".into(),
+            yubihsm::Domain::DOM1,
+            yubihsm::Capability::ASYMMETRIC_SIGN_EDDSA,
+            yubihsm::AsymmetricAlg::Ed25519,
+        ).unwrap_or_else(|e| panic!("error generating asymmetric key: {}", e));
 
     assert_eq!(key_id, BENCH_KEY_ID);
 }
 
 fn sign_ed25519(c: &mut Criterion) {
-    let mut session = init_yubihsm_session();
-    generate_key(&mut session);
+    #[cfg(not(feature = "usb"))]
+    let connector = yubihsm::HttpConnector::default();
+
+    #[cfg(feature = "usb")]
+    let connector = yubihsm::UsbConnector::default();
+
+    let mut hsm = yubihsm::Client::open(connector, Default::default(), true).unwrap();
+    generate_key(&mut hsm);
 
     c.bench_function("ed25519 signing", move |b| {
-        b.iter(|| yubihsm::sign_ed25519(&mut session, BENCH_KEY_ID, EXAMPLE_MESSAGE).unwrap())
+        b.iter(|| {
+            if let Err(e) = hsm.sign_ed25519(BENCH_KEY_ID, EXAMPLE_MESSAGE) {
+                eprintln!("error performing ed25519 signature: {}", e);
+            }
+        })
     });
 }
 

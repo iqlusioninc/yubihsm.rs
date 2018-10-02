@@ -49,7 +49,7 @@ use block_modes::{block_padding::Iso7816, BlockMode, BlockModeIv, Cbc};
 use byteorder::{BigEndian, ByteOrder};
 use clear_on_drop::clear::Clear;
 use cmac::{crypto_mac::Mac as CryptoMac, Cmac};
-use command::CommandType;
+use command::CommandCode;
 #[cfg(feature = "mockhsm")]
 use response::ResponseCode;
 #[cfg(feature = "mockhsm")]
@@ -115,7 +115,6 @@ impl SecureChannel {
     }
 
     /// Get the channel (i.e. session) ID
-    #[inline]
     pub fn id(&self) -> SessionId {
         self.id
     }
@@ -145,7 +144,7 @@ impl SecureChannel {
     /// Compute a command message with a MAC value for this session
     pub fn command_with_mac(
         &mut self,
-        command_type: CommandType,
+        command_type: CommandCode,
         command_data: &[u8],
     ) -> Result<CommandMessage, SessionError> {
         if self.counter >= MAX_COMMANDS_PER_SESSION {
@@ -184,7 +183,7 @@ impl SecureChannel {
         assert_eq!(self.mac_chaining_value, [0u8; MAC_SIZE * 2]);
 
         let host_cryptogram = self.host_cryptogram();
-        self.command_with_mac(CommandType::AuthSession, host_cryptogram.as_slice())
+        self.command_with_mac(CommandCode::AuthSession, host_cryptogram.as_slice())
     }
 
     /// Handle the authenticate session response from the card
@@ -230,7 +229,7 @@ impl SecureChannel {
         let cbc_encryptor = Aes128Cbc::new(cipher, &icv);
         let ciphertext = cbc_encryptor.encrypt_pad(&mut message, pos).unwrap();
 
-        self.command_with_mac(CommandType::SessionMessage, ciphertext)
+        self.command_with_mac(CommandCode::SessionMessage, ciphertext)
     }
 
     /// Verify and decrypt a response from the card
@@ -346,7 +345,7 @@ impl SecureChannel {
         // command." -- GPC_SPE_014 section 6.2.6
         self.counter = 1;
 
-        Ok(ResponseMessage::success(CommandType::AuthSession, vec![]))
+        Ok(ResponseMessage::success(CommandCode::AuthSession, vec![]))
     }
 
     /// Verify and decrypt a command from the host
@@ -438,7 +437,7 @@ impl SecureChannel {
         let ct_len = cbc_encryptor.encrypt_pad(&mut message, pos).unwrap().len();
         message.truncate(ct_len);
 
-        self.response_with_mac(ResponseCode::Success(CommandType::SessionMessage), message)
+        self.response_with_mac(ResponseCode::Success(CommandCode::SessionMessage), message)
     }
 
     /// Compute the MAC for a response message
@@ -539,12 +538,12 @@ fn compute_icv(cipher: &Aes128, counter: u32) -> GenericArray<u8, U16> {
 mod tests {
     use super::*;
     use auth_key::AuthKey;
-    use command::CommandType;
+    use command::CommandCode;
 
     const PASSWORD: &[u8] = b"password";
     const HOST_CHALLENGE: &[u8] = &[0u8; 8];
     const CARD_CHALLENGE: &[u8] = &[0u8; 8];
-    const COMMAND_TYPE: CommandType = CommandType::Echo;
+    const COMMAND_CODE: CommandCode = CommandCode::Echo;
     const COMMAND_DATA: &[u8] = b"Hello, world!";
 
     fn create_channel_pair() -> (SecureChannel, SecureChannel) {
@@ -580,7 +579,7 @@ mod tests {
 
         // Host sends encrypted command
         let command_ciphertext = host_channel
-            .encrypt_command(CommandMessage::new(COMMAND_TYPE, Vec::from(COMMAND_DATA)).unwrap())
+            .encrypt_command(CommandMessage::new(COMMAND_CODE, Vec::from(COMMAND_DATA)).unwrap())
             .unwrap();
 
         // Card decrypts command
@@ -596,7 +595,7 @@ mod tests {
         let decrypted_response = host_channel.decrypt_response(response_ciphertext).unwrap();
 
         assert_eq!(host_channel.security_level, SecurityLevel::Authenticated);
-        assert_eq!(decrypted_response.command().unwrap(), COMMAND_TYPE);
+        assert_eq!(decrypted_response.command().unwrap(), COMMAND_CODE);
         assert_eq!(&decrypted_response.data[..], COMMAND_DATA);
     }
 
@@ -606,7 +605,7 @@ mod tests {
 
         // Host sends encrypted command
         let command_ciphertext = host_channel
-            .encrypt_command(CommandMessage::new(COMMAND_TYPE, Vec::from(COMMAND_DATA)).unwrap())
+            .encrypt_command(CommandMessage::new(COMMAND_CODE, Vec::from(COMMAND_DATA)).unwrap())
             .unwrap();
 
         // Card decrypts command

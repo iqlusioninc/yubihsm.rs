@@ -14,7 +14,7 @@ use super::{
     securechannel::{Mac, MAC_SIZE},
     SessionId,
 };
-use command::CommandType;
+use command::CommandCode;
 #[cfg(feature = "mockhsm")]
 use error::HsmErrorKind;
 use response::ResponseCode;
@@ -30,7 +30,7 @@ pub(crate) struct CommandMessage {
     pub uuid: Uuid,
 
     /// Type of command to be invoked
-    pub command_type: CommandType,
+    pub command_type: CommandCode,
 
     /// Session ID for this command
     pub session_id: Option<SessionId>,
@@ -44,7 +44,7 @@ pub(crate) struct CommandMessage {
 
 impl CommandMessage {
     /// Create a new command message without a MAC
-    pub fn new<T>(command_type: CommandType, command_data: T) -> Result<Self, SessionError>
+    pub fn new<T>(command_type: CommandCode, command_data: T) -> Result<Self, SessionError>
     where
         T: Into<Vec<u8>>,
     {
@@ -69,7 +69,7 @@ impl CommandMessage {
 
     /// Create a new command message with a MAC
     pub fn new_with_mac<D, M>(
-        command_type: CommandType,
+        command_type: CommandCode,
         session_id: SessionId,
         command_data: D,
         mac: M,
@@ -109,7 +109,7 @@ impl CommandMessage {
         }
 
         let command_type =
-            CommandType::from_u8(bytes[0]).map_err(|e| err!(ProtocolError, "{}", e))?;
+            CommandCode::from_u8(bytes[0]).map_err(|e| err!(ProtocolError, "{}", e))?;
 
         let length = BigEndian::read_u16(&bytes[1..3]) as usize;
 
@@ -125,7 +125,7 @@ impl CommandMessage {
         bytes.drain(..3);
 
         let (session_id, mac) = match command_type {
-            CommandType::AuthSession | CommandType::SessionMessage => {
+            CommandCode::AuthSession | CommandCode::SessionMessage => {
                 if bytes.is_empty() {
                     fail!(
                         ProtocolError,
@@ -303,7 +303,7 @@ impl ResponseMessage {
 
     /// Create a successful response
     #[cfg(feature = "mockhsm")]
-    pub fn success<T>(command_type: CommandType, response_data: T) -> ResponseMessage
+    pub fn success<T>(command_type: CommandCode, response_data: T) -> ResponseMessage
     where
         T: Into<Vec<u8>>,
     {
@@ -319,7 +319,7 @@ impl ResponseMessage {
     }
 
     /// Get the command being responded to
-    pub fn command(&self) -> Option<CommandType> {
+    pub fn command(&self) -> Option<CommandCode> {
         match self.code {
             ResponseCode::Success(cmd) => Some(cmd),
             _ => None,
@@ -375,7 +375,7 @@ impl Into<Vec<u8>> for ResponseMessage {
 fn has_session_id(code: ResponseCode) -> bool {
     match code {
         ResponseCode::Success(cmd_type) => match cmd_type {
-            CommandType::CreateSession | CommandType::SessionMessage => true,
+            CommandCode::CreateSession | CommandCode::SessionMessage => true,
             _ => false,
         },
         _ => false,
@@ -386,7 +386,7 @@ fn has_session_id(code: ResponseCode) -> bool {
 fn has_rmac(code: ResponseCode) -> bool {
     match code {
         ResponseCode::Success(cmd_type) => match cmd_type {
-            CommandType::SessionMessage => true,
+            CommandCode::SessionMessage => true,
             _ => false,
         },
         _ => false,

@@ -4,7 +4,7 @@
 use std::collections::BTreeMap;
 
 use audit::AuditOption;
-use connection::{ConnectionError, ConnectionErrorKind};
+use connector::{ConnectionError, ConnectionErrorKind};
 use object::{ObjectId, ObjectType};
 use session::{
     securechannel::{Challenge, SecureChannel},

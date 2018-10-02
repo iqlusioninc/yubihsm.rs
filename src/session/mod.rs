@@ -3,33 +3,28 @@
 use std::time::{Duration, Instant};
 use subtle::ConstantTimeEq;
 
-use command::{
-    //close_session::CloseSessionCommand,
-    create_session::create_session,
-    Command,
-    CommandType,
-};
-use connection::Connection;
+use command::{Command, CommandCode, CommandMessage};
+use connector::{Connection, Connector};
 use credentials::Credentials;
 use error::HsmErrorKind;
+use response::ResponseMessage;
 use serialization::deserialize;
 
 #[macro_use]
 mod macros;
 
+pub(crate) mod command;
 mod error;
 mod id;
-mod message;
 pub(crate) mod securechannel;
 mod timeout;
 
+use self::command::close::*;
 pub use self::id::SessionId;
-pub(crate) use self::message::{CommandMessage, ResponseMessage};
 use self::securechannel::{Challenge, SecureChannel};
 use self::SessionErrorKind::*;
 pub use self::{
     error::{SessionError, SessionErrorKind},
-    message::MAX_MSG_SIZE,
     timeout::SessionTimeout,
 };
 
@@ -40,21 +35,17 @@ pub use self::{
 /// than opaque "lost connection to HSM"-style errors.
 const TIMEOUT_FUZZ_FACTOR: Duration = Duration::from_secs(1);
 
-/// Encrypted connection to the HSM made through a particular connection.
-/// This type handles opening/closing the underlying connection and creating
-/// encrypted (SCP03) channels.
+/// Authenticated and encrypted (SCP03) `Session` with the HSM. A `Session` is
+/// needed to perform any command.
 ///
-/// This type provides one-shot behavior: the connection is opened, a session
-/// is authenticated, and remains open until an error occurs. Once an error
-/// has occurred this connection is aborted, and a new one must be created
-/// to restore communication with the HSM (which is handled by the higher-level
-/// `Session` type, which is intended to be the user-facing one)
-pub struct Session<A: Connection> {
+/// `Session`s are automatically closed on `Drop`, releasing HSM session
+/// resources and wiping the ephemeral keys used to encrypt the session.
+pub struct Session {
     /// ID for this session
     id: SessionId,
 
     /// Connection which communicates with the HSM (HTTP or USB)
-    connection: A,
+    connection: Box<Connection>,
 
     /// Encrypted channel (SCP03) to the HSM
     secure_channel: Option<SecureChannel>,
@@ -69,10 +60,10 @@ pub struct Session<A: Connection> {
     timeout: SessionTimeout,
 }
 
-impl<A: Connection> Session<A> {
+impl Session {
     /// Connect to the HSM using the given configuration and credentials
     pub(super) fn open(
-        config: &A::Config,
+        connector: &Connector,
         credentials: &Credentials,
         timeout: SessionTimeout,
     ) -> Result<Self, SessionError> {
@@ -82,17 +73,15 @@ impl<A: Connection> Session<A> {
             "timeout too low: must be longer than {:?}",
             TIMEOUT_FUZZ_FACTOR
         );
-        let connection = A::open(config)?;
 
-        // Ensure the new connection is healthy
-        if let Err(e) = connection.healthcheck() {
-            fail!(CreateFailed, e);
-        }
+        // Ensure `Connector` is healthy before attempting to open `Session`
+        connector.healthcheck()?;
 
+        let connection = connector.connect()?;
         let host_challenge = Challenge::random();
 
         let (session_id, session_response) =
-            create_session(&connection, credentials.auth_key_id, host_challenge)?;
+            command::create_session(&*connection, credentials.auth_key_id, host_challenge)?;
 
         let channel = SecureChannel::new(
             session_id,
@@ -117,7 +106,7 @@ impl<A: Connection> Session<A> {
         let id = channel.id();
         let now = Instant::now();
 
-        let mut connection = Session {
+        let mut session = Session {
             id,
             connection,
             secure_channel: Some(channel),
@@ -126,8 +115,13 @@ impl<A: Connection> Session<A> {
             timeout,
         };
 
-        connection.authenticate(credentials)?;
-        Ok(connection)
+        session.authenticate(credentials)?;
+        Ok(session)
+    }
+
+    /// Is this `Session` still open?
+    pub fn is_open(&self) -> bool {
+        self.secure_channel.is_some() && !self.timed_out()
     }
 
     /// Session ID value (1-16)
@@ -148,22 +142,19 @@ impl<A: Connection> Session<A> {
     }
 
     /// Encrypt a command, send it to the HSM, then read and decrypt the response
-    pub(super) fn send_command<T: Command>(
+    pub(crate) fn send_command<C: Command>(
         &mut self,
-        command: T,
-    ) -> Result<T::ResponseType, SessionError> {
+        command: C,
+    ) -> Result<C::ResponseType, SessionError> {
         let plaintext_cmd: CommandMessage = command.into();
         let cmd_type = plaintext_cmd.command_type;
         let encrypted_cmd = self.secure_channel()?.encrypt_command(plaintext_cmd)?;
         let uuid = encrypted_cmd.uuid;
 
-        session_debug!(self, "uuid={} cmd={:?}", uuid, T::COMMAND_TYPE);
+        session_debug!(self, "uuid={} cmd={:?}", uuid, C::COMMAND_CODE);
 
         let encrypted_response = self.send_message(encrypted_cmd)?;
 
-        // For decryption we go straight to the connection's secure channel,
-        // skipping checks of whether or not the connection is open, as we
-        // have already completed all I/O.
         let response = self
             .secure_channel()?
             .decrypt_response(encrypted_response)
@@ -175,21 +166,19 @@ impl<A: Connection> Session<A> {
         if response.is_err() {
             if let Some(kind) = HsmErrorKind::from_response_message(&response) {
                 session_debug!(self, "uuid={} failed={:?} error={:?}", uuid, cmd_type, kind);
-
                 return Err(kind.into());
             } else {
                 session_debug!(self, "uuid={} failed={:?} error=unknown", uuid, cmd_type);
-
                 fail!(ResponseError, "{:?} failed: HSM error", cmd_type);
             }
         }
 
-        if response.command() != Some(T::COMMAND_TYPE) {
+        if response.command() != Some(C::COMMAND_CODE) {
             fail!(
                 ResponseError,
                 "bad command type in response: {:?} (expected {:?})",
                 response.command(),
-                T::COMMAND_TYPE,
+                C::COMMAND_CODE,
             );
         }
 
@@ -212,9 +201,8 @@ impl<A: Connection> Session<A> {
             }
         };
 
-        if response.is_err() || response.command() != Some(cmd_type) {
+        if response.is_err() {
             session_error!(self, "uuid={} error={:?}", &uuid, response.code);
-
             fail!(ResponseError, "HSM error (session: {})", self.id().to_u8(),);
         }
 
@@ -226,7 +214,7 @@ impl<A: Connection> Session<A> {
         session_debug!(
             self,
             "command={:?} key={}",
-            CommandType::AuthSession,
+            CommandCode::AuthSession,
             credentials.auth_key_id
         );
 
@@ -240,7 +228,7 @@ impl<A: Connection> Session<A> {
             session_error!(
                 self,
                 "failed={:?} key={} err={:?}",
-                CommandType::AuthSession,
+                CommandCode::AuthSession,
                 credentials.auth_key_id,
                 e.to_string()
             );
@@ -261,7 +249,7 @@ impl<A: Connection> Session<A> {
 }
 
 /// Close session automatically on drop
-impl<A: Connection> Drop for Session<A> {
+impl Drop for Session {
     /// Make a best effort to close the session
     ///
     /// NOTE: this runs the potential of panicking in a drop handler, which
@@ -272,15 +260,15 @@ impl<A: Connection> Drop for Session<A> {
     /// Because of this, it's very important `send_encrypted_command` and
     /// everything it calls be panic-free.
     fn drop(&mut self) {
-        // Don't do anything if the session is presumed unhealthy
-        //if !self.is_open() {
-        //    return;
-        //}
+        // Don't do anything if the session already timed out
+        if self.timed_out() {
+            return;
+        }
 
         session_debug!(self, "closing dropped session");
 
-        //if let Err(e) = self.send_command(CloseSessionCommand {}) {
-        //    session_debug!(self, "error closing dropped session: {}", e);
-        //}
+        if let Err(e) = self.send_command(CloseSessionCommand {}) {
+            session_debug!(self, "error closing dropped session: {}", e);
+        }
     }
 }

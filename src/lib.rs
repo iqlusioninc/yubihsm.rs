@@ -29,16 +29,21 @@
 //!
 //! ```no_run
 //! extern crate yubihsm;
-//! use yubihsm::HttpClient;
+//! use yubihsm::{Client, Credentials, HttpConnector};
 //!
-//! // Default yubihsm-connector URI, auth key ID, and password for yubihsm-connector
+//! // Connect to default `yubihsm-connector` URI (http://127.0.0.1:1234)
+//! let connector = HttpConnector::new(&Default::default()).unwrap();
+//!
+//! // Default auth key ID, and password for yubihsm-connector
 //! // NOTE: DON'T USE THIS IN PRODUCTION!
-//! let mut client =
-//!     HttpClient::create(Default::default(), Default::default(), true).unwrap();
+//! let credentials = Credentials::default();
+//!
+//! // Connect to the HSM and authenticate with the given credentials
+//! let mut hsm_client = Client::open(connector, credentials, true).unwrap();
 //!
 //! // Note: You'll need to create this key first. Run the following from yubihsm-shell:
 //! // `generate asymmetric 0 100 ed25519_test_key 1 asymmetric_sign_eddsa ed25519`
-//! let signature = yubihsm::sign_ed25519(&mut client, 100, "Hello, world!").unwrap();
+//! let signature = hsm_client.sign_ed25519(100, "Hello, world!").unwrap();
 //! println!("Ed25519 signature: {:?}", signature);
 //! ```
 //!
@@ -100,13 +105,6 @@ pub mod error;
 #[macro_use]
 mod serialization;
 
-/// Connections for connecting to the HSM. There are two main connections supported:
-///
-/// - `HttpConnection`: communicates with the YubiHSM via the `yubihsm-connector`
-///   network service, which provides an HTTP API
-/// - `UsbConnection`: communicates with the YubiHSM directly via USB.
-pub mod connection;
-
 /// Cryptographic algorithms supported by the HSM
 pub mod algorithm;
 
@@ -130,6 +128,13 @@ pub mod client;
 /// For more information, see:
 /// <https://developers.yubico.com/YubiHSM2/Commands/>
 pub mod command;
+
+/// Connections for connecting to the HSM. There are two main connections supported:
+///
+/// - `HttpConnection`: communicates with the YubiHSM via the `yubihsm-connector`
+///   network service, which provides an HTTP API
+/// - `UsbConnection`: communicates with the YubiHSM directly via USB.
+pub mod connector;
 
 /// Credentials used to authenticate to the HSM (key ID + `AuthKey`)
 pub mod credentials;
@@ -166,33 +171,18 @@ pub use algorithm::*;
 pub use audit::AuditOption;
 pub use auth_key::{AuthKey, AUTH_KEY_SIZE};
 pub use capability::Capability;
-#[cfg(feature = "http")]
-pub use client::HttpClient;
-#[cfg(feature = "usb")]
-pub use client::UsbClient;
 pub use client::{Client, ClientError};
+pub use command::CommandCode;
 #[cfg(feature = "http")]
-pub use connection::http::{HttpConfig, HttpConnection};
+pub use connector::http::{HttpConfig, HttpConnector};
 #[cfg(feature = "usb")]
-pub use connection::usb::{UsbConfig, UsbConnection, UsbDevices, UsbTimeout};
-pub use connection::Connection;
-// Import command functions from all submodules
-pub use command::{
-    attest_asymmetric::*, blink::*, delete_object::*, device_info::*, echo::*, export_wrapped::*,
-    generate_asymmetric_key::*, generate_hmac_key::*, generate_wrap_key::*, get_logs::*,
-    get_object_info::*, get_opaque::*, get_option::*, get_pseudo_random::*, get_pubkey::*, hmac::*,
-    import_wrapped::*, list_objects::*, put_asymmetric_key::*, put_auth_key::*, put_hmac_key::*,
-    put_opaque::*, put_option::*, put_otp_aead_key::*, put_wrap_key::*, reset::*, set_log_index::*,
-    sign_ecdsa::*, sign_eddsa::*, storage_status::*, unwrap_data::*, verify_hmac::*, wrap_data::*,
-    CommandType,
-};
-#[cfg(feature = "rsa")]
-pub use command::{sign_rsa_pkcs1v15::*, sign_rsa_pss::*};
+pub use connector::usb::{UsbConfig, UsbConnector};
+pub use connector::{Connection, ConnectionError, Connector};
 pub use credentials::Credentials;
 pub use domain::Domain;
 pub use error::*;
 #[cfg(feature = "mockhsm")]
-pub use mockhsm::{MockConnection, MockSession};
+pub use mockhsm::MockHsm;
 pub use object::*;
 pub use response::ResponseCode;
 pub use serial_number::SerialNumber;

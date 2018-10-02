@@ -1,33 +1,34 @@
-use yubihsm::{self, AuthAlg, AuthKey, Capability, ObjectOrigin, ObjectType};
+use yubihsm::{AuthAlg, AuthKey, Capability, ObjectOrigin, ObjectType};
 
 use {clear_test_key_slot, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL, TEST_MESSAGE};
 
 /// Put a new authentication key into the `YubiHSM`
 #[test]
 fn put_auth_key() {
-    let mut session = create_session!();
+    let mut client = ::get_hsm_client();
     let algorithm = AuthAlg::YUBICO_AES;
     let capabilities = Capability::all();
     let delegated_capabilities = Capability::all();
 
-    clear_test_key_slot(&mut session, ObjectType::AuthKey);
+    clear_test_key_slot(&mut client, ObjectType::AuthKey);
 
     let new_auth_key = AuthKey::derive_from_password(TEST_MESSAGE);
 
-    let key_id = yubihsm::put_auth_key(
-        &mut session,
-        TEST_KEY_ID,
-        TEST_KEY_LABEL.into(),
-        TEST_DOMAINS,
-        capabilities,
-        delegated_capabilities,
-        algorithm,
-        new_auth_key,
-    ).unwrap_or_else(|err| panic!("error putting auth key: {}", err));
+    let key_id = client
+        .put_auth_key(
+            TEST_KEY_ID,
+            TEST_KEY_LABEL.into(),
+            TEST_DOMAINS,
+            capabilities,
+            delegated_capabilities,
+            algorithm,
+            new_auth_key,
+        ).unwrap_or_else(|err| panic!("error putting auth key: {}", err));
 
     assert_eq!(key_id, TEST_KEY_ID);
 
-    let object_info = yubihsm::get_object_info(&mut session, TEST_KEY_ID, ObjectType::AuthKey)
+    let object_info = client
+        .get_object_info(TEST_KEY_ID, ObjectType::AuthKey)
         .unwrap_or_else(|err| panic!("error getting object info: {}", err));
 
     assert_eq!(object_info.capabilities, capabilities);

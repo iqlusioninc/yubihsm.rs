@@ -2,9 +2,11 @@
 
 use std::fmt::{self, Debug};
 
+use command::CommandMessage;
+use response::ResponseMessage;
 use session::{
     securechannel::{Challenge, Cryptogram, SecureChannel},
-    CommandMessage, ResponseMessage, SessionId,
+    SessionId,
 };
 
 /// Session with the `MockHsm`

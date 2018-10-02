@@ -1,11 +1,10 @@
 #[cfg(not(debug_assertions))]
 compile_error!("MockHsm is not intended for use in release builds");
 
-use serde::{
-    de::{Deserialize, Deserializer},
-    ser::{Serialize, Serializer},
+use std::{
+    str::FromStr,
+    sync::{Arc, Mutex},
 };
-use std::sync::{Arc, Mutex};
 
 mod audit;
 mod command;
@@ -16,7 +15,11 @@ mod state;
 
 pub use self::connection::MockConnection;
 use self::state::State;
-use client::Client;
+use connector::{Connection, ConnectionError, Connector};
+use serial_number::SerialNumber;
+
+/// Mock serial number for the MockHsm
+pub const MOCK_SERIAL_NUMBER: &str = "0123456789";
 
 /// Software simulation of a `YubiHSM2` intended for testing
 /// implemented as a `yubihsm::Connection`.
@@ -36,25 +39,31 @@ impl MockHsm {
     }
 }
 
+impl Connector for MockHsm {
+    /// Create a new connection with a clone of the MockHsm state
+    fn connect(&self) -> Result<Box<Connection>, ConnectionError> {
+        Ok(Box::new(MockConnection::new(self)))
+    }
+
+    /// Rust never sleeps
+    fn healthcheck(&self) -> Result<(), ConnectionError> {
+        Ok(())
+    }
+
+    /// Get the serial number for the current YubiHSM2 (if available)
+    fn serial_number(&self) -> Result<SerialNumber, ConnectionError> {
+        Ok(SerialNumber::from_str(MOCK_SERIAL_NUMBER).unwrap())
+    }
+}
+
 impl Default for MockHsm {
     fn default() -> Self {
         Self::new()
     }
 }
 
-// This is required by the `Connection` trait
-impl Serialize for MockHsm {
-    fn serialize<S: Serializer>(&self, _serializer: S) -> Result<S::Ok, S::Error> {
-        panic!("unimplemented");
+impl Into<Box<Connector>> for MockHsm {
+    fn into(self) -> Box<Connector> {
+        Box::new(self)
     }
 }
-
-// This is required by the `Connection` trait
-impl<'de> Deserialize<'de> for MockHsm {
-    fn deserialize<D: Deserializer<'de>>(_deserializer: D) -> Result<MockHsm, D::Error> {
-        panic!("unimplemented");
-    }
-}
-
-/// Drop-in replacement `Session` type which uses `MockHsm`
-pub type MockSession = Client<MockConnection>;

@@ -1,6 +1,6 @@
 //! Errors that occur during sessions
 
-use connection::ConnectionError;
+use connector::{ConnectionError, ConnectionErrorKind};
 use error::{Error, HsmErrorKind};
 use serialization::SerializationError;
 use session::{SessionError, SessionErrorKind};
@@ -19,6 +19,13 @@ pub enum ClientErrorKind {
     /// Session is closed
     #[fail(display = "session closed")]
     ClosedSessionError,
+
+    /// Errors with the connection to the HSM
+    #[fail(display = "connection error")]
+    ConnectionError {
+        /// Connection error kind
+        kind: ConnectionErrorKind,
+    },
 
     /// Couldn't create session
     #[fail(display = "couldn't create session")]
@@ -40,14 +47,15 @@ pub enum ClientErrorKind {
     ResponseError,
 }
 
-// TODO: connection (nee connection) error variant
+// TODO: capture causes?
 impl From<ConnectionError> for ClientError {
     fn from(err: ConnectionError) -> Self {
-        // TODO: protocol error is probably not the best variant here
-        err!(ClientErrorKind::ProtocolError, err.to_string())
+        let kind = ClientErrorKind::ConnectionError { kind: err.kind() };
+        err!(kind, err.description())
     }
 }
 
+// TODO: capture causes?
 impl From<SessionError> for ClientError {
     fn from(err: SessionError) -> Self {
         let kind = match err.kind() {
@@ -69,6 +77,6 @@ impl From<SessionError> for ClientError {
 // TODO: capture causes?
 impl From<SerializationError> for ClientError {
     fn from(err: SerializationError) -> Self {
-        err!(ClientErrorKind::ProtocolError, err.to_string())
+        err!(ClientErrorKind::ProtocolError, err.description())
     }
 }

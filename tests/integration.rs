@@ -1,72 +1,27 @@
 //! Integration tests (using live YubiHSM2 or MockHsm)
 
-#[cfg(not(feature = "mockhsm"))]
 #[macro_use]
 extern crate lazy_static;
 extern crate ring;
 extern crate sha2;
 extern crate untrusted;
 extern crate yubihsm;
-use yubihsm::{AsymmetricAlg, Capability, Client, Domain, ObjectId, ObjectType};
 
-/// Perform a live integration test against yubihsm-connector and a real `YubiHSM2`
-#[cfg(not(feature = "mockhsm"))]
-macro_rules! create_session {
-    () => {
-        $crate::HSM_CLIENT.lock().unwrap()
-    };
-}
+use std::sync::{Mutex, MutexGuard};
 
-/// Perform an integration test against the MockHsm (useful for CI)
+#[cfg(feature = "http")]
+use yubihsm::HttpConnector;
 #[cfg(feature = "mockhsm")]
-macro_rules! create_session {
-    () => {
-        $crate::TestClient::create(::yubihsm::mockhsm::MockHsm::new(), Default::default(), true)
-            .unwrap()
-    };
-}
-
-#[cfg(not(any(feature = "usb", feature = "mockhsm")))]
-lazy_static! {
-    static ref HSM_CLIENT: ::std::sync::Mutex<TestClient> = {
-        let session = Client::create(Default::default(), Default::default(), true)
-            .unwrap_or_else(|err| panic!("{}", err));
-        ::std::sync::Mutex::new(session)
-    };
-}
-
-#[cfg(all(feature = "usb", not(feature = "mockhsm")))]
-lazy_static! {
-    static ref HSM_CLIENT: ::std::sync::Mutex<TestClient> = {
-        let session = Client::create(Default::default(), Default::default(), true)
-            .unwrap_or_else(|err| panic!("{}", err));
-        ::std::sync::Mutex::new(session)
-    };
-}
+use yubihsm::MockHsm;
+#[cfg(feature = "usb")]
+use yubihsm::UsbConnector;
+use yubihsm::{AsymmetricAlg, Capability, Client, Connector, Domain, ObjectId, ObjectType};
 
 /// Integration tests for individual YubiHSM2 commands
 pub mod command;
 
 /// Cryptographic test vectors taken from standards documents
 mod test_vectors;
-
-#[cfg(not(any(feature = "usb", feature = "mockhsm")))]
-use yubihsm::HttpConnection;
-
-#[cfg(all(feature = "usb", not(feature = "mockhsm")))]
-use yubihsm::UsbConnection;
-
-#[cfg(feature = "mockhsm")]
-use yubihsm::mockhsm::MockConnection;
-
-#[cfg(not(any(feature = "usb", feature = "mockhsm")))]
-type TestClient = Client<HttpConnection>;
-
-#[cfg(all(feature = "usb", not(feature = "mockhsm")))]
-type TestClient = Client<UsbConnection>;
-
-#[cfg(feature = "mockhsm")]
-type TestClient = Client<MockConnection>;
 
 /// Key ID to use for testing keygen/signing
 const TEST_KEY_ID: ObjectId = 100;
@@ -92,68 +47,119 @@ const TEST_MESSAGE: &[u8] = b"The YubiHSM2 is a simple, affordable, and secure H
 /// Size of a NIST P-256 public key
 pub const EC_P256_PUBLIC_KEY_SIZE: usize = 64;
 
-// Ensure we can read the YubiHSM2's serial number
-//#[test]
-//fn get_yubihsm_serial_number() {
-//    let mut session = create_session!();
-//    #[allow(unused_variables)]
-//    let serial_result = session.serial_number();
-//    #[cfg(any(feature = "usb", feature = "mockhsm"))]
-//    assert!(serial_result.is_ok());
-//}
+lazy_static! {
+    static ref HSM_CLIENT: Mutex<Client> =
+        { Mutex::new(Client::open(create_hsm_connector(), Default::default(), true).unwrap()) };
+}
 
 //
 // Helper Functions
 //
 
+/// Create a `yubihsm::Client` to run the test suite against
+pub fn get_hsm_client() -> MutexGuard<'static, Client> {
+    HSM_CLIENT.lock().unwrap()
+}
+
+/// Create a `yubihsm::Connector` for accessing the HSM
+///
+/// Connector is selected by preference based on cargo features.
+/// The preference order is:
+///
+/// 1. `mockhsm`
+/// 2. `usb`
+/// 3. `http`
+///
+/// Panics if none of the above features are enabled
+#[allow(unreachable_code)]
+pub fn create_hsm_connector() -> Box<Connector> {
+    // MockHSM has highest priority when testing
+    #[cfg(feature = "mockhsm")]
+    return create_mockhsm_connector();
+
+    // USB has second highest priority when testing
+    #[cfg(feature = "usb")]
+    return create_usb_connector();
+
+    // HTTP has lowest priority when testing
+    #[cfg(feature = "http")]
+    return create_http_connector();
+
+    panic!(
+        "No connector features enabled! Enable one of these cargo features: \
+         http, usb, mockhsm"
+    );
+}
+
+/// Connect to the HSM via HTTP using `yubihsm-connector`
+#[cfg(feature = "http")]
+pub fn create_http_connector() -> Box<Connector> {
+    HttpConnector::new(&Default::default()).unwrap().into()
+}
+
+/// Connect to the HSM via USB
+#[cfg(feature = "usb")]
+pub fn create_usb_connector() -> Box<Connector> {
+    UsbConnector::new(&Default::default()).unwrap().into()
+}
+
+/// Create a mock HSM for testing in situations where a hardware device is
+/// unavailable/impractical (e.g. CI)
+#[cfg(feature = "mockhsm")]
+pub fn create_mockhsm_connector() -> Box<Connector> {
+    MockHsm::default().into()
+}
+
 /// Delete the key in the test key slot (if it exists, otherwise do nothing)
-pub fn clear_test_key_slot(session: &mut TestClient, object_type: ObjectType) {
+pub fn clear_test_key_slot(client: &mut Client, object_type: ObjectType) {
     // Delete the key in TEST_KEY_ID slot it exists (we use it for testing)
     // Ignore errors since the object may not exist yet
-    let _ = yubihsm::delete_object(session, TEST_KEY_ID, object_type);
+    if let Err(e) = client.delete_object(TEST_KEY_ID, object_type) {
+        eprintln!("error clearing test key: {}", e);
+    }
 
     // Ensure the object does not already exist
-    assert!(yubihsm::get_object_info(session, TEST_KEY_ID, object_type).is_err());
+    assert!(client.get_object_info(TEST_KEY_ID, object_type).is_err());
 }
 
 /// Create a public key for use in a test
 pub fn generate_asymmetric_key(
-    session: &mut TestClient,
+    client: &mut Client,
     algorithm: AsymmetricAlg,
     capabilities: Capability,
 ) {
-    clear_test_key_slot(session, ObjectType::AsymmetricKey);
+    clear_test_key_slot(client, ObjectType::AsymmetricKey);
 
-    let key_id = yubihsm::generate_asymmetric_key(
-        session,
-        TEST_KEY_ID,
-        TEST_KEY_LABEL.into(),
-        TEST_DOMAINS,
-        capabilities,
-        algorithm,
-    ).unwrap_or_else(|err| panic!("error generating asymmetric key: {}", err));
+    let key_id = client
+        .generate_asymmetric_key(
+            TEST_KEY_ID,
+            TEST_KEY_LABEL.into(),
+            TEST_DOMAINS,
+            capabilities,
+            algorithm,
+        ).unwrap_or_else(|err| panic!("error generating asymmetric key: {}", err));
 
     assert_eq!(key_id, TEST_KEY_ID);
 }
 
 /// Put an asymmetric private key into the HSM
 pub fn put_asymmetric_key<T: Into<Vec<u8>>>(
-    session: &mut TestClient,
+    client: &mut Client,
     algorithm: AsymmetricAlg,
     capabilities: Capability,
     data: T,
 ) {
-    clear_test_key_slot(session, ObjectType::AsymmetricKey);
+    clear_test_key_slot(client, ObjectType::AsymmetricKey);
 
-    let key_id = yubihsm::put_asymmetric_key(
-        session,
-        TEST_KEY_ID,
-        TEST_KEY_LABEL.into(),
-        TEST_DOMAINS,
-        capabilities,
-        algorithm,
-        data,
-    ).unwrap_or_else(|err| panic!("error putting asymmetric key: {}", err));
+    let key_id = client
+        .put_asymmetric_key(
+            TEST_KEY_ID,
+            TEST_KEY_LABEL.into(),
+            TEST_DOMAINS,
+            capabilities,
+            algorithm,
+            data,
+        ).unwrap_or_else(|err| panic!("error putting asymmetric key: {}", err));
 
     assert_eq!(key_id, TEST_KEY_ID);
 }

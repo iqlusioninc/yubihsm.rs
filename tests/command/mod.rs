@@ -20,6 +20,8 @@ pub mod put_opaque;
 pub mod put_option;
 #[cfg(feature = "mockhsm")]
 pub mod reset;
+// TODO: fix MockHsm ECDSA support
+#[cfg(not(feature = "mockhsm"))]
 pub mod sign_ecdsa;
 pub mod sign_eddsa;
 pub mod storage_status;

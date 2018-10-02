@@ -3,15 +3,15 @@ use serde::de::{self, Deserialize, Deserializer, Visitor};
 use serde::ser::{Serialize, Serializer};
 use std::fmt;
 
-use command::CommandType;
+use command::CommandCode;
 
 /// Audit settings for a particular command
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct AuditCommand(pub CommandType, pub AuditOption);
+pub struct AuditCommand(pub CommandCode, pub AuditOption);
 
 impl AuditCommand {
     /// Get the command type
-    pub fn command_type(&self) -> CommandType {
+    pub fn command_type(&self) -> CommandCode {
         self.0
     }
 

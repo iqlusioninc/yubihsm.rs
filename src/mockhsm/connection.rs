@@ -1,39 +1,21 @@
-use std::{
-    str::FromStr,
-    sync::{Arc, Mutex},
-};
+use std::sync::{Arc, Mutex};
 use uuid::Uuid;
 
 use super::{command, state::State, MockHsm};
-use command::CommandType;
-use connection::{Connection, ConnectionError, ConnectionErrorKind::ConnectionFailed};
-use serial_number::SerialNumber;
-use session::CommandMessage;
+use command::{CommandCode, CommandMessage};
+use connector::{Connection, ConnectionError, ConnectionErrorKind::ConnectionFailed};
 
 /// A mocked connection to the MockHsm
 pub struct MockConnection(Arc<Mutex<State>>);
 
-/// Mock serial number for the MockHsm
-pub const MOCK_SERIAL_NUMBER: &str = "0123456789";
+impl MockConnection {
+    /// Create a new connection with a clone of the MockHsm state
+    pub(super) fn new(hsm: &MockHsm) -> Self {
+        MockConnection(hsm.0.clone())
+    }
+}
 
 impl Connection for MockConnection {
-    type Config = MockHsm;
-
-    /// Create a new connection with a clone of the MockHsm state
-    fn open(hsm: &MockHsm) -> Result<Self, ConnectionError> {
-        Ok(MockConnection(hsm.0.clone()))
-    }
-
-    /// Rust never sleeps
-    fn healthcheck(&self) -> Result<(), ConnectionError> {
-        Ok(())
-    }
-
-    /// Get the serial number for the current YubiHSM2 (if available)
-    fn serial_number(&self) -> Result<SerialNumber, ConnectionError> {
-        Ok(SerialNumber::from_str(MOCK_SERIAL_NUMBER).unwrap())
-    }
-
     /// Send a message to the MockHsm
     fn send_message(&self, _uuid: Uuid, body: Vec<u8>) -> Result<Vec<u8>, ConnectionError> {
         let command = CommandMessage::parse(body)
@@ -45,9 +27,9 @@ impl Connection for MockConnection {
             .map_err(|e| err!(ConnectionFailed, "error obtaining state lock: {}", e))?;
 
         match command.command_type {
-            CommandType::CreateSession => command::create_session(&mut state, &command),
-            CommandType::AuthSession => command::authenticate_session(&mut state, &command),
-            CommandType::SessionMessage => command::session_message(&mut state, command),
+            CommandCode::CreateSession => command::create_session(&mut state, &command),
+            CommandCode::AuthSession => command::authenticate_session(&mut state, &command),
+            CommandCode::SessionMessage => command::session_message(&mut state, command),
             unsupported => fail!(ConnectionFailed, "unsupported command: {:?}", unsupported),
         }
     }
