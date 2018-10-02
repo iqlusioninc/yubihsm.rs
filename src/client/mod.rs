@@ -142,13 +142,13 @@ impl Client {
         self.session.as_ref().map(Session::is_open).unwrap_or(false)
     }
 
-    /// Get the current session ID
+    /// Get the current session ID (if we have an open session).
     pub fn session_id(&self) -> Option<SessionId> {
         self.session.as_ref().and_then(|s| Some(s.id()))
     }
 
     /// Get current `Session` (either opening a new one or returning an already
-    /// open one)
+    /// open one).
     pub fn session(&mut self) -> Result<&mut Session, ClientError> {
         if self.is_connected() {
             return Ok(self.session.as_mut().unwrap());
@@ -167,7 +167,7 @@ impl Client {
     }
 
     /// Ping the HSM, ensuring we have a live connection and returning the
-    /// end-to-end latency
+    /// end-to-end latency.
     pub fn ping(&mut self) -> Result<Duration, ClientError> {
         let t = Instant::now();
         let uuid = Uuid::new_v4().to_hyphenated().to_string();
@@ -184,7 +184,7 @@ impl Client {
         Ok(Instant::now().duration_since(t))
     }
 
-    /// Encrypt a command, send it to the HSM, then read and decrypt the response
+    /// Encrypt a command, send it to the HSM, then read and decrypt the response.
     fn send_command<T: Command>(&mut self, command: T) -> Result<T::ResponseType, ClientError> {
         Ok(self.session()?.send_command(command)?)
     }
