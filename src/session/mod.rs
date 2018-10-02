@@ -121,7 +121,7 @@ impl Session {
 
     /// Is this `Session` still open?
     pub fn is_open(&self) -> bool {
-        self.secure_channel.is_some() && !self.timed_out()
+        self.secure_channel.is_some() && !self.is_timed_out()
     }
 
     /// Session ID value (1-16)
@@ -134,8 +134,16 @@ impl Session {
         Instant::now().duration_since(self.created_at)
     }
 
+    /// Number of messages sent during this session
+    pub fn messages_sent(&self) -> Result<usize, SessionError> {
+        self.secure_channel
+            .as_ref()
+            .ok_or_else(|| err!(ClosedSessionError, "session is already closed"))
+            .map(SecureChannel::counter)
+    }
+
     /// Has this session timed out?
-    pub fn timed_out(&self) -> bool {
+    pub fn is_timed_out(&self) -> bool {
         let idle_time = Instant::now().duration_since(self.last_active);
         let timeout_with_fuzz = self.timeout.duration() - TIMEOUT_FUZZ_FACTOR;
         idle_time >= timeout_with_fuzz
@@ -261,7 +269,7 @@ impl Drop for Session {
     /// everything it calls be panic-free.
     fn drop(&mut self) {
         // Don't do anything if the session already timed out
-        if self.timed_out() {
+        if self.is_timed_out() {
             return;
         }
 
