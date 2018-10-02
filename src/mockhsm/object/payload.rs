@@ -5,7 +5,6 @@ use ring::rand::{SecureRandom, SystemRandom};
 use ring::signature::Ed25519KeyPair;
 use untrusted;
 
-use super::ecdsa::{ECDSAKeyPair, ECDSA_KEY_PAIR_SIZE};
 use algorithm::{Algorithm, AsymmetricAlg, AuthAlg, HmacAlg, OpaqueAlg, WrapAlg};
 use auth_key::{AuthKey, AUTH_KEY_SIZE};
 
@@ -17,9 +16,6 @@ pub(crate) const ED25519_SEED_SIZE: usize = 32;
 pub(crate) enum Payload {
     /// Authentication keys
     AuthKey(AuthKey),
-
-    /// ECDSA signing keys
-    EcdsaKeyPair(ECDSAKeyPair),
 
     /// Ed25519 signing keys
     Ed25519KeyPair([u8; ED25519_SEED_SIZE]),
@@ -64,10 +60,6 @@ impl Payload {
                 Payload::WrapKey(wrap_alg, bytes)
             }
             Algorithm::Asymmetric(asymmetric_alg) => match asymmetric_alg {
-                AsymmetricAlg::EC_P256 => {
-                    let keypair = ECDSAKeyPair::generate(asymmetric_alg, &csprng);
-                    Payload::EcdsaKeyPair(keypair)
-                }
                 AsymmetricAlg::Ed25519 => {
                     let mut bytes = [0u8; ED25519_SEED_SIZE];
                     csprng.fill(&mut bytes).unwrap();
@@ -94,7 +86,6 @@ impl Payload {
     pub fn algorithm(&self) -> Algorithm {
         match *self {
             Payload::AuthKey(_) => Algorithm::Auth(AuthAlg::YUBICO_AES),
-            Payload::EcdsaKeyPair(_) => Algorithm::Asymmetric(AsymmetricAlg::EC_P256),
             Payload::Ed25519KeyPair(_) => Algorithm::Asymmetric(AsymmetricAlg::Ed25519),
             Payload::HmacKey(alg, _) => alg.into(),
             Payload::Opaque(alg, _) => alg.into(),
@@ -106,7 +97,6 @@ impl Payload {
     pub fn len(&self) -> u16 {
         let l = match *self {
             Payload::AuthKey(_) => AUTH_KEY_SIZE,
-            Payload::EcdsaKeyPair(_) => ECDSA_KEY_PAIR_SIZE,
             Payload::Ed25519KeyPair(_) => ED25519_SEED_SIZE,
             Payload::HmacKey(_, ref data) => data.len(),
             Payload::Opaque(_, ref data) => data.len(),
@@ -118,7 +108,6 @@ impl Payload {
     /// If this object is a public key, return its byte serialization
     pub fn public_key_bytes(&self) -> Option<Vec<u8>> {
         match *self {
-            Payload::EcdsaKeyPair(ref k) => Some(k.public_key_bytes.clone()),
             Payload::Ed25519KeyPair(ref k) => Some(
                 Ed25519KeyPair::from_seed_unchecked(untrusted::Input::from(k))
                     .unwrap()
@@ -142,7 +131,6 @@ impl AsRef<[u8]> for Payload {
     fn as_ref(&self) -> &[u8] {
         match *self {
             Payload::AuthKey(ref k) => k.0.as_ref(),
-            Payload::EcdsaKeyPair(ref k) => &k.private_key_bytes,
             Payload::Ed25519KeyPair(ref k) => k.as_ref(),
             Payload::HmacKey(_, ref data) => data,
             Payload::Opaque(_, ref data) => data,

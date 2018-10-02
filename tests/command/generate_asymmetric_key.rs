@@ -26,6 +26,7 @@ fn ed25519_key_test() {
 }
 
 /// Generate a NIST P-256 key
+#[cfg(not(feature = "mockhsm"))]
 #[test]
 fn nistp256_key_test() {
     let mut client = ::get_hsm_client();

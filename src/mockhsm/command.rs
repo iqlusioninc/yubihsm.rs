@@ -34,7 +34,6 @@ use client::{
     put_wrap_key::{PutWrapKeyCommand, PutWrapKeyResponse},
     reset::ResetResponse,
     set_log_index::SetLogIndexResponse,
-    sign_ecdsa::{ECDSASignature, SignDataECDSACommand},
     sign_eddsa::{Ed25519Signature, SignDataEdDSACommand, ED25519_SIGNATURE_SIZE},
     storage_status::StorageStatusResponse,
     verify_hmac::{VerifyHMACCommand, VerifyHMACResponse},
@@ -132,7 +131,6 @@ pub(crate) fn session_message(
         CommandCode::PutWrapKey => put_wrap_key(state, &command.data),
         CommandCode::Reset => return Ok(reset(state, session_id)),
         CommandCode::SetLogIndex => SetLogIndexResponse {}.serialize(),
-        CommandCode::SignDataECDSA => sign_data_ecdsa(state, &command.data),
         CommandCode::SignDataEdDSA => sign_data_eddsa(state, &command.data),
         CommandCode::StorageStatus => storage_status(),
         CommandCode::VerifyHMAC => verify_hmac(state, &command.data),
@@ -605,24 +603,6 @@ fn reset(state: &mut State, session_id: SessionId) -> Vec<u8> {
 
     state.reset();
     response
-}
-
-/// Sign a message using the ECDSA signature algorithm
-fn sign_data_ecdsa(state: &State, cmd_data: &[u8]) -> ResponseMessage {
-    let command: SignDataECDSACommand = deserialize(cmd_data)
-        .unwrap_or_else(|e| panic!("error parsing CommandCode::SignDataEdDSA: {:?}", e));
-
-    if let Some(obj) = state.objects.get(command.key_id, ObjectType::AsymmetricKey) {
-        if let Payload::EcdsaKeyPair(ref key) = obj.payload {
-            ECDSASignature(key.sign(command.digest).as_ref().into()).serialize()
-        } else {
-            debug!("not an ECDSA key: {:?}", obj.algorithm());
-            HsmErrorKind::CommandInvalid.into()
-        }
-    } else {
-        debug!("no such object ID: {:?}", command.key_id);
-        HsmErrorKind::ObjectNotFound.into()
-    }
 }
 
 /// Sign a message using the Ed25519 signature algorithm
