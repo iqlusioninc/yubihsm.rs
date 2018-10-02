@@ -66,7 +66,7 @@ pub(crate) struct SecureChannel {
     /// ID of this channel (a.k.a. session ID)
     id: SessionId,
 
-    /// Counter of total command performed in this session
+    /// Number of messages sent over this channel
     counter: u32,
 
     /// External authentication state
@@ -471,6 +471,11 @@ impl SecureChannel {
             body,
             &mac.result().code(),
         ))
+    }
+
+    /// Get the current value of the internal message counter
+    pub(super) fn counter(&self) -> usize {
+        self.counter as usize
     }
 
     /// Increment the internal message counter
