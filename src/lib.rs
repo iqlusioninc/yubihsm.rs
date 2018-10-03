@@ -1,4 +1,4 @@
-//! yubihsm.rs: pure Rust client for YubiHSM2 hardware security modules
+//! **yubihsm.rs**: pure Rust client for YubiHSM2 hardware security modules
 //!
 //! ## Prerequisites
 //!
@@ -128,14 +128,17 @@ pub mod client;
 /// <https://developers.yubico.com/YubiHSM2/Commands/>
 pub mod command;
 
-/// Methods of connecting to an HSM. There are two main connections supported:
+/// Methods of connecting to a YubiHSM2:
 ///
-/// - [HttpConnector]: communicates with the YubiHSM via the `yubihsm-connector`
-///   network service, which provides an HTTP API
-/// - [UsbConnector]: communicates with the YubiHSM directly via USB.
+/// - [HttpConnector]: communicates with HSM via the `yubihsm-connector` service's HTTP API
+/// - [UsbConnector]: communicates with the HSM directly via USB using `libusb`.
+///
+/// Additionally, [MockHsm] implements the `Connector` API and can be used as a drop-in replacement
+/// in places where you would like a simulated HSM for testing (e.g. CI).
 ///
 /// [HttpConnector]: https://docs.rs/yubihsm/latest/yubihsm/connector/http/struct.HttpConnector.html
 /// [UsbConnector]: https://docs.rs/yubihsm/latest/yubihsm/connector/usb/struct.UsbConnector.html
+/// [MockHsm]: https://docs.rs/yubihsm/latest/yubihsm/mockhsm/struct.MockHsm.html
 pub mod connector;
 
 /// Credentials used to authenticate to the HSM (key ID + `AuthKey`).
