@@ -66,7 +66,6 @@ extern crate aes;
 extern crate bitflags;
 extern crate block_modes;
 extern crate byteorder;
-extern crate clear_on_drop;
 extern crate cmac;
 #[macro_use]
 extern crate failure;
@@ -95,6 +94,7 @@ extern crate subtle;
 #[cfg(feature = "mockhsm")]
 extern crate untrusted;
 extern crate uuid;
+extern crate zeroize;
 
 /// Error types
 #[macro_use]

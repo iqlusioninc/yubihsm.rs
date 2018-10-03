@@ -6,11 +6,11 @@
 //! increases the chance of collisions since the birthday bound is much
 //! lower (~2^32 messages).
 
-use clear_on_drop::clear::Clear;
 use cmac::crypto_mac::generic_array::typenum::U16;
 use cmac::crypto_mac::generic_array::GenericArray;
 use std::fmt;
 use subtle::{Choice, ConstantTimeEq};
+use zeroize::secure_zero_memory;
 
 use session::{SessionError, SessionErrorKind::VerifyFailed};
 
@@ -65,7 +65,7 @@ impl fmt::Debug for Mac {
 
 impl Drop for Mac {
     fn drop(&mut self) {
-        self.0.clear();
+        secure_zero_memory(&mut self.0);
     }
 }
 

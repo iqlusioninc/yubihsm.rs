@@ -1,6 +1,5 @@
 //! `YubiHSM2` authentication keys (2 * AES-128 symmetric PSK) from which session keys are derived
 
-use clear_on_drop::clear::Clear;
 use error::Error;
 #[cfg(feature = "hmac")]
 use hmac::Hmac;
@@ -10,6 +9,7 @@ use rand::{OsRng, RngCore};
 #[cfg(feature = "sha2")]
 use sha2::Sha256;
 use std::fmt::{self, Debug};
+use zeroize::secure_zero_memory;
 
 /// Auth keys are 2 * AES-128 keys
 pub const AUTH_KEY_SIZE: usize = 32;
@@ -111,7 +111,7 @@ impl Default for AuthKey {
 
 impl Drop for AuthKey {
     fn drop(&mut self) {
-        self.0.clear();
+        secure_zero_memory(&mut self.0);
     }
 }
 
