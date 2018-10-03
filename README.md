@@ -6,12 +6,13 @@
 [![Docs][docs-image]][docs-link]
 ![MIT/Apache2 licensed][license-image]
 [![Build Status][build-image]][build-link]
+<img src="https://rustsec.org/assets/img/badges/unsafe/deny.svg" width="88" height="20" alt="unsafe: deny">
 
 [crate-image]: https://img.shields.io/crates/v/yubihsm.svg
 [crate-link]: https://crates.io/crates/yubihsm
 [docs-image]: https://docs.rs/yubihsm/badge.svg
 [docs-link]: https://docs.rs/yubihsm/
-[license-image]: https://img.shields.io/badge/license-MIT/Apache2.0-blue.svg
+[license-image]: https://img.shields.io/badge/license-Apache2.0/MIT-blue.svg
 [build-image]: https://circleci.com/gh/tendermint/yubihsm-rs.svg?style=shield
 [build-link]: https://circleci.com/gh/tendermint/yubihsm-rs
 
