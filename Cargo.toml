@@ -53,7 +53,7 @@ rsa = ["sha2"]
 usb = ["lazy_static", "libusb"]
 
 [package.metadata.docs.rs]
-all-features = true
+features = ["mockhsm", "rsa", "usb"]
 rustc-args = ["-Ctarget-feature=+aes"]
 
 [[bench]]
