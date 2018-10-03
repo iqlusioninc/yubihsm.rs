@@ -1,3 +1,16 @@
+## [0.18.0] (2018-10-03)
+
+[0.18.0]: https://github.com/tendermint/yubihsm-rs/pull/139
+
+* [#138](https://github.com/tendermint/yubihsm-rs/pull/138)
+  Use the zeroize crate.
+
+* [#136](https://github.com/tendermint/yubihsm-rs/pull/136)
+  `Session`: add `messages_sent()`.
+
+* [#131](https://github.com/tendermint/yubihsm-rs/pull/131)
+  API overhaul: eliminate adapter-related generics with trait objects.
+
 ## [0.17.3] (2018-09-21)
 
 [0.17.3]: https://github.com/tendermint/yubihsm-rs/pull/130
