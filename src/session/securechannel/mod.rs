@@ -47,13 +47,13 @@ use aes::{
 use auth_key::AuthKey;
 use block_modes::{block_padding::Iso7816, BlockMode, BlockModeIv, Cbc};
 use byteorder::{BigEndian, ByteOrder};
-use clear_on_drop::clear::Clear;
 use cmac::{crypto_mac::Mac as CryptoMac, Cmac};
 use command::CommandCode;
 #[cfg(feature = "mockhsm")]
 use response::ResponseCode;
 #[cfg(feature = "mockhsm")]
 use subtle::ConstantTimeEq;
+use zeroize::secure_zero_memory;
 
 /// Size of an AES block
 const AES_BLOCK_SIZE: usize = 16;
@@ -125,7 +125,7 @@ impl SecureChannel {
         kdf::derive(&self.mac_key, 0, &self.context, &mut result_bytes);
 
         let result = Cryptogram::from_slice(&result_bytes);
-        result_bytes.clear();
+        secure_zero_memory(&mut result_bytes);
 
         result
     }
@@ -136,7 +136,7 @@ impl SecureChannel {
         kdf::derive(&self.mac_key, 1, &self.context, &mut result_bytes);
 
         let result = Cryptogram::from_slice(&result_bytes);
-        result_bytes.clear();
+        secure_zero_memory(&mut result_bytes);
 
         result
     }
@@ -490,9 +490,9 @@ impl SecureChannel {
     /// Terminate the session
     fn terminate(&mut self) {
         self.security_level = SecurityLevel::Terminated;
-        self.enc_key.clear();
-        self.mac_key.clear();
-        self.rmac_key.clear();
+        secure_zero_memory(&mut self.enc_key);
+        secure_zero_memory(&mut self.mac_key);
+        secure_zero_memory(&mut self.rmac_key);
     }
 }
 
