@@ -1,3 +1,10 @@
+## [0.18.1] (2018-10-03)
+
+[0.18.1]: https://github.com/tendermint/yubihsm-rs/pull/141
+
+* [#140](https://github.com/tendermint/yubihsm-rs/pull/140)
+  `Cargo.toml`: Don't build the nightly feature on docs.rs.
+
 ## [0.18.0] (2018-10-03)
 
 [0.18.0]: https://github.com/tendermint/yubihsm-rs/pull/139
