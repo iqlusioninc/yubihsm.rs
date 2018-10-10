@@ -47,6 +47,7 @@ use session::command::{
     close::CloseSessionResponse,
     create::{CreateSessionCommand, CreateSessionResponse},
 };
+use subtle::ConstantTimeEq;
 use {Capability, ObjectType, SessionId, WrapMessage, WrapNonce};
 
 use super::object::Payload;
@@ -655,10 +656,10 @@ fn verify_hmac(state: &State, cmd_data: &[u8]) -> ResponseMessage {
 
             let mut mac = Hmac::<Sha256>::new_varkey(key).unwrap();
             mac.input(&data[32..]);
-            let tag = mac.result();
-            let is_ok = tag.is_equal(&data[..32]);
+            let tag = mac.result().code();
+            let is_ok = tag.as_slice().ct_eq(&data[..32]).unwrap_u8();
 
-            VerifyHMACResponse(is_ok as u8).serialize()
+            VerifyHMACResponse(is_ok).serialize()
         } else {
             debug!("not an HMAC key: {:?}", obj.algorithm());
             HsmErrorKind::CommandInvalid.into()
