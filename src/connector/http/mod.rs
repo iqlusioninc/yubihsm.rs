@@ -40,7 +40,7 @@ const CONNECTOR_STATUS_PATH: &str = "/connector/status";
 /// <https://developers.yubico.com/YubiHSM2/Component_Reference/yubihsm-connector/>
 ///
 /// [Yubico SDK]: https://developers.yubico.com/YubiHSM2/Releases/
-#[derive(Default)]
+#[derive(Clone, Default, Debug)]
 pub struct HttpConnector(HttpConfig);
 
 impl HttpConnector {
