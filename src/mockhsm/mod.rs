@@ -29,7 +29,7 @@ pub const MOCK_SERIAL_NUMBER: &str = "0123456789";
 /// a real device.
 ///
 /// To enable, make sure to build yubihsm.rs with the `mockhsm` cargo feature
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct MockHsm(Arc<Mutex<State>>);
 
 impl MockHsm {

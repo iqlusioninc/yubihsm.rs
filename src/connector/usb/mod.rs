@@ -40,7 +40,7 @@ pub const YUBIHSM2_BULK_IN_ENDPOINT: u8 = 0x81;
 /// needs the `yubihsm-connector` process).
 ///
 /// [Yubico SDK]: https://developers.yubico.com/YubiHSM2/Releases/
-#[derive(Default)]
+#[derive(Clone, Default, Debug)]
 pub struct UsbConnector(UsbConfig);
 
 impl UsbConnector {

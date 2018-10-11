@@ -203,7 +203,7 @@ impl Device {
     pub fn open(self, timeout: UsbTimeout) -> Result<UsbConnection, ConnectionError> {
         let connection = UsbConnection::new(self, timeout)?;
 
-        info!(
+        debug!(
             "USB(bus={},addr={}): successfully opened {} (serial #{})",
             connection.device().bus_number(),
             connection.device().address(),
