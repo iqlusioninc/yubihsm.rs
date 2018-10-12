@@ -9,7 +9,7 @@ use rand::{OsRng, RngCore};
 #[cfg(feature = "sha2")]
 use sha2::Sha256;
 use std::fmt::{self, Debug};
-use zeroize::secure_zero_memory;
+use zeroize::Zeroize;
 
 /// Auth keys are 2 * AES-128 keys
 pub const AUTH_KEY_SIZE: usize = 32;
@@ -111,7 +111,7 @@ impl Default for AuthKey {
 
 impl Drop for AuthKey {
     fn drop(&mut self) {
-        secure_zero_memory(&mut self.0);
+        self.0.zeroize();
     }
 }
 

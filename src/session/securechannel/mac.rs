@@ -10,7 +10,7 @@ use cmac::crypto_mac::generic_array::typenum::U16;
 use cmac::crypto_mac::generic_array::GenericArray;
 use std::fmt;
 use subtle::{Choice, ConstantTimeEq};
-use zeroize::secure_zero_memory;
+use zeroize::Zeroize;
 
 use session::{SessionError, SessionErrorKind::VerifyFailed};
 
@@ -65,7 +65,7 @@ impl fmt::Debug for Mac {
 
 impl Drop for Mac {
     fn drop(&mut self) {
-        secure_zero_memory(&mut self.0);
+        self.0.zeroize();
     }
 }
 

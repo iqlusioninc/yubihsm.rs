@@ -53,7 +53,7 @@ use command::CommandCode;
 use response::ResponseCode;
 #[cfg(feature = "mockhsm")]
 use subtle::ConstantTimeEq;
-use zeroize::secure_zero_memory;
+use zeroize::Zeroize;
 
 /// Size of an AES block
 const AES_BLOCK_SIZE: usize = 16;
@@ -125,7 +125,7 @@ impl SecureChannel {
         kdf::derive(&self.mac_key, 0, &self.context, &mut result_bytes);
 
         let result = Cryptogram::from_slice(&result_bytes);
-        secure_zero_memory(&mut result_bytes);
+        result_bytes.zeroize();
 
         result
     }
@@ -136,7 +136,7 @@ impl SecureChannel {
         kdf::derive(&self.mac_key, 1, &self.context, &mut result_bytes);
 
         let result = Cryptogram::from_slice(&result_bytes);
-        secure_zero_memory(&mut result_bytes);
+        result_bytes.zeroize();
 
         result
     }
@@ -490,9 +490,9 @@ impl SecureChannel {
     /// Terminate the session
     fn terminate(&mut self) {
         self.security_level = SecurityLevel::Terminated;
-        secure_zero_memory(&mut self.enc_key);
-        secure_zero_memory(&mut self.mac_key);
-        secure_zero_memory(&mut self.rmac_key);
+        self.enc_key.zeroize();
+        self.mac_key.zeroize();
+        self.rmac_key.zeroize();
     }
 }
 
