@@ -2,7 +2,7 @@
 
 use std::fmt;
 use subtle::{Choice, ConstantTimeEq};
-use zeroize::secure_zero_memory;
+use zeroize::Zeroize;
 
 /// Size of a cryptogram (i.e. truncated MAC)
 pub const CRYPTOGRAM_SIZE: usize = 8;
@@ -44,6 +44,6 @@ impl ConstantTimeEq for Cryptogram {
 
 impl Drop for Cryptogram {
     fn drop(&mut self) {
-        secure_zero_memory(&mut self.0);
+        self.0.zeroize();
     }
 }
