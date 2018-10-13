@@ -8,7 +8,7 @@ mod types;
 
 pub(crate) use self::handle::Handle as ObjectHandle;
 pub use self::info::Info as ObjectInfo;
-pub use self::label::Label as ObjectLabel;
+pub use self::label::{Label as ObjectLabel, LABEL_SIZE};
 pub use self::origins::Origin as ObjectOrigin;
 pub use self::types::Type as ObjectType;
 

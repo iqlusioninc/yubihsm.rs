@@ -8,45 +8,45 @@
 #[macro_use]
 mod error;
 
-pub mod attest_asymmetric;
-pub mod blink;
-pub mod delete_object;
-pub mod device_info;
-pub mod echo;
-pub mod export_wrapped;
-pub mod generate_asymmetric_key;
-pub mod generate_hmac_key;
-pub mod generate_key;
-pub mod generate_wrap_key;
-pub mod get_logs;
-pub mod get_object_info;
-pub mod get_opaque;
-pub mod get_option;
-pub mod get_pseudo_random;
-pub mod get_pubkey;
-pub mod hmac;
-pub mod import_wrapped;
-pub mod list_objects;
-pub mod put_asymmetric_key;
-pub mod put_auth_key;
-pub mod put_hmac_key;
+mod attest_asymmetric;
+mod blink;
+mod delete_object;
+mod device_info;
+mod echo;
+mod export_wrapped;
+mod generate_asymmetric_key;
+mod generate_hmac_key;
+mod generate_key;
+mod generate_wrap_key;
+mod get_logs;
+mod get_object_info;
+mod get_opaque;
+mod get_option;
+mod get_pseudo_random;
+mod get_pubkey;
+mod hmac;
+mod import_wrapped;
+mod list_objects;
+mod put_asymmetric_key;
+mod put_auth_key;
+mod put_hmac_key;
 mod put_object;
-pub mod put_opaque;
-pub mod put_option;
-pub mod put_otp_aead_key;
-pub mod put_wrap_key;
-pub mod reset;
-pub mod set_log_index;
-pub mod sign_ecdsa;
-pub mod sign_eddsa;
+mod put_opaque;
+mod put_option;
+mod put_otp_aead_key;
+mod put_wrap_key;
+mod reset;
+mod set_log_index;
+mod sign_ecdsa;
+mod sign_eddsa;
 #[cfg(feature = "rsa")]
-pub mod sign_rsa_pkcs1v15;
+mod sign_rsa_pkcs1v15;
 #[cfg(feature = "rsa")]
-pub mod sign_rsa_pss;
-pub mod storage_status;
-pub mod unwrap_data;
-pub mod verify_hmac;
-pub mod wrap_data;
+mod sign_rsa_pss;
+mod storage_status;
+mod unwrap_data;
+mod verify_hmac;
+mod wrap_data;
 
 #[cfg(feature = "rsa")]
 use sha2::{Digest, Sha256};
@@ -56,17 +56,19 @@ use uuid::Uuid;
 pub use self::error::{ClientError, ClientErrorKind};
 
 use self::error::ClientErrorKind::*;
-use self::{
-    attest_asymmetric::*, blink::*, delete_object::*, device_info::*, echo::*, export_wrapped::*,
-    generate_asymmetric_key::*, generate_hmac_key::*, generate_key::*, generate_wrap_key::*,
-    get_logs::*, get_object_info::*, get_opaque::*, get_option::*, get_pseudo_random::*,
-    get_pubkey::*, hmac::*, import_wrapped::*, list_objects::*, put_asymmetric_key::*,
-    put_auth_key::*, put_hmac_key::*, put_object::*, put_opaque::*, put_option::*,
-    put_otp_aead_key::*, put_wrap_key::*, reset::*, set_log_index::*, sign_ecdsa::*, sign_eddsa::*,
-    storage_status::*, unwrap_data::*, verify_hmac::*, wrap_data::*,
+pub use self::{
+    attest_asymmetric::*, device_info::*, get_logs::*, get_pubkey::*, hmac::*, import_wrapped::*,
+    list_objects::*, reset::*, sign_ecdsa::*, sign_eddsa::*, storage_status::*,
+};
+pub(crate) use self::{
+    blink::*, delete_object::*, echo::*, export_wrapped::*, generate_asymmetric_key::*,
+    generate_hmac_key::*, generate_key::*, generate_wrap_key::*, get_object_info::*, get_opaque::*,
+    get_option::*, get_pseudo_random::*, put_asymmetric_key::*, put_auth_key::*, put_hmac_key::*,
+    put_object::*, put_opaque::*, put_option::*, put_otp_aead_key::*, put_wrap_key::*,
+    set_log_index::*, unwrap_data::*, verify_hmac::*, wrap_data::*,
 };
 #[cfg(feature = "rsa")]
-use self::{sign_rsa_pkcs1v15::*, sign_rsa_pss::*};
+pub use self::{sign_rsa_pkcs1v15::*, sign_rsa_pss::*};
 use algorithm::*;
 use audit::*;
 use auth_key::AuthKey;
@@ -488,10 +490,21 @@ impl Client {
 
     /// List objects visible from the current session.
     ///
+    /// Optionally apply a set of provided `filters` which select objects
+    /// based on their attributes.
+    ///
     /// <https://developers.yubico.com/YubiHSM2/Commands/List_Objects.html>
-    pub fn list_objects(&mut self) -> Result<Vec<ListObjectsEntry>, ClientError> {
-        // TODO: support for filtering objects
-        Ok(self.send_command(ListObjectsCommand {})?.0)
+    pub fn list_objects(
+        &mut self,
+        filters: &[Filter],
+    ) -> Result<Vec<ListObjectsEntry>, ClientError> {
+        let mut filter_bytes = vec![];
+
+        for filter in filters {
+            filter.serialize(&mut filter_bytes)?;
+        }
+
+        Ok(self.send_command(ListObjectsCommand(filter_bytes))?.0)
     }
 
     /// Put an existing asymmetric key into the HSM.
