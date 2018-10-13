@@ -4,7 +4,7 @@ use connector::{ConnectionError, ConnectionErrorKind};
 use error::{Error, HsmErrorKind};
 use serialization::SerializationError;
 use session::{SessionError, SessionErrorKind};
-use std::error::Error as StdError;
+use std::{error::Error as StdError, io};
 
 /// Session errors
 pub type ClientError = Error<ClientErrorKind>;
@@ -71,6 +71,12 @@ impl From<SessionError> for ClientError {
         };
 
         err!(kind, err.description())
+    }
+}
+
+impl From<io::Error> for ClientError {
+    fn from(err: io::Error) -> Self {
+        err!(ClientErrorKind::ProtocolError, err.description())
     }
 }
 

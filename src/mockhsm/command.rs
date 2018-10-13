@@ -4,40 +4,12 @@ use hmac::{Hmac, Mac};
 use rand::{OsRng, RngCore};
 use ring::signature::Ed25519KeyPair;
 use sha2::Sha256;
+use std::io::Cursor;
 use untrusted;
 
 use algorithm::*;
 use audit::{AuditCommand, AuditOption, AuditTag};
-use client::{
-    blink::BlinkResponse,
-    delete_object::{DeleteObjectCommand, DeleteObjectResponse},
-    device_info::DeviceInfoResponse,
-    echo::EchoResponse,
-    export_wrapped::{ExportWrappedCommand, ExportWrappedResponse},
-    generate_asymmetric_key::{GenAsymmetricKeyCommand, GenAsymmetricKeyResponse},
-    generate_hmac_key::{GenHMACKeyCommand, GenHMACKeyResponse},
-    generate_wrap_key::{GenWrapKeyCommand, GenWrapKeyResponse},
-    get_logs::AuditLogs,
-    get_object_info::{GetObjectInfoCommand, GetObjectInfoResponse},
-    get_opaque::{GetOpaqueCommand, GetOpaqueResponse},
-    get_option::{GetOptionCommand, GetOptionResponse},
-    get_pseudo_random::{GetPseudoRandomCommand, GetPseudoRandomResponse},
-    get_pubkey::{GetPubKeyCommand, PublicKey},
-    hmac::{HMACDataCommand, HMACTag},
-    import_wrapped::{ImportWrappedCommand, ImportWrappedResponse},
-    list_objects::{ListObjectsCommand, ListObjectsEntry, ListObjectsResponse},
-    put_asymmetric_key::{PutAsymmetricKeyCommand, PutAsymmetricKeyResponse},
-    put_auth_key::{PutAuthKeyCommand, PutAuthKeyResponse},
-    put_hmac_key::{PutHMACKeyCommand, PutHMACKeyResponse},
-    put_opaque::{PutOpaqueCommand, PutOpaqueResponse},
-    put_option::{PutOptionCommand, PutOptionResponse},
-    put_wrap_key::{PutWrapKeyCommand, PutWrapKeyResponse},
-    reset::ResetResponse,
-    set_log_index::SetLogIndexResponse,
-    sign_eddsa::{Ed25519Signature, SignDataEdDSACommand, ED25519_SIGNATURE_SIZE},
-    storage_status::StorageStatusResponse,
-    verify_hmac::{VerifyHMACCommand, VerifyHMACResponse},
-};
+use client::*;
 use command::{CommandCode, CommandMessage};
 use connector::ConnectionError;
 use error::HsmErrorKind;
@@ -449,14 +421,34 @@ fn import_wrapped(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
 
 /// List all objects presently accessible to a session
 fn list_objects(state: &State, cmd_data: &[u8]) -> ResponseMessage {
-    // TODO: filter support
-    let _command: ListObjectsCommand = deserialize(cmd_data)
+    let command: ListObjectsCommand = deserialize(cmd_data)
         .unwrap_or_else(|e| panic!("error parsing CommandCode::ListObjects: {:?}", e));
+
+    let len = command.0.len() as u64;
+    let mut cursor = Cursor::new(command.0);
+    let mut filters = vec![];
+
+    while cursor.position() < len {
+        filters.push(Filter::deserialize(&mut cursor).unwrap());
+    }
 
     let list_entries = state
         .objects
         .iter()
-        .map(|(_, object)| ListObjectsEntry {
+        .filter(|(_, object)| {
+            if filters.is_empty() {
+                true
+            } else {
+                filters.iter().all(|filter| match filter {
+                    Filter::Algorithm(alg) => object.info().algorithm == *alg,
+                    Filter::Capabilities(caps) => object.info().capabilities.contains(*caps),
+                    Filter::Domains(doms) => object.info().domains.contains(*doms),
+                    Filter::Label(label) => object.info().label == *label,
+                    Filter::Id(id) => object.info().object_id == *id,
+                    Filter::Type(ty) => object.info().object_type == *ty,
+                })
+            }
+        }).map(|(_, object)| ListObjectsEntry {
             object_id: object.object_info.object_id,
             object_type: object.object_info.object_type,
             sequence: object.object_info.sequence,

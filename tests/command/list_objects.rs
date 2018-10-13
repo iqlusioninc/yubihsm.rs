@@ -1,4 +1,4 @@
-use yubihsm::{AsymmetricAlg, Capability, ObjectType};
+use yubihsm::{client::Filter, AsymmetricAlg, Capability, ObjectType};
 
 use {generate_asymmetric_key, TEST_KEY_ID};
 
@@ -14,7 +14,7 @@ fn list_objects_test() {
     );
 
     let objects = client
-        .list_objects()
+        .list_objects(&[])
         .unwrap_or_else(|err| panic!("error listing objects: {}", err));
 
     // Look for the asymmetric key we just generated
@@ -23,5 +23,21 @@ fn list_objects_test() {
             .iter()
             .find(|i| i.object_id == TEST_KEY_ID && i.object_type == ObjectType::AsymmetricKey)
             .is_some()
+    );
+}
+
+/// Filter objects in the HSM by their type
+#[test]
+fn list_objects_with_filter() {
+    let mut client = ::get_hsm_client();
+
+    let objects = client
+        .list_objects(&[Filter::Type(ObjectType::AuthKey)])
+        .unwrap_or_else(|err| panic!("error listing objects: {}", err));
+
+    assert!(
+        objects
+            .iter()
+            .all(|obj| obj.object_type == ObjectType::AuthKey)
     );
 }
