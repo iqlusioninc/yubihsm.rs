@@ -66,6 +66,10 @@ impl From<libusb::Error> for ConnectionError {
         match err {
             libusb::Error::Access => err!(ConnectionErrorKind::AccessDenied, "{}", err),
             libusb::Error::Io => err!(ConnectionErrorKind::IoError, "{}", err),
+            libusb::Error::Pipe => err!(
+                ConnectionErrorKind::UsbError,
+                "lost connection to USB device"
+            ),
             _ => err!(ConnectionErrorKind::UsbError, "{}", err),
         }
     }
