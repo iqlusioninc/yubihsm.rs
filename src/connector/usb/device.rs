@@ -55,23 +55,25 @@ impl Devices {
 
             fail!(
                 UsbError,
-                "no YubiHSM 2 found with serial number: {:?}",
+                "no YubiHSM2 found with serial number: {:?}",
                 serial_number
             )
-        } else if devices.0.len() == 1 {
-            devices.0.remove(0).open(timeout)
         } else {
-            fail!(
-                UsbError,
-                "expected a single YubiHSM device to be connected, found {}: {:?}",
-                devices.0.len(),
-                devices
-                    .0
-                    .iter()
-                    .map(|d| d.serial_number.as_str().to_owned())
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            );
+            match devices.0.len() {
+                1 => devices.0.remove(0).open(timeout),
+                0 => fail!(UsbError, "no YubiHSM2 devices detected"),
+                _ => fail!(
+                    UsbError,
+                    "expected a single YubiHSM2 device to be connected, found {}: {}",
+                    devices.0.len(),
+                    devices
+                        .0
+                        .iter()
+                        .map(|d| d.serial_number.as_str().to_owned())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                ),
+            }
         }
     }
 
