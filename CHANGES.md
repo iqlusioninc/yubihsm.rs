@@ -1,3 +1,22 @@
+## [0.19.0] (2018-10-16)
+
+[0.19.0]: https://github.com/tendermint/yubihsm-rs/pull/150
+
+* [#149](https://github.com/tendermint/yubihsm-rs/pull/149)
+  USB error message improvements.
+
+* [#148](https://github.com/tendermint/yubihsm-rs/pull/148)
+  Implement filter support for the List Objects command.
+
+* [#147](https://github.com/tendermint/yubihsm-rs/pull/147)
+  Upgrade to zeroize 0.4.
+
+* [#145](https://github.com/tendermint/yubihsm-rs/pull/145)
+  Derive Clone and Debug on all connectors.
+
+* [#144](https://github.com/tendermint/yubihsm-rs/pull/144)
+  Upgrade digest 0.8 (and all transitive dependencies).
+
 ## [0.18.1] (2018-10-03)
 
 [0.18.1]: https://github.com/tendermint/yubihsm-rs/pull/141
