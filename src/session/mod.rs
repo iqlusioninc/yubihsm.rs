@@ -1,6 +1,9 @@
 //! Encrypted connection to the HSM through a particular connection
 
-use std::time::{Duration, Instant};
+use std::{
+    panic::{self, AssertUnwindSafe},
+    time::{Duration, Instant},
+};
 use subtle::ConstantTimeEq;
 
 use command::{Command, CommandCode, CommandMessage};
@@ -159,7 +162,13 @@ impl Session {
         let encrypted_cmd = self.secure_channel()?.encrypt_command(plaintext_cmd)?;
         let uuid = encrypted_cmd.uuid;
 
-        session_debug!(self, "uuid={} cmd={:?}", uuid, C::COMMAND_CODE);
+        session_debug!(
+            self,
+            "n={} uuid={} cmd={:?}",
+            self.messages_sent()?,
+            uuid,
+            C::COMMAND_CODE
+        );
 
         let encrypted_response = self.send_message(encrypted_cmd)?;
 
@@ -199,7 +208,16 @@ impl Session {
         let uuid = cmd.uuid;
         self.last_active = Instant::now();
 
-        session_debug!(self, "uuid={} command={:?}", &uuid, cmd_type);
+        // We log the plaintext of all `SessionMessage` commands, so ignore those
+        if cmd_type != CommandCode::SessionMessage {
+            session_debug!(
+                self,
+                "n={} uuid={} msg={:?}",
+                self.messages_sent()?,
+                &uuid,
+                cmd_type
+            );
+        }
 
         let response = match self.connection.send_message(uuid, cmd.into()) {
             Ok(response_bytes) => ResponseMessage::parse(response_bytes)?,
@@ -256,17 +274,8 @@ impl Session {
     }
 }
 
-/// Close session automatically on drop
 impl Drop for Session {
-    /// Make a best effort to close the session
-    ///
-    /// NOTE: this runs the potential of panicking in a drop handler, which
-    /// results in the following when it occurs (Aieee!):
-    ///
-    /// "thread panicked while panicking. aborting"
-    ///
-    /// Because of this, it's very important `send_encrypted_command` and
-    /// everything it calls be panic-free.
+    /// Make a best effort to close the session if it's still healthy
     fn drop(&mut self) {
         // Don't do anything if the session already timed out
         if self.is_timed_out() {
@@ -274,9 +283,32 @@ impl Drop for Session {
         }
 
         session_debug!(self, "closing dropped session");
-
-        if let Err(e) = self.send_command(CloseSessionCommand {}) {
-            session_debug!(self, "error closing dropped session: {}", e);
-        }
+        close_session(self);
     }
+}
+
+/// Attempt to close the session, catching any panics (because this is invoked
+/// from a drop handler) and turning them into `Error` types which can be logged
+fn close_session(session: &mut Session) {
+    // TODO: ensure we're really unwind safe.
+    // This should still be better than panicking in a drop handler, hopefully
+    let err = match panic::catch_unwind(AssertUnwindSafe(|| {
+        session.send_command(CloseSessionCommand {}).unwrap()
+    })) {
+        Ok(_) => return,
+        Err(e) => e,
+    };
+
+    // Attempt to extract the error message from the `Any` returned from `catch_unwind`
+    let msg = err
+        .downcast_ref::<String>()
+        .map(|m| m.as_ref())
+        .or_else(|| err.downcast_ref::<&str>().map(|m| *m))
+        .unwrap_or_else(|| "unknown cause!");
+
+    error!(
+        "session={} panic closing dropped session: {}",
+        session.id().to_u8(),
+        msg
+    );
 }
