@@ -1,3 +1,13 @@
+## [0.19.1] (2018-10-21)
+
+[0.19.1]: https://github.com/tendermint/yubihsm-rs/pull/153
+
+* [#152](https://github.com/tendermint/yubihsm-rs/pull/152)
+  `HttpConnector`: use `gaunt` for an HTTP client.
+
+* [#151](https://github.com/tendermint/yubihsm-rs/pull/151)
+  session: Catch panics which occur in drop handler.
+
 ## [0.19.0] (2018-10-16)
 
 [0.19.0]: https://github.com/tendermint/yubihsm-rs/pull/150
