@@ -1,5 +1,7 @@
 //! Error types for `yubihsm-connector`
 
+#[cfg(feature = "http")]
+use gaunt;
 #[cfg(feature = "usb")]
 use libusb;
 use std::num::ParseIntError;
@@ -57,6 +59,22 @@ impl From<fmt::Error> for ConnectionError {
 impl From<io::Error> for ConnectionError {
     fn from(err: io::Error) -> Self {
         err!(ConnectionErrorKind::IoError, err.to_string())
+    }
+}
+
+#[cfg(feature = "http")]
+impl From<gaunt::Error> for ConnectionError {
+    fn from(err: gaunt::Error) -> ConnectionError {
+        let kind = match err.kind() {
+            gaunt::ErrorKind::AddrInvalid => ConnectionErrorKind::AddrInvalid,
+            gaunt::ErrorKind::IoError => ConnectionErrorKind::IoError,
+            gaunt::ErrorKind::ParseError | gaunt::ErrorKind::ResponseError => {
+                ConnectionErrorKind::ResponseError
+            }
+            gaunt::ErrorKind::RequestError => ConnectionErrorKind::RequestError,
+        };
+
+        err!(kind, err)
     }
 }
 

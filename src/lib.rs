@@ -71,6 +71,8 @@ extern crate cmac;
 extern crate failure;
 #[macro_use]
 extern crate failure_derive;
+#[cfg(feature = "http")]
+extern crate gaunt;
 #[cfg(feature = "hmac")]
 extern crate hmac;
 #[cfg(feature = "usb")]
