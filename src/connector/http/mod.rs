@@ -2,20 +2,17 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Component_Reference/yubihsm-connector/>
 
-#[macro_use]
-mod macros;
-
 mod config;
 mod connection;
-mod response;
 mod status;
 
 use std::str;
 
-use self::response::ResponseReader;
-pub use self::{config::HttpConfig, connection::HttpConnection, status::ConnectorStatus};
+use self::connection::HttpConnection;
 use super::{Connection, ConnectionError, ConnectionErrorKind::ResponseError, Connector};
 use serial_number::SerialNumber;
+
+pub use self::{config::HttpConfig, status::ConnectorStatus};
 
 /// User-Agent string to supply
 pub const USER_AGENT: &str = concat!("yubihsm.rs ", env!("CARGO_PKG_VERSION"));
