@@ -159,9 +159,17 @@ impl Session {
     ) -> Result<C::ResponseType, SessionError> {
         let plaintext_cmd: CommandMessage = command.into();
         let cmd_type = plaintext_cmd.command_type;
-        let encrypted_cmd = self.secure_channel()?.encrypt_command(plaintext_cmd)?;
-        let uuid = encrypted_cmd.uuid;
 
+        let encrypted_cmd = self
+            .secure_channel()?
+            .encrypt_command(plaintext_cmd)
+            .map_err(|e| {
+                // Clear the secure channel in the event of any cryptographic errors
+                self.secure_channel = None;
+                e
+            })?;
+
+        let uuid = encrypted_cmd.uuid;
         session_debug!(
             self,
             "n={} uuid={} cmd={:?}",
@@ -176,6 +184,7 @@ impl Session {
             .secure_channel()?
             .decrypt_response(encrypted_response)
             .map_err(|e| {
+                // Clear the secure channel in the event of any cryptographic errors
                 self.secure_channel = None;
                 e
             })?;
