@@ -151,7 +151,7 @@ impl SecureChannel {
             self.terminate();
             fail!(
                 CommandLimitExceeded,
-                "max of {} command per session exceeded",
+                "session limit of {} messages exceeded",
                 MAX_COMMANDS_PER_SESSION
             );
         }
