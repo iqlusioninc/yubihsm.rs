@@ -1,6 +1,10 @@
 [package]
 name          = "yubihsm"
-description   = "Pure Rust client for YubiHSM2 devices"
+description   = """
+                Pure Rust client for YubiHSM2 devices with support for HTTP and
+                USB-based access to the device. Supports most HSM functionality
+                including ECDSA, Ed25519, and HMAC.
+                """
 version       = "0.19.1" # Also update html_root_url in lib.rs when bumping this
 license       = "Apache-2.0 OR MIT"
 authors       = ["Tony Arcieri <tony@iqlusion.io>"]
@@ -8,8 +12,8 @@ documentation = "https://docs.rs/yubihsm"
 homepage      = "https://github.com/tendermint/yubihsm-rs"
 repository    = "https://github.com/tendermint/yubihsm-rs/tree/master/"
 readme        = "README.md"
-categories    = ["cryptography"]
-keywords      = ["ed25519", "hmac", "hsm", "signing", "yubikey"]
+categories    = ["cryptography", "hardware-support"]
+keywords      = ["ecdsa", "ed25519", "hmac", "hsm", "yubikey"]
 
 [badges]
 circle-ci = { repository = "tendermint/yubihsm-rs" }
