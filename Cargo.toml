@@ -26,7 +26,7 @@ byteorder = "1.2"
 cmac = "0.2"
 failure = "0.1"
 failure_derive = "0.1"
-gaunt = { version = "0.0.1", optional = true }
+gaunt = { version = "0.1", optional = true }
 hmac = { version = "0.7", optional = true }
 lazy_static = { version = "1", optional = true }
 libusb = { version = "0.3", optional = true }

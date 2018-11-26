@@ -25,12 +25,13 @@ impl HttpConnection {
         Ok(HttpConnection(gaunt::Connection::new(
             &config.addr,
             config.port,
+            &Default::default(),
         )?))
     }
 
     /// Make an HTTP GET request to a `yubihsm-connector` service
     pub(super) fn get(&self, path: &str) -> Result<Vec<u8>, ConnectionError> {
-        Ok(self.0.get(path)?)
+        Ok(self.0.get(path, &Default::default())?.into_vec())
     }
 
     /// Make an HTTP POST request to a `yubihsm-connector` service
@@ -38,16 +39,19 @@ impl HttpConnection {
         &self,
         path: &str,
         _uuid: Uuid,
-        body: Vec<u8>,
+        body: &[u8],
     ) -> Result<Vec<u8>, ConnectionError> {
-        // TODO: send UUID as `X-Request-ID` header
-        Ok(self.0.post(path, body)?)
+        // TODO: send UUID as `X-Request-ID` header, zero copy body creation
+        Ok(self
+            .0
+            .post(path, &gaunt::request::Body::from(body))?
+            .into_vec())
     }
 }
 
 impl Connection for HttpConnection {
     /// `POST /connector/api` with a given command message
     fn send_message(&self, uuid: Uuid, cmd: Vec<u8>) -> Result<Vec<u8>, ConnectionError> {
-        self.post("/connector/api", uuid, cmd)
+        self.post("/connector/api", uuid, &cmd)
     }
 }
