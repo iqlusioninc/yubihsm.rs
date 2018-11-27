@@ -1,3 +1,8 @@
+## [0.19.2] (2018-11-27)
+
+- `HttpConnector`: upgrade to `gaunt` v0.1.0 (#157)
+- Terminate sessions on encryption failures (#154)
+
 ## [0.19.1] (2018-10-21)
 
 - `HttpConnector`: use `gaunt` for an HTTP client (#152)
