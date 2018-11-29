@@ -23,8 +23,8 @@ Pure Rust client for [YubiHSM 2] devices from [Yubico].
 ## About
 
 This is a pure-Rust client library for [YubiHSM 2] devices which implements
-most the functionality of the closed-source [libyubihsm] library from the
-Yubico SDK. It provides two backends for communicating with YubiHSMs:
+most the functionality of the [libyubihsm] C library from Yubico's YubiHSM SDK.
+It provides two backends for communicating with YubiHSMs:
 
 - [yubihsm::HttpConnector]: communicate with YubiHSM via the
   `yubihsm-connector` process from the Yubico SDK.
@@ -160,7 +160,7 @@ the Apache License (Version 2.0).
 
 See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT) for details.
 
-[libyubihsm]: https://developers.yubico.com/YubiHSM2/Component_Reference/libyubihsm/
+[libyubihsm]: https://github.com/Yubico/yubihsm-shell/blob/master/lib/README.adoc
 [YubiHSM 2]: https://www.yubico.com/products/yubihsm/
 [Yubico]: https://www.yubico.com/
 [yubihsm-connector]: https://developers.yubico.com/YubiHSM2/Component_Reference/yubihsm-connector/
