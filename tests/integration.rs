@@ -68,7 +68,7 @@ pub fn get_hsm_client() -> MutexGuard<'static, Client> {
 ///
 /// Panics if none of the above features are enabled
 #[allow(unreachable_code)]
-pub fn create_hsm_connector() -> Box<Connector> {
+pub fn create_hsm_connector() -> Box<dyn Connector> {
     // MockHSM has highest priority when testing
     #[cfg(feature = "mockhsm")]
     return create_mockhsm_connector();
@@ -89,7 +89,7 @@ pub fn create_hsm_connector() -> Box<Connector> {
 
 /// Connect to the HSM via HTTP using `yubihsm-connector`
 #[cfg(feature = "http")]
-pub fn create_http_connector() -> Box<Connector> {
+pub fn create_http_connector() -> Box<dyn Connector> {
     HttpConnector::create(&Default::default()).unwrap().into()
 }
 

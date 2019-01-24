@@ -88,7 +88,7 @@ use byteorder::{BigEndian, ByteOrder};
 /// HSM hardware device.
 pub struct Client {
     /// Method for connecting to the HSM
-    connector: Box<Connector>,
+    connector: Box<dyn Connector>,
 
     /// Encrypted session with the HSM (if we have one open)
     session: Option<Session>,
@@ -111,7 +111,7 @@ impl Client {
         reconnect: bool,
     ) -> Result<Self, ClientError>
     where
-        C: Into<Box<Connector>>,
+        C: Into<Box<dyn Connector>>,
     {
         let mut client = Self::create(connector, credentials)?;
         client.connect()?;
@@ -127,7 +127,7 @@ impl Client {
     /// Create a `yubihsm::Client`, but defer connecting until `connect()` is called.
     pub fn create<C>(connector: C, credentials: Credentials) -> Result<Self, ClientError>
     where
-        C: Into<Box<Connector>>,
+        C: Into<Box<dyn Connector>>,
     {
         let client = Self {
             connector: connector.into(),

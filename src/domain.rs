@@ -59,7 +59,7 @@ impl Domain {
     /// e.g. `Domain::at(1)` returns `Domain::DOM1`.
     pub fn at(index: usize) -> Result<Self, Error> {
         match index {
-            1...16 => Ok(DOMAINS[index - 1]),
+            1..=16 => Ok(DOMAINS[index - 1]),
             _ => bail!("invalid domain: {} (valid domains are 1-16)", index),
         }
     }
@@ -84,7 +84,7 @@ impl<'de> Deserialize<'de> for Domain {
         impl<'de> Visitor<'de> for DomainVisitor {
             type Value = Domain;
 
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
                 formatter.write_str("2-bytes containing domain bitflags")
             }
 

@@ -40,7 +40,7 @@ macro_rules! impl_array_serializers {
                 impl<'de> ::serde::de::Visitor<'de> for ArrayVisitor {
                     type Value = $ty;
 
-                    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                    fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
                         write!(formatter, "{}-byte string of arbitrary bytes", $size)
                     }
 

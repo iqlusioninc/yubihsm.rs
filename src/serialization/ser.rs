@@ -195,7 +195,7 @@ impl<'a, W: Write> serde::Serializer for &'a mut Serializer<W> {
     }
 }
 
-pub(crate) struct SerializeHelper<'a, W: 'a> {
+pub(crate) struct SerializeHelper<'a, W> {
     ser: &'a mut Serializer<W>,
 }
 

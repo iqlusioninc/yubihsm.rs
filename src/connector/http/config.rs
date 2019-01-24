@@ -32,7 +32,7 @@ impl Default for HttpConfig {
 }
 
 impl Display for HttpConfig {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // TODO: HTTPS support
         write!(f, "http://{}:{}", self.addr, self.port)
     }

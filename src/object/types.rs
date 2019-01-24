@@ -64,7 +64,7 @@ impl<'de> Deserialize<'de> for Type {
         impl<'de> Visitor<'de> for TypeVisitor {
             type Value = Type;
 
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
                 formatter.write_str("an unsigned byte between 0x01 and 0x07")
             }
 

@@ -13,7 +13,7 @@ use crate::serialization::deserialize;
 
 /// Create a new encrypted session with the HSM over the given `Connection`
 pub(super) fn create_session(
-    connection: &Connection,
+    connection: &dyn Connection,
     auth_key_id: ObjectId,
     host_challenge: Challenge,
 ) -> Result<(SessionId, CreateSessionResponse), SessionError> {

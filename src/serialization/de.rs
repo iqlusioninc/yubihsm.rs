@@ -178,7 +178,7 @@ impl<'de, 'a, R: Read> serde::Deserializer<'de> for &'a mut Deserializer<R> {
     where
         V: Visitor<'de>,
     {
-        struct Access<'a, R: Read + 'a> {
+        struct Access<'a, R: Read> {
             deserializer: &'a mut Deserializer<R>,
             len: usize,
         }
@@ -225,7 +225,7 @@ impl<'de, 'a, R: Read> serde::Deserializer<'de> for &'a mut Deserializer<R> {
         V: Visitor<'de>,
     {
         // SeqAccess which consumes the remainder of the message
-        struct Access<'a, R: Read + 'a> {
+        struct Access<'a, R: Read> {
             deserializer: &'a mut Deserializer<R>,
         }
 

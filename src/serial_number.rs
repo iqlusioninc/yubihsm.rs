@@ -27,13 +27,13 @@ impl AsRef<str> for SerialNumber {
 }
 
 impl Debug for SerialNumber {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "SerialNumber(\"{}\")", self.as_str())
     }
 }
 
 impl Display for SerialNumber {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.as_str())
     }
 }
@@ -53,7 +53,7 @@ impl FromStr for SerialNumber {
 
         for char in s.chars() {
             match char {
-                '0'...'9' => (),
+                '0'..='9' => (),
                 _ => {
                     return Err(err!(
                         AddrInvalid,

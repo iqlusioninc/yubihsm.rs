@@ -65,7 +65,7 @@ impl<'de> Deserialize<'de> for AuditOption {
         impl<'de> Visitor<'de> for AuditOptionVisitor {
             type Value = AuditOption;
 
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
                 formatter.write_str("an unsigned byte with values 0x01, 0x02, or 0x03")
             }
 
@@ -120,7 +120,7 @@ impl<'de> Deserialize<'de> for AuditTag {
         impl<'de> Visitor<'de> for AuditTagVisitor {
             type Value = AuditTag;
 
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
                 formatter.write_str("an unsigned byte with values 0x01 or 0x03")
             }
 

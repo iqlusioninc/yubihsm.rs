@@ -106,7 +106,7 @@ impl ResponseCode {
         let code = i16::from(byte).checked_sub(0x80).unwrap() as i8;
 
         Ok(match code {
-            0...0x7F => ResponseCode::Success(CommandCode::from_u8(code as u8)?),
+            0..=0x7F => ResponseCode::Success(CommandCode::from_u8(code as u8)?),
             -1 => ResponseCode::MemoryError,
             -2 => ResponseCode::InitError,
             -3 => ResponseCode::NetError,

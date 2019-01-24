@@ -4,7 +4,7 @@
 
 #[macro_use]
 extern crate criterion;
-extern crate yubihsm;
+use yubihsm;
 
 use criterion::Criterion;
 
