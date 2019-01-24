@@ -1,6 +1,6 @@
 use failure::Error;
 #[cfg(feature = "mockhsm")]
-use rand::{OsRng, RngCore};
+use rand_os::{rand_core::RngCore, OsRng};
 use std::fmt;
 
 /// Number of bytes in a nonce used for "wrapping" (i.e AES-CCM encryption)

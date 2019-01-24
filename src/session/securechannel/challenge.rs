@@ -1,4 +1,7 @@
-use rand::{CryptoRng, OsRng, RngCore};
+use rand_os::{
+    rand_core::{CryptoRng, RngCore},
+    OsRng,
+};
 
 /// Size of a challenge message
 pub const CHALLENGE_SIZE: usize = 8;

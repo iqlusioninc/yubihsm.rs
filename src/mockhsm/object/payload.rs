@@ -1,12 +1,16 @@
 //! Object "payloads" in the MockHsm are instances of software implementations
 //! of supported cryptographic primitives, already initialized with a private key
 
-use ring::rand::{SecureRandom, SystemRandom};
-use ring::signature::Ed25519KeyPair;
+use ring::{
+    rand::{SecureRandom, SystemRandom},
+    signature::{Ed25519KeyPair, KeyPair},
+};
 use untrusted;
 
-use crate::algorithm::{Algorithm, AsymmetricAlg, AuthAlg, HmacAlg, OpaqueAlg, WrapAlg};
-use crate::auth_key::{AuthKey, AUTH_KEY_SIZE};
+use crate::{
+    algorithm::{Algorithm, AsymmetricAlg, AuthAlg, HmacAlg, OpaqueAlg, WrapAlg},
+    auth_key::{AuthKey, AUTH_KEY_SIZE},
+};
 
 /// Size of an Ed25519 seed
 pub(crate) const ED25519_SEED_SIZE: usize = 32;
@@ -111,7 +115,8 @@ impl Payload {
             Payload::Ed25519KeyPair(ref k) => Some(
                 Ed25519KeyPair::from_seed_unchecked(untrusted::Input::from(k))
                     .unwrap()
-                    .public_key_bytes()
+                    .public_key()
+                    .as_ref()
                     .into(),
             ),
             _ => None,
