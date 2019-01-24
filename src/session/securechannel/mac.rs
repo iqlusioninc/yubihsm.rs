@@ -57,7 +57,7 @@ impl ConstantTimeEq for Mac {
 }
 
 impl fmt::Debug for Mac {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // Avoid leaking secrets in debug messages
         write!(f, "yubihsm::Mac")
     }

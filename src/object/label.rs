@@ -48,7 +48,7 @@ impl Clone for Label {
 }
 
 impl fmt::Debug for Label {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let string = self
             .to_string()
             .unwrap_or_else(|_| "[INVALID UTF-8 CHARACTER IN LABEL]".to_owned());

@@ -30,7 +30,7 @@ impl Cryptogram {
 }
 
 impl fmt::Debug for Cryptogram {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // Avoid leaking secrets in debug messages
         write!(f, "yubihsm::Cryptogram(...)")
     }

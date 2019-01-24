@@ -55,7 +55,7 @@ impl HttpConnector {
 
 impl Connector for HttpConnector {
     /// Open a connection to `yubihsm-connector`
-    fn connect(&self) -> Result<Box<Connection>, ConnectionError> {
+    fn connect(&self) -> Result<Box<dyn Connection>, ConnectionError> {
         Ok(Box::new(HttpConnection::open(&self.0)?))
     }
 
@@ -85,8 +85,8 @@ impl Connector for HttpConnector {
     }
 }
 
-impl Into<Box<Connector>> for HttpConnector {
-    fn into(self) -> Box<Connector> {
+impl Into<Box<dyn Connector>> for HttpConnector {
+    fn into(self) -> Box<dyn Connector> {
         Box::new(self)
     }
 }

@@ -81,7 +81,7 @@ impl AsRef<[u8]> for LogDigest {
 }
 
 impl Debug for LogDigest {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "LogDigest(")?;
         for (i, byte) in self.0.iter().enumerate() {
             write!(f, "{:02x}", byte)?;

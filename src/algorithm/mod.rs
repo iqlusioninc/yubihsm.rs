@@ -18,7 +18,7 @@ macro_rules! impl_algorithm_serializers {
                 impl<'de> Visitor<'de> for AlgorithmVisitor {
                     type Value = $alg;
 
-                    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                    fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
                         // TODO: customize this per algorithm
                         formatter.write_str("an unsigned tag byte")
                     }
@@ -97,14 +97,14 @@ impl Algorithm {
     /// Convert an unsigned byte into an Algorithm (if valid)
     pub fn from_u8(byte: u8) -> Result<Self, AlgorithmError> {
         Ok(match byte {
-            0x01...0x08 | 0x19...0x1c => Algorithm::Rsa(RsaAlg::from_u8(byte)?),
-            0x09...0x12 | 0x2e | 0x2f => Algorithm::Asymmetric(AsymmetricAlg::from_u8(byte)?),
-            0x13...0x16 => Algorithm::Hmac(HmacAlg::from_u8(byte)?),
-            0x17 | 0x2b...0x2d => Algorithm::Ecdsa(EcdsaAlg::from_u8(byte)?),
+            0x01..=0x08 | 0x19..=0x1c => Algorithm::Rsa(RsaAlg::from_u8(byte)?),
+            0x09..=0x12 | 0x2e | 0x2f => Algorithm::Asymmetric(AsymmetricAlg::from_u8(byte)?),
+            0x13..=0x16 => Algorithm::Hmac(HmacAlg::from_u8(byte)?),
+            0x17 | 0x2b..=0x2d => Algorithm::Ecdsa(EcdsaAlg::from_u8(byte)?),
             0x18 => Algorithm::Kex(KexAlg::from_u8(byte)?),
             0x1d | 0x29 | 0x2a => Algorithm::Wrap(WrapAlg::from_u8(byte)?),
             0x1e | 0x1f => Algorithm::Opaque(OpaqueAlg::from_u8(byte)?),
-            0x20...0x23 => Algorithm::Mgf(MgfAlg::from_u8(byte)?),
+            0x20..=0x23 => Algorithm::Mgf(MgfAlg::from_u8(byte)?),
             0x24 => Algorithm::Template(TemplateAlg::from_u8(byte)?),
             0x25 | 0x27 | 0x28 => Algorithm::Otp(OtpAlg::from_u8(byte)?),
             0x26 => Algorithm::Auth(AuthAlg::from_u8(byte)?),

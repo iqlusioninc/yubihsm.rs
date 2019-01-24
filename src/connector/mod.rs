@@ -13,7 +13,7 @@ use crate::serial_number::SerialNumber;
 /// Connectors which create `Connection` objects to the HSM
 pub trait Connector: Send + Sync {
     /// Open a connection to the HSM using this `Connector`
-    fn connect(&self) -> Result<Box<Connection>, ConnectionError>;
+    fn connect(&self) -> Result<Box<dyn Connection>, ConnectionError>;
 
     /// Ensure the connection to the HSM is healthy, or return an error
     fn healthcheck(&self) -> Result<(), ConnectionError>;

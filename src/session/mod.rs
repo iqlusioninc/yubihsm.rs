@@ -48,7 +48,7 @@ pub struct Session {
     id: SessionId,
 
     /// Connection which communicates with the HSM (HTTP or USB)
-    connection: Box<Connection>,
+    connection: Box<dyn Connection>,
 
     /// Encrypted channel (SCP03) to the HSM
     secure_channel: Option<SecureChannel>,
@@ -66,7 +66,7 @@ pub struct Session {
 impl Session {
     /// Connect to the HSM using the given configuration and credentials
     pub(super) fn open(
-        connector: &Connector,
+        connector: &dyn Connector,
         credentials: &Credentials,
         timeout: SessionTimeout,
     ) -> Result<Self, SessionError> {

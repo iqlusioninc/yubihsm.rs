@@ -39,7 +39,7 @@ impl AsRef<[u8]> for Ed25519Signature {
 }
 
 impl Debug for Ed25519Signature {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Ed25519Signature(")?;
         for (i, byte) in self.0.iter().enumerate() {
             write!(f, "{:02x}", byte)?;

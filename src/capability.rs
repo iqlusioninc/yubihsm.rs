@@ -230,7 +230,7 @@ impl<'de> Deserialize<'de> for Capability {
         impl<'de> Visitor<'de> for CapabilityVisitor {
             type Value = Capability;
 
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
                 formatter.write_str("8-bytes containing capability bitflags")
             }
 
