@@ -1,12 +1,12 @@
 use yubihsm::credentials::DEFAULT_AUTH_KEY_ID;
 use yubihsm::{AuthAlg, Capability, Domain, ObjectOrigin, ObjectType};
 
-use DEFAULT_AUTH_KEY_LABEL;
+use crate::DEFAULT_AUTH_KEY_LABEL;
 
 /// Get object info on default auth key
 #[test]
 fn default_authkey_test() {
-    let mut client = ::get_hsm_client();
+    let mut client = crate::get_hsm_client();
 
     let object_info = client
         .get_object_info(DEFAULT_AUTH_KEY_ID, ObjectType::AuthKey)

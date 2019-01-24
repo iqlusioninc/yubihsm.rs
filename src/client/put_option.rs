@@ -12,9 +12,9 @@
 //! [put_command_audit_option()]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.put_command_audit_option
 //! [put_force_audit_option()]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.put_force_audit_option
 
-use audit::*;
-use command::{Command, CommandCode};
-use response::Response;
+use crate::audit::*;
+use crate::command::{Command, CommandCode};
+use crate::response::Response;
 
 /// Request parameters for `command::put_option`
 #[derive(Serialize, Deserialize, Debug)]

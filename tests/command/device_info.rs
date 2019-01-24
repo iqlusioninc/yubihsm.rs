@@ -1,7 +1,7 @@
 /// Get device information
 #[test]
 fn device_info_test() {
-    let mut client = ::get_hsm_client();
+    let mut client = crate::get_hsm_client();
 
     let device_info = client
         .device_info()

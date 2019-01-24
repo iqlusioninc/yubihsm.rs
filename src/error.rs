@@ -2,7 +2,7 @@ pub use failure::{Backtrace, Context, Fail};
 use std::error::Error as StdError;
 use std::fmt::{self, Display};
 
-use response::{ResponseCode, ResponseMessage};
+use crate::response::{ResponseCode, ResponseMessage};
 
 /// Placeholder for when we have no description for an error
 const NO_DESCRIPTION: &str = "(no description)";
@@ -42,11 +42,13 @@ where
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.description {
             None => Display::fmt(&self.inner, f),
-            Some(ref desc) => if desc == NO_DESCRIPTION {
-                Display::fmt(&self.inner, f)
-            } else {
-                write!(f, "{}: {}", &self.inner, desc)
-            },
+            Some(ref desc) => {
+                if desc == NO_DESCRIPTION {
+                    Display::fmt(&self.inner, f)
+                } else {
+                    write!(f, "{}: {}", &self.inner, desc)
+                }
+            }
         }
     }
 }
@@ -232,7 +234,7 @@ impl HsmErrorKind {
 /// Create a new error (of a given kind) with a formatted message
 macro_rules! err {
     ($kind:path, $msg:expr) => {
-        ::error::Error::new($kind, Some($msg.to_string()))
+        crate::error::Error::new($kind, Some($msg.to_string()))
     };
     ($kind:path, $fmt:expr, $($arg:tt)+) => {
         err!($kind, &format!($fmt, $($arg)+))

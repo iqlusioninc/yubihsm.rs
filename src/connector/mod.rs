@@ -8,7 +8,7 @@ pub mod usb;
 use uuid::Uuid;
 
 pub use self::error::{ConnectionError, ConnectionErrorKind};
-use serial_number::SerialNumber;
+use crate::serial_number::SerialNumber;
 
 /// Connectors which create `Connection` objects to the HSM
 pub trait Connector: Send + Sync {

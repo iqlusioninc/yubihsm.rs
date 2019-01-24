@@ -2,9 +2,9 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Delete_Object.html>
 
-use command::{Command, CommandCode};
-use object::{ObjectId, ObjectType};
-use response::Response;
+use crate::command::{Command, CommandCode};
+use crate::object::{ObjectId, ObjectType};
+use crate::response::Response;
 
 /// Request parameters for `command::delete_object`
 #[derive(Serialize, Deserialize, Debug)]

@@ -1,7 +1,7 @@
 //! The `YubiHSM2` doesnt' have a unified put object command, however all of the put object
 //! commands share a common structure, i.e. `PutObjectParams`
 
-use {Algorithm, Capability, Domain, ObjectId, ObjectLabel};
+use crate::{Algorithm, Capability, Domain, ObjectId, ObjectLabel};
 
 /// Common parameters to all put object commands
 #[derive(Serialize, Deserialize, Debug)]

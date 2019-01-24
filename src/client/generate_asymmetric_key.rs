@@ -3,9 +3,9 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/Generate_Asymmetric_Key.html>
 
 use super::generate_key::GenerateKeyParams;
-use command::{Command, CommandCode};
-use object::ObjectId;
-use response::Response;
+use crate::command::{Command, CommandCode};
+use crate::object::ObjectId;
+use crate::response::Response;
 
 /// Request parameters for `command::generate_asymmetric_key`
 #[derive(Serialize, Deserialize, Debug)]

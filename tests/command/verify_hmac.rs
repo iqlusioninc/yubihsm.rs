@@ -1,12 +1,12 @@
 use yubihsm::{Capability, HmacAlg, ObjectType};
 
-use test_vectors::HMAC_SHA256_TEST_VECTORS;
-use {clear_test_key_slot, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL};
+use crate::test_vectors::HMAC_SHA256_TEST_VECTORS;
+use crate::{clear_test_key_slot, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL};
 
 /// Test HMAC against RFC 4231 test vectors
 #[test]
 fn hmac_test_vectors() {
-    let mut client = ::get_hsm_client();
+    let mut client = crate::get_hsm_client();
     let algorithm = HmacAlg::SHA256;
     let capabilities = Capability::HMAC_DATA | Capability::HMAC_VERIFY;
 
@@ -21,7 +21,8 @@ fn hmac_test_vectors() {
                 capabilities,
                 algorithm,
                 vector.key,
-            ).unwrap_or_else(|err| panic!("error putting HMAC key: {}", err));
+            )
+            .unwrap_or_else(|err| panic!("error putting HMAC key: {}", err));
 
         assert_eq!(key_id, TEST_KEY_ID);
 
@@ -31,19 +32,15 @@ fn hmac_test_vectors() {
 
         assert_eq!(tag.as_ref(), vector.tag);
 
-        assert!(
-            client
-                .verify_hmac(TEST_KEY_ID, vector.msg, vector.tag)
-                .is_ok()
-        );
+        assert!(client
+            .verify_hmac(TEST_KEY_ID, vector.msg, vector.tag)
+            .is_ok());
 
         let mut bad_tag = Vec::from(vector.tag);
         bad_tag[0] ^= 1;
 
-        assert!(
-            client
-                .verify_hmac(TEST_KEY_ID, vector.msg, bad_tag)
-                .is_err()
-        );
+        assert!(client
+            .verify_hmac(TEST_KEY_ID, vector.msg, bad_tag)
+            .is_err());
     }
 }

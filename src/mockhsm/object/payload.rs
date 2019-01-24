@@ -5,8 +5,8 @@ use ring::rand::{SecureRandom, SystemRandom};
 use ring::signature::Ed25519KeyPair;
 use untrusted;
 
-use algorithm::{Algorithm, AsymmetricAlg, AuthAlg, HmacAlg, OpaqueAlg, WrapAlg};
-use auth_key::{AuthKey, AUTH_KEY_SIZE};
+use crate::algorithm::{Algorithm, AsymmetricAlg, AuthAlg, HmacAlg, OpaqueAlg, WrapAlg};
+use crate::auth_key::{AuthKey, AUTH_KEY_SIZE};
 
 /// Size of an Ed25519 seed
 pub(crate) const ED25519_SEED_SIZE: usize = 32;

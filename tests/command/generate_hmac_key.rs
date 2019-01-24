@@ -1,11 +1,11 @@
 use yubihsm::{Capability, HmacAlg, ObjectOrigin, ObjectType};
 
-use {clear_test_key_slot, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL};
+use crate::{clear_test_key_slot, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL};
 
 /// Generate an HMAC key
 #[test]
 fn hmac_key_test() {
-    let mut client = ::get_hsm_client();
+    let mut client = crate::get_hsm_client();
 
     let algorithm = HmacAlg::SHA256;
     let capabilities = Capability::HMAC_DATA | Capability::HMAC_VERIFY;
@@ -19,7 +19,8 @@ fn hmac_key_test() {
             TEST_DOMAINS,
             capabilities,
             algorithm,
-        ).unwrap_or_else(|err| panic!("error generating wrap key: {}", err));
+        )
+        .unwrap_or_else(|err| panic!("error generating wrap key: {}", err));
 
     assert_eq!(key_id, TEST_KEY_ID);
 

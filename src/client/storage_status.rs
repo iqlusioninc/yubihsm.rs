@@ -2,8 +2,8 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Storage_Status.html>
 
-use command::{Command, CommandCode};
-use response::Response;
+use crate::command::{Command, CommandCode};
+use crate::response::Response;
 
 /// Request parameters for `command::storage_status`
 #[derive(Serialize, Deserialize, Debug)]

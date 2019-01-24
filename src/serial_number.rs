@@ -4,7 +4,7 @@ use std::{
     str::{self, FromStr},
 };
 
-use connector::{ConnectionError, ConnectionErrorKind::AddrInvalid};
+use crate::connector::{ConnectionError, ConnectionErrorKind::AddrInvalid};
 
 /// Length of a YubiHSM2 serial number
 pub const SERIAL_SIZE: usize = 10;
@@ -59,7 +59,7 @@ impl FromStr for SerialNumber {
                         AddrInvalid,
                         "invalid character in serial number: {}",
                         s
-                    ))
+                    ));
                 }
             }
         }

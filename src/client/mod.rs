@@ -69,20 +69,20 @@ pub(crate) use self::{
 };
 #[cfg(feature = "rsa")]
 pub use self::{sign_rsa_pkcs1v15::*, sign_rsa_pss::*};
-use algorithm::*;
-use audit::*;
-use auth_key::AuthKey;
+use crate::algorithm::*;
+use crate::audit::*;
+use crate::auth_key::AuthKey;
+use crate::capability::Capability;
+use crate::command::{Command, CommandCode};
+use crate::connector::Connector;
+use crate::credentials::Credentials;
+use crate::domain::Domain;
+use crate::object::{ObjectHandle, ObjectId, ObjectInfo, ObjectLabel, ObjectType};
+use crate::serialization::{deserialize, serialize};
+use crate::session::{Session, SessionId, SessionTimeout};
+use crate::wrap::WrapMessage;
 #[cfg(feature = "rsa")]
 use byteorder::{BigEndian, ByteOrder};
-use capability::Capability;
-use command::{Command, CommandCode};
-use connector::Connector;
-use credentials::Credentials;
-use domain::Domain;
-use object::{ObjectHandle, ObjectId, ObjectInfo, ObjectLabel, ObjectType};
-use serialization::{deserialize, serialize};
-use session::{Session, SessionId, SessionTimeout};
-use wrap::WrapMessage;
 
 /// YubiHSM client: main API in this crate for accessing functions of the
 /// HSM hardware device.
@@ -113,7 +113,7 @@ impl Client {
     where
         C: Into<Box<Connector>>,
     {
-        let mut client = Self::new(connector, credentials)?;
+        let mut client = Self::create(connector, credentials)?;
         client.connect()?;
 
         // Clear credentials if reconnecting has been disabled
@@ -125,7 +125,7 @@ impl Client {
     }
 
     /// Create a `yubihsm::Client`, but defer connecting until `connect()` is called.
-    pub fn new<C>(connector: C, credentials: Credentials) -> Result<Self, ClientError>
+    pub fn create<C>(connector: C, credentials: Credentials) -> Result<Self, ClientError>
     where
         C: Into<Box<Connector>>,
     {
@@ -265,7 +265,8 @@ impl Client {
         Ok(self
             .send_command(EchoCommand {
                 message: msg.into(),
-            })?.0)
+            })?
+            .0)
     }
 
     /// Export an encrypted object from the HSM using the given key-wrapping key.
@@ -282,7 +283,8 @@ impl Client {
                 wrap_key_id,
                 object_type,
                 object_id,
-            })?.0)
+            })?
+            .0)
     }
 
     /// Generate a new asymmetric key within the HSM.
@@ -303,7 +305,8 @@ impl Client {
                 domains,
                 capabilities,
                 algorithm: algorithm.into(),
-            }))?.key_id)
+            }))?
+            .key_id)
     }
 
     /// Generate a new HMAC key within the HSM.
@@ -324,7 +327,8 @@ impl Client {
                 domains,
                 capabilities,
                 algorithm: algorithm.into(),
-            }))?.key_id)
+            }))?
+            .key_id)
     }
 
     /// Generate a new wrap key within the HSM.
@@ -352,7 +356,8 @@ impl Client {
                     algorithm: algorithm.into(),
                 },
                 delegated_capabilities,
-            })?.key_id)
+            })?
+            .key_id)
     }
 
     /// Get audit logs from the HSM device.
@@ -374,7 +379,8 @@ impl Client {
             .send_command(GetObjectInfoCommand(ObjectHandle::new(
                 object_id,
                 object_type,
-            )))?.0)
+            )))?
+            .0)
     }
 
     /// Get an opaque object stored in the HSM.
@@ -445,7 +451,8 @@ impl Client {
         Ok(self
             .send_command(GetPseudoRandomCommand {
                 bytes: bytes as u16,
-            })?.bytes)
+            })?
+            .bytes)
     }
 
     /// Get the public key for an asymmetric key stored on the device.
@@ -544,7 +551,8 @@ impl Client {
                     algorithm: algorithm.into(),
                 },
                 data,
-            })?.key_id)
+            })?
+            .key_id)
     }
 
     /// Put an existing `AuthKey` into the HSM.
@@ -576,7 +584,8 @@ impl Client {
                 },
                 delegated_capabilities,
                 auth_key: auth_key.into(),
-            })?.key_id)
+            })?
+            .key_id)
     }
 
     /// Put an existing HMAC key into the HSM.
@@ -617,7 +626,8 @@ impl Client {
                     algorithm: algorithm.into(),
                 },
                 hmac_key,
-            })?.key_id)
+            })?
+            .key_id)
     }
 
     /// Put an opaque object (X.509 certificate or other bytestring) into the HSM.
@@ -645,7 +655,8 @@ impl Client {
                     algorithm: algorithm.into(),
                 },
                 data: opaque_data.into(),
-            })?.object_id)
+            })?
+            .object_id)
     }
 
     /// Configure the audit policy settings for a particular command, e.g. auditing
@@ -720,7 +731,8 @@ impl Client {
                     algorithm: algorithm.into(),
                 },
                 data,
-            })?.key_id)
+            })?
+            .key_id)
     }
 
     /// Put an existing wrap key into the HSM.
@@ -764,7 +776,8 @@ impl Client {
                 },
                 delegated_capabilities,
                 data,
-            })?.key_id)
+            })?
+            .key_id)
     }
 
     /// Reset the HSM to a factory default state and reboot, clearing all
@@ -921,7 +934,8 @@ impl Client {
                 wrap_key_id,
                 nonce,
                 ciphertext,
-            })?.0)
+            })?
+            .0)
     }
 
     /// Verify an HMAC tag of the given data with the given key ID.
@@ -957,6 +971,7 @@ impl Client {
             .send_command(WrapDataCommand {
                 wrap_key_id,
                 plaintext,
-            })?.0)
+            })?
+            .0)
     }
 }

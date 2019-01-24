@@ -3,10 +3,10 @@
 
 use std::collections::BTreeMap;
 
-use audit::AuditOption;
-use connector::{ConnectionError, ConnectionErrorKind};
-use object::{ObjectId, ObjectType};
-use session::{
+use crate::audit::AuditOption;
+use crate::connector::{ConnectionError, ConnectionErrorKind};
+use crate::object::{ObjectId, ObjectType};
+use crate::session::{
     securechannel::{Challenge, SecureChannel},
     SessionId,
 };
@@ -55,7 +55,7 @@ impl State {
             .keys()
             .max()
             .map(|id| id.succ().expect("session count exceeded"))
-            .unwrap_or_else(|| SessionId::new(0).unwrap());
+            .unwrap_or_else(|| SessionId::from_u8(0).unwrap());
 
         let channel = {
             let auth_key_obj = self

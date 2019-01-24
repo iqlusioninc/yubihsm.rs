@@ -2,8 +2,8 @@
 
 use std::str::FromStr;
 
-use connector::{ConnectionError, ConnectionErrorKind::ResponseError};
-use serial_number::SerialNumber;
+use crate::connector::{ConnectionError, ConnectionErrorKind::ResponseError};
+use crate::serial_number::SerialNumber;
 
 /// `yubihsm-connector` status message when healthy
 pub(super) const CONNECTOR_STATUS_OK: &str = "OK";

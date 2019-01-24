@@ -1,14 +1,14 @@
 use serde::{de::DeserializeOwned, Serialize};
 
 #[cfg(feature = "mockhsm")]
-use serialization::serialize;
+use crate::serialization::serialize;
 
 mod code;
 mod message;
 
 pub use self::code::ResponseCode;
 pub(crate) use self::message::ResponseMessage;
-use command::CommandCode;
+use crate::command::CommandCode;
 
 /// Structured responses to `Command` messages sent from the HSM
 pub(crate) trait Response: Serialize + DeserializeOwned + Sized {

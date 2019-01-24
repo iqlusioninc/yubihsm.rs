@@ -1,7 +1,7 @@
 use serde::{de::DeserializeOwned, ser::Serialize};
 
-use response::Response;
-use serialization::serialize;
+use crate::response::Response;
+use crate::serialization::serialize;
 
 mod code;
 mod message;
@@ -26,6 +26,6 @@ pub(crate) trait Command: Serialize + DeserializeOwned + Sized {
 
 impl<C: Command> From<C> for CommandMessage {
     fn from(command: C) -> CommandMessage {
-        Self::new(C::COMMAND_CODE, serialize(&command).unwrap()).unwrap()
+        Self::create(C::COMMAND_CODE, serialize(&command).unwrap()).unwrap()
     }
 }

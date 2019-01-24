@@ -61,42 +61,20 @@
     html_root_url = "https://docs.rs/yubihsm/0.19.2"
 )]
 
-extern crate aes;
 #[macro_use]
 extern crate bitflags;
-extern crate block_modes;
-extern crate byteorder;
-extern crate cmac;
 #[macro_use]
 extern crate failure;
 #[macro_use]
 extern crate failure_derive;
-#[cfg(feature = "http")]
-extern crate gaunt;
-#[cfg(feature = "hmac")]
-extern crate hmac;
 #[cfg(feature = "usb")]
 #[macro_use]
 extern crate lazy_static;
-#[cfg(feature = "usb")]
-extern crate libusb;
 #[macro_use]
 extern crate log;
-#[cfg(feature = "pbkdf2")]
-extern crate pbkdf2;
-extern crate rand;
-#[cfg(feature = "mockhsm")]
-extern crate ring;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
-#[cfg(feature = "sha2")]
-extern crate sha2;
-extern crate subtle;
-#[cfg(feature = "mockhsm")]
-extern crate untrusted;
-extern crate uuid;
-extern crate zeroize;
 
 /// Error types
 #[macro_use]
@@ -174,25 +152,25 @@ mod serial_number;
 /// Object wrapping support, i.e. encrypt objects from one HSM to another.
 pub mod wrap;
 
-pub use algorithm::*;
-pub use audit::AuditOption;
-pub use auth_key::{AuthKey, AUTH_KEY_SIZE};
-pub use capability::Capability;
-pub use client::{Client, ClientError};
-pub use command::CommandCode;
+pub use crate::algorithm::*;
+pub use crate::audit::AuditOption;
+pub use crate::auth_key::{AuthKey, AUTH_KEY_SIZE};
+pub use crate::capability::Capability;
+pub use crate::client::{Client, ClientError};
+pub use crate::command::CommandCode;
 #[cfg(feature = "http")]
-pub use connector::http::{HttpConfig, HttpConnector};
+pub use crate::connector::http::{HttpConfig, HttpConnector};
 #[cfg(feature = "usb")]
-pub use connector::usb::{UsbConfig, UsbConnector};
-pub use connector::{Connection, ConnectionError, Connector};
-pub use credentials::Credentials;
-pub use domain::Domain;
-pub use error::*;
+pub use crate::connector::usb::{UsbConfig, UsbConnector};
+pub use crate::connector::{Connection, ConnectionError, Connector};
+pub use crate::credentials::Credentials;
+pub use crate::domain::Domain;
+pub use crate::error::*;
 #[cfg(feature = "mockhsm")]
-pub use mockhsm::MockHsm;
-pub use object::*;
-pub use response::ResponseCode;
-pub use serial_number::SerialNumber;
-pub use session::SessionId;
+pub use crate::mockhsm::MockHsm;
+pub use crate::object::*;
+pub use crate::response::ResponseCode;
+pub use crate::serial_number::SerialNumber;
+pub use crate::session::SessionId;
+pub use crate::wrap::{WrapMessage, WrapNonce};
 pub use uuid::Uuid;
-pub use wrap::{WrapMessage, WrapNonce};

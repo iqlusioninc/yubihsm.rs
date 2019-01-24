@@ -5,11 +5,11 @@ pub(crate) mod create;
 
 use self::create::*;
 use super::{securechannel::Challenge, SessionError, SessionErrorKind::*, SessionId};
-use command::{CommandCode, CommandMessage};
-use connector::Connection;
-use object::ObjectId;
-use response::ResponseMessage;
-use serialization::deserialize;
+use crate::command::{CommandCode, CommandMessage};
+use crate::connector::Connection;
+use crate::object::ObjectId;
+use crate::response::ResponseMessage;
+use crate::serialization::deserialize;
 
 /// Create a new encrypted session with the HSM over the given `Connection`
 pub(super) fn create_session(
@@ -20,7 +20,8 @@ pub(super) fn create_session(
     let command_message: CommandMessage = CreateSessionCommand {
         auth_key_id,
         host_challenge,
-    }.into();
+    }
+    .into();
 
     let uuid = command_message.uuid;
     let response_body = connection.send_message(uuid, command_message.into())?;

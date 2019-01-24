@@ -1,11 +1,11 @@
 use yubihsm::{Capability, ObjectOrigin, ObjectType, WrapAlg};
 
-use {clear_test_key_slot, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL};
+use crate::{clear_test_key_slot, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL};
 
 /// Generate an AES-CCM key wrapping key
 #[test]
 fn wrap_key_test() {
-    let mut client = ::get_hsm_client();
+    let mut client = crate::get_hsm_client();
 
     let algorithm = WrapAlg::AES256_CCM;
     let capabilities = Capability::EXPORT_WRAPPED
@@ -24,7 +24,8 @@ fn wrap_key_test() {
             capabilities,
             delegated_capabilities,
             algorithm,
-        ).unwrap_or_else(|err| panic!("error generating wrap key: {}", err));
+        )
+        .unwrap_or_else(|err| panic!("error generating wrap key: {}", err));
 
     assert_eq!(key_id, TEST_KEY_ID);
 

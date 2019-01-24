@@ -14,8 +14,8 @@ pub use self::{
     device::{Device, Devices},
     timeout::UsbTimeout,
 };
-use connector::{Connection, ConnectionError, Connector};
-use serial_number::SerialNumber;
+use crate::connector::{Connection, ConnectionError, Connector};
+use crate::serial_number::SerialNumber;
 
 /// USB vendor ID for Yubico
 pub const YUBICO_VENDOR_ID: u16 = 0x1050;
@@ -45,7 +45,7 @@ pub struct UsbConnector(UsbConfig);
 
 impl UsbConnector {
     /// Create a new `UsbConnector` with the given configuration
-    pub fn new(config: &UsbConfig) -> Result<Self, ConnectionError> {
+    pub fn create(config: &UsbConfig) -> Result<Self, ConnectionError> {
         Ok(UsbConnector(config.clone()))
     }
 }

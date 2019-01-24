@@ -14,7 +14,7 @@ use byteorder::{BigEndian, WriteBytesExt};
 use uuid::Uuid;
 
 use super::{CommandCode, MAX_MSG_SIZE};
-use session::{
+use crate::session::{
     securechannel::{Mac, MAC_SIZE},
     SessionError,
     SessionErrorKind::ProtocolError,
@@ -43,7 +43,7 @@ pub(crate) struct CommandMessage {
 
 impl CommandMessage {
     /// Create a new command message without a MAC
-    pub fn new<T>(command_type: CommandCode, command_data: T) -> Result<Self, SessionError>
+    pub fn create<T>(command_type: CommandCode, command_data: T) -> Result<Self, SessionError>
     where
         T: Into<Vec<u8>>,
     {
@@ -132,7 +132,7 @@ impl CommandMessage {
                     );
                 }
 
-                let id = SessionId::new(bytes.remove(0))?;
+                let id = SessionId::from_u8(bytes.remove(0))?;
 
                 if bytes.len() < MAC_SIZE {
                     fail!(

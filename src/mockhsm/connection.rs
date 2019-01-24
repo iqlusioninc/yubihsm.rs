@@ -2,8 +2,8 @@ use std::sync::{Arc, Mutex};
 use uuid::Uuid;
 
 use super::{command, state::State, MockHsm};
-use command::{CommandCode, CommandMessage};
-use connector::{Connection, ConnectionError, ConnectionErrorKind::ConnectionFailed};
+use crate::command::{CommandCode, CommandMessage};
+use crate::connector::{Connection, ConnectionError, ConnectionErrorKind::ConnectionFailed};
 
 /// A mocked connection to the MockHsm
 pub struct MockConnection(Arc<Mutex<State>>);

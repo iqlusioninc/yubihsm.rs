@@ -1,6 +1,6 @@
 //! Generate keys within the `YubiHSM2`
 
-use {Algorithm, Capability, Domain, ObjectId, ObjectLabel};
+use crate::{Algorithm, Capability, Domain, ObjectId, ObjectLabel};
 
 /// Parameters which are common to all key generation commands
 #[derive(Serialize, Deserialize, Debug)]

@@ -15,8 +15,8 @@ mod state;
 
 pub use self::connection::MockConnection;
 use self::state::State;
-use connector::{Connection, ConnectionError, Connector};
-use serial_number::SerialNumber;
+use crate::connector::{Connection, ConnectionError, Connector};
+use crate::serial_number::SerialNumber;
 
 /// Mock serial number for the MockHsm
 pub const MOCK_SERIAL_NUMBER: &str = "0123456789";

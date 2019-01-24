@@ -2,10 +2,6 @@
 
 #[macro_use]
 extern crate lazy_static;
-extern crate ring;
-extern crate sha2;
-extern crate untrusted;
-extern crate yubihsm;
 
 use std::sync::{Mutex, MutexGuard};
 
@@ -94,13 +90,13 @@ pub fn create_hsm_connector() -> Box<Connector> {
 /// Connect to the HSM via HTTP using `yubihsm-connector`
 #[cfg(feature = "http")]
 pub fn create_http_connector() -> Box<Connector> {
-    HttpConnector::new(&Default::default()).unwrap().into()
+    HttpConnector::create(&Default::default()).unwrap().into()
 }
 
 /// Connect to the HSM via USB
 #[cfg(feature = "usb")]
 pub fn create_usb_connector() -> Box<Connector> {
-    UsbConnector::new(&Default::default()).unwrap().into()
+    UsbConnector::create(&Default::default()).unwrap().into()
 }
 
 /// Create a mock HSM for testing in situations where a hardware device is
@@ -137,7 +133,8 @@ pub fn generate_asymmetric_key(
             TEST_DOMAINS,
             capabilities,
             algorithm,
-        ).unwrap_or_else(|err| panic!("error generating asymmetric key: {}", err));
+        )
+        .unwrap_or_else(|err| panic!("error generating asymmetric key: {}", err));
 
     assert_eq!(key_id, TEST_KEY_ID);
 }
@@ -159,7 +156,8 @@ pub fn put_asymmetric_key<T: Into<Vec<u8>>>(
             capabilities,
             algorithm,
             data,
-        ).unwrap_or_else(|err| panic!("error putting asymmetric key: {}", err));
+        )
+        .unwrap_or_else(|err| panic!("error putting asymmetric key: {}", err));
 
     assert_eq!(key_id, TEST_KEY_ID);
 }

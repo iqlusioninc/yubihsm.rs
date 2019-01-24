@@ -2,8 +2,8 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Get_Pseudo_Random.html>
 
-use command::{Command, CommandCode, MAX_MSG_SIZE};
-use response::Response;
+use crate::command::{Command, CommandCode, MAX_MSG_SIZE};
+use crate::response::Response;
 
 /// Max message size - tag byte - 16-bit response length field
 pub(crate) const MAX_RAND_BYTES: usize = MAX_MSG_SIZE - 1 - 2;

@@ -14,9 +14,9 @@
 //! [get_commands_audit_options()]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.get_commands_audit_options
 //! [get_force_audit_option()]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.get_force_audit_option
 
-use audit::*;
-use command::{Command, CommandCode};
-use response::Response;
+use crate::audit::*;
+use crate::command::{Command, CommandCode};
+use crate::response::Response;
 
 /// Request parameters for `command::get_option`
 #[derive(Serialize, Deserialize, Debug)]

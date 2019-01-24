@@ -12,7 +12,7 @@ use std::fmt;
 use subtle::{Choice, ConstantTimeEq};
 use zeroize::Zeroize;
 
-use session::{SessionError, SessionErrorKind::VerifyFailed};
+use crate::session::{SessionError, SessionErrorKind::VerifyFailed};
 
 /// Size of the MAC in bytes: SCP03 truncates it to 8-bytes
 pub const MAC_SIZE: usize = 8;

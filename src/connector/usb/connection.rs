@@ -3,8 +3,8 @@ use std::sync::Mutex;
 
 use super::{Device, Devices, UsbConfig, UsbTimeout};
 use super::{YUBIHSM2_BULK_IN_ENDPOINT, YUBIHSM2_BULK_OUT_ENDPOINT};
-use command::MAX_MSG_SIZE;
-use connector::{Connection, ConnectionError, ConnectionErrorKind::UsbError};
+use crate::command::MAX_MSG_SIZE;
+use crate::connector::{Connection, ConnectionError, ConnectionErrorKind::UsbError};
 use uuid::Uuid;
 
 /// Connection to HSM via USB
@@ -26,7 +26,7 @@ impl UsbConnection {
     }
 
     /// Create a new YubiHSM device from a libusb device
-    pub(super) fn new(device: Device, timeout: UsbTimeout) -> Result<Self, ConnectionError> {
+    pub(super) fn create(device: Device, timeout: UsbTimeout) -> Result<Self, ConnectionError> {
         let handle = device.open_handle()?;
 
         let connection = UsbConnection {

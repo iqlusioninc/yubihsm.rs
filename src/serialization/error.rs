@@ -1,7 +1,7 @@
 use serde;
 use std::{fmt, io};
 
-use error::Error;
+use crate::error::Error;
 
 /// Serialization errors
 pub type SerializationError = Error<SerializationErrorKind>;

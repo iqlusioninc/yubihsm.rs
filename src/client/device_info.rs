@@ -2,9 +2,9 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Device_Info.html>
 
-use algorithm::Algorithm;
-use command::{Command, CommandCode};
-use response::Response;
+use crate::algorithm::Algorithm;
+use crate::command::{Command, CommandCode};
+use crate::response::Response;
 
 /// Request parameters for `command::device_info`
 #[derive(Serialize, Deserialize, Debug)]

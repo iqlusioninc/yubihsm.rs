@@ -2,10 +2,12 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Sign_Data_Pss.html>
 
-use algorithm::Algorithm;
-use command::{Command, CommandCode};
-use object::ObjectId;
-use response::Response;
+use crate::{
+    algorithm::Algorithm,
+    command::{Command, CommandCode},
+    object::ObjectId,
+    response::Response,
+};
 
 /// Maximum message size supported for RSASSA-PSS
 pub const RSA_PSS_MAX_MESSAGE_SIZE: usize = 0xFFFF;
@@ -39,11 +41,7 @@ impl Response for RSAPSSSignature {
 }
 
 // TODO: use clippy's scoped lints once they work on stable
-#[allow(
-    unknown_lints,
-    renamed_and_removed_lints,
-    len_without_is_empty
-)]
+#[allow(unknown_lints, renamed_and_removed_lints, len_without_is_empty)]
 impl RSAPSSSignature {
     /// Unwrap inner byte vector
     pub fn into_vec(self) -> Vec<u8> {

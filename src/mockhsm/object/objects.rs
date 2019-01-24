@@ -4,10 +4,10 @@ use std::collections::btree_map::Iter as BTreeMapIter;
 use std::collections::BTreeMap;
 
 use super::{Object, Payload, WrappedObject, DEFAULT_AUTH_KEY_LABEL, WRAPPED_DATA_MAC_SIZE};
-use auth_key::{AuthKey, AUTH_KEY_SIZE};
-use credentials::DEFAULT_AUTH_KEY_ID;
-use serialization::{deserialize, serialize};
-use {
+use crate::auth_key::{AuthKey, AUTH_KEY_SIZE};
+use crate::credentials::DEFAULT_AUTH_KEY_ID;
+use crate::serialization::{deserialize, serialize};
+use crate::{
     Algorithm, AuthAlg, Capability, Domain, ObjectHandle, ObjectId, ObjectInfo, ObjectLabel,
     ObjectOrigin, ObjectType, WrapAlg, WrapNonce,
 };
@@ -154,7 +154,8 @@ impl Objects {
             WrapAlg::AES128_CCM => SealingKey::new(&AES_128_GCM, wrap_key.payload.as_ref()),
             WrapAlg::AES256_CCM => SealingKey::new(&AES_256_GCM, wrap_key.payload.as_ref()),
             unsupported => bail!("unsupported wrap key algorithm: {:?}", unsupported),
-        }.unwrap();
+        }
+        .unwrap();
 
         let object_to_wrap = match self.get(object_id, object_type) {
             Some(o) => o,
@@ -184,7 +185,8 @@ impl Objects {
         let mut wrapped_object = serialize(&WrappedObject {
             object_info,
             data: object_to_wrap.payload.as_ref().into(),
-        }).unwrap();
+        })
+        .unwrap();
 
         // Make room for the MAC
         wrapped_object.extend_from_slice(&[0u8; WRAPPED_DATA_MAC_SIZE]);
@@ -195,7 +197,8 @@ impl Objects {
             b"",
             &mut wrapped_object,
             WRAPPED_DATA_MAC_SIZE,
-        ).unwrap();
+        )
+        .unwrap();
 
         Ok(wrapped_object)
     }
@@ -212,7 +215,8 @@ impl Objects {
                 WrapAlg::AES128_CCM => OpeningKey::new(&AES_128_GCM, k.payload.as_ref()),
                 WrapAlg::AES256_CCM => OpeningKey::new(&AES_256_GCM, k.payload.as_ref()),
                 unsupported => bail!("unsupported wrap key algorithm: {:?}", unsupported),
-            }.unwrap(),
+            }
+            .unwrap(),
             None => bail!("no such wrap key: {:?}", wrap_key_id),
         };
 
@@ -224,7 +228,8 @@ impl Objects {
             b"",
             0,
             &mut wrapped_data,
-        ).is_err()
+        )
+        .is_err()
         {
             bail!("error decrypting wrapped object!");
         }

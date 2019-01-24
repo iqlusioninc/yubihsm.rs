@@ -1,11 +1,11 @@
 use yubihsm::{AsymmetricAlg, Capability, ObjectOrigin, ObjectType};
 
-use {generate_asymmetric_key, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL};
+use crate::{generate_asymmetric_key, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL};
 
 /// Generate an Ed25519 key
 #[test]
 fn ed25519_key_test() {
-    let mut client = ::get_hsm_client();
+    let mut client = crate::get_hsm_client();
 
     let algorithm = AsymmetricAlg::Ed25519;
     let capabilities = Capability::ASYMMETRIC_SIGN_EDDSA;
@@ -29,7 +29,7 @@ fn ed25519_key_test() {
 #[cfg(not(feature = "mockhsm"))]
 #[test]
 fn nistp256_key_test() {
-    let mut client = ::get_hsm_client();
+    let mut client = crate::get_hsm_client();
     let algorithm = AsymmetricAlg::EC_P256;
     let capabilities = Capability::ASYMMETRIC_SIGN_EDDSA;
 

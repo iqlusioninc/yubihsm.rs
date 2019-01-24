@@ -1,8 +1,8 @@
 //! Session error types
 
-use connector::ConnectionError;
-use error::{Error, HsmErrorKind};
-use serialization::SerializationError;
+use crate::connector::ConnectionError;
+use crate::error::{Error, HsmErrorKind};
+use crate::serialization::SerializationError;
 
 /// Session errors
 pub type SessionError = Error<SessionErrorKind>;

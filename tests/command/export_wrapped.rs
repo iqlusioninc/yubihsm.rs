@@ -1,7 +1,7 @@
 use yubihsm::{AsymmetricAlg, Capability, ObjectOrigin, ObjectType, WrapAlg};
 
-use test_vectors::AESCCM_TEST_VECTORS;
-use {
+use crate::test_vectors::AESCCM_TEST_VECTORS;
+use crate::{
     clear_test_key_slot, TEST_DOMAINS, TEST_EXPORTED_KEY_ID, TEST_EXPORTED_KEY_LABEL, TEST_KEY_ID,
     TEST_KEY_LABEL,
 };
@@ -10,7 +10,7 @@ use {
 // TODO: test against RFC 3610 vectors
 #[test]
 fn wrap_key_test() {
-    let mut client = ::get_hsm_client();
+    let mut client = crate::get_hsm_client();
     let algorithm = WrapAlg::AES128_CCM;
     let capabilities = Capability::EXPORT_WRAPPED | Capability::IMPORT_WRAPPED;
     let delegated_capabilities = Capability::all();
@@ -26,7 +26,8 @@ fn wrap_key_test() {
             delegated_capabilities,
             algorithm,
             AESCCM_TEST_VECTORS[0].key,
-        ).unwrap_or_else(|err| panic!("error generating wrap key: {}", err));
+        )
+        .unwrap_or_else(|err| panic!("error generating wrap key: {}", err));
 
     assert_eq!(key_id, TEST_KEY_ID);
 
@@ -45,18 +46,17 @@ fn wrap_key_test() {
             TEST_DOMAINS,
             exported_key_capabilities,
             exported_key_algorithm,
-        ).unwrap_or_else(|err| panic!("error generating asymmetric key: {}", err));
+        )
+        .unwrap_or_else(|err| panic!("error generating asymmetric key: {}", err));
 
     let wrap_data = client
         .export_wrapped(TEST_KEY_ID, exported_key_type, TEST_EXPORTED_KEY_ID)
         .unwrap_or_else(|err| panic!("error exporting key: {}", err));
 
     // Delete the object from the HSM prior to re-importing it
-    assert!(
-        client
-            .delete_object(TEST_EXPORTED_KEY_ID, exported_key_type)
-            .is_ok()
-    );
+    assert!(client
+        .delete_object(TEST_EXPORTED_KEY_ID, exported_key_type)
+        .is_ok());
 
     // Re-import the wrapped key back into the HSM
     let import_response = client

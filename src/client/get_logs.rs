@@ -4,9 +4,9 @@
 
 use std::fmt::{self, Debug};
 
-use command::{Command, CommandCode};
-use object::ObjectId;
-use response::{Response, ResponseCode};
+use crate::command::{Command, CommandCode};
+use crate::object::ObjectId;
+use crate::response::{Response, ResponseCode};
 
 /// Request parameters for `command::get_logs`
 #[derive(Serialize, Deserialize, Debug)]

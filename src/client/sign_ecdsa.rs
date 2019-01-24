@@ -2,9 +2,9 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Sign_Data_Ecdsa.html>
 
-use command::{Command, CommandCode};
-use object::ObjectId;
-use response::Response;
+use crate::command::{Command, CommandCode};
+use crate::object::ObjectId;
+use crate::response::Response;
 
 /// Request parameters for `command::sign_ecdsa*`
 #[derive(Serialize, Deserialize, Debug)]
@@ -29,11 +29,7 @@ impl Response for ECDSASignature {
 }
 
 // TODO: use clippy's scoped lints once they work on stable
-#[allow(
-    unknown_lints,
-    renamed_and_removed_lints,
-    len_without_is_empty
-)]
+#[allow(unknown_lints, renamed_and_removed_lints, len_without_is_empty)]
 impl ECDSASignature {
     /// Unwrap inner byte vector
     pub fn into_vec(self) -> Vec<u8> {

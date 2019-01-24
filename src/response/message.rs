@@ -9,10 +9,10 @@ use byteorder::WriteBytesExt;
 use byteorder::{BigEndian, ByteOrder};
 
 use super::ResponseCode;
-use command::CommandCode;
+use crate::command::CommandCode;
 #[cfg(feature = "mockhsm")]
-use error::HsmErrorKind;
-use session::{
+use crate::error::HsmErrorKind;
+use crate::session::{
     securechannel::{Mac, MAC_SIZE},
     SessionError,
     SessionErrorKind::ProtocolError,
@@ -64,7 +64,7 @@ impl ResponseMessage {
             if bytes.is_empty() {
                 fail!(ProtocolError, "session ID missing");
             } else {
-                Some(SessionId::new(bytes.remove(0))?)
+                Some(SessionId::from_u8(bytes.remove(0))?)
             }
         } else {
             None

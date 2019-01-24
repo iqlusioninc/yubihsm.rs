@@ -4,7 +4,7 @@ use gaunt;
 use uuid::Uuid;
 
 use super::config::HttpConfig;
-use connector::{Connection, ConnectionError};
+use crate::connector::{Connection, ConnectionError};
 
 /// Connection to YubiHSM via HTTP requests to `yubihsm-connector`.
 ///

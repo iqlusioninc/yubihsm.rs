@@ -2,9 +2,9 @@
 
 use std::fmt::{self, Debug};
 
-use command::CommandMessage;
-use response::ResponseMessage;
-use session::{
+use crate::command::CommandMessage;
+use crate::response::ResponseMessage;
+use crate::session::{
     securechannel::{Challenge, Cryptogram, SecureChannel},
     SessionId,
 };

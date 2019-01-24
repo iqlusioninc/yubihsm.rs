@@ -2,10 +2,10 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Export_Wrapped.html>
 
-use command::{Command, CommandCode};
-use object::{ObjectId, ObjectType};
-use response::Response;
-use wrap::WrapMessage;
+use crate::command::{Command, CommandCode};
+use crate::object::{ObjectId, ObjectType};
+use crate::response::Response;
+use crate::wrap::WrapMessage;
 
 /// Request parameters for `command::export_wrapped`
 #[derive(Serialize, Deserialize, Debug)]
