@@ -1,5 +1,5 @@
-use auth_key::AuthKey;
-use object::ObjectId;
+use crate::auth_key::AuthKey;
+use crate::object::ObjectId;
 
 /// Default auth key ID slot
 pub const DEFAULT_AUTH_KEY_ID: ObjectId = 1;

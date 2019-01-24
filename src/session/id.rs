@@ -9,7 +9,7 @@ pub struct SessionId(u8);
 
 impl SessionId {
     /// Create a new session ID from a byte value
-    pub fn new(id: u8) -> Result<Self, SessionError> {
+    pub fn from_u8(id: u8) -> Result<Self, SessionError> {
         if id > MAX_SESSION_ID.0 {
             fail!(
                 ProtocolError,
@@ -24,7 +24,7 @@ impl SessionId {
 
     /// Obtain the next session ID
     pub fn succ(self) -> Result<Self, SessionError> {
-        Self::new(self.0 + 1)
+        Self::from_u8(self.0 + 1)
     }
 
     /// Obtain session ID as a u8

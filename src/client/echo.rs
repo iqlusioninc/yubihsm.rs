@@ -2,8 +2,8 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Echo.html>
 
-use command::{Command, CommandCode};
-use response::Response;
+use crate::command::{Command, CommandCode};
+use crate::response::Response;
 
 /// Request parameters for `command::echo`
 #[derive(Serialize, Deserialize, Debug)]

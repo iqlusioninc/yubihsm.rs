@@ -37,6 +37,10 @@ pub use self::{
 };
 
 use super::{CommandMessage, ResponseMessage, SessionError, SessionErrorKind::*, SessionId};
+use crate::auth_key::AuthKey;
+use crate::command::CommandCode;
+#[cfg(feature = "mockhsm")]
+use crate::response::ResponseCode;
 use aes::{
     block_cipher_trait::{
         generic_array::{typenum::U16, GenericArray},
@@ -44,13 +48,9 @@ use aes::{
     },
     Aes128,
 };
-use auth_key::AuthKey;
 use block_modes::{block_padding::Iso7816, BlockMode, BlockModeIv, Cbc};
 use byteorder::{BigEndian, ByteOrder};
 use cmac::{crypto_mac::Mac as CryptoMac, Cmac};
-use command::CommandCode;
-#[cfg(feature = "mockhsm")]
-use response::ResponseCode;
 #[cfg(feature = "mockhsm")]
 use subtle::ConstantTimeEq;
 use zeroize::Zeroize;
@@ -253,7 +253,8 @@ impl SecureChannel {
             .map_err(|e| {
                 self.terminate();
                 err!(ProtocolError, "error decrypting response: {:?}", e)
-            })?.len();
+            })?
+            .len();
 
         response_message.truncate(response_len);
         let mut decrypted_response = ResponseMessage::parse(response_message)?;
@@ -370,7 +371,8 @@ impl SecureChannel {
             .map_err(|e| {
                 self.terminate();
                 err!(ProtocolError, "error decrypting command: {:?}", e)
-            })?.len();
+            })?
+            .len();
 
         command_data.truncate(command_len);
         let mut decrypted_command = CommandMessage::parse(command_data)?;
@@ -542,8 +544,8 @@ fn compute_icv(cipher: &Aes128, counter: u32) -> GenericArray<u8, U16> {
 #[cfg(all(test, feature = "mockhsm"))]
 mod tests {
     use super::*;
-    use auth_key::AuthKey;
-    use command::CommandCode;
+    use crate::auth_key::AuthKey;
+    use crate::command::CommandCode;
 
     const PASSWORD: &[u8] = b"password";
     const HOST_CHALLENGE: &[u8] = &[0u8; 8];
@@ -557,7 +559,7 @@ mod tests {
         let host_challenge = Challenge::from_slice(HOST_CHALLENGE);
         let card_challenge = Challenge::from_slice(CARD_CHALLENGE);
 
-        let session_id = SessionId::new(0).unwrap();
+        let session_id = SessionId::from_u8(0).unwrap();
 
         // Create channels
         let mut host_channel =
@@ -584,7 +586,7 @@ mod tests {
 
         // Host sends encrypted command
         let command_ciphertext = host_channel
-            .encrypt_command(CommandMessage::new(COMMAND_CODE, Vec::from(COMMAND_DATA)).unwrap())
+            .encrypt_command(CommandMessage::create(COMMAND_CODE, Vec::from(COMMAND_DATA)).unwrap())
             .unwrap();
 
         // Card decrypts command
@@ -595,7 +597,8 @@ mod tests {
             .encrypt_response(ResponseMessage::success(
                 decrypted_command.command_type,
                 decrypted_command.data,
-            )).unwrap();
+            ))
+            .unwrap();
 
         let decrypted_response = host_channel.decrypt_response(response_ciphertext).unwrap();
 
@@ -610,7 +613,7 @@ mod tests {
 
         // Host sends encrypted command
         let command_ciphertext = host_channel
-            .encrypt_command(CommandMessage::new(COMMAND_CODE, Vec::from(COMMAND_DATA)).unwrap())
+            .encrypt_command(CommandMessage::create(COMMAND_CODE, Vec::from(COMMAND_DATA)).unwrap())
             .unwrap();
 
         // Card decrypts command
@@ -621,7 +624,8 @@ mod tests {
             .encrypt_response(ResponseMessage::success(
                 decrypted_command.command_type,
                 decrypted_command.data,
-            )).unwrap();
+            ))
+            .unwrap();
 
         // Tweak MAC in response
         let mut bad_mac = Vec::from(response_ciphertext.mac.as_ref().unwrap().as_slice());

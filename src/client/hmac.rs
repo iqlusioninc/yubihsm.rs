@@ -2,9 +2,9 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Hmac_Data.html>
 
-use command::{Command, CommandCode};
-use object::ObjectId;
-use response::Response;
+use crate::command::{Command, CommandCode};
+use crate::object::ObjectId;
+use crate::response::Response;
 
 /// Request parameters for `command::hmac`
 #[derive(Serialize, Deserialize, Debug)]
@@ -29,11 +29,7 @@ impl Response for HMACTag {
 }
 
 // TODO: use clippy's scoped lints once they work on stable
-#[allow(
-    unknown_lints,
-    renamed_and_removed_lints,
-    len_without_is_empty
-)]
+#[allow(unknown_lints, renamed_and_removed_lints, len_without_is_empty)]
 impl HMACTag {
     /// Create a new HMAC tag
     pub fn new<V: Into<Vec<u8>>>(vec: V) -> HMACTag {

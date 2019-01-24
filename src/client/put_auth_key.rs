@@ -3,11 +3,11 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/Put_Authkey.html>
 
 use super::put_object::PutObjectParams;
-use auth_key::AuthKey;
-use capability::Capability;
-use command::{Command, CommandCode};
-use object::ObjectId;
-use response::Response;
+use crate::auth_key::AuthKey;
+use crate::capability::Capability;
+use crate::command::{Command, CommandCode};
+use crate::object::ObjectId;
+use crate::response::Response;
 
 /// Request parameters for `command::put_auth_key`
 #[derive(Serialize, Deserialize, Debug)]

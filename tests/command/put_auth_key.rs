@@ -1,11 +1,11 @@
 use yubihsm::{AuthAlg, AuthKey, Capability, ObjectOrigin, ObjectType};
 
-use {clear_test_key_slot, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL, TEST_MESSAGE};
+use crate::{clear_test_key_slot, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL, TEST_MESSAGE};
 
 /// Put a new authentication key into the `YubiHSM`
 #[test]
 fn put_auth_key() {
-    let mut client = ::get_hsm_client();
+    let mut client = crate::get_hsm_client();
     let algorithm = AuthAlg::YUBICO_AES;
     let capabilities = Capability::all();
     let delegated_capabilities = Capability::all();
@@ -23,7 +23,8 @@ fn put_auth_key() {
             delegated_capabilities,
             algorithm,
             new_auth_key,
-        ).unwrap_or_else(|err| panic!("error putting auth key: {}", err));
+        )
+        .unwrap_or_else(|err| panic!("error putting auth key: {}", err));
 
     assert_eq!(key_id, TEST_KEY_ID);
 

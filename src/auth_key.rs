@@ -1,6 +1,6 @@
 //! `YubiHSM2` authentication keys (2 * AES-128 symmetric PSK) from which session keys are derived
 
-use error::Error;
+use crate::error::Error;
 #[cfg(feature = "hmac")]
 use hmac::Hmac;
 #[cfg(feature = "pbkdf2")]

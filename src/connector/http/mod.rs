@@ -10,7 +10,7 @@ use std::str;
 
 use self::connection::HttpConnection;
 use super::{Connection, ConnectionError, ConnectionErrorKind::ResponseError, Connector};
-use serial_number::SerialNumber;
+use crate::serial_number::SerialNumber;
 
 pub use self::{config::HttpConfig, status::ConnectorStatus};
 
@@ -42,7 +42,7 @@ pub struct HttpConnector(HttpConfig);
 
 impl HttpConnector {
     /// Create a new `HttpConnector` with the given configuration
-    pub fn new(config: &HttpConfig) -> Result<Self, ConnectionError> {
+    pub fn create(config: &HttpConfig) -> Result<Self, ConnectionError> {
         Ok(HttpConnector(config.clone()))
     }
 

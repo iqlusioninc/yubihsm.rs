@@ -6,12 +6,12 @@ use std::{
 };
 use subtle::ConstantTimeEq;
 
-use command::{Command, CommandCode, CommandMessage};
-use connector::{Connection, Connector};
-use credentials::Credentials;
-use error::HsmErrorKind;
-use response::ResponseMessage;
-use serialization::deserialize;
+use crate::command::{Command, CommandCode, CommandMessage};
+use crate::connector::{Connection, Connector};
+use crate::credentials::Credentials;
+use crate::error::HsmErrorKind;
+use crate::response::ResponseMessage;
+use crate::serialization::deserialize;
 
 #[macro_use]
 mod macros;
@@ -312,7 +312,7 @@ fn close_session(session: &mut Session) {
     let msg = err
         .downcast_ref::<String>()
         .map(|m| m.as_ref())
-        .or_else(|| err.downcast_ref::<&str>().map(|m| *m))
+        .or_else(|| err.downcast_ref::<&str>().cloned())
         .unwrap_or_else(|| "unknown cause!");
 
     error!(

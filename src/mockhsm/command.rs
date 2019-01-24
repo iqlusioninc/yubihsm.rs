@@ -7,20 +7,20 @@ use sha2::Sha256;
 use std::io::Cursor;
 use untrusted;
 
-use algorithm::*;
-use audit::{AuditCommand, AuditOption, AuditTag};
-use client::*;
-use command::{CommandCode, CommandMessage};
-use connector::ConnectionError;
-use error::HsmErrorKind;
-use response::{Response, ResponseMessage};
-use serialization::deserialize;
-use session::command::{
+use crate::algorithm::*;
+use crate::audit::{AuditCommand, AuditOption, AuditTag};
+use crate::client::*;
+use crate::command::{CommandCode, CommandMessage};
+use crate::connector::ConnectionError;
+use crate::error::HsmErrorKind;
+use crate::response::{Response, ResponseMessage};
+use crate::serialization::deserialize;
+use crate::session::command::{
     close::CloseSessionResponse,
     create::{CreateSessionCommand, CreateSessionResponse},
 };
+use crate::{Capability, ObjectType, SessionId, WrapMessage, WrapNonce};
 use subtle::ConstantTimeEq;
-use {Capability, ObjectType, SessionId, WrapMessage, WrapNonce};
 
 use super::object::Payload;
 use super::state::State;
@@ -38,7 +38,8 @@ pub(crate) fn create_session(
     let mut response = CreateSessionResponse {
         card_challenge: *session.card_challenge(),
         card_cryptogram: session.card_cryptogram(),
-    }.serialize();
+    }
+    .serialize();
 
     response.session_id = Some(session.id);
     Ok(response.into())
@@ -201,7 +202,8 @@ fn device_info() -> ResponseMessage {
             Algorithm::Asymmetric(AsymmetricAlg::Ed25519),
             Algorithm::Asymmetric(AsymmetricAlg::EC_P224),
         ],
-    }.serialize()
+    }
+    .serialize()
 }
 
 /// Echo a message back to the host
@@ -249,7 +251,8 @@ fn gen_asymmetric_key(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
 
     GenAsymmetricKeyResponse {
         key_id: command.key_id,
-    }.serialize()
+    }
+    .serialize()
 }
 
 /// Generate a new random HMAC key
@@ -269,7 +272,8 @@ fn gen_hmac_key(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
 
     GenHMACKeyResponse {
         key_id: command.key_id,
-    }.serialize()
+    }
+    .serialize()
 }
 
 /// Generate a new random wrap (i.e. AES-CCM) key
@@ -292,7 +296,8 @@ fn gen_wrap_key(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
 
     GenWrapKeyResponse {
         key_id: params.key_id,
-    }.serialize()
+    }
+    .serialize()
 }
 
 /// Get mock log information
@@ -303,7 +308,8 @@ fn get_logs() -> ResponseMessage {
         unlogged_auth_events: 0,
         num_entries: 0,
         entries: vec![],
-    }.serialize()
+    }
+    .serialize()
 }
 
 /// Get detailed info about a specific object
@@ -369,7 +375,8 @@ fn get_pubkey(state: &State, cmd_data: &[u8]) -> ResponseMessage {
         PublicKey {
             algorithm: obj.algorithm().asymmetric().unwrap(),
             bytes: obj.payload.public_key_bytes().unwrap(),
-        }.serialize()
+        }
+        .serialize()
     } else {
         debug!("no such object ID: {:?}", command.key_id);
         HsmErrorKind::ObjectNotFound.into()
@@ -411,7 +418,8 @@ fn import_wrapped(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
         Ok(obj) => ImportWrappedResponse {
             object_type: obj.object_type,
             object_id: obj.object_id,
-        }.serialize(),
+        }
+        .serialize(),
         Err(e) => {
             debug!("error unwrapping object: {}", e);
             HsmErrorKind::CommandInvalid.into()
@@ -448,11 +456,13 @@ fn list_objects(state: &State, cmd_data: &[u8]) -> ResponseMessage {
                     Filter::Type(ty) => object.info().object_type == *ty,
                 })
             }
-        }).map(|(_, object)| ListObjectsEntry {
+        })
+        .map(|(_, object)| ListObjectsEntry {
             object_id: object.object_info.object_id,
             object_type: object.object_info.object_type,
             sequence: object.object_info.sequence,
-        }).collect();
+        })
+        .collect();
 
     ListObjectsResponse(list_entries).serialize()
 }
@@ -536,7 +546,8 @@ fn put_opaque(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
 
     PutOpaqueResponse {
         object_id: params.id,
-    }.serialize()
+    }
+    .serialize()
 }
 
 /// Change an HSM auditing setting
@@ -631,7 +642,8 @@ fn storage_status() -> ResponseMessage {
         total_pages: 1024,
         free_pages: 1024,
         page_size: 126,
-    }.serialize()
+    }
+    .serialize()
 }
 
 /// Verify the HMAC tag for the given data

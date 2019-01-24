@@ -1,11 +1,11 @@
 use yubihsm::{AsymmetricAlg, Capability};
 
-use {generate_asymmetric_key, EC_P256_PUBLIC_KEY_SIZE, TEST_KEY_ID};
+use crate::{generate_asymmetric_key, EC_P256_PUBLIC_KEY_SIZE, TEST_KEY_ID};
 
 /// Generate an attestation about a key in the HSM
 #[test]
 fn attest_asymmetric_test() {
-    let mut client = ::get_hsm_client();
+    let mut client = crate::get_hsm_client();
 
     generate_asymmetric_key(
         &mut client,

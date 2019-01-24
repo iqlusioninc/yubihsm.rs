@@ -2,9 +2,9 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Get_Pubkey.html>
 
-use command::{Command, CommandCode};
-use response::Response;
-use {AsymmetricAlg, ObjectId};
+use crate::command::{Command, CommandCode};
+use crate::response::Response;
+use crate::{AsymmetricAlg, ObjectId};
 
 /// Request parameters for `command::get_pubkey`
 #[derive(Serialize, Deserialize, Debug)]
@@ -43,11 +43,7 @@ impl Response for PublicKey {
 }
 
 // TODO: use clippy's scoped lints once they work on stable
-#[allow(
-    unknown_lints,
-    renamed_and_removed_lints,
-    len_without_is_empty
-)]
+#[allow(unknown_lints, renamed_and_removed_lints, len_without_is_empty)]
 impl PublicKey {
     /// Unwrap inner byte vector
     pub fn into_vec(self) -> Vec<u8> {

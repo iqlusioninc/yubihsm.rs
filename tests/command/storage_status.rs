@@ -1,7 +1,7 @@
 /// Get stats about currently free storage
 #[test]
 fn storage_status_test() {
-    let mut client = ::get_hsm_client();
+    let mut client = crate::get_hsm_client();
 
     let response = client
         .storage_status()

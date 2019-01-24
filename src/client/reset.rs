@@ -3,8 +3,8 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Reset.html>
 
-use command::{Command, CommandCode};
-use response::Response;
+use crate::command::{Command, CommandCode};
+use crate::response::Response;
 
 /// Request parameters for `command::reset`
 #[derive(Serialize, Deserialize, Debug)]

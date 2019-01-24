@@ -2,9 +2,11 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Sign_Data_Pkcs1.html>
 
-use command::{Command, CommandCode};
-use object::ObjectId;
-use response::Response;
+use crate::{
+    command::{Command, CommandCode},
+    object::ObjectId,
+    response::Response,
+};
 
 /// Request parameters for `command::sign_rsa_pkcs1v15*`
 #[derive(Serialize, Deserialize, Debug)]
@@ -29,11 +31,7 @@ impl Response for RSAPKCS1Signature {
 }
 
 // TODO: use clippy's scoped lints once they work on stable
-#[allow(
-    unknown_lints,
-    renamed_and_removed_lints,
-    len_without_is_empty
-)]
+#[allow(unknown_lints, renamed_and_removed_lints, len_without_is_empty)]
 impl RSAPKCS1Signature {
     /// Unwrap inner byte vector
     pub fn into_vec(self) -> Vec<u8> {

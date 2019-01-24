@@ -3,9 +3,9 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/Put_Opaque.html>
 
 use super::put_object::PutObjectParams;
-use command::{Command, CommandCode};
-use object::ObjectId;
-use response::Response;
+use crate::command::{Command, CommandCode};
+use crate::object::ObjectId;
+use crate::response::Response;
 
 /// Request parameters for `command::put_opaque`
 #[derive(Serialize, Deserialize, Debug)]

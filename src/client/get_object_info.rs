@@ -2,9 +2,9 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Get_Object_Info.html>
 
-use command::{Command, CommandCode};
-use object::{ObjectHandle, ObjectInfo};
-use response::Response;
+use crate::command::{Command, CommandCode};
+use crate::object::{ObjectHandle, ObjectInfo};
+use crate::response::Response;
 
 /// Request parameters for `command::get_object_info`
 #[derive(Serialize, Deserialize, Debug)]

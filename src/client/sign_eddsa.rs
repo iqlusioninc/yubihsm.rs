@@ -4,9 +4,9 @@
 
 use std::fmt::{self, Debug};
 
-use command::{Command, CommandCode};
-use object::ObjectId;
-use response::Response;
+use crate::command::{Command, CommandCode};
+use crate::object::ObjectId;
+use crate::response::Response;
 
 /// Size of an Ed25519 signature
 pub const ED25519_SIGNATURE_SIZE: usize = 64;

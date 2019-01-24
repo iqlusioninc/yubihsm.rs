@@ -4,7 +4,7 @@ use serde::{
     ser::{Serialize, Serializer},
 };
 
-use command::CommandCode;
+use crate::command::CommandCode;
 
 /// Codes associated with HSM responses
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]

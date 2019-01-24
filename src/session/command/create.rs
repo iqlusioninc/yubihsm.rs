@@ -2,10 +2,10 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Create_Session.html>
 
-use command::{Command, CommandCode};
-use object::ObjectId;
-use response::Response;
-use session::securechannel::{Challenge, Cryptogram};
+use crate::command::{Command, CommandCode};
+use crate::object::ObjectId;
+use crate::response::Response;
+use crate::session::securechannel::{Challenge, Cryptogram};
 
 /// Request parameters for `command::create_session`
 #[derive(Serialize, Deserialize, Debug)]

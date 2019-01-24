@@ -1,4 +1,6 @@
-use {Algorithm, Capability, Domain, ObjectId, ObjectLabel, ObjectOrigin, ObjectType, SequenceId};
+use crate::{
+    Algorithm, Capability, Domain, ObjectId, ObjectLabel, ObjectOrigin, ObjectType, SequenceId,
+};
 
 /// Information about an object
 #[derive(Serialize, Deserialize, Clone, Debug)]

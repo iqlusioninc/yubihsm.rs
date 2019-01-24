@@ -3,12 +3,12 @@ use sha2::{Digest, Sha256};
 use untrusted;
 use yubihsm::{AsymmetricAlg, Capability};
 
-use {generate_asymmetric_key, TEST_KEY_ID, TEST_MESSAGE};
+use crate::{generate_asymmetric_key, TEST_KEY_ID, TEST_MESSAGE};
 
 /// Test ECDSA signatures (using NIST P-256)
 #[test]
 fn generated_nistp256_key_test() {
-    let mut client = ::get_hsm_client();
+    let mut client = crate::get_hsm_client();
 
     generate_asymmetric_key(
         &mut client,
@@ -38,5 +38,6 @@ fn generated_nistp256_key_test() {
         untrusted::Input::from(&pubkey),
         untrusted::Input::from(TEST_MESSAGE),
         untrusted::Input::from(signature.as_ref()),
-    ).unwrap();
+    )
+    .unwrap();
 }

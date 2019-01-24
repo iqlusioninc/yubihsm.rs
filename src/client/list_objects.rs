@@ -12,14 +12,14 @@ use std::io::Write;
 use super::ClientError;
 #[cfg(feature = "mockhsm")]
 use super::ClientErrorKind::ProtocolError;
-use algorithm::Algorithm;
-use capability::Capability;
-use command::{Command, CommandCode};
-use domain::Domain;
+use crate::algorithm::Algorithm;
+use crate::capability::Capability;
+use crate::command::{Command, CommandCode};
+use crate::domain::Domain;
 #[cfg(feature = "mockhsm")]
-use object::LABEL_SIZE;
-use object::{ObjectId, ObjectLabel, ObjectType, SequenceId};
-use response::Response;
+use crate::object::LABEL_SIZE;
+use crate::object::{ObjectId, ObjectLabel, ObjectType, SequenceId};
+use crate::response::Response;
 
 /// Request parameters for `command::list_objects`
 #[derive(Serialize, Deserialize, Debug)]

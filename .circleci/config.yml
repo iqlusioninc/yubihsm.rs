@@ -3,7 +3,7 @@ version: 2
 jobs:
   build:
     docker:
-    - image: iqlusion/tmkms:2018-11-27-v0 # bump cache keys when modifying this
+    - image: tendermint/kms:build-2019-01-24-v0 # bump cache keys when modifying this
 
     steps:
     - checkout

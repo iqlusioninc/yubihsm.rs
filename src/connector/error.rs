@@ -8,7 +8,7 @@ use std::num::ParseIntError;
 use std::str::Utf8Error;
 use std::{fmt, io};
 
-use error::Error;
+use crate::error::Error;
 
 /// `yubihsm-connector` related errors
 pub type ConnectionError = Error<ConnectionErrorKind>;

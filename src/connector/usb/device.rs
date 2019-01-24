@@ -12,12 +12,12 @@ use super::{UsbConnection, UsbTimeout};
 use super::{
     YUBICO_VENDOR_ID, YUBIHSM2_BULK_IN_ENDPOINT, YUBIHSM2_INTERFACE_NUM, YUBIHSM2_PRODUCT_ID,
 };
-use command::MAX_MSG_SIZE;
-use connector::{
+use crate::command::MAX_MSG_SIZE;
+use crate::connector::{
     ConnectionError,
     ConnectionErrorKind::{DeviceBusyError, UsbError},
 };
-use serial_number::SerialNumber;
+use crate::serial_number::SerialNumber;
 
 lazy_static! {
     /// Global USB context for accessing YubiHSM2s
@@ -33,7 +33,7 @@ pub struct Devices(Vec<Device>);
 impl Devices {
     /// Return the serial numbers of all connected YubiHSM2s
     pub fn serial_numbers() -> Result<Vec<SerialNumber>, ConnectionError> {
-        let devices = Self::new(UsbTimeout::default())?;
+        let devices = Self::detect(UsbTimeout::default())?;
         let serials: Vec<_> = devices.iter().map(|a| a.serial_number).collect();
         Ok(serials)
     }
@@ -44,7 +44,7 @@ impl Devices {
         serial_number: Option<SerialNumber>,
         timeout: UsbTimeout,
     ) -> Result<UsbConnection, ConnectionError> {
-        let mut devices = Self::new(timeout)?;
+        let mut devices = Self::detect(timeout)?;
 
         if let Some(sn) = serial_number {
             while let Some(device) = devices.0.pop() {
@@ -78,7 +78,7 @@ impl Devices {
     }
 
     /// Detect connected YubiHSM 2s, returning a collection of them
-    pub fn new(timeout: UsbTimeout) -> Result<Self, ConnectionError> {
+    pub fn detect(timeout: UsbTimeout) -> Result<Self, ConnectionError> {
         let device_list = GLOBAL_USB_CONTEXT.devices()?;
         let mut devices = vec![];
 
@@ -203,7 +203,7 @@ impl Device {
 
     /// Open this device, consuming it and creating a `UsbConnection`
     pub fn open(self, timeout: UsbTimeout) -> Result<UsbConnection, ConnectionError> {
-        let connection = UsbConnection::new(self, timeout)?;
+        let connection = UsbConnection::create(self, timeout)?;
 
         debug!(
             "USB(bus={},addr={}): successfully opened {} (serial #{})",

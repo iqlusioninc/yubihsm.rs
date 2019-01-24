@@ -2,13 +2,13 @@ use ring;
 use untrusted;
 use yubihsm::{AsymmetricAlg, Capability};
 
-use test_vectors::ED25519_TEST_VECTORS;
-use {generate_asymmetric_key, put_asymmetric_key, TEST_KEY_ID, TEST_MESSAGE};
+use crate::test_vectors::ED25519_TEST_VECTORS;
+use crate::{generate_asymmetric_key, put_asymmetric_key, TEST_KEY_ID, TEST_MESSAGE};
 
 /// Test Ed25519 against RFC 8032 test vectors
 #[test]
 fn test_vectors() {
-    let mut client = ::get_hsm_client();
+    let mut client = crate::get_hsm_client();
 
     for vector in ED25519_TEST_VECTORS {
         put_asymmetric_key(
@@ -36,7 +36,7 @@ fn test_vectors() {
 /// Test Ed25519 signing using a randomly generated HSM key
 #[test]
 fn generated_key_test() {
-    let mut client = ::get_hsm_client();
+    let mut client = crate::get_hsm_client();
 
     generate_asymmetric_key(
         &mut client,
@@ -59,5 +59,6 @@ fn generated_key_test() {
         untrusted::Input::from(pubkey.bytes.as_ref()),
         untrusted::Input::from(TEST_MESSAGE),
         untrusted::Input::from(signature.as_ref()),
-    ).unwrap();
+    )
+    .unwrap();
 }

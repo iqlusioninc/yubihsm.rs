@@ -2,10 +2,10 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Wrap_Data.html>
 
-use command::{Command, CommandCode};
-use object::ObjectId;
-use response::Response;
-use wrap::WrapMessage;
+use crate::command::{Command, CommandCode};
+use crate::object::ObjectId;
+use crate::response::Response;
+use crate::wrap::WrapMessage;
 
 /// Request parameters for `command::wrap_data`
 #[derive(Serialize, Deserialize, Debug)]

@@ -10,7 +10,7 @@ pub struct Label(pub [u8; LABEL_SIZE]);
 
 impl Label {
     /// Create a new label from a slice, returning an error if it's over 40-bytes
-    pub fn new(label_slice: &[u8]) -> Result<Self, Error> {
+    pub fn from_bytes(label_slice: &[u8]) -> Result<Self, Error> {
         if label_slice.len() > LABEL_SIZE {
             bail!(
                 "label too long: {}-bytes (max {})",
@@ -43,7 +43,7 @@ impl AsRef<[u8]> for Label {
 
 impl Clone for Label {
     fn clone(&self) -> Self {
-        Self::new(self.as_ref()).unwrap()
+        Self::from_bytes(self.as_ref()).unwrap()
     }
 }
 
@@ -59,7 +59,7 @@ impl fmt::Debug for Label {
 
 impl<'a> From<&'a str> for Label {
     fn from(string: &'a str) -> Self {
-        Self::new(string.as_bytes()).unwrap()
+        Self::from_bytes(string.as_bytes()).unwrap()
     }
 }
 

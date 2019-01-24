@@ -2,8 +2,8 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Close_Session.html>
 
-use command::{Command, CommandCode};
-use response::Response;
+use crate::command::{Command, CommandCode};
+use crate::response::Response;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct CloseSessionCommand {}

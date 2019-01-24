@@ -2,10 +2,10 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Import_Wrapped.html>
 
-use command::{Command, CommandCode};
-use object::{ObjectId, ObjectType};
-use response::Response;
-use wrap::WrapNonce;
+use crate::command::{Command, CommandCode};
+use crate::object::{ObjectId, ObjectType};
+use crate::response::Response;
+use crate::wrap::WrapNonce;
 
 /// Request parameters for `command::import_wrapped`
 #[derive(Serialize, Deserialize, Debug)]

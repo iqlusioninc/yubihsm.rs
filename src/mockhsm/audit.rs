@@ -4,9 +4,9 @@
 
 use std::collections::BTreeMap;
 
-use audit::*;
-use command::CommandCode;
-use serialization::serialize;
+use crate::audit::*;
+use crate::command::CommandCode;
+use crate::serialization::serialize;
 
 /// Default per-command auditing options
 pub const DEFAULT_COMMAND_AUDIT_OPTIONS: &[AuditCommand] = &[

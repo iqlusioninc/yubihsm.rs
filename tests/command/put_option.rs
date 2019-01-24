@@ -3,7 +3,7 @@ use yubihsm::{AuditOption, CommandCode};
 /// Set the auditing options for a particular command
 #[test]
 fn command_audit_options_test() {
-    let mut client = ::get_hsm_client();
+    let mut client = crate::get_hsm_client();
     let command_type = CommandCode::Echo;
 
     for audit_option in &[AuditOption::On, AuditOption::Off] {
@@ -22,7 +22,7 @@ fn command_audit_options_test() {
 /// Configure the "force audit" option setting
 #[test]
 fn force_audit_option_test() {
-    let mut client = ::get_hsm_client();
+    let mut client = crate::get_hsm_client();
 
     // Make sure we've consumed the latest log data or else forced auditing
     // will prevent the tests from completing

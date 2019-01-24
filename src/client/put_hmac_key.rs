@@ -3,9 +3,9 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/Put_Hmac_Key.html>
 
 use super::put_object::PutObjectParams;
-use command::{Command, CommandCode};
-use object::ObjectId;
-use response::Response;
+use crate::command::{Command, CommandCode};
+use crate::object::ObjectId;
+use crate::response::Response;
 
 /// Minimum allowed size of an HMAC key (64-bits)
 pub const HMAC_MIN_KEY_SIZE: usize = 8;
