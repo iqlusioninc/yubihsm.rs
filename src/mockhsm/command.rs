@@ -1,7 +1,7 @@
 //! Commands supported by the `MockHsm`
 
 use hmac::{Hmac, Mac};
-use rand::{OsRng, RngCore};
+use rand_os::{rand_core::RngCore, OsRng};
 use ring::signature::Ed25519KeyPair;
 use sha2::Sha256;
 use std::io::Cursor;

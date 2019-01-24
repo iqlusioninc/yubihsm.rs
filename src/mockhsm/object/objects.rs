@@ -1,13 +1,12 @@
 use failure::Error;
-use ring::aead::{self, OpeningKey, SealingKey, AES_128_GCM, AES_256_GCM};
-use std::collections::btree_map::Iter as BTreeMapIter;
-use std::collections::BTreeMap;
+use ring::aead::{self, Aad, Nonce, OpeningKey, SealingKey, AES_128_GCM, AES_256_GCM};
+use std::collections::{btree_map::Iter as BTreeMapIter, BTreeMap};
 
 use super::{Object, Payload, WrappedObject, DEFAULT_AUTH_KEY_LABEL, WRAPPED_DATA_MAC_SIZE};
-use crate::auth_key::{AuthKey, AUTH_KEY_SIZE};
-use crate::credentials::DEFAULT_AUTH_KEY_ID;
-use crate::serialization::{deserialize, serialize};
 use crate::{
+    auth_key::{AuthKey, AUTH_KEY_SIZE},
+    credentials::DEFAULT_AUTH_KEY_ID,
+    serialization::{deserialize, serialize},
     Algorithm, AuthAlg, Capability, Domain, ObjectHandle, ObjectId, ObjectInfo, ObjectLabel,
     ObjectOrigin, ObjectType, WrapAlg, WrapNonce,
 };
@@ -142,7 +141,7 @@ impl Objects {
         wrap_key_id: ObjectId,
         object_id: ObjectId,
         object_type: ObjectType,
-        nonce: &WrapNonce,
+        wrap_nonce: &WrapNonce,
     ) -> Result<Vec<u8>, Error> {
         let wrap_key = match self.get(wrap_key_id, ObjectType::WrapKey) {
             Some(k) => k,
@@ -191,10 +190,13 @@ impl Objects {
         // Make room for the MAC
         wrapped_object.extend_from_slice(&[0u8; WRAPPED_DATA_MAC_SIZE]);
 
+        let mut nonce = [0u8; 12];
+        nonce.copy_from_slice(&wrap_nonce.as_ref()[..12]);
+
         aead::seal_in_place(
             &sealing_key,
-            &nonce.as_ref()[..12],
-            b"",
+            Nonce::assume_unique_for_key(nonce),
+            Aad::from(b""),
             &mut wrapped_object,
             WRAPPED_DATA_MAC_SIZE,
         )
@@ -207,7 +209,7 @@ impl Objects {
     pub fn unwrap<V: Into<Vec<u8>>>(
         &mut self,
         wrap_key_id: ObjectId,
-        nonce: &WrapNonce,
+        wrap_nonce: &WrapNonce,
         ciphertext: V,
     ) -> Result<ObjectHandle, Error> {
         let opening_key = match self.get(wrap_key_id, ObjectType::WrapKey) {
@@ -222,10 +224,13 @@ impl Objects {
 
         let mut wrapped_data: Vec<u8> = ciphertext.into();
 
+        let mut nonce = [0u8; 12];
+        nonce.copy_from_slice(&wrap_nonce.as_ref()[..12]);
+
         if aead::open_in_place(
             &opening_key,
-            &nonce.as_ref()[..12],
-            b"",
+            Nonce::assume_unique_for_key(nonce),
+            Aad::from(b""),
             0,
             &mut wrapped_data,
         )

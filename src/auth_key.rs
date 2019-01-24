@@ -5,7 +5,7 @@ use crate::error::Error;
 use hmac::Hmac;
 #[cfg(feature = "pbkdf2")]
 use pbkdf2::pbkdf2;
-use rand::{OsRng, RngCore};
+use rand_os::{rand_core::RngCore, OsRng};
 #[cfg(feature = "sha2")]
 use sha2::Sha256;
 use std::fmt::{self, Debug};
