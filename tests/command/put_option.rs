@@ -8,7 +8,7 @@ fn command_audit_options_test() {
 
     for audit_option in &[AuditOption::On, AuditOption::Off] {
         client
-            .put_command_audit_option(command_type, *audit_option)
+            .set_audit_option(command_type, *audit_option)
             .unwrap_or_else(|err| panic!("error setting {:?} audit option: {}", command_type, err));
 
         let hsm_option = client
@@ -27,7 +27,7 @@ fn force_audit_option_test() {
     // Make sure we've consumed the latest log data or else forced auditing
     // will prevent the tests from completing
     let audit_logs = client
-        .get_audit_logs()
+        .get_log_entries()
         .unwrap_or_else(|err| panic!("error getting audit logs: {}", err));
 
     if let Some(last_entry) = audit_logs.entries.last() {

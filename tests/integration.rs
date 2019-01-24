@@ -29,7 +29,7 @@ const TEST_EXPORTED_KEY_ID: ObjectId = 101;
 const TEST_KEY_LABEL: &str = "yubihsm.rs test key";
 
 /// Label for the default auth key
-const DEFAULT_AUTH_KEY_LABEL: &str = "DEFAULT AUTHKEY CHANGE THIS ASAP";
+const DEFAULT_AUTHENTICATION_KEY_LABEL: &str = "DEFAULT AUTHKEY CHANGE THIS ASAP";
 
 /// Label to use for the exported test
 const TEST_EXPORTED_KEY_LABEL: &str = "yubihsm.rs exported test key";

@@ -6,11 +6,7 @@ use yubihsm::{AsymmetricAlg, Capability, ObjectType};
 fn delete_object_test() {
     let mut client = crate::get_hsm_client();
 
-    generate_asymmetric_key(
-        &mut client,
-        AsymmetricAlg::Ed25519,
-        Capability::ASYMMETRIC_SIGN_EDDSA,
-    );
+    generate_asymmetric_key(&mut client, AsymmetricAlg::Ed25519, Capability::SIGN_EDDSA);
 
     // The first request to delete should succeed because the object exists
     assert!(client

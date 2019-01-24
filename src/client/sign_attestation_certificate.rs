@@ -1,14 +1,16 @@
 //! Obtain an X.509 attestation certificate for a key within the `YubiHSM2`
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Attest_Asymmetric.html>
-//!
-use crate::command::{Command, CommandCode};
-use crate::object::ObjectId;
-use crate::response::Response;
+
+use crate::{
+    command::{Command, CommandCode},
+    object::ObjectId,
+    response::Response,
+};
 
 /// Request parameters for `command::attest_asymmetric`
 #[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct AttestAsymmetricCommand {
+pub(crate) struct SignAttestationCertificateCommand {
     /// Key that attestation certificate will be generated for
     pub key_id: ObjectId,
 
@@ -16,7 +18,7 @@ pub(crate) struct AttestAsymmetricCommand {
     pub attestation_key_id: ObjectId,
 }
 
-impl Command for AttestAsymmetricCommand {
+impl Command for SignAttestationCertificateCommand {
     type ResponseType = AttestationCertificate;
 }
 
@@ -25,11 +27,10 @@ impl Command for AttestAsymmetricCommand {
 pub struct AttestationCertificate(pub Vec<u8>);
 
 impl Response for AttestationCertificate {
-    const COMMAND_CODE: CommandCode = CommandCode::AttestAsymmetric;
+    const COMMAND_CODE: CommandCode = CommandCode::SignAttestationCertificate;
 }
 
-// TODO: use clippy's scoped lints once they work on stable
-#[allow(unknown_lints, renamed_and_removed_lints, len_without_is_empty)]
+#[allow(clippy::len_without_is_empty)]
 impl AttestationCertificate {
     /// Unwrap inner byte vector
     pub fn into_vec(self) -> Vec<u8> {

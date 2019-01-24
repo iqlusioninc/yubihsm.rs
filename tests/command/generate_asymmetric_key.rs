@@ -8,7 +8,7 @@ fn ed25519_key_test() {
     let mut client = crate::get_hsm_client();
 
     let algorithm = AsymmetricAlg::Ed25519;
-    let capabilities = Capability::ASYMMETRIC_SIGN_EDDSA;
+    let capabilities = Capability::SIGN_EDDSA;
 
     generate_asymmetric_key(&mut client, algorithm, capabilities);
 
@@ -31,7 +31,7 @@ fn ed25519_key_test() {
 fn nistp256_key_test() {
     let mut client = crate::get_hsm_client();
     let algorithm = AsymmetricAlg::EC_P256;
-    let capabilities = Capability::ASYMMETRIC_SIGN_EDDSA;
+    let capabilities = Capability::SIGN_EDDSA;
 
     generate_asymmetric_key(&mut client, algorithm, capabilities);
 

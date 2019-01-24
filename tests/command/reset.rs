@@ -2,5 +2,5 @@
 #[test]
 fn reset_test() {
     let mut client = crate::get_hsm_client();
-    client.reset().unwrap();
+    client.reset_device().unwrap();
 }

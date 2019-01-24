@@ -124,7 +124,7 @@ impl CommandMessage {
         bytes.drain(..3);
 
         let (session_id, mac) = match command_type {
-            CommandCode::AuthSession | CommandCode::SessionMessage => {
+            CommandCode::AuthenticateSession | CommandCode::SessionMessage => {
                 if bytes.is_empty() {
                     fail!(
                         ProtocolError,

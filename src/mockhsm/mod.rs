@@ -25,8 +25,9 @@ pub const MOCK_SERIAL_NUMBER: &str = "0123456789";
 /// implemented as a `yubihsm::Connection`.
 ///
 /// This only implements a subset of the YubiHSM's functionality, and does
-/// not enforce access control. It's recommended to also test live against
-/// a real device.
+/// *NOT* properly enforce access control / capabilities!
+///
+/// It is *STRONGLY* recommended to also test live against a real device.
 ///
 /// To enable, make sure to build yubihsm.rs with the `mockhsm` cargo feature
 #[derive(Clone, Debug)]

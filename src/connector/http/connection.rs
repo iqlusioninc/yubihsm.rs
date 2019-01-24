@@ -17,8 +17,6 @@ use crate::connector::{Connection, ConnectionError};
 /// <https://developers.yubico.com/YubiHSM2/Component_Reference/yubihsm-connector/>
 pub struct HttpConnection(gaunt::Connection);
 
-// TODO: use clippy's scoped lints once they work on stable
-#[allow(unknown_lints, renamed_and_removed_lints, write_with_newline)]
 impl HttpConnection {
     /// Open a connection to a `yubihsm-connector` service
     pub(crate) fn open(config: &HttpConfig) -> Result<Self, ConnectionError> {

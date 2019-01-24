@@ -19,13 +19,13 @@ pub enum ResponseCode {
     InitError,
 
     /// Network error
-    NetError,
+    ConnectionError,
 
     /// Couldn't find connector
     ConnectorNotFound,
 
     /// Invalid parameters
-    InvalidParams,
+    InvalidParameters,
 
     /// Wrong length
     WrongLength,
@@ -37,10 +37,10 @@ pub enum ResponseCode {
     CryptogramMismatch,
 
     /// Session auth error
-    AuthSessionError,
+    SessionAuthenticationFailed,
 
     /// MAC mismatch
-    MACMismatch,
+    MacMismatch,
 
     /// OK (HSM)
     DeviceOK,
@@ -55,7 +55,7 @@ pub enum ResponseCode {
     DeviceInvalidSession,
 
     /// Authentication failure (HSM)
-    DeviceAuthFail,
+    DeviceAuthenticationFailed,
 
     /// Sessions full (HSM)
     DeviceSessionsFull,
@@ -70,25 +70,25 @@ pub enum ResponseCode {
     DeviceWrongLength,
 
     /// Invalid permissions (HSM)
-    DeviceInvalidPermission,
+    DeviceInsufficientPermissions,
 
     /// Audit log full (HSM)
     DeviceLogFull,
 
     /// Object not found (HSM)
-    DeviceObjNotFound,
+    DeviceObjectNotFound,
 
-    /// ID illegal (HSM)
-    DeviceIDIllegal,
+    /// Invalid ID (HSM)
+    DeviceInvalidId,
 
     /// Invalid OTP (HSM)
-    DeviceInvalidOTP,
+    DeviceInvalidOtp,
 
     /// Demo mode (HSM)
     DeviceDemoMode,
 
     /// Command unexecuted
-    DeviceCmdUnexecuted,
+    DeviceCommandUnexecuted,
 
     /// Generic error
     GenericError,
@@ -98,6 +98,9 @@ pub enum ResponseCode {
 
     /// Connector error
     ConnectorError,
+
+    /// Constraint on CA violated
+    DeviceSshCaConstraintViolation,
 }
 
 impl ResponseCode {
@@ -109,33 +112,34 @@ impl ResponseCode {
             0..=0x7F => ResponseCode::Success(CommandCode::from_u8(code as u8)?),
             -1 => ResponseCode::MemoryError,
             -2 => ResponseCode::InitError,
-            -3 => ResponseCode::NetError,
+            -3 => ResponseCode::ConnectionError,
             -4 => ResponseCode::ConnectorNotFound,
-            -5 => ResponseCode::InvalidParams,
+            -5 => ResponseCode::InvalidParameters,
             -6 => ResponseCode::WrongLength,
             -7 => ResponseCode::BufferTooSmall,
             -8 => ResponseCode::CryptogramMismatch,
-            -9 => ResponseCode::AuthSessionError,
-            -10 => ResponseCode::MACMismatch,
+            -9 => ResponseCode::SessionAuthenticationFailed,
+            -10 => ResponseCode::MacMismatch,
             -11 => ResponseCode::DeviceOK,
             -12 => ResponseCode::DeviceInvalidCommand,
             -13 => ResponseCode::DeviceInvalidData,
             -14 => ResponseCode::DeviceInvalidSession,
-            -15 => ResponseCode::DeviceAuthFail,
+            -15 => ResponseCode::DeviceAuthenticationFailed,
             -16 => ResponseCode::DeviceSessionsFull,
             -17 => ResponseCode::DeviceSessionFailed,
             -18 => ResponseCode::DeviceStorageFailed,
             -19 => ResponseCode::DeviceWrongLength,
-            -20 => ResponseCode::DeviceInvalidPermission,
+            -20 => ResponseCode::DeviceInsufficientPermissions,
             -21 => ResponseCode::DeviceLogFull,
-            -22 => ResponseCode::DeviceObjNotFound,
-            -23 => ResponseCode::DeviceIDIllegal,
-            -24 => ResponseCode::DeviceInvalidOTP,
+            -22 => ResponseCode::DeviceObjectNotFound,
+            -23 => ResponseCode::DeviceInvalidId,
+            -24 => ResponseCode::DeviceInvalidOtp,
             -25 => ResponseCode::DeviceDemoMode,
-            -26 => ResponseCode::DeviceCmdUnexecuted,
+            -26 => ResponseCode::DeviceCommandUnexecuted,
             -27 => ResponseCode::GenericError,
             -28 => ResponseCode::DeviceObjectExists,
             -29 => ResponseCode::ConnectorError,
+            -30 => ResponseCode::DeviceSshCaConstraintViolation,
             _ => bail!("invalid response code: {}", code),
         })
     }
@@ -146,33 +150,34 @@ impl ResponseCode {
             ResponseCode::Success(cmd_type) => cmd_type as i8,
             ResponseCode::MemoryError => -1,
             ResponseCode::InitError => -2,
-            ResponseCode::NetError => -3,
+            ResponseCode::ConnectionError => -3,
             ResponseCode::ConnectorNotFound => -4,
-            ResponseCode::InvalidParams => -5,
+            ResponseCode::InvalidParameters => -5,
             ResponseCode::WrongLength => -6,
             ResponseCode::BufferTooSmall => -7,
             ResponseCode::CryptogramMismatch => -8,
-            ResponseCode::AuthSessionError => -9,
-            ResponseCode::MACMismatch => -10,
+            ResponseCode::SessionAuthenticationFailed => -9,
+            ResponseCode::MacMismatch => -10,
             ResponseCode::DeviceOK => -11,
             ResponseCode::DeviceInvalidCommand => -12,
             ResponseCode::DeviceInvalidData => -13,
             ResponseCode::DeviceInvalidSession => -14,
-            ResponseCode::DeviceAuthFail => -15,
+            ResponseCode::DeviceAuthenticationFailed => -15,
             ResponseCode::DeviceSessionsFull => -16,
             ResponseCode::DeviceSessionFailed => -17,
             ResponseCode::DeviceStorageFailed => -18,
             ResponseCode::DeviceWrongLength => -19,
-            ResponseCode::DeviceInvalidPermission => -20,
+            ResponseCode::DeviceInsufficientPermissions => -20,
             ResponseCode::DeviceLogFull => -21,
-            ResponseCode::DeviceObjNotFound => -22,
-            ResponseCode::DeviceIDIllegal => -23,
-            ResponseCode::DeviceInvalidOTP => -24,
+            ResponseCode::DeviceObjectNotFound => -22,
+            ResponseCode::DeviceInvalidId => -23,
+            ResponseCode::DeviceInvalidOtp => -24,
             ResponseCode::DeviceDemoMode => -25,
-            ResponseCode::DeviceCmdUnexecuted => -26,
+            ResponseCode::DeviceCommandUnexecuted => -26,
             ResponseCode::GenericError => -27,
             ResponseCode::DeviceObjectExists => -28,
             ResponseCode::ConnectorError => -29,
+            ResponseCode::DeviceSshCaConstraintViolation => -30,
         };
 
         (i16::from(code) + 0x80) as u8

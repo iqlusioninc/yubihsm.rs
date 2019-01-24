@@ -8,17 +8,17 @@ use crate::command::{Command, CommandCode};
 use crate::object::ObjectId;
 use crate::response::{Response, ResponseCode};
 
-/// Request parameters for `command::get_logs`
+/// Request parameters for `command::get_log_entries`
 #[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct GetLogsCommand {}
+pub(crate) struct GetLogEntriesCommand {}
 
-impl Command for GetLogsCommand {
-    type ResponseType = AuditLogs;
+impl Command for GetLogEntriesCommand {
+    type ResponseType = LogEntries;
 }
 
-/// Response from `command::get_logs`
+/// Response from `command::get_log_entries`
 #[derive(Serialize, Deserialize, Debug)]
-pub struct AuditLogs {
+pub struct LogEntries {
     /// Number of boot events which weren't logged (if buffer is full and audit enforce is set)
     pub unlogged_boot_events: u16,
 
@@ -32,8 +32,8 @@ pub struct AuditLogs {
     pub entries: Vec<LogEntry>,
 }
 
-impl Response for AuditLogs {
-    const COMMAND_CODE: CommandCode = CommandCode::GetLogs;
+impl Response for LogEntries {
+    const COMMAND_CODE: CommandCode = CommandCode::GetLogEntries;
 }
 
 /// Entry in the log response

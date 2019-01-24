@@ -7,11 +7,7 @@ use crate::{generate_asymmetric_key, TEST_KEY_ID};
 fn list_objects_test() {
     let mut client = crate::get_hsm_client();
 
-    generate_asymmetric_key(
-        &mut client,
-        AsymmetricAlg::Ed25519,
-        Capability::ASYMMETRIC_SIGN_EDDSA,
-    );
+    generate_asymmetric_key(&mut client, AsymmetricAlg::Ed25519, Capability::SIGN_EDDSA);
 
     let objects = client
         .list_objects(&[])
@@ -30,10 +26,10 @@ fn list_objects_with_filter() {
     let mut client = crate::get_hsm_client();
 
     let objects = client
-        .list_objects(&[Filter::Type(ObjectType::AuthKey)])
+        .list_objects(&[Filter::Type(ObjectType::AuthenticationKey)])
         .unwrap_or_else(|err| panic!("error listing objects: {}", err));
 
     assert!(objects
         .iter()
-        .all(|obj| obj.object_type == ObjectType::AuthKey));
+        .all(|obj| obj.object_type == ObjectType::AuthenticationKey));
 }

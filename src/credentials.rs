@@ -1,24 +1,24 @@
-use crate::auth_key::AuthKey;
+use crate::authentication_key::AuthenticationKey;
 use crate::object::ObjectId;
 
 /// Default auth key ID slot
-pub const DEFAULT_AUTH_KEY_ID: ObjectId = 1;
+pub const DEFAULT_AUTHENTICATION_KEY_ID: ObjectId = 1;
 
 /// Credentials used to establish a session with the HSM
 pub struct Credentials {
     /// Key ID to authenticate with
-    pub auth_key_id: ObjectId,
+    pub authentication_key_id: ObjectId,
 
     /// Auth key to authenticate with
-    pub auth_key: AuthKey,
+    pub authentication_key: AuthenticationKey,
 }
 
 impl Credentials {
-    /// Create new `Credentials` (auth key ID + `AuthKey`)
-    pub fn new(auth_key_id: ObjectId, auth_key: AuthKey) -> Self {
+    /// Create new `Credentials` (auth key ID + `AuthenticationKey`)
+    pub fn new(authentication_key_id: ObjectId, authentication_key: AuthenticationKey) -> Self {
         Self {
-            auth_key_id,
-            auth_key,
+            authentication_key_id,
+            authentication_key,
         }
     }
 
@@ -27,14 +27,17 @@ impl Credentials {
     /// (PBKDF2 + static salt), which is not particularly strong, so use
     /// of a long, random password is recommended.
     #[cfg(feature = "passwords")]
-    pub fn from_password(auth_key_id: ObjectId, password: &[u8]) -> Self {
-        Self::new(auth_key_id, AuthKey::derive_from_password(password))
+    pub fn from_password(authentication_key_id: ObjectId, password: &[u8]) -> Self {
+        Self::new(
+            authentication_key_id,
+            AuthenticationKey::derive_from_password(password),
+        )
     }
 }
 
 #[cfg(feature = "passwords")]
 impl Default for Credentials {
     fn default() -> Self {
-        Self::new(DEFAULT_AUTH_KEY_ID, AuthKey::default())
+        Self::new(DEFAULT_AUTHENTICATION_KEY_ID, AuthenticationKey::default())
     }
 }

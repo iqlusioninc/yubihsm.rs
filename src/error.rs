@@ -81,19 +81,19 @@ pub enum HsmErrorKind {
 
     /// Invalid command
     #[fail(display = "invalid command")]
-    CommandInvalid,
+    InvalidCommand,
 
     /// Invalid data
     #[fail(display = "invalid data")]
-    DataInvalid,
+    InvalidData,
 
     /// Invalid session
     #[fail(display = "invalid session")]
-    SessionInvalid,
+    InvalidSession,
 
     /// Authentication failure
     #[fail(display = "authentication failed")]
-    AuthFail,
+    AuthenticationFailed,
 
     /// Sessions full (HSM has a max of 16)
     #[fail(display = "sessions full (max 16)")]
@@ -111,9 +111,9 @@ pub enum HsmErrorKind {
     #[fail(display = "incorrect length")]
     WrongLength,
 
-    /// Invalid permissions
+    /// Insufficient permissions
     #[fail(display = "invalid permissions")]
-    PermissionInvalid,
+    InsufficientPermissions,
 
     /// Audit log full
     #[fail(display = "audit log full")]
@@ -123,13 +123,13 @@ pub enum HsmErrorKind {
     #[fail(display = "object not found")]
     ObjectNotFound,
 
-    /// ID illegal
-    #[fail(display = "ID illegal")]
-    IDIllegal,
+    /// Invalid ID
+    #[fail(display = "invalid ID")]
+    InvalidId,
 
     /// Invalid OTP
     #[fail(display = "invalid OTP")]
-    InvalidOTP,
+    InvalidOtp,
 
     /// Demo mode(?)
     #[fail(display = "demo mode")]
@@ -137,7 +137,7 @@ pub enum HsmErrorKind {
 
     /// Command unexecuted
     #[fail(display = "command unexecuted")]
-    CmdUnexecuted,
+    CommandUnexecuted,
 
     /// Generic error
     #[fail(display = "generic error")]
@@ -146,29 +146,34 @@ pub enum HsmErrorKind {
     /// Object already exists
     #[fail(display = "object already exists")]
     ObjectExists,
+
+    /// SSH CA constraint violation
+    #[fail(display = "SSH CA constraint violation")]
+    SshCaConstraintViolation,
 }
 
 impl HsmErrorKind {
     /// Create an `HsmErrorKind` from the given byte tag
     pub fn from_u8(tag: u8) -> HsmErrorKind {
         match tag {
-            0x01 => HsmErrorKind::CommandInvalid,
-            0x02 => HsmErrorKind::DataInvalid,
-            0x03 => HsmErrorKind::SessionInvalid,
-            0x04 => HsmErrorKind::AuthFail,
+            0x01 => HsmErrorKind::InvalidCommand,
+            0x02 => HsmErrorKind::InvalidData,
+            0x03 => HsmErrorKind::InvalidSession,
+            0x04 => HsmErrorKind::AuthenticationFailed,
             0x05 => HsmErrorKind::SessionsFull,
             0x06 => HsmErrorKind::SessionFailed,
             0x07 => HsmErrorKind::StorageFailed,
             0x08 => HsmErrorKind::WrongLength,
-            0x09 => HsmErrorKind::PermissionInvalid,
+            0x09 => HsmErrorKind::InsufficientPermissions,
             0x0a => HsmErrorKind::LogFull,
             0x0b => HsmErrorKind::ObjectNotFound,
-            0x0c => HsmErrorKind::IDIllegal,
-            0x0d => HsmErrorKind::InvalidOTP,
+            0x0c => HsmErrorKind::InvalidId,
+            0x0d => HsmErrorKind::InvalidOtp,
             0x0e => HsmErrorKind::DemoMode,
-            0x0f => HsmErrorKind::CmdUnexecuted,
+            0x0f => HsmErrorKind::CommandUnexecuted,
             0x10 => HsmErrorKind::GenericError,
             0x11 => HsmErrorKind::ObjectExists,
+            // TODO: determine correct value for YHR_DEVICE_SSH_CA_CONSTRAINT_VIOLATION
             code => HsmErrorKind::Unknown { code },
         }
     }
@@ -177,46 +182,51 @@ impl HsmErrorKind {
     pub fn to_u8(self) -> u8 {
         match self {
             HsmErrorKind::Unknown { code } => code,
-            HsmErrorKind::CommandInvalid => 0x01,
-            HsmErrorKind::DataInvalid => 0x02,
-            HsmErrorKind::SessionInvalid => 0x03,
-            HsmErrorKind::AuthFail => 0x04,
+            HsmErrorKind::InvalidCommand => 0x01,
+            HsmErrorKind::InvalidData => 0x02,
+            HsmErrorKind::InvalidSession => 0x03,
+            HsmErrorKind::AuthenticationFailed => 0x04,
             HsmErrorKind::SessionsFull => 0x05,
             HsmErrorKind::SessionFailed => 0x06,
             HsmErrorKind::StorageFailed => 0x07,
             HsmErrorKind::WrongLength => 0x08,
-            HsmErrorKind::PermissionInvalid => 0x09,
+            HsmErrorKind::InsufficientPermissions => 0x09,
             HsmErrorKind::LogFull => 0x0a,
             HsmErrorKind::ObjectNotFound => 0x0b,
-            HsmErrorKind::IDIllegal => 0x0c,
-            HsmErrorKind::InvalidOTP => 0x0d,
+            HsmErrorKind::InvalidId => 0x0c,
+            HsmErrorKind::InvalidOtp => 0x0d,
             HsmErrorKind::DemoMode => 0x0e,
-            HsmErrorKind::CmdUnexecuted => 0x0f,
+            HsmErrorKind::CommandUnexecuted => 0x0f,
             HsmErrorKind::GenericError => 0x10,
             HsmErrorKind::ObjectExists => 0x11,
+            // TODO: determine correct value
+            HsmErrorKind::SshCaConstraintViolation => {
+                panic!("don't know device code for YHR_DEVICE_SSH_CA_CONSTRAINT_VIOLATION")
+            }
         }
     }
 
     /// Create an `HsmError` from the given `ResponseCode` (if applicable)
     pub fn from_response_code(code: ResponseCode) -> Option<HsmErrorKind> {
         Some(match code {
-            ResponseCode::DeviceInvalidCommand => HsmErrorKind::CommandInvalid,
-            ResponseCode::DeviceInvalidData => HsmErrorKind::DataInvalid,
-            ResponseCode::DeviceInvalidSession => HsmErrorKind::SessionInvalid,
-            ResponseCode::DeviceAuthFail => HsmErrorKind::AuthFail,
+            ResponseCode::DeviceInvalidCommand => HsmErrorKind::InvalidCommand,
+            ResponseCode::DeviceInvalidData => HsmErrorKind::InvalidData,
+            ResponseCode::DeviceInvalidSession => HsmErrorKind::InvalidSession,
+            ResponseCode::DeviceAuthenticationFailed => HsmErrorKind::AuthenticationFailed,
             ResponseCode::DeviceSessionsFull => HsmErrorKind::SessionsFull,
             ResponseCode::DeviceSessionFailed => HsmErrorKind::SessionFailed,
             ResponseCode::DeviceStorageFailed => HsmErrorKind::StorageFailed,
             ResponseCode::DeviceWrongLength => HsmErrorKind::WrongLength,
-            ResponseCode::DeviceInvalidPermission => HsmErrorKind::PermissionInvalid,
+            ResponseCode::DeviceInsufficientPermissions => HsmErrorKind::InsufficientPermissions,
             ResponseCode::DeviceLogFull => HsmErrorKind::LogFull,
-            ResponseCode::DeviceObjNotFound => HsmErrorKind::ObjectNotFound,
-            ResponseCode::DeviceIDIllegal => HsmErrorKind::IDIllegal,
-            ResponseCode::DeviceInvalidOTP => HsmErrorKind::InvalidOTP,
+            ResponseCode::DeviceObjectNotFound => HsmErrorKind::ObjectNotFound,
+            ResponseCode::DeviceInvalidId => HsmErrorKind::InvalidId,
+            ResponseCode::DeviceInvalidOtp => HsmErrorKind::InvalidOtp,
             ResponseCode::DeviceDemoMode => HsmErrorKind::DemoMode,
-            ResponseCode::DeviceCmdUnexecuted => HsmErrorKind::CmdUnexecuted,
+            ResponseCode::DeviceCommandUnexecuted => HsmErrorKind::CommandUnexecuted,
             ResponseCode::GenericError => HsmErrorKind::GenericError,
             ResponseCode::DeviceObjectExists => HsmErrorKind::ObjectExists,
+            ResponseCode::DeviceSshCaConstraintViolation => HsmErrorKind::SshCaConstraintViolation,
             _ => return None,
         })
     }

@@ -32,5 +32,5 @@ pub(crate) struct PutHMACKeyResponse {
 }
 
 impl Response for PutHMACKeyResponse {
-    const COMMAND_CODE: CommandCode = CommandCode::PutHMACKey;
+    const COMMAND_CODE: CommandCode = CommandCode::PutHmacKey;
 }

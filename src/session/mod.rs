@@ -83,12 +83,15 @@ impl Session {
         let connection = connector.connect()?;
         let host_challenge = Challenge::random();
 
-        let (session_id, session_response) =
-            command::create_session(&*connection, credentials.auth_key_id, host_challenge)?;
+        let (session_id, session_response) = command::create_session(
+            &*connection,
+            credentials.authentication_key_id,
+            host_challenge,
+        )?;
 
         let channel = SecureChannel::new(
             session_id,
-            &credentials.auth_key,
+            &credentials.authentication_key,
             host_challenge,
             session_response.card_challenge,
         );
@@ -249,8 +252,8 @@ impl Session {
         session_debug!(
             self,
             "command={:?} key={}",
-            CommandCode::AuthSession,
-            credentials.auth_key_id
+            CommandCode::AuthenticateSession,
+            credentials.authentication_key_id
         );
 
         let command = self.secure_channel()?.authenticate_session()?;
@@ -263,15 +266,15 @@ impl Session {
             session_error!(
                 self,
                 "failed={:?} key={} err={:?}",
-                CommandCode::AuthSession,
-                credentials.auth_key_id,
+                CommandCode::AuthenticateSession,
+                credentials.authentication_key_id,
                 e.to_string()
             );
 
             return Err(e);
         }
 
-        session_debug!(self, "auth=OK key={}", credentials.auth_key_id);
+        session_debug!(self, "auth=OK key={}", credentials.authentication_key_id);
         Ok(())
     }
 

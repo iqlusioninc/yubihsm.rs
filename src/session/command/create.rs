@@ -11,7 +11,7 @@ use crate::session::securechannel::{Challenge, Cryptogram};
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct CreateSessionCommand {
     /// Authentication key ID to use
-    pub auth_key_id: ObjectId,
+    pub authentication_key_id: ObjectId,
 
     /// Randomly generated challenge from the host
     pub host_challenge: Challenge,

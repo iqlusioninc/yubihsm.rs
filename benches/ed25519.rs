@@ -31,7 +31,7 @@ fn generate_key(hsm: &mut yubihsm::Client) {
             BENCH_KEY_ID,
             "ed25519 benchmark key".into(),
             yubihsm::Domain::DOM1,
-            yubihsm::Capability::ASYMMETRIC_SIGN_EDDSA,
+            yubihsm::Capability::SIGN_EDDSA,
             yubihsm::AsymmetricAlg::Ed25519,
         )
         .unwrap_or_else(|e| panic!("error generating asymmetric key: {}", e));

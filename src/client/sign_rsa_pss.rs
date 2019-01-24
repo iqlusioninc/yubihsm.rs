@@ -14,7 +14,7 @@ pub const RSA_PSS_MAX_MESSAGE_SIZE: usize = 0xFFFF;
 
 /// Request parameters for `command::sign_rsa_pss*`
 #[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct SignDataPSSCommand {
+pub(crate) struct SignPssCommand {
     /// ID of the key to perform the signature with
     pub key_id: ObjectId,
 
@@ -28,21 +28,20 @@ pub(crate) struct SignDataPSSCommand {
     pub digest: Vec<u8>,
 }
 
-impl Command for SignDataPSSCommand {
-    type ResponseType = RSAPSSSignature;
+impl Command for SignPssCommand {
+    type ResponseType = RsaPssSignature;
 }
 
 /// RSASSA-PSS signatures (ASN.1 DER encoded)
 #[derive(Serialize, Deserialize, Debug)]
-pub struct RSAPSSSignature(pub Vec<u8>);
+pub struct RsaPssSignature(pub Vec<u8>);
 
-impl Response for RSAPSSSignature {
-    const COMMAND_CODE: CommandCode = CommandCode::SignDataPSS;
+impl Response for RsaPssSignature {
+    const COMMAND_CODE: CommandCode = CommandCode::SignPss;
 }
 
-// TODO: use clippy's scoped lints once they work on stable
-#[allow(unknown_lints, renamed_and_removed_lints, len_without_is_empty)]
-impl RSAPSSSignature {
+#[allow(clippy::len_without_is_empty)]
+impl RsaPssSignature {
     /// Unwrap inner byte vector
     pub fn into_vec(self) -> Vec<u8> {
         self.into()
@@ -59,13 +58,13 @@ impl RSAPSSSignature {
     }
 }
 
-impl AsRef<[u8]> for RSAPSSSignature {
+impl AsRef<[u8]> for RsaPssSignature {
     fn as_ref(&self) -> &[u8] {
         self.0.as_ref()
     }
 }
 
-impl Into<Vec<u8>> for RSAPSSSignature {
+impl Into<Vec<u8>> for RsaPssSignature {
     fn into(self) -> Vec<u8> {
         self.0
     }

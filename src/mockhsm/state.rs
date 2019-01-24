@@ -44,7 +44,7 @@ impl State {
     /// Create a new session with the MockHsm
     pub fn create_session(
         &mut self,
-        auth_key_id: ObjectId,
+        authentication_key_id: ObjectId,
         host_challenge: Challenge,
     ) -> &HsmSession {
         // Generate a random card challenge to send back to the client
@@ -58,14 +58,22 @@ impl State {
             .unwrap_or_else(|| SessionId::from_u8(0).unwrap());
 
         let channel = {
-            let auth_key_obj = self
+            let authentication_key_obj = self
                 .objects
-                .get(auth_key_id, ObjectType::AuthKey)
-                .unwrap_or_else(|| panic!("MockHsm has no AuthKey in slot {:?}", auth_key_id));
+                .get(authentication_key_id, ObjectType::AuthenticationKey)
+                .unwrap_or_else(|| {
+                    panic!(
+                        "MockHsm has no AuthenticationKey in slot {:?}",
+                        authentication_key_id
+                    )
+                });
 
             SecureChannel::new(
                 session_id,
-                auth_key_obj.payload.auth_key().expect("auth key payload"),
+                authentication_key_obj
+                    .payload
+                    .authentication_key()
+                    .expect("auth key payload"),
                 host_challenge,
                 card_challenge,
             )

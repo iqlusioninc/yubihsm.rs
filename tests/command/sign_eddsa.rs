@@ -14,12 +14,12 @@ fn test_vectors() {
         put_asymmetric_key(
             &mut client,
             AsymmetricAlg::Ed25519,
-            Capability::ASYMMETRIC_SIGN_EDDSA,
+            Capability::SIGN_EDDSA,
             vector.sk,
         );
 
         let pubkey_response = client
-            .get_pubkey(TEST_KEY_ID)
+            .get_public_key(TEST_KEY_ID)
             .unwrap_or_else(|err| panic!("error getting public key: {}", err));
 
         assert_eq!(pubkey_response.algorithm, AsymmetricAlg::Ed25519);
@@ -38,14 +38,10 @@ fn test_vectors() {
 fn generated_key_test() {
     let mut client = crate::get_hsm_client();
 
-    generate_asymmetric_key(
-        &mut client,
-        AsymmetricAlg::Ed25519,
-        Capability::ASYMMETRIC_SIGN_EDDSA,
-    );
+    generate_asymmetric_key(&mut client, AsymmetricAlg::Ed25519, Capability::SIGN_EDDSA);
 
     let pubkey = client
-        .get_pubkey(TEST_KEY_ID)
+        .get_public_key(TEST_KEY_ID)
         .unwrap_or_else(|err| panic!("error getting public key: {}", err));
 
     assert_eq!(pubkey.algorithm, AsymmetricAlg::Ed25519);

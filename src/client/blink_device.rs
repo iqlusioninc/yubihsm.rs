@@ -7,19 +7,19 @@ use crate::response::Response;
 
 /// Request parameters for `command::blink`
 #[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct BlinkCommand {
+pub(crate) struct BlinkDeviceCommand {
     /// Number of seconds to blink for
     pub num_seconds: u8,
 }
 
-impl Command for BlinkCommand {
-    type ResponseType = BlinkResponse;
+impl Command for BlinkDeviceCommand {
+    type ResponseType = BlinkDeviceResponse;
 }
 
 /// Response from `command::blink`
 #[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct BlinkResponse {}
+pub(crate) struct BlinkDeviceResponse {}
 
-impl Response for BlinkResponse {
-    const COMMAND_CODE: CommandCode = CommandCode::Blink;
+impl Response for BlinkDeviceResponse {
+    const COMMAND_CODE: CommandCode = CommandCode::BlinkDevice;
 }

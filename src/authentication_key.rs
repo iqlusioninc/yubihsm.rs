@@ -12,7 +12,7 @@ use std::fmt::{self, Debug};
 use zeroize::Zeroize;
 
 /// Auth keys are 2 * AES-128 keys
-pub const AUTH_KEY_SIZE: usize = 32;
+pub const AUTHENTICATION_KEY_SIZE: usize = 32;
 
 /// Password from which the default auth key is derived
 pub const DEFAULT_PASSWORD: &[u8] = b"password";
@@ -29,15 +29,15 @@ pub const DEFAULT_PBKDF2_ITERATIONS: usize = 10_000;
 /// `YubiHSM2` authentication keys (2 * AES-128 symmetric PSK) from which
 /// session keys are derived.c
 #[derive(Clone)]
-pub struct AuthKey(pub(crate) [u8; AUTH_KEY_SIZE]);
+pub struct AuthenticationKey(pub(crate) [u8; AUTHENTICATION_KEY_SIZE]);
 
-impl AuthKey {
-    /// Generate a random `AuthKey` using `OsRng`.
+impl AuthenticationKey {
+    /// Generate a random `AuthenticationKey` using `OsRng`.
     pub fn random() -> Self {
         let mut rng = OsRng::new().expect("RNG failure!");
-        let mut challenge = [0u8; AUTH_KEY_SIZE];
+        let mut challenge = [0u8; AUTHENTICATION_KEY_SIZE];
         rng.fill_bytes(&mut challenge);
-        AuthKey(challenge)
+        AuthenticationKey(challenge)
     }
 
     /// Derive an auth key from a password (using PBKDF2 + static salt).
@@ -46,7 +46,7 @@ impl AuthKey {
     /// derivation algorithm used does little to prevent brute force attacks.
     #[cfg(feature = "passwords")]
     pub fn derive_from_password(password: &[u8]) -> Self {
-        let mut kdf_output = [0u8; AUTH_KEY_SIZE];
+        let mut kdf_output = [0u8; AUTHENTICATION_KEY_SIZE];
         pbkdf2::<Hmac<Sha256>>(
             password,
             DEFAULT_PBKDF2_SALT,
@@ -56,26 +56,26 @@ impl AuthKey {
         Self::new(kdf_output)
     }
 
-    /// Create an AuthKey from a 32-byte slice, returning an error if the key
+    /// Create an AuthenticationKey from a 32-byte slice, returning an error if the key
     /// is the wrong length
-    pub fn from_slice(key_slice: &[u8]) -> Result<Self, AuthKeyError> {
+    pub fn from_slice(key_slice: &[u8]) -> Result<Self, AuthenticationKeyError> {
         ensure!(
-            key_slice.len() == AUTH_KEY_SIZE,
-            AuthKeyErrorKind::SizeInvalid,
+            key_slice.len() == AUTHENTICATION_KEY_SIZE,
+            AuthenticationKeyErrorKind::SizeInvalid,
             "expected {}-byte key, got {}",
-            AUTH_KEY_SIZE,
+            AUTHENTICATION_KEY_SIZE,
             key_slice.len()
         );
 
-        let mut key_bytes = [0u8; AUTH_KEY_SIZE];
+        let mut key_bytes = [0u8; AUTHENTICATION_KEY_SIZE];
         key_bytes.copy_from_slice(key_slice);
 
-        Ok(AuthKey(key_bytes))
+        Ok(AuthenticationKey(key_bytes))
     }
 
-    /// Create a new AuthKey from the given byte array
-    pub fn new(key_bytes: [u8; AUTH_KEY_SIZE]) -> Self {
-        AuthKey(key_bytes)
+    /// Create a new AuthenticationKey from the given byte array
+    pub fn new(key_bytes: [u8; AUTHENTICATION_KEY_SIZE]) -> Self {
+        AuthenticationKey(key_bytes)
     }
 
     /// Borrow the secret authentication keys
@@ -94,41 +94,41 @@ impl AuthKey {
     }
 }
 
-impl Debug for AuthKey {
+impl Debug for AuthenticationKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // Avoid leaking secrets in debug messages
-        write!(f, "yubihsm::AuthKey(...)")
+        write!(f, "yubihsm::AuthenticationKey(...)")
     }
 }
 
 /// Derive the default authentication key for all YubiHSM2s
 #[cfg(feature = "passwords")]
-impl Default for AuthKey {
+impl Default for AuthenticationKey {
     fn default() -> Self {
-        AuthKey::derive_from_password(DEFAULT_PASSWORD)
+        AuthenticationKey::derive_from_password(DEFAULT_PASSWORD)
     }
 }
 
-impl Drop for AuthKey {
+impl Drop for AuthenticationKey {
     fn drop(&mut self) {
         self.0.zeroize();
     }
 }
 
-impl From<[u8; AUTH_KEY_SIZE]> for AuthKey {
-    fn from(key_bytes: [u8; AUTH_KEY_SIZE]) -> AuthKey {
-        AuthKey::new(key_bytes)
+impl From<[u8; AUTHENTICATION_KEY_SIZE]> for AuthenticationKey {
+    fn from(key_bytes: [u8; AUTHENTICATION_KEY_SIZE]) -> AuthenticationKey {
+        AuthenticationKey::new(key_bytes)
     }
 }
 
-impl_array_serializers!(AuthKey, AUTH_KEY_SIZE);
+impl_array_serializers!(AuthenticationKey, AUTHENTICATION_KEY_SIZE);
 
-/// `AuthKey`-related errors
-pub type AuthKeyError = Error<AuthKeyErrorKind>;
+/// `AuthenticationKey`-related errors
+pub type AuthenticationKeyError = Error<AuthenticationKeyErrorKind>;
 
-/// Kinds of `AuthKey`-related errors
+/// Kinds of `AuthenticationKey`-related errors
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
-pub enum AuthKeyErrorKind {
+pub enum AuthenticationKeyErrorKind {
     /// Size is invalid
     #[fail(display = "invalid size")]
     SizeInvalid,

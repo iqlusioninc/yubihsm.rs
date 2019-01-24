@@ -8,7 +8,7 @@ use crate::{put_asymmetric_key, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL};
 fn ed25519_key_test() {
     let mut client = crate::get_hsm_client();
     let algorithm = AsymmetricAlg::Ed25519;
-    let capabilities = Capability::ASYMMETRIC_SIGN_EDDSA;
+    let capabilities = Capability::SIGN_EDDSA;
     let example_private_key = ED25519_TEST_VECTORS[0].sk;
 
     put_asymmetric_key(&mut client, algorithm, capabilities, example_private_key);

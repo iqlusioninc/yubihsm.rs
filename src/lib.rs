@@ -90,7 +90,7 @@ pub mod algorithm;
 pub(crate) mod audit;
 
 /// Authentication keys used to establish encrypted sessions with the HSM
-pub mod auth_key;
+pub mod authentication_key;
 
 /// Object attributes specifying which operations are allowed to be performed
 pub mod capability;
@@ -120,7 +120,7 @@ pub mod command;
 /// [MockHsm]: https://docs.rs/yubihsm/latest/yubihsm/mockhsm/struct.MockHsm.html
 pub mod connector;
 
-/// Credentials used to authenticate to the HSM (key ID + `AuthKey`).
+/// Credentials used to authenticate to the HSM (key ID + `AuthenticationKey`).
 pub mod credentials;
 
 /// Logical partitions within the HSM, allowing several applications to share the device.
@@ -153,7 +153,7 @@ pub mod wrap;
 
 pub use crate::algorithm::*;
 pub use crate::audit::AuditOption;
-pub use crate::auth_key::{AuthKey, AUTH_KEY_SIZE};
+pub use crate::authentication_key::{AuthenticationKey, AUTHENTICATION_KEY_SIZE};
 pub use crate::capability::Capability;
 pub use crate::client::{Client, ClientError};
 pub use crate::command::CommandCode;

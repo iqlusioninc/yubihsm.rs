@@ -37,7 +37,7 @@ pub use self::{
 };
 
 use super::{CommandMessage, ResponseMessage, SessionError, SessionErrorKind::*, SessionId};
-use crate::auth_key::AuthKey;
+use crate::authentication_key::AuthenticationKey;
 use crate::command::CommandCode;
 #[cfg(feature = "mockhsm")]
 use crate::response::ResponseCode;
@@ -92,14 +92,14 @@ impl SecureChannel {
     /// Create a new channel with the given ID, auth key, and host/card challenges
     pub fn new(
         id: SessionId,
-        auth_key: &AuthKey,
+        authentication_key: &AuthenticationKey,
         host_challenge: Challenge,
         card_challenge: Challenge,
     ) -> Self {
         let context = Context::from_challenges(host_challenge, card_challenge);
-        let enc_key = derive_key(auth_key.enc_key(), 0b100, &context);
-        let mac_key = derive_key(auth_key.mac_key(), 0b110, &context);
-        let rmac_key = derive_key(auth_key.mac_key(), 0b111, &context);
+        let enc_key = derive_key(authentication_key.enc_key(), 0b100, &context);
+        let mac_key = derive_key(authentication_key.mac_key(), 0b110, &context);
+        let rmac_key = derive_key(authentication_key.mac_key(), 0b111, &context);
         let mac_chaining_value = [0u8; MAC_SIZE * 2];
 
         Self {
@@ -183,7 +183,7 @@ impl SecureChannel {
         assert_eq!(self.mac_chaining_value, [0u8; MAC_SIZE * 2]);
 
         let host_cryptogram = self.host_cryptogram();
-        self.command_with_mac(CommandCode::AuthSession, host_cryptogram.as_slice())
+        self.command_with_mac(CommandCode::AuthenticateSession, host_cryptogram.as_slice())
     }
 
     /// Handle the authenticate session response from the card
@@ -346,7 +346,10 @@ impl SecureChannel {
         // command." -- GPC_SPE_014 section 6.2.6
         self.counter = 1;
 
-        Ok(ResponseMessage::success(CommandCode::AuthSession, vec![]))
+        Ok(ResponseMessage::success(
+            CommandCode::AuthenticateSession,
+            vec![],
+        ))
     }
 
     /// Verify and decrypt a command from the host
@@ -544,7 +547,7 @@ fn compute_icv(cipher: &Aes128, counter: u32) -> GenericArray<u8, U16> {
 #[cfg(all(test, feature = "mockhsm"))]
 mod tests {
     use super::*;
-    use crate::auth_key::AuthKey;
+    use crate::authentication_key::AuthenticationKey;
     use crate::command::CommandCode;
 
     const PASSWORD: &[u8] = b"password";
@@ -554,7 +557,7 @@ mod tests {
     const COMMAND_DATA: &[u8] = b"Hello, world!";
 
     fn create_channel_pair() -> (SecureChannel, SecureChannel) {
-        let auth_key = AuthKey::derive_from_password(PASSWORD);
+        let authentication_key = AuthenticationKey::derive_from_password(PASSWORD);
 
         let host_challenge = Challenge::from_slice(HOST_CHALLENGE);
         let card_challenge = Challenge::from_slice(CARD_CHALLENGE);
@@ -562,10 +565,18 @@ mod tests {
         let session_id = SessionId::from_u8(0).unwrap();
 
         // Create channels
-        let mut host_channel =
-            SecureChannel::new(session_id, &auth_key, host_challenge, card_challenge);
-        let mut card_channel =
-            SecureChannel::new(session_id, &auth_key, host_challenge, card_challenge);
+        let mut host_channel = SecureChannel::new(
+            session_id,
+            &authentication_key,
+            host_challenge,
+            card_challenge,
+        );
+        let mut card_channel = SecureChannel::new(
+            session_id,
+            &authentication_key,
+            host_challenge,
+            card_challenge,
+        );
 
         // Auth host to card
         let auth_command = host_channel.authenticate_session().unwrap();

@@ -4,7 +4,7 @@ use super::{Algorithm, AlgorithmError, AlgorithmErrorKind::TagInvalid};
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[allow(non_camel_case_types)]
 #[repr(u8)]
-pub enum OtpAlg {
+pub enum YubicoOtpAlg {
     /// Yubico OTP using AES-128
     AES128 = 0x25,
 
@@ -15,13 +15,13 @@ pub enum OtpAlg {
     AES256 = 0x28,
 }
 
-impl OtpAlg {
+impl YubicoOtpAlg {
     /// Convert an unsigned byte tag into an `OtpAlgorithm` (if valid)
     pub fn from_u8(tag: u8) -> Result<Self, AlgorithmError> {
         Ok(match tag {
-            0x25 => OtpAlg::AES128,
-            0x27 => OtpAlg::AES192,
-            0x28 => OtpAlg::AES256,
+            0x25 => YubicoOtpAlg::AES128,
+            0x27 => YubicoOtpAlg::AES192,
+            0x28 => YubicoOtpAlg::AES256,
             _ => fail!(TagInvalid, "unknown OTP algorithm ID: 0x{:02x}", tag),
         })
     }
@@ -34,17 +34,17 @@ impl OtpAlg {
     /// Return the size of the given key (as expected by the `YubiHSM2`) in bytes
     pub fn key_len(self) -> usize {
         match self {
-            OtpAlg::AES128 => 16,
-            OtpAlg::AES192 => 24,
-            OtpAlg::AES256 => 32,
+            YubicoOtpAlg::AES128 => 16,
+            YubicoOtpAlg::AES192 => 24,
+            YubicoOtpAlg::AES256 => 32,
         }
     }
 }
 
-impl From<OtpAlg> for Algorithm {
-    fn from(alg: OtpAlg) -> Algorithm {
-        Algorithm::Otp(alg)
+impl From<YubicoOtpAlg> for Algorithm {
+    fn from(alg: YubicoOtpAlg) -> Algorithm {
+        Algorithm::YubicoOtp(alg)
     }
 }
 
-impl_algorithm_serializers!(OtpAlg);
+impl_algorithm_serializers!(YubicoOtpAlg);

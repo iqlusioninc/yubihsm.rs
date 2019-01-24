@@ -5,17 +5,17 @@
 use crate::command::{Command, CommandCode};
 use crate::response::Response;
 
-/// Request parameters for `command::storage_status`
+/// Request parameters for `command::get_storage_info`
 #[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct StorageStatusCommand {}
+pub(crate) struct GetStorageInfoCommand {}
 
-impl Command for StorageStatusCommand {
-    type ResponseType = StorageStatusResponse;
+impl Command for GetStorageInfoCommand {
+    type ResponseType = GetStorageInfoResponse;
 }
 
-/// Response from `command::storage_status`
+/// Response from `command::get_storage_info`
 #[derive(Serialize, Deserialize, Debug)]
-pub struct StorageStatusResponse {
+pub struct GetStorageInfoResponse {
     /// Total number of storage records
     pub total_records: u16,
 
@@ -32,6 +32,6 @@ pub struct StorageStatusResponse {
     pub page_size: u16,
 }
 
-impl Response for StorageStatusResponse {
-    const COMMAND_CODE: CommandCode = CommandCode::StorageStatus;
+impl Response for GetStorageInfoResponse {
+    const COMMAND_CODE: CommandCode = CommandCode::GetStorageInfo;
 }
