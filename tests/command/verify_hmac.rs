@@ -8,10 +8,10 @@ use crate::{clear_test_key_slot, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL};
 fn hmac_test_vectors() {
     let mut client = crate::get_hsm_client();
     let algorithm = HmacAlg::SHA256;
-    let capabilities = Capability::HMAC_DATA | Capability::HMAC_VERIFY;
+    let capabilities = Capability::SIGN_HMAC | Capability::VERIFY_HMAC;
 
     for vector in HMAC_SHA256_TEST_VECTORS {
-        clear_test_key_slot(&mut client, ObjectType::HMACKey);
+        clear_test_key_slot(&mut client, ObjectType::HmacKey);
 
         let key_id = client
             .put_hmac_key(
@@ -27,7 +27,7 @@ fn hmac_test_vectors() {
         assert_eq!(key_id, TEST_KEY_ID);
 
         let tag = client
-            .hmac(TEST_KEY_ID, vector.msg)
+            .sign_hmac(TEST_KEY_ID, vector.msg)
             .unwrap_or_else(|err| panic!("error computing HMAC of data: {}", err));
 
         assert_eq!(tag.as_ref(), vector.tag);

@@ -9,7 +9,7 @@ pub enum OpaqueAlg {
     DATA = 0x1e,
 
     /// X.509 certificates
-    X509_CERT = 0x1f,
+    X509_CERTIFICATE = 0x1f,
 }
 
 impl OpaqueAlg {
@@ -17,7 +17,7 @@ impl OpaqueAlg {
     pub fn from_u8(tag: u8) -> Result<Self, AlgorithmError> {
         Ok(match tag {
             0x1e => OpaqueAlg::DATA,
-            0x1f => OpaqueAlg::X509_CERT,
+            0x1f => OpaqueAlg::X509_CERTIFICATE,
             _ => fail!(TagInvalid, "unknown opaque data ID: 0x{:02x}", tag),
         })
     }

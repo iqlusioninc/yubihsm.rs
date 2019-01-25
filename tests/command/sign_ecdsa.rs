@@ -10,14 +10,10 @@ use crate::{generate_asymmetric_key, TEST_KEY_ID, TEST_MESSAGE};
 fn generated_nistp256_key_test() {
     let mut client = crate::get_hsm_client();
 
-    generate_asymmetric_key(
-        &mut client,
-        AsymmetricAlg::EC_P256,
-        Capability::ASYMMETRIC_SIGN_ECDSA,
-    );
+    generate_asymmetric_key(&mut client, AsymmetricAlg::EC_P256, Capability::SIGN_ECDSA);
 
     let pubkey_response = client
-        .get_pubkey(TEST_KEY_ID)
+        .get_public_key(TEST_KEY_ID)
         .unwrap_or_else(|err| panic!("error getting public key: {}", err));
 
     assert_eq!(pubkey_response.algorithm, AsymmetricAlg::EC_P256);

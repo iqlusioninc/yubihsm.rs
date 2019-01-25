@@ -2,13 +2,15 @@ use failure::Error;
 use ring::aead::{self, Aad, Nonce, OpeningKey, SealingKey, AES_128_GCM, AES_256_GCM};
 use std::collections::{btree_map::Iter as BTreeMapIter, BTreeMap};
 
-use super::{Object, Payload, WrappedObject, DEFAULT_AUTH_KEY_LABEL, WRAPPED_DATA_MAC_SIZE};
+use super::{
+    Object, Payload, WrappedObject, DEFAULT_AUTHENTICATION_KEY_LABEL, WRAPPED_DATA_MAC_SIZE,
+};
 use crate::{
-    auth_key::{AuthKey, AUTH_KEY_SIZE},
-    credentials::DEFAULT_AUTH_KEY_ID,
+    authentication_key::{AuthenticationKey, AUTHENTICATION_KEY_SIZE},
+    credentials::DEFAULT_AUTHENTICATION_KEY_ID,
     serialization::{deserialize, serialize},
-    Algorithm, AuthAlg, Capability, Domain, ObjectHandle, ObjectId, ObjectInfo, ObjectLabel,
-    ObjectOrigin, ObjectType, WrapAlg, WrapNonce,
+    Algorithm, AuthenticationAlg, Capability, Domain, ObjectHandle, ObjectId, ObjectInfo,
+    ObjectLabel, ObjectOrigin, ObjectType, WrapAlg, WrapNonce,
 };
 
 /// Objects stored in the `MockHsm`
@@ -20,28 +22,29 @@ impl Default for Objects {
         let mut objects = BTreeMap::new();
 
         // Insert default authentication key
-        let auth_key_handle = ObjectHandle::new(DEFAULT_AUTH_KEY_ID, ObjectType::AuthKey);
+        let authentication_key_handle =
+            ObjectHandle::new(DEFAULT_AUTHENTICATION_KEY_ID, ObjectType::AuthenticationKey);
 
-        let auth_key_info = ObjectInfo {
-            object_id: DEFAULT_AUTH_KEY_ID,
-            object_type: ObjectType::AuthKey,
-            algorithm: Algorithm::Auth(AuthAlg::YUBICO_AES),
+        let authentication_key_info = ObjectInfo {
+            object_id: DEFAULT_AUTHENTICATION_KEY_ID,
+            object_type: ObjectType::AuthenticationKey,
+            algorithm: Algorithm::Auth(AuthenticationAlg::YUBICO_AES),
             capabilities: Capability::all(),
             delegated_capabilities: Capability::all(),
             domains: Domain::all(),
-            length: AUTH_KEY_SIZE as u16,
+            length: AUTHENTICATION_KEY_SIZE as u16,
             sequence: 1,
             origin: ObjectOrigin::Imported,
-            label: DEFAULT_AUTH_KEY_LABEL.into(),
+            label: DEFAULT_AUTHENTICATION_KEY_LABEL.into(),
         };
 
-        let auth_key_payload = Payload::AuthKey(AuthKey::default());
+        let authentication_key_payload = Payload::AuthenticationKey(AuthenticationKey::default());
 
         let _ = objects.insert(
-            auth_key_handle,
+            authentication_key_handle,
             Object {
-                object_info: auth_key_info,
-                payload: auth_key_payload,
+                object_info: authentication_key_info,
+                payload: authentication_key_payload,
             },
         );
 
@@ -164,7 +167,7 @@ impl Objects {
         if !object_to_wrap
             .object_info
             .capabilities
-            .contains(Capability::EXPORT_UNDER_WRAP)
+            .contains(Capability::EXPORTABLE_UNDER_WRAP)
         {
             bail!(
                 "object {:?} of type {:?} does not have EXPORT_UNDER_WRAP capability",

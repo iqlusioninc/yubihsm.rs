@@ -33,8 +33,7 @@ fn wrap_key_test() {
 
     // Create a key to export
     let exported_key_type = ObjectType::AsymmetricKey;
-    let exported_key_capabilities =
-        Capability::ASYMMETRIC_SIGN_EDDSA | Capability::EXPORT_UNDER_WRAP;
+    let exported_key_capabilities = Capability::SIGN_EDDSA | Capability::EXPORTABLE_UNDER_WRAP;
     let exported_key_algorithm = AsymmetricAlg::Ed25519;
 
     let _ = client.delete_object(TEST_EXPORTED_KEY_ID, exported_key_type);

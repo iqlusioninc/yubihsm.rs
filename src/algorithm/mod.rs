@@ -38,20 +38,21 @@ mod error;
 pub use self::error::{AlgorithmError, AlgorithmErrorKind};
 
 mod asymmetric;
-mod auth;
+mod authentication;
 mod ecdsa;
 mod hmac;
 mod kex;
 mod mgf;
 mod opaque;
-mod otp;
 mod rsa;
 mod template;
 mod wrap;
+mod yubico_otp;
 
 pub use self::{
-    asymmetric::AsymmetricAlg, auth::AuthAlg, ecdsa::EcdsaAlg, hmac::HmacAlg, kex::KexAlg,
-    mgf::MgfAlg, opaque::OpaqueAlg, otp::OtpAlg, rsa::RsaAlg, template::TemplateAlg, wrap::WrapAlg,
+    asymmetric::AsymmetricAlg, authentication::AuthenticationAlg, ecdsa::EcdsaAlg, hmac::HmacAlg,
+    kex::KexAlg, mgf::MgfAlg, opaque::OpaqueAlg, rsa::RsaAlg, template::TemplateAlg, wrap::WrapAlg,
+    yubico_otp::YubicoOtpAlg,
 };
 
 /// Cryptographic algorithm types supported by the `YubiHSM2`
@@ -63,7 +64,7 @@ pub enum Algorithm {
     Asymmetric(AsymmetricAlg),
 
     /// YubiHSM2 PSK authentication
-    Auth(AuthAlg),
+    Auth(AuthenticationAlg),
 
     /// ECDSA algorithms
     Ecdsa(EcdsaAlg),
@@ -80,9 +81,6 @@ pub enum Algorithm {
     /// Opaque data types
     Opaque(OpaqueAlg),
 
-    /// Yubico OTP algorithms
-    Otp(OtpAlg),
-
     /// RSA algorithms (signing and encryption)
     Rsa(RsaAlg),
 
@@ -91,6 +89,9 @@ pub enum Algorithm {
 
     /// Object wrap (i.e. HSM-to-HSM encryption) algorithms
     Wrap(WrapAlg),
+
+    /// Yubico OTP algorithms
+    YubicoOtp(YubicoOtpAlg),
 }
 
 impl Algorithm {
@@ -106,8 +107,8 @@ impl Algorithm {
             0x1e | 0x1f => Algorithm::Opaque(OpaqueAlg::from_u8(byte)?),
             0x20..=0x23 => Algorithm::Mgf(MgfAlg::from_u8(byte)?),
             0x24 => Algorithm::Template(TemplateAlg::from_u8(byte)?),
-            0x25 | 0x27 | 0x28 => Algorithm::Otp(OtpAlg::from_u8(byte)?),
-            0x26 => Algorithm::Auth(AuthAlg::from_u8(byte)?),
+            0x25 | 0x27 | 0x28 => Algorithm::YubicoOtp(YubicoOtpAlg::from_u8(byte)?),
+            0x26 => Algorithm::Auth(AuthenticationAlg::from_u8(byte)?),
             _ => fail!(
                 AlgorithmErrorKind::TagInvalid,
                 "unknown algorithm ID: 0x{:02x}",
@@ -126,7 +127,7 @@ impl Algorithm {
             Algorithm::Kex(alg) => alg.to_u8(),
             Algorithm::Mgf(alg) => alg.to_u8(),
             Algorithm::Opaque(alg) => alg.to_u8(),
-            Algorithm::Otp(alg) => alg.to_u8(),
+            Algorithm::YubicoOtp(alg) => alg.to_u8(),
             Algorithm::Rsa(alg) => alg.to_u8(),
             Algorithm::Template(alg) => alg.to_u8(),
             Algorithm::Wrap(alg) => alg.to_u8(),
@@ -142,7 +143,7 @@ impl Algorithm {
     }
 
     /// Get `AuthAlg`
-    pub fn auth(self) -> Option<AuthAlg> {
+    pub fn auth(self) -> Option<AuthenticationAlg> {
         match self {
             Algorithm::Auth(alg) => Some(alg),
             _ => None,
@@ -190,9 +191,9 @@ impl Algorithm {
     }
 
     /// Get `OtpAlg`
-    pub fn otp(self) -> Option<OtpAlg> {
+    pub fn otp(self) -> Option<YubicoOtpAlg> {
         match self {
-            Algorithm::Otp(alg) => Some(alg),
+            Algorithm::YubicoOtp(alg) => Some(alg),
             _ => None,
         }
     }
@@ -259,16 +260,16 @@ mod tests {
         (0x1c, Algorithm::Rsa(RsaAlg::OAEP_SHA512)),
         (0x1d, Algorithm::Wrap(WrapAlg::AES128_CCM)),
         (0x1e, Algorithm::Opaque(OpaqueAlg::DATA)),
-        (0x1f, Algorithm::Opaque(OpaqueAlg::X509_CERT)),
+        (0x1f, Algorithm::Opaque(OpaqueAlg::X509_CERTIFICATE)),
         (0x20, Algorithm::Mgf(MgfAlg::SHA1)),
         (0x21, Algorithm::Mgf(MgfAlg::SHA256)),
         (0x22, Algorithm::Mgf(MgfAlg::SHA384)),
         (0x23, Algorithm::Mgf(MgfAlg::SHA512)),
         (0x24, Algorithm::Template(TemplateAlg::SSH)),
-        (0x25, Algorithm::Otp(OtpAlg::AES128)),
-        (0x26, Algorithm::Auth(AuthAlg::YUBICO_AES)),
-        (0x27, Algorithm::Otp(OtpAlg::AES192)),
-        (0x28, Algorithm::Otp(OtpAlg::AES256)),
+        (0x25, Algorithm::YubicoOtp(YubicoOtpAlg::AES128)),
+        (0x26, Algorithm::Auth(AuthenticationAlg::YUBICO_AES)),
+        (0x27, Algorithm::YubicoOtp(YubicoOtpAlg::AES192)),
+        (0x28, Algorithm::YubicoOtp(YubicoOtpAlg::AES256)),
         (0x29, Algorithm::Wrap(WrapAlg::AES192_CCM)),
         (0x2a, Algorithm::Wrap(WrapAlg::AES256_CCM)),
         (0x2b, Algorithm::Ecdsa(EcdsaAlg::SHA256)),

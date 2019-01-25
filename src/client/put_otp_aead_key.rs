@@ -29,5 +29,5 @@ pub(crate) struct PutOTPAEADKeyResponse {
 }
 
 impl Response for PutOTPAEADKeyResponse {
-    const COMMAND_CODE: CommandCode = CommandCode::PutOTPAEAD;
+    const COMMAND_CODE: CommandCode = CommandCode::PutOtpAead;
 }

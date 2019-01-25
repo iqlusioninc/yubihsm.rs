@@ -8,8 +8,8 @@ use ring::{
 use untrusted;
 
 use crate::{
-    algorithm::{Algorithm, AsymmetricAlg, AuthAlg, HmacAlg, OpaqueAlg, WrapAlg},
-    auth_key::{AuthKey, AUTH_KEY_SIZE},
+    algorithm::{Algorithm, AsymmetricAlg, AuthenticationAlg, HmacAlg, OpaqueAlg, WrapAlg},
+    authentication_key::{AuthenticationKey, AUTHENTICATION_KEY_SIZE},
 };
 
 /// Size of an Ed25519 seed
@@ -19,7 +19,7 @@ pub(crate) const ED25519_SEED_SIZE: usize = 32;
 #[derive(Debug)]
 pub(crate) enum Payload {
     /// Authentication keys
-    AuthKey(AuthKey),
+    AuthenticationKey(AuthenticationKey),
 
     /// Ed25519 signing keys
     Ed25519KeyPair([u8; ED25519_SEED_SIZE]),
@@ -48,7 +48,9 @@ impl Payload {
             }
             Algorithm::Hmac(alg) => Payload::HmacKey(alg, data.into()),
             Algorithm::Opaque(alg) => Payload::Opaque(alg, data.into()),
-            Algorithm::Auth(_) => Payload::AuthKey(AuthKey::from_slice(data).unwrap()),
+            Algorithm::Auth(_) => {
+                Payload::AuthenticationKey(AuthenticationKey::from_slice(data).unwrap())
+            }
             _ => panic!("MockHsm does not support putting {:?} objects", algorithm),
         }
     }
@@ -89,7 +91,7 @@ impl Payload {
     /// Get the algorithm type for this payload
     pub fn algorithm(&self) -> Algorithm {
         match *self {
-            Payload::AuthKey(_) => Algorithm::Auth(AuthAlg::YUBICO_AES),
+            Payload::AuthenticationKey(_) => Algorithm::Auth(AuthenticationAlg::YUBICO_AES),
             Payload::Ed25519KeyPair(_) => Algorithm::Asymmetric(AsymmetricAlg::Ed25519),
             Payload::HmacKey(alg, _) => alg.into(),
             Payload::Opaque(alg, _) => alg.into(),
@@ -100,7 +102,7 @@ impl Payload {
     /// Get the length of the object
     pub fn len(&self) -> u16 {
         let l = match *self {
-            Payload::AuthKey(_) => AUTH_KEY_SIZE,
+            Payload::AuthenticationKey(_) => AUTHENTICATION_KEY_SIZE,
             Payload::Ed25519KeyPair(_) => ED25519_SEED_SIZE,
             Payload::HmacKey(_, ref data) => data.len(),
             Payload::Opaque(_, ref data) => data.len(),
@@ -124,9 +126,9 @@ impl Payload {
     }
 
     /// If this payload is an auth key, return a reference to it
-    pub fn auth_key(&self) -> Option<&AuthKey> {
+    pub fn authentication_key(&self) -> Option<&AuthenticationKey> {
         match *self {
-            Payload::AuthKey(ref k) => Some(k),
+            Payload::AuthenticationKey(ref k) => Some(k),
             _ => None,
         }
     }
@@ -135,7 +137,7 @@ impl Payload {
 impl AsRef<[u8]> for Payload {
     fn as_ref(&self) -> &[u8] {
         match *self {
-            Payload::AuthKey(ref k) => k.0.as_ref(),
+            Payload::AuthenticationKey(ref k) => k.0.as_ref(),
             Payload::Ed25519KeyPair(ref k) => k.as_ref(),
             Payload::HmacKey(_, ref data) => data,
             Payload::Opaque(_, ref data) => data,

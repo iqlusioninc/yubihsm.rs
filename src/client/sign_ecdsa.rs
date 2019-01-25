@@ -8,7 +8,7 @@ use crate::response::Response;
 
 /// Request parameters for `command::sign_ecdsa*`
 #[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct SignDataECDSACommand {
+pub(crate) struct SignEcdsaCommand {
     /// ID of the key to perform the signature with
     pub key_id: ObjectId,
 
@@ -16,21 +16,20 @@ pub(crate) struct SignDataECDSACommand {
     pub digest: Vec<u8>,
 }
 
-impl Command for SignDataECDSACommand {
-    type ResponseType = ECDSASignature;
+impl Command for SignEcdsaCommand {
+    type ResponseType = EcdsaSignature;
 }
 
 /// ECDSA signatures (ASN.1 DER encoded)
 #[derive(Serialize, Deserialize, Debug)]
-pub struct ECDSASignature(pub Vec<u8>);
+pub struct EcdsaSignature(pub Vec<u8>);
 
-impl Response for ECDSASignature {
-    const COMMAND_CODE: CommandCode = CommandCode::SignDataECDSA;
+impl Response for EcdsaSignature {
+    const COMMAND_CODE: CommandCode = CommandCode::SignEcdsa;
 }
 
-// TODO: use clippy's scoped lints once they work on stable
-#[allow(unknown_lints, renamed_and_removed_lints, len_without_is_empty)]
-impl ECDSASignature {
+#[allow(clippy::len_without_is_empty)]
+impl EcdsaSignature {
     /// Unwrap inner byte vector
     pub fn into_vec(self) -> Vec<u8> {
         self.into()
@@ -47,13 +46,13 @@ impl ECDSASignature {
     }
 }
 
-impl AsRef<[u8]> for ECDSASignature {
+impl AsRef<[u8]> for EcdsaSignature {
     fn as_ref(&self) -> &[u8] {
         self.0.as_ref()
     }
 }
 
-impl Into<Vec<u8>> for ECDSASignature {
+impl Into<Vec<u8>> for EcdsaSignature {
     fn into(self) -> Vec<u8> {
         self.0
     }

@@ -2,7 +2,7 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Verify_Hmac.html>
 
-use super::hmac::HMACTag;
+use super::sign_hmac::HmacTag;
 use crate::command::{Command, CommandCode};
 use crate::object::ObjectId;
 use crate::response::Response;
@@ -14,7 +14,7 @@ pub(crate) struct VerifyHMACCommand {
     pub key_id: ObjectId,
 
     /// HMAC tag to be verified
-    pub tag: HMACTag,
+    pub tag: HmacTag,
 
     /// Data to be authenticated
     pub data: Vec<u8>,
@@ -29,5 +29,5 @@ impl Command for VerifyHMACCommand {
 pub(crate) struct VerifyHMACResponse(pub(crate) u8);
 
 impl Response for VerifyHMACResponse {
-    const COMMAND_CODE: CommandCode = CommandCode::VerifyHMAC;
+    const COMMAND_CODE: CommandCode = CommandCode::VerifyHmac;
 }

@@ -13,7 +13,7 @@ pub const ED25519_SIGNATURE_SIZE: usize = 64;
 
 /// Request parameters for `command::sign_ed25519`
 #[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct SignDataEdDSACommand {
+pub(crate) struct SignDataEddsaCommand {
     /// ID of the key to perform the signature with
     pub key_id: ObjectId,
 
@@ -21,7 +21,7 @@ pub(crate) struct SignDataEdDSACommand {
     pub data: Vec<u8>,
 }
 
-impl Command for SignDataEdDSACommand {
+impl Command for SignDataEddsaCommand {
     type ResponseType = Ed25519Signature;
 }
 
@@ -29,7 +29,7 @@ impl Command for SignDataEdDSACommand {
 pub struct Ed25519Signature(pub [u8; ED25519_SIGNATURE_SIZE]);
 
 impl Response for Ed25519Signature {
-    const COMMAND_CODE: CommandCode = CommandCode::SignDataEdDSA;
+    const COMMAND_CODE: CommandCode = CommandCode::SignEddsa;
 }
 
 impl AsRef<[u8]> for Ed25519Signature {

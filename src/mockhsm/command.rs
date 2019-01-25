@@ -33,7 +33,7 @@ pub(crate) fn create_session(
     let cmd: CreateSessionCommand = deserialize(cmd_message.data.as_ref())
         .unwrap_or_else(|e| panic!("error parsing CreateSession command data: {:?}", e));
 
-    let session = state.create_session(cmd.auth_key_id, cmd.host_challenge);
+    let session = state.create_session(cmd.authentication_key_id, cmd.host_challenge);
 
     let mut response = CreateSessionResponse {
         card_challenge: *session.card_challenge(),
@@ -79,35 +79,35 @@ pub(crate) fn session_message(
         .decrypt_command(encrypted_command);
 
     let response = match command.command_type {
-        CommandCode::Blink => BlinkResponse {}.serialize(),
+        CommandCode::BlinkDevice => BlinkDeviceResponse {}.serialize(),
         CommandCode::CloseSession => return close_session(state, session_id),
         CommandCode::DeleteObject => delete_object(state, &command.data),
         CommandCode::DeviceInfo => device_info(),
         CommandCode::Echo => echo(&command.data),
         CommandCode::ExportWrapped => export_wrapped(state, &command.data),
         CommandCode::GenerateAsymmetricKey => gen_asymmetric_key(state, &command.data),
-        CommandCode::GenerateHMACKey => gen_hmac_key(state, &command.data),
+        CommandCode::GenerateHmacKey => gen_hmac_key(state, &command.data),
         CommandCode::GenerateWrapKey => gen_wrap_key(state, &command.data),
-        CommandCode::GetLogs => get_logs(),
+        CommandCode::GetLogEntries => get_log_entries(),
         CommandCode::GetObjectInfo => get_object_info(state, &command.data),
         CommandCode::GetOpaqueObject => get_opaque(state, &command.data),
         CommandCode::GetOption => get_option(state, &command.data),
         CommandCode::GetPseudoRandom => get_pseudo_random(state, &command.data),
-        CommandCode::GetPubKey => get_pubkey(state, &command.data),
-        CommandCode::HMACData => hmac_data(state, &command.data),
+        CommandCode::GetPublicKey => get_public_key(state, &command.data),
+        CommandCode::SignHmac => sign_hmac(state, &command.data),
         CommandCode::ImportWrapped => import_wrapped(state, &command.data),
         CommandCode::ListObjects => list_objects(state, &command.data),
         CommandCode::PutAsymmetricKey => put_asymmetric_key(state, &command.data),
-        CommandCode::PutAuthKey => put_auth_key(state, &command.data),
-        CommandCode::PutHMACKey => put_hmac_key(state, &command.data),
+        CommandCode::PutAuthenticationKey => put_authentication_key(state, &command.data),
+        CommandCode::PutHmacKey => put_hmac_key(state, &command.data),
         CommandCode::PutOpaqueObject => put_opaque(state, &command.data),
-        CommandCode::PutOption => put_option(state, &command.data),
+        CommandCode::SetOption => put_option(state, &command.data),
         CommandCode::PutWrapKey => put_wrap_key(state, &command.data),
-        CommandCode::Reset => return Ok(reset(state, session_id)),
+        CommandCode::ResetDevice => return Ok(reset_device(state, session_id)),
         CommandCode::SetLogIndex => SetLogIndexResponse {}.serialize(),
-        CommandCode::SignDataEdDSA => sign_data_eddsa(state, &command.data),
-        CommandCode::StorageStatus => storage_status(),
-        CommandCode::VerifyHMAC => verify_hmac(state, &command.data),
+        CommandCode::SignEddsa => sign_eddsa(state, &command.data),
+        CommandCode::GetStorageInfo => get_storage_info(),
+        CommandCode::VerifyHmac => verify_hmac(state, &command.data),
         unsupported => panic!("unsupported command type: {:?}", unsupported),
     };
 
@@ -184,16 +184,16 @@ fn device_info() -> ResponseMessage {
             Algorithm::Rsa(RsaAlg::OAEP_SHA512),
             Algorithm::Wrap(WrapAlg::AES128_CCM),
             Algorithm::Opaque(OpaqueAlg::DATA),
-            Algorithm::Opaque(OpaqueAlg::X509_CERT),
+            Algorithm::Opaque(OpaqueAlg::X509_CERTIFICATE),
             Algorithm::Mgf(MgfAlg::SHA1),
             Algorithm::Mgf(MgfAlg::SHA256),
             Algorithm::Mgf(MgfAlg::SHA384),
             Algorithm::Mgf(MgfAlg::SHA512),
             Algorithm::Template(TemplateAlg::SSH),
-            Algorithm::Otp(OtpAlg::AES128),
-            Algorithm::Auth(AuthAlg::YUBICO_AES),
-            Algorithm::Otp(OtpAlg::AES192),
-            Algorithm::Otp(OtpAlg::AES256),
+            Algorithm::YubicoOtp(YubicoOtpAlg::AES128),
+            Algorithm::Auth(AuthenticationAlg::YUBICO_AES),
+            Algorithm::YubicoOtp(YubicoOtpAlg::AES192),
+            Algorithm::YubicoOtp(YubicoOtpAlg::AES256),
             Algorithm::Wrap(WrapAlg::AES192_CCM),
             Algorithm::Wrap(WrapAlg::AES256_CCM),
             Algorithm::Ecdsa(EcdsaAlg::SHA256),
@@ -229,7 +229,7 @@ fn export_wrapped(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
         Ok(ciphertext) => ExportWrappedResponse(WrapMessage { nonce, ciphertext }).serialize(),
         Err(e) => {
             debug!("error wrapping object: {}", e);
-            HsmErrorKind::CommandInvalid.into()
+            HsmErrorKind::InvalidCommand.into()
         }
     }
 }
@@ -262,7 +262,7 @@ fn gen_hmac_key(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
 
     state.objects.generate(
         command.key_id,
-        ObjectType::HMACKey,
+        ObjectType::HmacKey,
         command.algorithm,
         command.label,
         command.capabilities,
@@ -301,9 +301,9 @@ fn gen_wrap_key(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
 }
 
 /// Get mock log information
-fn get_logs() -> ResponseMessage {
+fn get_log_entries() -> ResponseMessage {
     // TODO: mimic the YubiHSM's actual audit log
-    AuditLogs {
+    LogEntries {
         unlogged_boot_events: 0,
         unlogged_auth_events: 0,
         num_entries: 0,
@@ -367,7 +367,7 @@ fn get_pseudo_random(_state: &State, cmd_data: &[u8]) -> ResponseMessage {
 }
 
 /// Get the public key associated with a key in the HSM
-fn get_pubkey(state: &State, cmd_data: &[u8]) -> ResponseMessage {
+fn get_public_key(state: &State, cmd_data: &[u8]) -> ResponseMessage {
     let command: GetPubKeyCommand = deserialize(cmd_data)
         .unwrap_or_else(|e| panic!("error parsing CommandCode::GetPubKey: {:?}", e));
 
@@ -383,26 +383,17 @@ fn get_pubkey(state: &State, cmd_data: &[u8]) -> ResponseMessage {
     }
 }
 
-/// Compute the HMAC tag for the given data
-fn hmac_data(state: &State, cmd_data: &[u8]) -> ResponseMessage {
-    let command: HMACDataCommand = deserialize(cmd_data)
-        .unwrap_or_else(|e| panic!("error parsing CommandCode::HMACData: {:?}", e));
-
-    if let Some(obj) = state.objects.get(command.key_id, ObjectType::HMACKey) {
-        if let Payload::HmacKey(alg, ref key) = obj.payload {
-            assert_eq!(alg, HmacAlg::SHA256);
-            let mut mac = Hmac::<Sha256>::new_varkey(key).unwrap();
-            mac.input(&command.data);
-            let tag = mac.result();
-            HMACTag(tag.code().as_ref().into()).serialize()
-        } else {
-            debug!("not an HMAC key: {:?}", obj.algorithm());
-            HsmErrorKind::CommandInvalid.into()
-        }
-    } else {
-        debug!("no such object ID: {:?}", command.key_id);
-        HsmErrorKind::ObjectNotFound.into()
+/// Generate a mock storage status report
+fn get_storage_info() -> ResponseMessage {
+    // TODO: model actual free storage
+    GetStorageInfoResponse {
+        total_records: 256,
+        free_records: 256,
+        total_pages: 1024,
+        free_pages: 1024,
+        page_size: 126,
     }
+    .serialize()
 }
 
 /// Import an object encrypted under a wrap key into the HSM
@@ -422,7 +413,7 @@ fn import_wrapped(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
         .serialize(),
         Err(e) => {
             debug!("error unwrapping object: {}", e);
-            HsmErrorKind::CommandInvalid.into()
+            HsmErrorKind::InvalidCommand.into()
         }
     }
 }
@@ -487,26 +478,26 @@ fn put_asymmetric_key(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
 }
 
 /// Put a new authentication key into the HSM
-fn put_auth_key(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
-    let PutAuthKeyCommand {
+fn put_authentication_key(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
+    let PutAuthenticationKeyCommand {
         params,
         delegated_capabilities,
-        auth_key,
+        authentication_key,
     } = deserialize(cmd_data)
-        .unwrap_or_else(|e| panic!("error parsing CommandCode::PutAuthKey: {:?}", e));
+        .unwrap_or_else(|e| panic!("error parsing CommandCode::PutAuthenticationKey: {:?}", e));
 
     state.objects.put(
         params.id,
-        ObjectType::AuthKey,
+        ObjectType::AuthenticationKey,
         params.algorithm,
         params.label,
         params.capabilities,
         delegated_capabilities,
         params.domains,
-        &auth_key.0,
+        &authentication_key.0,
     );
 
-    PutAuthKeyResponse { key_id: params.id }.serialize()
+    PutAuthenticationKeyResponse { key_id: params.id }.serialize()
 }
 
 /// Put a new HMAC key into the HSM
@@ -516,7 +507,7 @@ fn put_hmac_key(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
 
     state.objects.put(
         params.id,
-        ObjectType::HMACKey,
+        ObjectType::HmacKey,
         params.algorithm,
         params.label,
         params.capabilities,
@@ -598,11 +589,11 @@ fn put_wrap_key(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
 }
 
 /// Reset the MockHsm back to its default state
-fn reset(state: &mut State, session_id: SessionId) -> Vec<u8> {
+fn reset_device(state: &mut State, session_id: SessionId) -> Vec<u8> {
     let response = state
         .get_session(session_id)
         .unwrap()
-        .encrypt_response(ResetResponse(0x01).serialize())
+        .encrypt_response(ResetDeviceResponse(0x01).serialize())
         .into();
 
     state.reset();
@@ -610,8 +601,8 @@ fn reset(state: &mut State, session_id: SessionId) -> Vec<u8> {
 }
 
 /// Sign a message using the Ed25519 signature algorithm
-fn sign_data_eddsa(state: &State, cmd_data: &[u8]) -> ResponseMessage {
-    let command: SignDataEdDSACommand = deserialize(cmd_data)
+fn sign_eddsa(state: &State, cmd_data: &[u8]) -> ResponseMessage {
+    let command: SignDataEddsaCommand = deserialize(cmd_data)
         .unwrap_or_else(|e| panic!("error parsing CommandCode::SignDataEdDSA: {:?}", e));
 
     if let Some(obj) = state.objects.get(command.key_id, ObjectType::AsymmetricKey) {
@@ -625,7 +616,7 @@ fn sign_data_eddsa(state: &State, cmd_data: &[u8]) -> ResponseMessage {
             Ed25519Signature(signature_bytes).serialize()
         } else {
             debug!("not an Ed25519 key: {:?}", obj.algorithm());
-            HsmErrorKind::CommandInvalid.into()
+            HsmErrorKind::InvalidCommand.into()
         }
     } else {
         debug!("no such object ID: {:?}", command.key_id);
@@ -633,17 +624,26 @@ fn sign_data_eddsa(state: &State, cmd_data: &[u8]) -> ResponseMessage {
     }
 }
 
-/// Generate a mock storage status report
-fn storage_status() -> ResponseMessage {
-    // TODO: model actual free storage
-    StorageStatusResponse {
-        total_records: 256,
-        free_records: 256,
-        total_pages: 1024,
-        free_pages: 1024,
-        page_size: 126,
+/// Compute the HMAC tag for the given data
+fn sign_hmac(state: &State, cmd_data: &[u8]) -> ResponseMessage {
+    let command: SignHmacCommand = deserialize(cmd_data)
+        .unwrap_or_else(|e| panic!("error parsing CommandCode::HMACData: {:?}", e));
+
+    if let Some(obj) = state.objects.get(command.key_id, ObjectType::HmacKey) {
+        if let Payload::HmacKey(alg, ref key) = obj.payload {
+            assert_eq!(alg, HmacAlg::SHA256);
+            let mut mac = Hmac::<Sha256>::new_varkey(key).unwrap();
+            mac.input(&command.data);
+            let tag = mac.result();
+            HmacTag(tag.code().as_ref().into()).serialize()
+        } else {
+            debug!("not an HMAC key: {:?}", obj.algorithm());
+            HsmErrorKind::InvalidCommand.into()
+        }
+    } else {
+        debug!("no such object ID: {:?}", command.key_id);
+        HsmErrorKind::ObjectNotFound.into()
     }
-    .serialize()
 }
 
 /// Verify the HMAC tag for the given data
@@ -651,7 +651,7 @@ fn verify_hmac(state: &State, cmd_data: &[u8]) -> ResponseMessage {
     let command: VerifyHMACCommand = deserialize(cmd_data)
         .unwrap_or_else(|e| panic!("error parsing CommandCode::HMACData: {:?}", e));
 
-    if let Some(obj) = state.objects.get(command.key_id, ObjectType::HMACKey) {
+    if let Some(obj) = state.objects.get(command.key_id, ObjectType::HmacKey) {
         if let Payload::HmacKey(alg, ref key) = obj.payload {
             assert_eq!(alg, HmacAlg::SHA256);
 
@@ -666,7 +666,7 @@ fn verify_hmac(state: &State, cmd_data: &[u8]) -> ResponseMessage {
             VerifyHMACResponse(is_ok).serialize()
         } else {
             debug!("not an HMAC key: {:?}", obj.algorithm());
-            HsmErrorKind::CommandInvalid.into()
+            HsmErrorKind::InvalidCommand.into()
         }
     } else {
         debug!("no such object ID: {:?}", command.key_id);

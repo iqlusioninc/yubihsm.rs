@@ -1,213 +1,329 @@
-// Apparently bitflags isn't clippy-safe
-#![cfg_attr(clippy, allow(clippy::redundant_field_names, clippy::suspicious_arithmetic_impl))]
-
-use std::fmt;
-
-use serde::de::{self, Deserialize, Deserializer, Visitor};
-use serde::ser::{Serialize, Serializer};
+use serde::{
+    de::{self, Deserialize, Deserializer, Visitor},
+    ser::{Serialize, Serializer},
+};
+use std::{
+    fmt::{self, Display},
+    str::{self, FromStr},
+};
 
 bitflags! {
     /// Object attributes specifying which operations are allowed to be performed
     ///
     /// <https://developers.yubico.com/YubiHSM2/Concepts/Capability.html>
     pub struct Capability: u64 {
-        /// asymmetric_decrypt_ecdh: perform ECDH operation
-        const ASYMMETRIC_DECRYPT_ECDH = 0x800;
+        /// `derive-ecdh`: perform ECDH operation
+        const DERIVE_ECDH = 0x800;
 
-        /// asymmetric_decrypt_oaep: perform RSA-OAEP decryption
-        const ASYMMETRIC_DECRYPT_OAEP = 0x400;
+        /// `decrypt-oaep`: perform RSA-OAEP decryption
+        const DECRYPT_OAEP = 0x400;
 
-        /// asymmetric_decrypt_pkcs: perform RSA-PKCS1v1.5 decryption
-        const ASYMMETRIC_DECRYPT_PKCS = 0x200;
+        /// `decrypt-pkcs`: perform RSA-PKCS1v1.5 decryption
+        const DECRYPT_PKCS = 0x200;
 
-        /// asymmetric_gen: generate asymmetric objects
-        const ASYMMETRIC_GEN = 0x10;
+        /// `generate-asymmetric-key`: generate asymmetric objects
+        const GENERATE_ASYMMETRIC_KEY = 0x10;
 
-        /// asymmetric_sign_ecdsa: compute ECDSA digital signature
-        const ASYMMETRIC_SIGN_ECDSA = 0x80;
+        /// `sign-ecdsa`: compute ECDSA digital signature
+        const SIGN_ECDSA = 0x80;
 
-        /// asymmetric_sign_eddsa: compute EdDSA (i.e. Ed25519) digital signature
-        const ASYMMETRIC_SIGN_EDDSA = 0x100;
+        /// `sign-eddsa`: compute EdDSA (i.e. Ed25519) digital signature
+        const SIGN_EDDSA = 0x100;
 
-        /// asymmetric_sign_pkcs: compute RSA-PKCS1v1.5 digital signature
-        const ASYMMETRIC_SIGN_PKCS = 0x20;
+        /// `sign-pkcs`: compute RSA-PKCS1v1.5 digital signature
+        const SIGN_PKCS = 0x20;
 
-        /// asymmetric_sign_pss: compute RSA-PSS digital signature
-        const ASYMMETRIC_SIGN_PSS = 0x40;
+        /// `sign-pss`: compute RSA-PSS digital signature
+        const SIGN_PSS = 0x40;
 
-        /// attest: create attestation (i.e. X.509 certificate) about an asymmetric object
-        const ATTEST = 0x4_0000_0000;
+        /// `sign-attestation-certificate`: create attestation (i.e. X.509 certificate)
+        /// about an asymmetric object
+        const SIGN_ATTESTATION_CERTIFICATE = 0x4_0000_0000;
 
-        /// audit: read the log store
-        const AUDIT = 0x100_0000;
+        /// `get-log-entries`: read the log store
+        const GET_LOG_ENTRIES = 0x100_0000;
 
-        /// delete_asymmetric: delete asymmetric key objects
-        const DELETE_ASYMMETRIC = 0x200_0000_0000;
+        /// `delete-asymmetric-key`: delete asymmetric key objects
+        const DELETE_ASYMMETRIC_KEY = 0x200_0000_0000;
 
-        /// delete_auth_key: delete AuthKey objects
-        const DELETE_AUTHKEY = 0x100_0000_0000;
+        /// `delete-authentication-key`: delete AuthenticationKey objects
+        const DELETE_AUTHENTICATION_KEY = 0x100_0000_0000;
 
-        /// delete_hmac_key: delete HMACKey objects
-        const DELETE_HMACKEY = 0x800_0000_0000;
+        /// `delete-hmac-key`: delete HMACKey objects
+        const DELETE_HMAC_KEY = 0x800_0000_0000;
 
-        /// delete_opaque: delete opaque objects
+        /// `delete-opaque`: delete opaque objects
         const DELETE_OPAQUE = 0x80_0000_0000;
 
-        /// delete_otp_aead_key: delete OTPAEADKey objects
+        /// `delete-otp-aead-key`: delete Yubic OTP AEAD key objects
         const DELETE_OTP_AEAD_KEY = 0x2000_0000_0000;
 
-        /// delete_template: delete template objects
+        /// `delete-template`: delete template objects
         const DELETE_TEMPLATE = 0x1000_0000_0000;
 
-        /// delete_wrap_key: delete WrapKey objects
-        const DELETE_WRAPKEY = 0x400_0000_0000;
+        /// `delete-wrap-key`: delete WrapKey objects
+        const DELETE_WRAP_KEY = 0x400_0000_0000;
 
-        /// export_under_wrap: mark an object as exportable under keywrap
-        const EXPORT_UNDER_WRAP = 0x1_0000;
+        /// `exportable-under-wrap`: mark an object as exportable under keywrap
+        const EXPORTABLE_UNDER_WRAP = 0x1_0000;
 
-        /// export_wrapped: export objects under keywrap
+        /// `export-wrapped`: export objects under keywrap
         const EXPORT_WRAPPED = 0x1000;
 
-        /// generate_otp_aead_key: generate OTPAEADKey objects
+        /// `generate-otp-aead-key`: generate Yubico OTP AEAD objects
         const GENERATE_OTP_AEAD_KEY = 0x10_0000_0000;
 
-        /// generate_wrapkey: generate wrapkey objects
-        const GENERATE_WRAPKEY = 0x8000;
+        /// `generate-wrap-key`: generate wrapkey objects
+        const GENERATE_WRAP_KEY = 0x8000;
 
-        /// get_opaque: read opaque objects
+        /// `get-opaque`: read opaque objects
         const GET_OPAQUE = 0x1;
 
-        /// get_option: read device-global options
+        /// `get-option`: read device-global options
         const GET_OPTION = 0x4_0000;
 
-        /// get_randomness: extract random bytes
-        const GET_RANDOMNESS = 0x8_0000;
+        /// `get-pseudo-random`: extract random bytes
+        const GET_PSEUDO_RANDOM = 0x8_0000;
 
-        /// get_template: read template objects
+        /// `get-template`: read SSH template objects
         const GET_TEMPLATE = 0x400_0000;
 
-        /// hmackey_generate: generate HMACKey objects
-        const HMACKEY_GENERATE = 0x20_0000;
+        /// `generate-hmac-key`: generate HMAC key objects
+        const GENERATE_HMAC_KEY = 0x20_0000;
 
-        /// hmac_data: compute HMAC for data
-        const HMAC_DATA = 0x40_0000;
+        /// `sign-hmac`: compute HMAC for data
+        const SIGN_HMAC = 0x40_0000;
 
-        /// hmac_verify: verify HMAC for data
-        const HMAC_VERIFY = 0x80_0000;
+        /// `verify-hmac`: verify HMAC for data
+        const VERIFY_HMAC = 0x80_0000;
 
-        /// import_wrapped: import keywrapped objects
+        /// `import-wrapped`: import keywrapped objects
         const IMPORT_WRAPPED = 0x2000;
 
-        /// otp_aead_create: create an OTP AEAD
-        const OTP_AEAD_CREATE = 0x4000_0000;
+        /// `create-otp-aead`: create an OTP AEAD
+        const CREATE_OTP_AEAD = 0x4000_0000;
 
-        /// otp_aead_random: create an OTP AEAD from random data
-        const OTP_AEAD_RANDOM = 0x8000_0000;
+        /// `randomize-otp-aead`: create an OTP AEAD from random data
+        const RANDOMIZE_OTP_AEAD = 0x8000_0000;
 
-        /// otp_aead_rewrap_from: rewrap AEADs from one OTPAEADKey Object to another
-        const OTP_AEAD_REWRAP_FROM = 0x1_0000_0000;
+        /// `rewrap-from-otp-aead-key`: rewrap AEADs from an OTP AEAD key object to another
+        const REWRAP_FROM_OTP_AEAD_KEY = 0x1_0000_0000;
 
-        /// otp_aead_rewrap_to: rewrap AEADs to one OTPAEADKey Object from another
-        const OTP_AEAD_REWRAP_TO = 0x2_0000_0000;
+        /// `rewrap-to-otp-aead-key`: rewrap AEADs to an OTP AEAD key object from another
+        const REWRAP_TO_OTP_AEAD_KEY = 0x2_0000_0000;
 
-        /// otp_decrypt: decrypt OTP
-        const OTP_DECRYPT = 0x2000_0000;
+        /// `decrypt-otp`: decrypt OTP
+        const DECRYPT_OTP = 0x2000_0000;
 
-        /// put_asymmetric_key: write asymmetric objects
-        const PUT_ASYMMETRIC =  0x8;
+        /// `put-asymmetric-key`: write asymmetric objects
+        const PUT_ASYMMETRIC_KEY =  0x8;
 
-        /// put_auth_key: write AuthKey objects
-        const PUT_AUTHKEY = 0x4;
+        /// `put-authentication-key`: write authentication key objects
+        const PUT_AUTHENTICATION_KEY = 0x4;
 
-        /// put_hmac_key: write HMACKey objects
-        const PUT_HMACKEY = 0x10_0000;
+        /// `put-hmac-key`: write HMAC key objects
+        const PUT_HMAC_KEY = 0x10_0000;
 
-        /// put_opaque: Write Opaque Objects
+        /// `put-opaque`: Write Opaque Objects
         const PUT_OPAQUE = 0x2;
 
-        /// put_option: write device-global options
+        /// `set-option`: write device-global options
         const PUT_OPTION = 0x2_0000;
 
-        /// put_otp_aead_key: write OTPAEADKey objects
+        /// `put-otp-aead-key`: write OTP AEAD key objects
         const PUT_OTP_AEAD_KEY = 0x8_0000_0000;
 
-        /// put_template: write template objects
+        /// `put-template`: write template objects
         const PUT_TEMPLATE = 0x800_0000;
 
-        /// put_wrapkey: write WrapKey objects
-        const PUT_WRAPKEY = 0x4000;
+        /// `put-wrap-key`: write WrapKey objects
+        const PUT_WRAP_KEY = 0x4000;
 
-        /// reset: factory reset the device
-        const RESET = 0x1000_0000;
+        /// `reset-device`: factory reset the device
+        const RESET_DEVICE = 0x1000_0000;
 
-        /// ssh_certify: sign SSH certificates
-        const SSH_CERTIFY = 0x200_0000;
+        /// `sign-ssh-certificate`: sign SSH certificates
+        const SIGN_SSH_CERTIFICATE = 0x200_0000;
 
-        /// unwrap_data: unwrap user-provided data
+        /// `unwrap-data`: unwrap user-provided data
         const UNWRAP_DATA = 0x40_0000_0000;
 
-        /// wrap_data: wrap user-provided data
+        /// `wrap-data`: wrap user-provided data
         const WRAP_DATA = 0x20_0000_0000;
 
-        /// Unknown Capability (Bit 46)
-        const CAP46 = 0x4000_0000_0000;
+        /// `change-authentication-key`: overwrite existing authentication key with new one
+        const CHANGE_AUTHENTICATION_KEY = 0x4000_0000_0000;
 
-        /// Unknown Capability (Bit 47)
-        const CAP47 = 0x8000_0000_0000;
+        /// unknown capability: bit 47
+        const UNKNOWN_CAPABILITY_47 = 0x8000_0000_0000;
 
-        /// Unknown Capability (Bit 48)
-        const CAP48 = 0x1_0000_0000_0000;
+        /// unknown capability: bit 48
+        const UNKNOWN_CAPABILITY_48 = 0x1_0000_0000_0000;
 
-        /// Unknown Capability (Bit 49)
-        const CAP49 = 0x2_0000_0000_0000;
+        /// unknown capability: bit 49
+        const UNKNOWN_CAPABILITY_49 = 0x2_0000_0000_0000;
 
-        /// Unknown Capability (Bit 50)
-        const CAP50 = 0x4_0000_0000_0000;
+        /// unknown capability: bit 50
+        const UNKNOWN_CAPABILITY_50 = 0x4_0000_0000_0000;
 
-        /// Unknown Capability (Bit 51)
-        const CAP51 = 0x8_0000_0000_0000;
+        /// unknown capability: bit 51
+        const UNKNOWN_CAPABILITY_51 = 0x8_0000_0000_0000;
 
-        /// Unknown Capability (Bit 52)
-        const CAP52 = 0x10_0000_0000_0000;
+        /// unknown capability: bit 52
+        const UNKNOWN_CAPABILITY_52 = 0x10_0000_0000_0000;
 
-        /// Unknown Capability (Bit 53)
-        const CAP53 = 0x20_0000_0000_0000;
+        /// unknown capability: bit 53
+        const UNKNOWN_CAPABILITY_53 = 0x20_0000_0000_0000;
 
-        /// Unknown Capability (Bit 54)
-        const CAP54 = 0x40_0000_0000_0000;
+        /// unknown capability: bit 54
+        const UNKNOWN_CAPABILITY_54 = 0x40_0000_0000_0000;
 
-        /// Unknown Capability (Bit 55)
-        const CAP55 = 0x80_0000_0000_0000;
+        /// unknown capability: bit 55
+        const UNKNOWN_CAPABILITY_55 = 0x80_0000_0000_0000;
 
-        /// Unknown Capability (Bit 56)
-        const CAP56 = 0x100_0000_0000_0000;
+        /// unknown capability: bit 56
+        const UNKNOWN_CAPABILITY_56 = 0x100_0000_0000_0000;
 
-        /// Unknown Capability (Bit 57)
-        const CAP57 = 0x200_0000_0000_0000;
+        /// unknown capability: bit 57
+        const UNKNOWN_CAPABILITY_57 = 0x200_0000_0000_0000;
 
-        /// Unknown Capability (Bit 58)
-        const CAP58 = 0x400_0000_0000_0000;
+        /// unknown capability: bit 58
+        const UNKNOWN_CAPABILITY_58 = 0x400_0000_0000_0000;
 
-        /// Unknown Capability (Bit 59)
-        const CAP59 = 0x800_0000_0000_0000;
+        /// unknown capability: bit 59
+        const UNKNOWN_CAPABILITY_59 = 0x800_0000_0000_0000;
 
-        /// Unknown Capability (Bit 60)
-        const CAP60 = 0x1000_0000_0000_0000;
+        /// unknown capability: bit 60
+        const UNKNOWN_CAPABILITY_60 = 0x1000_0000_0000_0000;
 
-        /// Unknown Capability (Bit 61)
-        const CAP61 = 0x2000_0000_0000_0000;
+        /// unknown capability: bit 61
+        const UNKNOWN_CAPABILITY_61 = 0x2000_0000_0000_0000;
 
-        /// Unknown Capability (Bit 62)
-        const CAP62 = 0x4000_0000_0000_0000;
+        /// unknown capability: bit 62
+        const UNKNOWN_CAPABILITY_62 = 0x4000_0000_0000_0000;
 
-        /// Unknown Capability (Bit 63)
-        const CAP63 = 0x8000_0000_0000_0000;
+        /// unknown capability: bit 63
+        const UNKNOWN_CAPABILITY_63 = 0x8000_0000_0000_0000;
     }
 }
 
 impl Default for Capability {
     fn default() -> Self {
         Capability::empty()
+    }
+}
+
+impl Display for Capability {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match *self {
+            Capability::DERIVE_ECDH => "derive-ecdh",
+            Capability::DECRYPT_OAEP => "decrypt-oaep",
+            Capability::DECRYPT_PKCS => "decrypt-pkcs",
+            Capability::GENERATE_ASYMMETRIC_KEY => "generate-asymmetric-key",
+            Capability::SIGN_ECDSA => "sign-ecdsa",
+            Capability::SIGN_EDDSA => "sign-eddsa",
+            Capability::SIGN_PKCS => "sign-pkcs",
+            Capability::SIGN_PSS => "sign-pss",
+            Capability::SIGN_ATTESTATION_CERTIFICATE => "sign-attestation-certificate",
+            Capability::GET_LOG_ENTRIES => "get-log-entries",
+            Capability::DELETE_ASYMMETRIC_KEY => "delete-asymmetric-key",
+            Capability::DELETE_AUTHENTICATION_KEY => "delete-authentication-key",
+            Capability::DELETE_HMAC_KEY => "delete-hmac-key",
+            Capability::DELETE_OPAQUE => "delete-opaque",
+            Capability::DELETE_OTP_AEAD_KEY => "delete-otp-aead-key",
+            Capability::DELETE_TEMPLATE => "delete-template",
+            Capability::DELETE_WRAP_KEY => "delete-wrap-key",
+            Capability::EXPORTABLE_UNDER_WRAP => "exportable-under-wrap",
+            Capability::EXPORT_WRAPPED => "export-wrapped",
+            Capability::GENERATE_OTP_AEAD_KEY => "generate-otp-aead-key",
+            Capability::GENERATE_WRAP_KEY => "generate-wrap-key",
+            Capability::GET_OPAQUE => "get-opaque",
+            Capability::GET_OPTION => "get-option",
+            Capability::GET_PSEUDO_RANDOM => "get-pseudo-random",
+            Capability::GET_TEMPLATE => "get-template",
+            Capability::GENERATE_HMAC_KEY => "generate-hmac-key",
+            Capability::SIGN_HMAC => "sign-hmac",
+            Capability::VERIFY_HMAC => "verify-hmac",
+            Capability::IMPORT_WRAPPED => "import-wrapped",
+            Capability::CREATE_OTP_AEAD => "create-otp-aead",
+            Capability::RANDOMIZE_OTP_AEAD => "randomize-otp-aead",
+            Capability::REWRAP_FROM_OTP_AEAD_KEY => "rewrap-from-otp-aead-key",
+            Capability::REWRAP_TO_OTP_AEAD_KEY => "rewrap-to-otp-aead-key",
+            Capability::DECRYPT_OTP => "decrypt-otp",
+            Capability::PUT_ASYMMETRIC_KEY => "put-asymmetric-key",
+            Capability::PUT_AUTHENTICATION_KEY => "put-authentication-key",
+            Capability::PUT_HMAC_KEY => "put-hmac-key",
+            Capability::PUT_OPAQUE => "put-opaque",
+            Capability::PUT_OPTION => "set-option",
+            Capability::PUT_OTP_AEAD_KEY => "put-otp-aead-key",
+            Capability::PUT_TEMPLATE => "put-template",
+            Capability::PUT_WRAP_KEY => "put-wrap-key",
+            Capability::RESET_DEVICE => "reset-device",
+            Capability::SIGN_SSH_CERTIFICATE => "sign-ssh-certificate",
+            Capability::UNWRAP_DATA => "unwrap-data",
+            Capability::WRAP_DATA => "wrap-data",
+            Capability::CHANGE_AUTHENTICATION_KEY => "change-authentication-key",
+            _ => "unknown",
+        };
+
+        write!(f, "{}", s)
+    }
+}
+
+impl FromStr for Capability {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Capability, ()> {
+        Ok(match s {
+            "derive-ecdh" => Capability::DERIVE_ECDH,
+            "decrypt-oaep" => Capability::DECRYPT_OAEP,
+            "decrypt-pkcs" => Capability::DECRYPT_PKCS,
+            "generate-asymmetric-key" => Capability::GENERATE_ASYMMETRIC_KEY,
+            "sign-ecdsa" => Capability::SIGN_ECDSA,
+            "sign-eddsa" => Capability::SIGN_EDDSA,
+            "sign-pkcs" => Capability::SIGN_PKCS,
+            "sign-pss" => Capability::SIGN_PSS,
+            "sign-attestation-certificate" => Capability::SIGN_ATTESTATION_CERTIFICATE,
+            "get-log-entries" => Capability::GET_LOG_ENTRIES,
+            "delete-asymmetric-key" => Capability::DELETE_ASYMMETRIC_KEY,
+            "delete-authentication-key" => Capability::DELETE_AUTHENTICATION_KEY,
+            "delete-hmac-key" => Capability::DELETE_HMAC_KEY,
+            "delete-opaque" => Capability::DELETE_OPAQUE,
+            "delete-otp-aead-key" => Capability::DELETE_OTP_AEAD_KEY,
+            "delete-template" => Capability::DELETE_TEMPLATE,
+            "delete-wrap-key" => Capability::DELETE_WRAP_KEY,
+            "exportable-under-wrap" => Capability::EXPORTABLE_UNDER_WRAP,
+            "export-wrapped" => Capability::EXPORT_WRAPPED,
+            "generate-otp-aead-key" => Capability::GENERATE_OTP_AEAD_KEY,
+            "generate-wrap-key" => Capability::GENERATE_WRAP_KEY,
+            "get-opaque" => Capability::GET_OPAQUE,
+            "get-option" => Capability::GET_OPTION,
+            "get-pseudo-random" => Capability::GET_PSEUDO_RANDOM,
+            "get-template" => Capability::GET_TEMPLATE,
+            "generate-hmac-key" => Capability::GENERATE_HMAC_KEY,
+            "sign-hmac" => Capability::SIGN_HMAC,
+            "verify-hmac" => Capability::VERIFY_HMAC,
+            "import-wrapped" => Capability::IMPORT_WRAPPED,
+            "create-otp-aead" => Capability::CREATE_OTP_AEAD,
+            "randomize-otp-aead" => Capability::RANDOMIZE_OTP_AEAD,
+            "rewrap-from-otp-aead-key" => Capability::REWRAP_FROM_OTP_AEAD_KEY,
+            "rewrap-to-otp-aead-key" => Capability::REWRAP_TO_OTP_AEAD_KEY,
+            "decrypt-otp" => Capability::DECRYPT_OTP,
+            "put-asymmetric-key" => Capability::PUT_ASYMMETRIC_KEY,
+            "put-authentication-key" => Capability::PUT_AUTHENTICATION_KEY,
+            "put-hmac-key" => Capability::PUT_HMAC_KEY,
+            "put-opaque" => Capability::PUT_OPAQUE,
+            "set-option" => Capability::PUT_OPTION,
+            "put-otp-aead-key" => Capability::PUT_OTP_AEAD_KEY,
+            "put-template" => Capability::PUT_TEMPLATE,
+            "put-wrap-key" => Capability::PUT_WRAP_KEY,
+            "reset-device" => Capability::RESET_DEVICE,
+            "sign-ssh-certificate" => Capability::SIGN_SSH_CERTIFICATE,
+            "unwrap-data" => Capability::UNWRAP_DATA,
+            "wrap-data" => Capability::WRAP_DATA,
+            "change-authentication-key" => Capability::CHANGE_AUTHENTICATION_KEY,
+            _ => return Err(()),
+        })
     }
 }
 

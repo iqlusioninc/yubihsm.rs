@@ -12,7 +12,7 @@ pub enum Type {
     Opaque = 0x01,
 
     /// Authentication keys for establishing sessions
-    AuthKey = 0x02,
+    AuthenticationKey = 0x02,
 
     /// Asymmetric private keys
     AsymmetricKey = 0x03,
@@ -21,13 +21,13 @@ pub enum Type {
     WrapKey = 0x04,
 
     /// HMAC secret key
-    HMACKey = 0x05,
+    HmacKey = 0x05,
 
     /// Binary template used to validate SSH certificate requests
     Template = 0x06,
 
     /// Yubikey-AES OTP encryption/decryption key
-    OTPAEADKey = 0x07,
+    OtpAeadKey = 0x07,
 }
 
 impl Type {
@@ -35,12 +35,12 @@ impl Type {
     pub fn from_u8(byte: u8) -> Result<Self, Error> {
         Ok(match byte {
             0x01 => Type::Opaque,
-            0x02 => Type::AuthKey,
+            0x02 => Type::AuthenticationKey,
             0x03 => Type::AsymmetricKey,
             0x04 => Type::WrapKey,
-            0x05 => Type::HMACKey,
+            0x05 => Type::HmacKey,
             0x06 => Type::Template,
-            0x07 => Type::OTPAEADKey,
+            0x07 => Type::OtpAeadKey,
             _ => bail!("invalid object type: {}", byte),
         })
     }

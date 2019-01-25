@@ -28,7 +28,7 @@ impl Connection for MockConnection {
 
         match command.command_type {
             CommandCode::CreateSession => command::create_session(&mut state, &command),
-            CommandCode::AuthSession => command::authenticate_session(&mut state, &command),
+            CommandCode::AuthenticateSession => command::authenticate_session(&mut state, &command),
             CommandCode::SessionMessage => command::session_message(&mut state, command),
             unsupported => fail!(ConnectionFailed, "unsupported command: {:?}", unsupported),
         }

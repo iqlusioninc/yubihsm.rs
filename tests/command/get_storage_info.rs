@@ -1,10 +1,10 @@
 /// Get stats about currently free storage
 #[test]
-fn storage_status_test() {
+fn get_storage_info_test() {
     let mut client = crate::get_hsm_client();
 
     let response = client
-        .storage_status()
+        .get_storage_info()
         .unwrap_or_else(|err| panic!("error getting storage status: {}", err));
 
     // TODO: these will probably have to change if Yubico releases new models

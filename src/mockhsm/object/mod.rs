@@ -14,7 +14,7 @@ use crate::{Algorithm, ObjectInfo};
 const WRAPPED_DATA_MAC_SIZE: usize = 16;
 
 /// Label for the default auth key
-const DEFAULT_AUTH_KEY_LABEL: &str = "DEFAULT AUTHKEY CHANGE THIS ASAP";
+const DEFAULT_AUTHENTICATION_KEY_LABEL: &str = "DEFAULT AUTHKEY CHANGE THIS ASAP";
 
 /// An individual object in the `MockHsm`, specialized for a given object type
 #[derive(Debug)]

@@ -23,5 +23,5 @@ pub(crate) struct GenHMACKeyResponse {
 }
 
 impl Response for GenHMACKeyResponse {
-    const COMMAND_CODE: CommandCode = CommandCode::GenerateHMACKey;
+    const COMMAND_CODE: CommandCode = CommandCode::GenerateHmacKey;
 }

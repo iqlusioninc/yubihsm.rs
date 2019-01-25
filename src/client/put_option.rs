@@ -38,5 +38,5 @@ impl Command for PutOptionCommand {
 pub(crate) struct PutOptionResponse {}
 
 impl Response for PutOptionResponse {
-    const COMMAND_CODE: CommandCode = CommandCode::PutOption;
+    const COMMAND_CODE: CommandCode = CommandCode::SetOption;
 }

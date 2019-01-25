@@ -10,7 +10,7 @@ use crate::{
 
 /// Request parameters for `command::sign_rsa_pkcs1v15*`
 #[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct SignDataPKCS1Command {
+pub(crate) struct SignPkcs1Command {
     /// ID of the key to perform the signature with
     pub key_id: ObjectId,
 
@@ -18,21 +18,20 @@ pub(crate) struct SignDataPKCS1Command {
     pub digest: Vec<u8>,
 }
 
-impl Command for SignDataPKCS1Command {
-    type ResponseType = RSAPKCS1Signature;
+impl Command for SignPkcs1Command {
+    type ResponseType = RsaPkcs1Signature;
 }
 
 /// RSASSA-PKCS#1v1.5 signatures (ASN.1 DER encoded)
 #[derive(Serialize, Deserialize, Debug)]
-pub struct RSAPKCS1Signature(pub Vec<u8>);
+pub struct RsaPkcs1Signature(pub Vec<u8>);
 
-impl Response for RSAPKCS1Signature {
-    const COMMAND_CODE: CommandCode = CommandCode::SignDataPKCS1;
+impl Response for RsaPkcs1Signature {
+    const COMMAND_CODE: CommandCode = CommandCode::SignPkcs1;
 }
 
-// TODO: use clippy's scoped lints once they work on stable
-#[allow(unknown_lints, renamed_and_removed_lints, len_without_is_empty)]
-impl RSAPKCS1Signature {
+#[allow(clippy::len_without_is_empty)]
+impl RsaPkcs1Signature {
     /// Unwrap inner byte vector
     pub fn into_vec(self) -> Vec<u8> {
         self.into()
@@ -49,13 +48,13 @@ impl RSAPKCS1Signature {
     }
 }
 
-impl AsRef<[u8]> for RSAPKCS1Signature {
+impl AsRef<[u8]> for RsaPkcs1Signature {
     fn as_ref(&self) -> &[u8] {
         self.0.as_ref()
     }
 }
 
-impl Into<Vec<u8>> for RSAPKCS1Signature {
+impl Into<Vec<u8>> for RsaPkcs1Signature {
     fn into(self) -> Vec<u8> {
         self.0
     }
