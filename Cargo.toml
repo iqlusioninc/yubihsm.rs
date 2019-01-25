@@ -5,7 +5,7 @@ description   = """
                 USB-based access to the device. Supports most HSM functionality
                 including ECDSA, Ed25519, HMAC, and RSA.
                 """
-version       = "0.19.2" # Also update html_root_url in lib.rs when bumping this
+version       = "0.20.0-alpha1" # Also update html_root_url in lib.rs when bumping this
 license       = "Apache-2.0 OR MIT"
 authors       = ["Tony Arcieri <tony@iqlusion.io>"]
 documentation = "https://docs.rs/yubihsm"
