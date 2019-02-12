@@ -60,7 +60,6 @@ usb = ["lazy_static", "libusb"]
 
 [package.metadata.docs.rs]
 features = ["mockhsm", "rsa", "usb"]
-rustc-args = ["-Ctarget-feature=+aes"]
 
 [[bench]]
 name = "ed25519"

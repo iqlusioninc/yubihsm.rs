@@ -2,16 +2,16 @@
 //!
 //! ## Prerequisites
 //!
-//! This crate builds on Rust 1.27+ and by default uses SIMD features
+//! This crate builds on Rust 1.31+ and by default uses SIMD features
 //! which require the following `RUSTFLAGS`:
 //!
-//! `RUSTFLAGS=-Ctarget-feature=+aes`
+//! `RUSTFLAGS=-Ctarget-feature=+aes,+ssse3`
 //!
 //! You can configure your `~/.cargo/config` to always pass these flags:
 //!
 //! ```toml
 //! [build]
-//! rustflags = ["-Ctarget-feature=+aes"]
+//! rustflags = ["-Ctarget-feature=+aes,+ssse3"]
 //! ```
 //!
 //! # Getting Started
