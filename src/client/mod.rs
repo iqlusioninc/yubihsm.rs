@@ -33,11 +33,11 @@ mod put_authentication_key;
 mod put_hmac_key;
 mod put_object;
 mod put_opaque;
-mod put_option;
 mod put_otp_aead_key;
 mod put_wrap_key;
 mod reset_device;
 mod set_log_index;
+mod set_option;
 mod sign_attestation_certificate;
 mod sign_ecdsa;
 mod sign_eddsa;
@@ -62,8 +62,8 @@ pub(crate) use self::{
     blink_device::*, delete_object::*, echo::*, export_wrapped::*, generate_asymmetric_key::*,
     generate_hmac_key::*, generate_key::*, generate_wrap_key::*, get_object_info::*, get_opaque::*,
     get_option::*, get_pseudo_random::*, put_asymmetric_key::*, put_authentication_key::*,
-    put_hmac_key::*, put_object::*, put_opaque::*, put_option::*, put_otp_aead_key::*,
-    put_wrap_key::*, set_log_index::*, unwrap_data::*, verify_hmac::*, wrap_data::*,
+    put_hmac_key::*, put_object::*, put_opaque::*, put_otp_aead_key::*, put_wrap_key::*,
+    set_log_index::*, set_option::*, unwrap_data::*, verify_hmac::*, wrap_data::*,
 };
 pub use self::{
     device_info::*, get_log_entries::*, get_public_key::*, get_storage_info::*, import_wrapped::*,
@@ -207,8 +207,8 @@ impl Client {
 
     /// Blink the HSM's LEDs (to identify it) for the given number of seconds.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Blink.html>
-    pub fn blink(&mut self, num_seconds: u8) -> Result<(), ClientError> {
+    /// <https://developers.yubico.com/YubiHSM2/Commands/Blink_Device.html>
+    pub fn blink_device(&mut self, num_seconds: u8) -> Result<(), ClientError> {
         self.send_command(BlinkDeviceCommand { num_seconds })?;
         Ok(())
     }
@@ -342,7 +342,7 @@ impl Client {
 
     /// Get audit logs from the HSM device.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Get_Logs.html>
+    /// <https://developers.yubico.com/YubiHSM2/Commands/Get_Log_Entries.html>
     pub fn get_log_entries(&mut self) -> Result<LogEntries, ClientError> {
         Ok(self.send_command(GetLogEntriesCommand {})?)
     }
@@ -437,9 +437,16 @@ impl Client {
 
     /// Get the public key for an asymmetric key stored on the device.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Get_Pubkey.html>
+    /// <https://developers.yubico.com/YubiHSM2/Commands/Get_Public_Key.html>
     pub fn get_public_key(&mut self, key_id: ObjectId) -> Result<PublicKey, ClientError> {
         Ok(self.send_command(GetPubKeyCommand { key_id })?)
+    }
+
+    /// Get storage status (i.e. currently free storage) from the HSM device.
+    ///
+    /// <https://developers.yubico.com/YubiHSM2/Commands/Get_Storage_Info.html>
+    pub fn get_storage_info(&mut self) -> Result<GetStorageInfoResponse, ClientError> {
+        Ok(self.send_command(GetStorageInfoCommand {})?)
     }
 
     /// Import an encrypted object from the HSM using the given key-wrapping key.
@@ -524,7 +531,7 @@ impl Client {
 
     /// Put an existing `AuthenticationKey` into the HSM.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Put_Authkey.html>
+    /// <https://developers.yubico.com/YubiHSM2/Commands/Put_Authentication_Key.html>
     pub fn put_authentication_key<K>(
         &mut self,
         key_id: ObjectId,
@@ -632,7 +639,7 @@ impl Client {
     /// <https://developers.yubico.com/YubiHSM2/Commands/Put_Option.html>
     /// [log store]: https://developers.yubico.com/YubiHSM2/Concepts/Logs.html
     pub fn put_force_audit_option(&mut self, option: AuditOption) -> Result<(), ClientError> {
-        self.send_command(PutOptionCommand {
+        self.send_command(SetOptionCommand {
             tag: AuditTag::Force,
             length: 1,
             value: vec![option.to_u8()],
@@ -731,7 +738,7 @@ impl Client {
     /// **WARNING:** This wipes all keys and other data from the HSM! Make
     /// absolutely sure you want to use this!
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Reset.html>
+    /// <https://developers.yubico.com/YubiHSM2/Commands/Reset_Device.html>
     pub fn reset_device(&mut self) -> Result<(), ClientError> {
         // TODO: handle potential errors that occur when resetting
         if let Err(e) = self.send_command(ResetDeviceCommand {}) {
@@ -746,13 +753,13 @@ impl Client {
     /// Configure the audit policy settings for a particular command, e.g. auditing
     /// should be `On`, `Off`, or `Fix` (i.e. fixed permanently on).
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Put_Option.html>
+    /// <https://developers.yubico.com/YubiHSM2/Commands/Set_Option.html>
     pub fn set_audit_option(
         &mut self,
         command: CommandCode,
         audit_option: AuditOption,
     ) -> Result<(), ClientError> {
-        self.send_command(PutOptionCommand {
+        self.send_command(SetOptionCommand {
             tag: AuditTag::Command,
             length: 2,
             value: serialize(&AuditCommand(command, audit_option))?,
@@ -780,7 +787,7 @@ impl Client {
     /// If no attestation key is given, the device's default attestation key
     /// will be used, and can be verified against Yubico's certificate.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Attest_Asymmetric.html>
+    /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Attestation_Certificate.html>
     pub fn sign_attestation_certificate(
         &mut self,
         key_id: ObjectId,
@@ -794,7 +801,7 @@ impl Client {
 
     /// Compute an ECDSA signature of the given digest (i.e. a precomputed SHA-2 digest)
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Data_Ecdsa.html>
+    /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Ecdsa.html>
     ///
     /// # secp256k1 notes
     ///
@@ -827,7 +834,7 @@ impl Client {
 
     /// Compute an Ed25519 signature with the given key ID.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Data_Eddsa.html>
+    /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Eddsa.html>
     pub fn sign_ed25519<T>(
         &mut self,
         key_id: ObjectId,
@@ -844,7 +851,7 @@ impl Client {
 
     /// Compute an HMAC tag of the given data with the given key ID.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Hmac_Data.html>
+    /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Hmac.html>
     pub fn sign_hmac<M>(&mut self, key_id: ObjectId, msg: M) -> Result<HmacTag, ClientError>
     where
         M: Into<Vec<u8>>,
@@ -860,7 +867,7 @@ impl Client {
     /// **WARNING**: This method has not been tested and is not confirmed to actually work! Use at your
     /// own risk!
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Data_Pkcs1.html>
+    /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Pkcs1.html>
     #[cfg(feature = "rsa")]
     pub fn sign_rsa_pkcs1v15_sha256(
         &mut self,
@@ -878,7 +885,7 @@ impl Client {
     /// **WARNING**: This method has not been tested and is not confirmed to actually work! Use at your
     /// own risk!
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Data_Pss.html>
+    /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Pss.html>
     #[cfg(feature = "rsa")]
     pub fn sign_rsa_pss_sha256(
         &mut self,
@@ -906,13 +913,6 @@ impl Client {
             salt_len: digest.as_slice().len() as u16,
             digest: digest.as_slice().into(),
         })?)
-    }
-
-    /// Get storage status (i.e. currently free storage) from the HSM device.
-    ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Storage_Status.html>
-    pub fn get_storage_info(&mut self) -> Result<GetStorageInfoResponse, ClientError> {
-        Ok(self.send_command(GetStorageInfoCommand {})?)
     }
 
     /// Decrypt data which was encrypted (using AES-CCM) under a wrap key.

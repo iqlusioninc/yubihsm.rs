@@ -1,6 +1,6 @@
 //! Compute an ECDSA signature with the given key ID.
 //!
-//! <https://developers.yubico.com/YubiHSM2/Commands/Sign_Data_Ecdsa.html>
+//! <https://developers.yubico.com/YubiHSM2/Commands/Sign_Ecdsa.html>
 
 use crate::command::{Command, CommandCode};
 use crate::object::ObjectId;

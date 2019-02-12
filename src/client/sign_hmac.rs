@@ -1,6 +1,6 @@
 //! Compute HMAC tag for the given input data
 //!
-//! <https://developers.yubico.com/YubiHSM2/Commands/Hmac_Data.html>
+//! <https://developers.yubico.com/YubiHSM2/Commands/Sign_Hmac.html>
 
 use crate::{
     command::{Command, CommandCode},

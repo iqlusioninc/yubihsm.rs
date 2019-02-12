@@ -1,6 +1,6 @@
 //! Compute an Ed25519 signature with the given key ID
 //!
-//! <https://developers.yubico.com/YubiHSM2/Commands/Sign_Data_Eddsa.html>
+//! <https://developers.yubico.com/YubiHSM2/Commands/Sign_Eddsa.html>
 
 use std::fmt::{self, Debug};
 

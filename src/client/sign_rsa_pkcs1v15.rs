@@ -1,6 +1,6 @@
 //! Compute an RSASSA-PKCS#1v1.5 signature of the SHA-256 hash of the given data
 //!
-//! <https://developers.yubico.com/YubiHSM2/Commands/Sign_Data_Pkcs1.html>
+//! <https://developers.yubico.com/YubiHSM2/Commands/Sign_Pkcs1.html>
 
 use crate::{
     command::{Command, CommandCode},

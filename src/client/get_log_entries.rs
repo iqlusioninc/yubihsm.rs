@@ -1,6 +1,6 @@
 //! Get audit logs from the `YubiHSM2` device
 //!
-//! <https://developers.yubico.com/YubiHSM2/Commands/Get_Logs.html>
+//! <https://developers.yubico.com/YubiHSM2/Commands/Get_Log_Entries.html>
 
 use std::fmt::{self, Debug};
 

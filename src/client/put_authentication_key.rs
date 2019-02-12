@@ -1,6 +1,6 @@
 //! Put an existing auth key into the `YubiHSM2`
 //!
-//! <https://developers.yubico.com/YubiHSM2/Commands/Put_Authkey.html>
+//! <https://developers.yubico.com/YubiHSM2/Commands/Put_Authentication_Key.html>
 
 use super::put_object::PutObjectParams;
 use crate::authentication_key::AuthenticationKey;

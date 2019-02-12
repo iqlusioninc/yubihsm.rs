@@ -1,6 +1,6 @@
 //! Get storage status (i.e. currently free storage) from the `YubiHSM2` device
 //!
-//! <https://developers.yubico.com/YubiHSM2/Commands/Storage_Status.html>
+//! <https://developers.yubico.com/YubiHSM2/Commands/Get_Storage_Info.html>
 
 use crate::command::{Command, CommandCode};
 use crate::response::Response;

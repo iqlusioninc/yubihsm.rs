@@ -1,6 +1,6 @@
 //! Obtain an X.509 attestation certificate for a key within the `YubiHSM2`
 //!
-//! <https://developers.yubico.com/YubiHSM2/Commands/Attest_Asymmetric.html>
+//! <https://developers.yubico.com/YubiHSM2/Commands/Sign_Attestation_Certificate.html>
 
 use crate::{
     command::{Command, CommandCode},
