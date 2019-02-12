@@ -1,6 +1,6 @@
 //! Compute an RSASSA-PSS signature of the SHA-256 hash of the given data
 //!
-//! <https://developers.yubico.com/YubiHSM2/Commands/Sign_Data_Pss.html>
+//! <https://developers.yubico.com/YubiHSM2/Commands/Sign_Pss.html>
 
 use crate::{
     algorithm::Algorithm,

@@ -1,6 +1,6 @@
 //! Get the public key for an asymmetric key stored on the device
 //!
-//! <https://developers.yubico.com/YubiHSM2/Commands/Get_Pubkey.html>
+//! <https://developers.yubico.com/YubiHSM2/Commands/Get_Public_Key.html>
 
 use crate::{
     command::{Command, CommandCode},

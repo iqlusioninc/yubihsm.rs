@@ -543,7 +543,7 @@ fn put_opaque(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
 
 /// Change an HSM auditing setting
 fn put_option(state: &mut State, cmd_data: &[u8]) -> ResponseMessage {
-    let PutOptionCommand { tag, length, value } = deserialize(cmd_data)
+    let SetOptionCommand { tag, length, value } = deserialize(cmd_data)
         .unwrap_or_else(|e| panic!("error parsing CommandCode::PutOption: {:?}", e));
 
     match tag {

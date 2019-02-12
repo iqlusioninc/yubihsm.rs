@@ -1,11 +1,11 @@
 //! Blink the LED on the `YubiHSM2` for the given number of seconds
 //!
-//! <https://developers.yubico.com/YubiHSM2/Commands/Blink.html>
+//! <https://developers.yubico.com/YubiHSM2/Commands/Blink_Device.html>
 
 use crate::command::{Command, CommandCode};
 use crate::response::Response;
 
-/// Request parameters for `command::blink`
+/// Request parameters for `command::blink_device`
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct BlinkDeviceCommand {
     /// Number of seconds to blink for
@@ -16,7 +16,7 @@ impl Command for BlinkDeviceCommand {
     type ResponseType = BlinkDeviceResponse;
 }
 
-/// Response from `command::blink`
+/// Response from `command::blink_device`
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct BlinkDeviceResponse {}
 

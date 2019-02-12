@@ -1,7 +1,7 @@
 //! Reset the device: clear all stored objects, restore the default auth key,
 //! and reboot
 //!
-//! <https://developers.yubico.com/YubiHSM2/Commands/Reset.html>
+//! <https://developers.yubico.com/YubiHSM2/Commands/Reset_Device.html>
 
 use crate::command::{Command, CommandCode};
 use crate::response::Response;
