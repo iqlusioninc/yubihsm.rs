@@ -1,3 +1,10 @@
+## [0.20.0] (2019-02-12)
+
+- Match Yubico's API changes from their latest SDK release ([#167])
+- Upgrade `ring` crate to `v0.14`; switch to `rand_os` crate `v0.1` ([#166])
+- Update to Rust 2018 edition ([#164])
+- Upgrade `subtle` crate to `v2` ([#163])
+
 ## [0.19.2] (2018-11-27)
 
 - `HttpConnector`: upgrade to `gaunt` v0.1.0 (#157)
@@ -197,6 +204,12 @@ to adding support for several commands.
 
 - Initial release
 
+[0.20.0]: https://github.com/tendermint/yubihsm-rs/pull/172
+[#167]: https://github.com/tendermint/yubihsm-rs/pull/167
+[#166]: https://github.com/tendermint/yubihsm-rs/pull/166
+[#164]: https://github.com/tendermint/yubihsm-rs/pull/164
+[#163]: https://github.com/tendermint/yubihsm-rs/pull/163
+[0.19.2]: https://github.com/tendermint/yubihsm-rs/pull/159
 [0.19.1]: https://github.com/tendermint/yubihsm-rs/pull/153
 [0.19.0]: https://github.com/tendermint/yubihsm-rs/pull/150
 [0.18.1]: https://github.com/tendermint/yubihsm-rs/pull/141
