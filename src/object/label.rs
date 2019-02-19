@@ -47,6 +47,12 @@ impl Clone for Label {
     }
 }
 
+impl Default for Label {
+    fn default() -> Self {
+        Label([0u8; LABEL_SIZE])
+    }
+}
+
 impl fmt::Debug for Label {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let string = self

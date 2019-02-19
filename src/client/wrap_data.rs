@@ -6,7 +6,7 @@ use crate::{
     command::{self, Command},
     object,
     response::Response,
-    wrap::WrapMessage,
+    wrap,
 };
 
 /// Request parameters for `command::wrap_data`
@@ -25,7 +25,7 @@ impl Command for WrapDataCommand {
 
 /// Response from `command::wrap_data`
 #[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct WrapDataResponse(pub(crate) WrapMessage);
+pub(crate) struct WrapDataResponse(pub(crate) wrap::Message);
 
 impl Response for WrapDataResponse {
     const COMMAND_CODE: command::Code = command::Code::WrapData;

@@ -173,6 +173,5 @@ pub use crate::{
     error::*,
     object::*,
     serial_number::SerialNumber,
-    wrap::{WrapMessage, WrapNonce},
 };
 pub use uuid::Uuid;

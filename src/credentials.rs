@@ -4,6 +4,7 @@ use crate::{authentication_key::AuthenticationKey, object};
 pub const DEFAULT_AUTHENTICATION_KEY_ID: object::Id = 1;
 
 /// Credentials used to establish a session with the HSM
+#[derive(Clone, Debug)]
 pub struct Credentials {
     /// Key ID to authenticate with
     pub authentication_key_id: object::Id,
