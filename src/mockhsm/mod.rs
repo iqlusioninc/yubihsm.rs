@@ -41,6 +41,11 @@ impl MockHsm {
 }
 
 impl Connector for MockHsm {
+    /// Create a clone of this connector as a boxed trait object
+    fn box_clone(&self) -> Box<dyn Connector> {
+        Box::new(self.clone())
+    }
+
     /// Create a new connection with a clone of the MockHsm state
     fn connect(&self) -> Result<Box<Connection>, ConnectionError> {
         Ok(Box::new(MockConnection::new(self)))

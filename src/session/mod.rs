@@ -22,9 +22,9 @@ use self::{
     SessionErrorKind::*,
 };
 use crate::{
+    authentication::Credentials,
     command::{self, Command},
     connector::{Connection, Connector},
-    credentials::Credentials,
     error::HsmErrorKind,
     response,
     serialization::deserialize,

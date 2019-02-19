@@ -4,6 +4,7 @@ use super::{object::Payload, state::State};
 use crate::{
     algorithm::*,
     audit::{AuditCommand, AuditOption, AuditTag},
+    authentication::{self, commands::*},
     client::*,
     command::{Code, Message},
     connector::ConnectionError,
@@ -16,7 +17,8 @@ use crate::{
         close::CloseSessionResponse,
         create::{CreateSessionCommand, CreateSessionResponse},
     },
-    wrap, Capability,
+    wrap::{self, commands::*},
+    Capability,
 };
 use hmac::{Hmac, Mac};
 use rand_os::{rand_core::RngCore, OsRng};
@@ -192,7 +194,7 @@ fn device_info() -> response::Message {
             Algorithm::Mgf(MgfAlg::SHA512),
             Algorithm::Template(TemplateAlg::SSH),
             Algorithm::YubicoOtp(YubicoOtpAlg::AES128),
-            Algorithm::Auth(AuthenticationAlg::YUBICO_AES),
+            Algorithm::Authentication(authentication::Algorithm::YUBICO_AES),
             Algorithm::YubicoOtp(YubicoOtpAlg::AES192),
             Algorithm::YubicoOtp(YubicoOtpAlg::AES256),
             Algorithm::Wrap(WrapAlg::AES192_CCM),

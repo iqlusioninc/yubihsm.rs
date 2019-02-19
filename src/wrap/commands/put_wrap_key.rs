@@ -13,7 +13,7 @@ use crate::{
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct PutWrapKeyCommand {
     /// Common parameters to all put object commands
-    pub params: object::ImportParams,
+    pub params: object::import::Params,
 
     /// Delegated capabilities
     pub delegated_capabilities: Capability,

@@ -37,7 +37,7 @@ pub use self::{
 };
 
 use super::{SessionError, SessionErrorKind::*};
-use crate::{authentication_key::AuthenticationKey, command, response, session};
+use crate::{authentication, command, response, session};
 use aes::{
     block_cipher_trait::{
         generic_array::{typenum::U16, GenericArray},
@@ -89,7 +89,7 @@ impl SecureChannel {
     /// Create a new channel with the given ID, auth key, and host/card challenges
     pub fn new(
         id: session::Id,
-        authentication_key: &AuthenticationKey,
+        authentication_key: &authentication::Key,
         host_challenge: Challenge,
         card_challenge: Challenge,
     ) -> Self {
@@ -553,7 +553,7 @@ fn compute_icv(cipher: &Aes128, counter: u32) -> GenericArray<u8, U16> {
 #[cfg(all(test, feature = "mockhsm"))]
 mod tests {
     use super::*;
-    use crate::authentication_key::AuthenticationKey;
+    use crate::authentication;
 
     const PASSWORD: &[u8] = b"password";
     const HOST_CHALLENGE: &[u8] = &[0u8; 8];
@@ -562,7 +562,7 @@ mod tests {
     const COMMAND_DATA: &[u8] = b"Hello, world!";
 
     fn create_channel_pair() -> (SecureChannel, SecureChannel) {
-        let authentication_key = AuthenticationKey::derive_from_password(PASSWORD);
+        let authentication_key = authentication::Key::derive_from_password(PASSWORD);
 
         let host_challenge = Challenge::from_slice(HOST_CHALLENGE);
         let card_challenge = Challenge::from_slice(CARD_CHALLENGE);

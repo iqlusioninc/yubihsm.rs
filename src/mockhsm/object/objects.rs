@@ -6,11 +6,10 @@ use super::{
     Object, Payload, WrappedObject, DEFAULT_AUTHENTICATION_KEY_LABEL, WRAPPED_DATA_MAC_SIZE,
 };
 use crate::{
-    authentication_key::{AuthenticationKey, AUTHENTICATION_KEY_SIZE},
-    credentials::DEFAULT_AUTHENTICATION_KEY_ID,
+    authentication::{self, AUTHENTICATION_KEY_SIZE, DEFAULT_AUTHENTICATION_KEY_ID},
     object::{Handle, Id, Info, Label, Origin, Type},
     serialization::{deserialize, serialize},
-    wrap, Algorithm, AuthenticationAlg, Capability, Domain, WrapAlg,
+    wrap, Algorithm, Capability, Domain, WrapAlg,
 };
 
 /// Objects stored in the `MockHsm`
@@ -28,7 +27,7 @@ impl Default for Objects {
         let authentication_key_info = Info {
             object_id: DEFAULT_AUTHENTICATION_KEY_ID,
             object_type: Type::AuthenticationKey,
-            algorithm: Algorithm::Auth(AuthenticationAlg::YUBICO_AES),
+            algorithm: Algorithm::Authentication(authentication::Algorithm::YUBICO_AES),
             capabilities: Capability::all(),
             delegated_capabilities: Capability::all(),
             domains: Domain::all(),
@@ -38,7 +37,7 @@ impl Default for Objects {
             label: DEFAULT_AUTHENTICATION_KEY_LABEL.into(),
         };
 
-        let authentication_key_payload = Payload::AuthenticationKey(AuthenticationKey::default());
+        let authentication_key_payload = Payload::AuthenticationKey(authentication::Key::default());
 
         let _ = objects.insert(
             authentication_key_handle,

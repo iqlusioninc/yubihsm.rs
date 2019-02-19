@@ -1,4 +1,4 @@
-use yubihsm::{object, AuthenticationAlg, AuthenticationKey, Capability};
+use yubihsm::{authentication, object, Capability};
 
 use crate::{clear_test_key_slot, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL, TEST_MESSAGE};
 
@@ -6,13 +6,13 @@ use crate::{clear_test_key_slot, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL, TEST
 #[test]
 fn put_authentication_key() {
     let mut client = crate::get_hsm_client();
-    let algorithm = AuthenticationAlg::YUBICO_AES;
+    let algorithm = authentication::Algorithm::YUBICO_AES;
     let capabilities = Capability::all();
     let delegated_capabilities = Capability::all();
 
     clear_test_key_slot(&mut client, object::Type::AuthenticationKey);
 
-    let new_authentication_key = AuthenticationKey::derive_from_password(TEST_MESSAGE);
+    let new_authentication_key = authentication::Key::derive_from_password(TEST_MESSAGE);
 
     let key_id = client
         .put_authentication_key(
@@ -38,5 +38,5 @@ fn put_authentication_key() {
     assert_eq!(object_info.object_type, object::Type::AuthenticationKey);
     assert_eq!(object_info.algorithm, algorithm.into());
     assert_eq!(object_info.origin, object::Origin::Imported);
-    assert_eq!(&object_info.label.to_string().unwrap(), TEST_KEY_LABEL);
+    assert_eq!(&object_info.label.to_string(), TEST_KEY_LABEL);
 }

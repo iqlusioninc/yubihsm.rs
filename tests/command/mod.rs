@@ -11,17 +11,16 @@ pub mod get_log_entries;
 pub mod get_object_info;
 pub mod get_option;
 pub mod get_pseudo_random;
+pub mod get_storage_info;
 pub mod list_objects;
 pub mod put_asymmetric_key;
 pub mod put_authentication_key;
 pub mod put_opaque;
-pub mod put_option;
 #[cfg(feature = "mockhsm")]
 pub mod reset_device;
+pub mod set_option;
 #[cfg(not(feature = "mockhsm"))]
 pub mod sign_attestation_certificate;
-// TODO: fix MockHsm ECDSA support
-pub mod get_storage_info;
 #[cfg(not(feature = "mockhsm"))]
 pub mod sign_ecdsa;
 pub mod sign_eddsa;

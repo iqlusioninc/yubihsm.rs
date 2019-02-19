@@ -8,7 +8,7 @@ fn command_audit_options_test() {
 
     for audit_option in &[AuditOption::On, AuditOption::Off] {
         client
-            .set_audit_option(command_type, *audit_option)
+            .set_command_audit_option(command_type, *audit_option)
             .unwrap_or_else(|err| panic!("error setting {:?} audit option: {}", command_type, err));
 
         let hsm_option = client
@@ -38,7 +38,7 @@ fn force_audit_option_test() {
 
     for audit_option in &[AuditOption::On, AuditOption::Off] {
         client
-            .put_force_audit_option(*audit_option)
+            .set_force_audit_option(*audit_option)
             .unwrap_or_else(|err| panic!("error setting force option: {}", err));
 
         let hsm_option = client

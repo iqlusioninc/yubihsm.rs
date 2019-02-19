@@ -3,7 +3,7 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/Put_Authentication_Key.html>
 
 use crate::{
-    authentication_key::AuthenticationKey,
+    authentication,
     capability::Capability,
     command::{self, Command},
     object,
@@ -14,13 +14,13 @@ use crate::{
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct PutAuthenticationKeyCommand {
     /// Common parameters to all put object command
-    pub params: object::ImportParams,
+    pub params: object::import::Params,
 
     /// Delegated capabilities
     pub delegated_capabilities: Capability,
 
     /// Authentication key
-    pub authentication_key: AuthenticationKey,
+    pub authentication_key: authentication::Key,
 }
 
 impl Command for PutAuthenticationKeyCommand {
