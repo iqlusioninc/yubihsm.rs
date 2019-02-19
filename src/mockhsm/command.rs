@@ -16,7 +16,7 @@ use crate::{
         close::CloseSessionResponse,
         create::{CreateSessionCommand, CreateSessionResponse},
     },
-    Capability, WrapMessage, WrapNonce,
+    wrap, Capability,
 };
 use hmac::{Hmac, Mac};
 use rand_os::{rand_core::RngCore, OsRng};
@@ -221,13 +221,13 @@ fn export_wrapped(state: &mut State, cmd_data: &[u8]) -> response::Message {
     } = deserialize(cmd_data)
         .unwrap_or_else(|e| panic!("error parsing Code::ExportWrapped: {:?}", e));
 
-    let nonce = WrapNonce::generate();
+    let nonce = wrap::Nonce::generate();
 
     match state
         .objects
         .wrap(wrap_key_id, object_id, object_type, &nonce)
     {
-        Ok(ciphertext) => ExportWrappedResponse(WrapMessage { nonce, ciphertext }).serialize(),
+        Ok(ciphertext) => ExportWrappedResponse(wrap::Message { nonce, ciphertext }).serialize(),
         Err(e) => {
             debug!("error wrapping object: {}", e);
             HsmErrorKind::InvalidCommand.into()

@@ -78,7 +78,7 @@ use crate::{
     object,
     serialization::{deserialize, serialize},
     session::{self, Session},
-    wrap::WrapMessage,
+    wrap,
 };
 #[cfg(feature = "rsa")]
 use byteorder::{BigEndian, ByteOrder};
@@ -257,7 +257,7 @@ impl Client {
         wrap_key_id: object::Id,
         object_type: object::Type,
         object_id: object::Id,
-    ) -> Result<WrapMessage, ClientError> {
+    ) -> Result<wrap::Message, ClientError> {
         Ok(self
             .send_command(ExportWrappedCommand {
                 wrap_key_id,
@@ -458,9 +458,9 @@ impl Client {
         wrap_message: M,
     ) -> Result<ImportWrappedResponse, ClientError>
     where
-        M: Into<WrapMessage>,
+        M: Into<wrap::Message>,
     {
-        let WrapMessage { nonce, ciphertext } = wrap_message.into();
+        let wrap::Message { nonce, ciphertext } = wrap_message.into();
 
         Ok(self.send_command(ImportWrappedCommand {
             wrap_key_id,
@@ -924,9 +924,9 @@ impl Client {
         wrap_message: M,
     ) -> Result<Vec<u8>, ClientError>
     where
-        M: Into<WrapMessage>,
+        M: Into<wrap::Message>,
     {
-        let WrapMessage { nonce, ciphertext } = wrap_message.into();
+        let wrap::Message { nonce, ciphertext } = wrap_message.into();
 
         Ok(self
             .send_command(UnwrapDataCommand {
@@ -970,7 +970,7 @@ impl Client {
         &mut self,
         wrap_key_id: object::Id,
         plaintext: Vec<u8>,
-    ) -> Result<WrapMessage, ClientError> {
+    ) -> Result<wrap::Message, ClientError> {
         Ok(self
             .send_command(WrapDataCommand {
                 wrap_key_id,

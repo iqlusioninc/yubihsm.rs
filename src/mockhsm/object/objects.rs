@@ -1,5 +1,5 @@
 use failure::Error;
-use ring::aead::{self, Aad, Nonce, OpeningKey, SealingKey, AES_128_GCM, AES_256_GCM};
+use ring::aead::{self, AES_128_GCM, AES_256_GCM};
 use std::collections::{btree_map::Iter as BTreeMapIter, BTreeMap};
 
 use super::{
@@ -10,7 +10,7 @@ use crate::{
     credentials::DEFAULT_AUTHENTICATION_KEY_ID,
     object::{Handle, Id, Info, Label, Origin, Type},
     serialization::{deserialize, serialize},
-    Algorithm, AuthenticationAlg, Capability, Domain, WrapAlg, WrapNonce,
+    wrap, Algorithm, AuthenticationAlg, Capability, Domain, WrapAlg,
 };
 
 /// Objects stored in the `MockHsm`
@@ -144,7 +144,7 @@ impl Objects {
         wrap_key_id: Id,
         object_id: Id,
         object_type: Type,
-        wrap_nonce: &WrapNonce,
+        wrap_nonce: &wrap::Nonce,
     ) -> Result<Vec<u8>, Error> {
         let wrap_key = match self.get(wrap_key_id, Type::WrapKey) {
             Some(k) => k,
@@ -153,8 +153,8 @@ impl Objects {
 
         let sealing_key = match wrap_key.algorithm().wrap().unwrap() {
             // TODO: actually use AES-CCM
-            WrapAlg::AES128_CCM => SealingKey::new(&AES_128_GCM, wrap_key.payload.as_ref()),
-            WrapAlg::AES256_CCM => SealingKey::new(&AES_256_GCM, wrap_key.payload.as_ref()),
+            WrapAlg::AES128_CCM => aead::SealingKey::new(&AES_128_GCM, wrap_key.payload.as_ref()),
+            WrapAlg::AES256_CCM => aead::SealingKey::new(&AES_256_GCM, wrap_key.payload.as_ref()),
             unsupported => bail!("unsupported wrap key algorithm: {:?}", unsupported),
         }
         .unwrap();
@@ -198,8 +198,8 @@ impl Objects {
 
         aead::seal_in_place(
             &sealing_key,
-            Nonce::assume_unique_for_key(nonce),
-            Aad::from(b""),
+            aead::Nonce::assume_unique_for_key(nonce),
+            aead::Aad::from(b""),
             &mut wrapped_object,
             WRAPPED_DATA_MAC_SIZE,
         )
@@ -212,13 +212,13 @@ impl Objects {
     pub fn unwrap<V: Into<Vec<u8>>>(
         &mut self,
         wrap_key_id: Id,
-        wrap_nonce: &WrapNonce,
+        wrap_nonce: &wrap::Nonce,
         ciphertext: V,
     ) -> Result<Handle, Error> {
         let opening_key = match self.get(wrap_key_id, Type::WrapKey) {
             Some(k) => match k.algorithm().wrap().unwrap() {
-                WrapAlg::AES128_CCM => OpeningKey::new(&AES_128_GCM, k.payload.as_ref()),
-                WrapAlg::AES256_CCM => OpeningKey::new(&AES_256_GCM, k.payload.as_ref()),
+                WrapAlg::AES128_CCM => aead::OpeningKey::new(&AES_128_GCM, k.payload.as_ref()),
+                WrapAlg::AES256_CCM => aead::OpeningKey::new(&AES_256_GCM, k.payload.as_ref()),
                 unsupported => bail!("unsupported wrap key algorithm: {:?}", unsupported),
             }
             .unwrap(),
@@ -232,8 +232,8 @@ impl Objects {
 
         if aead::open_in_place(
             &opening_key,
-            Nonce::assume_unique_for_key(nonce),
-            Aad::from(b""),
+            aead::Nonce::assume_unique_for_key(nonce),
+            aead::Aad::from(b""),
             0,
             &mut wrapped_data,
         )

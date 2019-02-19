@@ -1,13 +1,11 @@
-use serde;
-use std::io::Cursor;
-
 #[macro_use]
 mod error;
-
 mod de;
 mod ser;
 
 pub use self::error::{SerializationError, SerializationErrorKind};
+use serde;
+use std::io::Cursor;
 
 /// Serialize a message into a byte vector
 pub fn serialize<T: serde::Serialize>(value: &T) -> Result<Vec<u8>, SerializationError> {
@@ -40,7 +38,10 @@ macro_rules! impl_array_serializers {
                 impl<'de> ::serde::de::Visitor<'de> for ArrayVisitor {
                     type Value = $ty;
 
-                    fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+                    fn expecting(
+                        &self,
+                        formatter: &mut ::std::fmt::Formatter<'_>,
+                    ) -> ::std::fmt::Result {
                         write!(formatter, "{}-byte string of arbitrary bytes", $size)
                     }
 

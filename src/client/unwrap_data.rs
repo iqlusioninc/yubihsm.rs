@@ -6,7 +6,7 @@ use crate::{
     command::{self, Command},
     object,
     response::Response,
-    wrap::WrapNonce,
+    wrap,
 };
 
 /// Request parameters for `command::unwrap_data`
@@ -16,7 +16,7 @@ pub(crate) struct UnwrapDataCommand {
     pub wrap_key_id: object::Id,
 
     /// Nonce used to encrypt the wrapped data
-    pub nonce: WrapNonce,
+    pub nonce: wrap::Nonce,
 
     /// Ciphertext of the encrypted data (including MAC)
     pub ciphertext: Vec<u8>,
