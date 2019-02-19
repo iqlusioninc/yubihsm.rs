@@ -2,16 +2,17 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Put_Asymmetric.html>
 
-use super::put_object::PutObjectParams;
-use crate::command::{Command, CommandCode};
-use crate::object::ObjectId;
-use crate::response::Response;
+use crate::{
+    command::{self, Command},
+    object,
+    response::Response,
+};
 
 /// Request parameters for `command::put_asymmetric_key`
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct PutAsymmetricKeyCommand {
     /// Common parameters to all put object commands
-    pub params: PutObjectParams,
+    pub params: object::ImportParams,
 
     /// Serialized object
     pub data: Vec<u8>,
@@ -25,9 +26,9 @@ impl Command for PutAsymmetricKeyCommand {
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct PutAsymmetricKeyResponse {
     /// ID of the key
-    pub key_id: ObjectId,
+    pub key_id: object::Id,
 }
 
 impl Response for PutAsymmetricKeyResponse {
-    const COMMAND_CODE: CommandCode = CommandCode::PutAsymmetricKey;
+    const COMMAND_CODE: command::Code = command::Code::PutAsymmetricKey;
 }

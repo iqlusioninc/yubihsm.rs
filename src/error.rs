@@ -1,8 +1,7 @@
+use crate::response;
 pub use failure::{Backtrace, Context, Fail};
 use std::error::Error as StdError;
 use std::fmt::{self, Display};
-
-use crate::response::{ResponseCode, ResponseMessage};
 
 /// Placeholder for when we have no description for an error
 const NO_DESCRIPTION: &str = "(no description)";
@@ -206,33 +205,35 @@ impl HsmErrorKind {
         }
     }
 
-    /// Create an `HsmError` from the given `ResponseCode` (if applicable)
-    pub fn from_response_code(code: ResponseCode) -> Option<HsmErrorKind> {
+    /// Create an `HsmError` from the given `response::Code` (if applicable)
+    pub fn from_response_code(code: response::Code) -> Option<HsmErrorKind> {
         Some(match code {
-            ResponseCode::DeviceInvalidCommand => HsmErrorKind::InvalidCommand,
-            ResponseCode::DeviceInvalidData => HsmErrorKind::InvalidData,
-            ResponseCode::DeviceInvalidSession => HsmErrorKind::InvalidSession,
-            ResponseCode::DeviceAuthenticationFailed => HsmErrorKind::AuthenticationFailed,
-            ResponseCode::DeviceSessionsFull => HsmErrorKind::SessionsFull,
-            ResponseCode::DeviceSessionFailed => HsmErrorKind::SessionFailed,
-            ResponseCode::DeviceStorageFailed => HsmErrorKind::StorageFailed,
-            ResponseCode::DeviceWrongLength => HsmErrorKind::WrongLength,
-            ResponseCode::DeviceInsufficientPermissions => HsmErrorKind::InsufficientPermissions,
-            ResponseCode::DeviceLogFull => HsmErrorKind::LogFull,
-            ResponseCode::DeviceObjectNotFound => HsmErrorKind::ObjectNotFound,
-            ResponseCode::DeviceInvalidId => HsmErrorKind::InvalidId,
-            ResponseCode::DeviceInvalidOtp => HsmErrorKind::InvalidOtp,
-            ResponseCode::DeviceDemoMode => HsmErrorKind::DemoMode,
-            ResponseCode::DeviceCommandUnexecuted => HsmErrorKind::CommandUnexecuted,
-            ResponseCode::GenericError => HsmErrorKind::GenericError,
-            ResponseCode::DeviceObjectExists => HsmErrorKind::ObjectExists,
-            ResponseCode::DeviceSshCaConstraintViolation => HsmErrorKind::SshCaConstraintViolation,
+            response::Code::DeviceInvalidCommand => HsmErrorKind::InvalidCommand,
+            response::Code::DeviceInvalidData => HsmErrorKind::InvalidData,
+            response::Code::DeviceInvalidSession => HsmErrorKind::InvalidSession,
+            response::Code::DeviceAuthenticationFailed => HsmErrorKind::AuthenticationFailed,
+            response::Code::DeviceSessionsFull => HsmErrorKind::SessionsFull,
+            response::Code::DeviceSessionFailed => HsmErrorKind::SessionFailed,
+            response::Code::DeviceStorageFailed => HsmErrorKind::StorageFailed,
+            response::Code::DeviceWrongLength => HsmErrorKind::WrongLength,
+            response::Code::DeviceInsufficientPermissions => HsmErrorKind::InsufficientPermissions,
+            response::Code::DeviceLogFull => HsmErrorKind::LogFull,
+            response::Code::DeviceObjectNotFound => HsmErrorKind::ObjectNotFound,
+            response::Code::DeviceInvalidId => HsmErrorKind::InvalidId,
+            response::Code::DeviceInvalidOtp => HsmErrorKind::InvalidOtp,
+            response::Code::DeviceDemoMode => HsmErrorKind::DemoMode,
+            response::Code::DeviceCommandUnexecuted => HsmErrorKind::CommandUnexecuted,
+            response::Code::GenericError => HsmErrorKind::GenericError,
+            response::Code::DeviceObjectExists => HsmErrorKind::ObjectExists,
+            response::Code::DeviceSshCaConstraintViolation => {
+                HsmErrorKind::SshCaConstraintViolation
+            }
             _ => return None,
         })
     }
 
-    /// Create an `HsmError` from the given `ResponseMessage` (if applicable)
-    pub(crate) fn from_response_message(response: &ResponseMessage) -> Option<HsmErrorKind> {
+    /// Create an `HsmError` from the given `response::Message` (if applicable)
+    pub(crate) fn from_response_message(response: &response::Message) -> Option<HsmErrorKind> {
         if response.is_err() && response.data.len() == 1 {
             Some(HsmErrorKind::from_u8(response.data[0]))
         } else {

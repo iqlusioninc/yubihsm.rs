@@ -1,4 +1,4 @@
-use yubihsm::{AuthenticationAlg, AuthenticationKey, Capability, ObjectOrigin, ObjectType};
+use yubihsm::{object, AuthenticationAlg, AuthenticationKey, Capability};
 
 use crate::{clear_test_key_slot, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL, TEST_MESSAGE};
 
@@ -10,7 +10,7 @@ fn put_authentication_key() {
     let capabilities = Capability::all();
     let delegated_capabilities = Capability::all();
 
-    clear_test_key_slot(&mut client, ObjectType::AuthenticationKey);
+    clear_test_key_slot(&mut client, object::Type::AuthenticationKey);
 
     let new_authentication_key = AuthenticationKey::derive_from_password(TEST_MESSAGE);
 
@@ -29,14 +29,14 @@ fn put_authentication_key() {
     assert_eq!(key_id, TEST_KEY_ID);
 
     let object_info = client
-        .get_object_info(TEST_KEY_ID, ObjectType::AuthenticationKey)
+        .get_object_info(TEST_KEY_ID, object::Type::AuthenticationKey)
         .unwrap_or_else(|err| panic!("error getting object info: {}", err));
 
     assert_eq!(object_info.capabilities, capabilities);
     assert_eq!(object_info.object_id, TEST_KEY_ID);
     assert_eq!(object_info.domains, TEST_DOMAINS);
-    assert_eq!(object_info.object_type, ObjectType::AuthenticationKey);
+    assert_eq!(object_info.object_type, object::Type::AuthenticationKey);
     assert_eq!(object_info.algorithm, algorithm.into());
-    assert_eq!(object_info.origin, ObjectOrigin::Imported);
+    assert_eq!(object_info.origin, object::Origin::Imported);
     assert_eq!(&object_info.label.to_string().unwrap(), TEST_KEY_LABEL);
 }

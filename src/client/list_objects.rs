@@ -2,24 +2,25 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/List_Objects.html>
 
+use super::ClientError;
+#[cfg(feature = "mockhsm")]
+use super::ClientErrorKind::ProtocolError;
+#[cfg(feature = "mockhsm")]
+use crate::object::LABEL_SIZE;
+use crate::{
+    algorithm::Algorithm,
+    capability::Capability,
+    command::{self, Command},
+    domain::Domain,
+    object,
+    response::Response,
+};
 #[cfg(feature = "mockhsm")]
 use byteorder::ReadBytesExt;
 use byteorder::{WriteBytesExt, BE};
 #[cfg(feature = "mockhsm")]
 use std::io::Read;
 use std::io::Write;
-
-use super::ClientError;
-#[cfg(feature = "mockhsm")]
-use super::ClientErrorKind::ProtocolError;
-use crate::algorithm::Algorithm;
-use crate::capability::Capability;
-use crate::command::{Command, CommandCode};
-use crate::domain::Domain;
-#[cfg(feature = "mockhsm")]
-use crate::object::LABEL_SIZE;
-use crate::object::{ObjectId, ObjectLabel, ObjectType, SequenceId};
-use crate::response::Response;
 
 /// Request parameters for `command::list_objects`
 #[derive(Serialize, Deserialize, Debug)]
@@ -35,7 +36,7 @@ impl Command for ListObjectsCommand {
 pub(crate) struct ListObjectsResponse(pub(crate) Vec<ListObjectsEntry>);
 
 impl Response for ListObjectsResponse {
-    const COMMAND_CODE: CommandCode = CommandCode::ListObjects;
+    const COMMAND_CODE: command::Code = command::Code::ListObjects;
 }
 
 /// Filters to apply when listing objects
@@ -50,13 +51,13 @@ pub enum Filter {
     Domains(Domain),
 
     /// Filter objects by label
-    Label(ObjectLabel),
+    Label(object::Label),
 
     /// Filter by object ID
-    Id(ObjectId),
+    Id(object::Id),
 
     /// Filter by object type
-    Type(ObjectType),
+    Type(object::Type),
 }
 
 impl Filter {
@@ -98,7 +99,7 @@ impl Filter {
         Ok(match tag {
             0x01 => Filter::Id(reader.read_u16::<BE>()?),
             0x02 => Filter::Type(
-                ObjectType::from_u8(reader.read_u8()?).map_err(|e| err!(ProtocolError, e))?,
+                object::Type::from_u8(reader.read_u8()?).map_err(|e| err!(ProtocolError, e))?,
             ),
             0x03 => Filter::Domains(
                 Domain::from_bits(reader.read_u16::<BE>()?)
@@ -114,7 +115,7 @@ impl Filter {
             0x06 => {
                 let mut label_bytes = [0u8; LABEL_SIZE];
                 reader.read_exact(&mut label_bytes)?;
-                Filter::Label(ObjectLabel(label_bytes))
+                Filter::Label(object::Label(label_bytes))
             }
             _ => fail!(ProtocolError, "invalid filter tag: 0x{:2x}", tag),
         })
@@ -125,12 +126,12 @@ impl Filter {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ListObjectsEntry {
     /// Object identifier
-    pub object_id: ObjectId,
+    pub object_id: object::Id,
 
     /// Object type
-    pub object_type: ObjectType,
+    pub object_type: object::Type,
 
     /// Sequence: number of times an object with this key ID and type has
     /// previously existed
-    pub sequence: SequenceId,
+    pub sequence: object::SequenceId,
 }

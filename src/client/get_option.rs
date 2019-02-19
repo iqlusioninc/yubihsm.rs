@@ -14,9 +14,11 @@
 //! [get_commands_audit_options()]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.get_commands_audit_options
 //! [get_force_audit_option()]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.get_force_audit_option
 
-use crate::audit::*;
-use crate::command::{Command, CommandCode};
-use crate::response::Response;
+use crate::{
+    audit::AuditTag,
+    command::{self, Command},
+    response::Response,
+};
 
 /// Request parameters for `command::get_option`
 #[derive(Serialize, Deserialize, Debug)]
@@ -34,5 +36,5 @@ impl Command for GetOptionCommand {
 pub(crate) struct GetOptionResponse(pub(crate) Vec<u8>);
 
 impl Response for GetOptionResponse {
-    const COMMAND_CODE: CommandCode = CommandCode::GetOption;
+    const COMMAND_CODE: command::Code = command::Code::GetOption;
 }

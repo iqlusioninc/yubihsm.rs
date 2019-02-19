@@ -2,16 +2,18 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Import_Wrapped.html>
 
-use crate::command::{Command, CommandCode};
-use crate::object::{ObjectId, ObjectType};
-use crate::response::Response;
-use crate::wrap::WrapNonce;
+use crate::{
+    command::{self, Command},
+    object,
+    response::Response,
+    wrap::WrapNonce,
+};
 
 /// Request parameters for `command::import_wrapped`
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct ImportWrappedCommand {
     /// ID of the wrap key to decrypt the object with
-    pub wrap_key_id: ObjectId,
+    pub wrap_key_id: object::Id,
 
     /// Nonce used to encrypt the wrapped data
     pub nonce: WrapNonce,
@@ -28,12 +30,12 @@ impl Command for ImportWrappedCommand {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ImportWrappedResponse {
     /// Type of object
-    pub object_type: ObjectType,
+    pub object_type: object::Type,
 
     /// ID of the decrypted object
-    pub object_id: ObjectId,
+    pub object_id: object::Id,
 }
 
 impl Response for ImportWrappedResponse {
-    const COMMAND_CODE: CommandCode = CommandCode::ImportWrapped;
+    const COMMAND_CODE: command::Code = command::Code::ImportWrapped;
 }

@@ -12,13 +12,13 @@ const EXAMPLE_MESSAGE: &[u8] =
     b"The Edwards-curve Digital Signature yubihsm::AsymmetricAlgorithm  (EdDSA) is a \
     variant of Schnorr's signature system with (possibly twisted) Edwards curves.";
 
-const BENCH_KEY_ID: yubihsm::ObjectId = 999;
+const BENCH_KEY_ID: yubihsm::object::Id = 999;
 
 fn clear_key_slot(hsm: &mut yubihsm::Client) {
-    let _ = hsm.delete_object(BENCH_KEY_ID, yubihsm::ObjectType::AsymmetricKey);
+    let _ = hsm.delete_object(BENCH_KEY_ID, yubihsm::object::Type::AsymmetricKey);
 
     assert!(hsm
-        .get_object_info(BENCH_KEY_ID, yubihsm::ObjectType::AsymmetricKey)
+        .get_object_info(BENCH_KEY_ID, yubihsm::object::Type::AsymmetricKey)
         .is_err());
 }
 

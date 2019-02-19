@@ -2,9 +2,11 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Device_Info.html>
 
-use crate::algorithm::Algorithm;
-use crate::command::{Command, CommandCode};
-use crate::response::Response;
+use crate::{
+    command::{self, Command},
+    response::Response,
+    Algorithm,
+};
 
 /// Request parameters for `command::device_info`
 #[derive(Serialize, Deserialize, Debug)]
@@ -40,5 +42,5 @@ pub struct DeviceInfoResponse {
 }
 
 impl Response for DeviceInfoResponse {
-    const COMMAND_CODE: CommandCode = CommandCode::DeviceInfo;
+    const COMMAND_CODE: command::Code = command::Code::DeviceInfo;
 }

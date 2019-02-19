@@ -11,7 +11,7 @@ use yubihsm::HttpConnector;
 use yubihsm::MockHsm;
 #[cfg(feature = "usb")]
 use yubihsm::UsbConnector;
-use yubihsm::{AsymmetricAlg, Capability, Client, Connector, Domain, ObjectId, ObjectType};
+use yubihsm::{object, AsymmetricAlg, Capability, Client, Connector, Domain};
 
 /// Integration tests for individual YubiHSM2 commands
 pub mod command;
@@ -20,10 +20,10 @@ pub mod command;
 mod test_vectors;
 
 /// Key ID to use for testing keygen/signing
-const TEST_KEY_ID: ObjectId = 100;
+const TEST_KEY_ID: object::Id = 100;
 
 /// Key ID to use as a keywrapping subject
-const TEST_EXPORTED_KEY_ID: ObjectId = 101;
+const TEST_EXPORTED_KEY_ID: object::Id = 101;
 
 /// Label to use for the test key
 const TEST_KEY_LABEL: &str = "yubihsm.rs test key";
@@ -107,7 +107,7 @@ pub fn create_mockhsm_connector() -> Box<Connector> {
 }
 
 /// Delete the key in the test key slot (if it exists, otherwise do nothing)
-pub fn clear_test_key_slot(client: &mut Client, object_type: ObjectType) {
+pub fn clear_test_key_slot(client: &mut Client, object_type: object::Type) {
     // Delete the key in TEST_KEY_ID slot it exists (we use it for testing)
     // Ignore errors since the object may not exist yet
     if let Err(e) = client.delete_object(TEST_KEY_ID, object_type) {
@@ -124,7 +124,7 @@ pub fn generate_asymmetric_key(
     algorithm: AsymmetricAlg,
     capabilities: Capability,
 ) {
-    clear_test_key_slot(client, ObjectType::AsymmetricKey);
+    clear_test_key_slot(client, object::Type::AsymmetricKey);
 
     let key_id = client
         .generate_asymmetric_key(
@@ -146,7 +146,7 @@ pub fn put_asymmetric_key<T: Into<Vec<u8>>>(
     capabilities: Capability,
     data: T,
 ) {
-    clear_test_key_slot(client, ObjectType::AsymmetricKey);
+    clear_test_key_slot(client, object::Type::AsymmetricKey);
 
     let key_id = client
         .put_asymmetric_key(

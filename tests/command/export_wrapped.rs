@@ -1,10 +1,8 @@
-use yubihsm::{AsymmetricAlg, Capability, ObjectOrigin, ObjectType, WrapAlg};
-
-use crate::test_vectors::AESCCM_TEST_VECTORS;
 use crate::{
-    clear_test_key_slot, TEST_DOMAINS, TEST_EXPORTED_KEY_ID, TEST_EXPORTED_KEY_LABEL, TEST_KEY_ID,
-    TEST_KEY_LABEL,
+    clear_test_key_slot, test_vectors::AESCCM_TEST_VECTORS, TEST_DOMAINS, TEST_EXPORTED_KEY_ID,
+    TEST_EXPORTED_KEY_LABEL, TEST_KEY_ID, TEST_KEY_LABEL,
 };
+use yubihsm::{object, AsymmetricAlg, Capability, WrapAlg};
 
 /// Test wrap key workflow using randomly generated keys
 // TODO: test against RFC 3610 vectors
@@ -15,7 +13,7 @@ fn wrap_key_test() {
     let capabilities = Capability::EXPORT_WRAPPED | Capability::IMPORT_WRAPPED;
     let delegated_capabilities = Capability::all();
 
-    clear_test_key_slot(&mut client, ObjectType::WrapKey);
+    clear_test_key_slot(&mut client, object::Type::WrapKey);
 
     let key_id = client
         .put_wrap_key(
@@ -32,7 +30,7 @@ fn wrap_key_test() {
     assert_eq!(key_id, TEST_KEY_ID);
 
     // Create a key to export
-    let exported_key_type = ObjectType::AsymmetricKey;
+    let exported_key_type = object::Type::AsymmetricKey;
     let exported_key_capabilities = Capability::SIGN_EDDSA | Capability::EXPORTABLE_UNDER_WRAP;
     let exported_key_algorithm = AsymmetricAlg::Ed25519;
 
@@ -74,7 +72,7 @@ fn wrap_key_test() {
     assert_eq!(imported_key_info.domains, TEST_DOMAINS);
     assert_eq!(imported_key_info.object_type, exported_key_type);
     assert_eq!(imported_key_info.algorithm, exported_key_algorithm.into());
-    assert_eq!(imported_key_info.origin, ObjectOrigin::WrappedGenerated);
+    assert_eq!(imported_key_info.origin, object::Origin::WrappedGenerated);
     assert_eq!(
         &imported_key_info.label.to_string().unwrap(),
         TEST_EXPORTED_KEY_LABEL

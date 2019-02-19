@@ -1,13 +1,13 @@
 use super::{SessionError, SessionErrorKind::ProtocolError};
 
 /// Maximum session identifier
-pub const MAX_SESSION_ID: SessionId = SessionId(16);
+pub const MAX_SESSION_ID: Id = Id(16);
 
 /// Session/Channel IDs
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
-pub struct SessionId(u8);
+pub struct Id(u8);
 
-impl SessionId {
+impl Id {
     /// Create a new session ID from a byte value
     pub fn from_u8(id: u8) -> Result<Self, SessionError> {
         if id > MAX_SESSION_ID.0 {
@@ -19,7 +19,7 @@ impl SessionId {
             );
         }
 
-        Ok(SessionId(id))
+        Ok(Id(id))
     }
 
     /// Obtain the next session ID

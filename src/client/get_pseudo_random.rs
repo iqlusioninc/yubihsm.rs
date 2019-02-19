@@ -2,8 +2,10 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Get_Pseudo_Random.html>
 
-use crate::command::{Command, CommandCode, MAX_MSG_SIZE};
-use crate::response::Response;
+use crate::{
+    command::{self, Command, MAX_MSG_SIZE},
+    response::Response,
+};
 
 /// Max message size - tag byte - 16-bit response length field
 pub(crate) const MAX_RAND_BYTES: usize = MAX_MSG_SIZE - 1 - 2;
@@ -27,5 +29,5 @@ pub(crate) struct GetPseudoRandomResponse {
 }
 
 impl Response for GetPseudoRandomResponse {
-    const COMMAND_CODE: CommandCode = CommandCode::GetPseudoRandom;
+    const COMMAND_CODE: command::Code = command::Code::GetPseudoRandom;
 }

@@ -8,14 +8,14 @@ use super::{
 use crate::{
     authentication_key::{AuthenticationKey, AUTHENTICATION_KEY_SIZE},
     credentials::DEFAULT_AUTHENTICATION_KEY_ID,
+    object::{Handle, Id, Info, Label, Origin, Type},
     serialization::{deserialize, serialize},
-    Algorithm, AuthenticationAlg, Capability, Domain, ObjectHandle, ObjectId, ObjectInfo,
-    ObjectLabel, ObjectOrigin, ObjectType, WrapAlg, WrapNonce,
+    Algorithm, AuthenticationAlg, Capability, Domain, WrapAlg, WrapNonce,
 };
 
 /// Objects stored in the `MockHsm`
 #[derive(Debug)]
-pub(crate) struct Objects(BTreeMap<ObjectHandle, Object>);
+pub(crate) struct Objects(BTreeMap<Handle, Object>);
 
 impl Default for Objects {
     fn default() -> Self {
@@ -23,18 +23,18 @@ impl Default for Objects {
 
         // Insert default authentication key
         let authentication_key_handle =
-            ObjectHandle::new(DEFAULT_AUTHENTICATION_KEY_ID, ObjectType::AuthenticationKey);
+            Handle::new(DEFAULT_AUTHENTICATION_KEY_ID, Type::AuthenticationKey);
 
-        let authentication_key_info = ObjectInfo {
+        let authentication_key_info = Info {
             object_id: DEFAULT_AUTHENTICATION_KEY_ID,
-            object_type: ObjectType::AuthenticationKey,
+            object_type: Type::AuthenticationKey,
             algorithm: Algorithm::Auth(AuthenticationAlg::YUBICO_AES),
             capabilities: Capability::all(),
             delegated_capabilities: Capability::all(),
             domains: Domain::all(),
             length: AUTHENTICATION_KEY_SIZE as u16,
             sequence: 1,
-            origin: ObjectOrigin::Imported,
+            origin: Origin::Imported,
             label: DEFAULT_AUTHENTICATION_KEY_LABEL.into(),
         };
 
@@ -56,10 +56,10 @@ impl Objects {
     /// Generate a new object in the MockHsm
     pub fn generate(
         &mut self,
-        object_id: ObjectId,
-        object_type: ObjectType,
+        object_id: Id,
+        object_type: Type,
         algorithm: Algorithm,
-        label: ObjectLabel,
+        label: Label,
         capabilities: Capability,
         delegated_capabilities: Capability,
         domains: Domain,
@@ -67,7 +67,7 @@ impl Objects {
         let payload = Payload::generate(algorithm);
         let length = payload.len();
 
-        let object_info = ObjectInfo {
+        let object_info = Info {
             object_id,
             object_type,
             algorithm,
@@ -76,11 +76,11 @@ impl Objects {
             domains,
             length,
             sequence: 1,
-            origin: ObjectOrigin::Generated,
+            origin: Origin::Generated,
             label,
         };
 
-        let handle = ObjectHandle::new(object_id, object_type);
+        let handle = Handle::new(object_id, object_type);
 
         let object = Object {
             object_info,
@@ -91,17 +91,17 @@ impl Objects {
     }
 
     /// Get an object
-    pub fn get(&self, object_id: ObjectId, object_type: ObjectType) -> Option<&Object> {
-        self.0.get(&ObjectHandle::new(object_id, object_type))
+    pub fn get(&self, object_id: Id, object_type: Type) -> Option<&Object> {
+        self.0.get(&Handle::new(object_id, object_type))
     }
 
     /// Put a new object in the MockHsm
     pub fn put(
         &mut self,
-        object_id: ObjectId,
-        object_type: ObjectType,
+        object_id: Id,
+        object_type: Type,
         algorithm: Algorithm,
-        label: ObjectLabel,
+        label: Label,
         capabilities: Capability,
         delegated_capabilities: Capability,
         domains: Domain,
@@ -110,7 +110,7 @@ impl Objects {
         let payload = Payload::new(algorithm, data);
         let length = payload.len();
 
-        let object_info = ObjectInfo {
+        let object_info = Info {
             object_id,
             object_type,
             algorithm,
@@ -119,11 +119,11 @@ impl Objects {
             domains,
             length,
             sequence: 1,
-            origin: ObjectOrigin::Imported,
+            origin: Origin::Imported,
             label,
         };
 
-        let handle = ObjectHandle::new(object_id, object_type);
+        let handle = Handle::new(object_id, object_type);
 
         let object = Object {
             object_info,
@@ -134,19 +134,19 @@ impl Objects {
     }
 
     /// Remove an object
-    pub fn remove(&mut self, object_id: ObjectId, object_type: ObjectType) -> Option<Object> {
-        self.0.remove(&ObjectHandle::new(object_id, object_type))
+    pub fn remove(&mut self, object_id: Id, object_type: Type) -> Option<Object> {
+        self.0.remove(&Handle::new(object_id, object_type))
     }
 
     /// Serialize an object as ciphertext
     pub fn wrap(
         &mut self,
-        wrap_key_id: ObjectId,
-        object_id: ObjectId,
-        object_type: ObjectType,
+        wrap_key_id: Id,
+        object_id: Id,
+        object_type: Type,
         wrap_nonce: &WrapNonce,
     ) -> Result<Vec<u8>, Error> {
-        let wrap_key = match self.get(wrap_key_id, ObjectType::WrapKey) {
+        let wrap_key = match self.get(wrap_key_id, Type::WrapKey) {
             Some(k) => k,
             None => bail!("no such wrap key: {:?}", wrap_key_id),
         };
@@ -179,9 +179,9 @@ impl Objects {
         let mut object_info = object_to_wrap.object_info.clone();
 
         match object_info.origin {
-            ObjectOrigin::Generated => object_info.origin = ObjectOrigin::WrappedGenerated,
-            ObjectOrigin::Imported => object_info.origin = ObjectOrigin::WrappedImported,
-            ObjectOrigin::WrappedGenerated | ObjectOrigin::WrappedImported => (),
+            Origin::Generated => object_info.origin = Origin::WrappedGenerated,
+            Origin::Imported => object_info.origin = Origin::WrappedImported,
+            Origin::WrappedGenerated | Origin::WrappedImported => (),
         }
 
         let mut wrapped_object = serialize(&WrappedObject {
@@ -211,11 +211,11 @@ impl Objects {
     /// Deserialize an encrypted object and insert it into the HSM
     pub fn unwrap<V: Into<Vec<u8>>>(
         &mut self,
-        wrap_key_id: ObjectId,
+        wrap_key_id: Id,
         wrap_nonce: &WrapNonce,
         ciphertext: V,
-    ) -> Result<ObjectHandle, Error> {
-        let opening_key = match self.get(wrap_key_id, ObjectType::WrapKey) {
+    ) -> Result<Handle, Error> {
+        let opening_key = match self.get(wrap_key_id, Type::WrapKey) {
             Some(k) => match k.algorithm().wrap().unwrap() {
                 WrapAlg::AES128_CCM => OpeningKey::new(&AES_128_GCM, k.payload.as_ref()),
                 WrapAlg::AES256_CCM => OpeningKey::new(&AES_256_GCM, k.payload.as_ref()),
@@ -254,7 +254,7 @@ impl Objects {
             &unwrapped_object.data,
         );
 
-        let object_key = ObjectHandle::new(
+        let object_key = Handle::new(
             unwrapped_object.object_info.object_id,
             unwrapped_object.object_info.object_type,
         );
@@ -276,4 +276,4 @@ impl Objects {
 }
 
 /// Iterator over objects
-pub(crate) type Iter<'a> = BTreeMapIter<'a, ObjectHandle, Object>;
+pub(crate) type Iter<'a> = BTreeMapIter<'a, Handle, Object>;

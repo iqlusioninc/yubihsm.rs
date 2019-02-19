@@ -2,8 +2,10 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Close_Session.html>
 
-use crate::command::{Command, CommandCode};
-use crate::response::Response;
+use crate::{
+    command::{self, Command},
+    response::Response,
+};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct CloseSessionCommand {}
@@ -16,5 +18,5 @@ impl Command for CloseSessionCommand {
 pub(crate) struct CloseSessionResponse {}
 
 impl Response for CloseSessionResponse {
-    const COMMAND_CODE: CommandCode = CommandCode::CloseSession;
+    const COMMAND_CODE: command::Code = command::Code::CloseSession;
 }

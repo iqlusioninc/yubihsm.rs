@@ -2,16 +2,17 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Put_Opaque.html>
 
-use super::put_object::PutObjectParams;
-use crate::command::{Command, CommandCode};
-use crate::object::ObjectId;
-use crate::response::Response;
+use crate::{
+    command::{self, Command},
+    object,
+    response::Response,
+};
 
 /// Request parameters for `command::put_opaque`
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct PutOpaqueCommand {
     /// Common parameters to all put object commands
-    pub params: PutObjectParams,
+    pub params: object::ImportParams,
 
     /// Serialized object
     pub data: Vec<u8>,
@@ -25,9 +26,9 @@ impl Command for PutOpaqueCommand {
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct PutOpaqueResponse {
     /// ID of the opaque data object
-    pub object_id: ObjectId,
+    pub object_id: object::Id,
 }
 
 impl Response for PutOpaqueResponse {
-    const COMMAND_CODE: CommandCode = CommandCode::PutOpaqueObject;
+    const COMMAND_CODE: command::Code = command::Code::PutOpaqueObject;
 }

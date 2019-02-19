@@ -2,15 +2,17 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Get_Opaque.html>
 
-use crate::command::{Command, CommandCode};
-use crate::object::ObjectId;
-use crate::response::Response;
+use crate::{
+    command::{self, Command},
+    object,
+    response::Response,
+};
 
 /// Request parameters for `command::get_opaque`
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct GetOpaqueCommand {
     /// Object ID of the key to obtain the corresponding opaque for
-    pub object_id: ObjectId,
+    pub object_id: object::Id,
 }
 
 impl Command for GetOpaqueCommand {
@@ -22,5 +24,5 @@ impl Command for GetOpaqueCommand {
 pub(crate) struct GetOpaqueResponse(pub(crate) Vec<u8>);
 
 impl Response for GetOpaqueResponse {
-    const COMMAND_CODE: CommandCode = CommandCode::GetOpaqueObject;
+    const COMMAND_CODE: command::Code = command::Code::GetOpaqueObject;
 }

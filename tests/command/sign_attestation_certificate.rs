@@ -1,6 +1,5 @@
-use yubihsm::{AsymmetricAlg, Capability};
-
 use crate::{generate_asymmetric_key, EC_P256_PUBLIC_KEY_SIZE, TEST_KEY_ID};
+use yubihsm::{AsymmetricAlg, Capability};
 
 /// Generate an attestation about a key in the HSM
 #[test]

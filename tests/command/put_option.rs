@@ -1,10 +1,10 @@
-use yubihsm::{AuditOption, CommandCode};
+use yubihsm::{command, AuditOption};
 
 /// Set the auditing options for a particular command
 #[test]
 fn command_audit_options_test() {
     let mut client = crate::get_hsm_client();
-    let command_type = CommandCode::Echo;
+    let command_type = command::Code::Echo;
 
     for audit_option in &[AuditOption::On, AuditOption::Off] {
         client

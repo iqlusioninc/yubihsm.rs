@@ -1,17 +1,16 @@
+use crate::command;
 use failure::Error;
 use serde::de::{self, Deserialize, Deserializer, Visitor};
 use serde::ser::{Serialize, Serializer};
 use std::fmt;
 
-use crate::command::CommandCode;
-
 /// Audit settings for a particular command
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct AuditCommand(pub CommandCode, pub AuditOption);
+pub struct AuditCommand(pub command::Code, pub AuditOption);
 
 impl AuditCommand {
     /// Get the command type
-    pub fn command_type(&self) -> CommandCode {
+    pub fn command_type(&self) -> command::Code {
         self.0
     }
 
@@ -36,7 +35,7 @@ pub enum AuditOption {
 }
 
 impl AuditOption {
-    /// Convert an unsigned byte into a ObjectType (if valid)
+    /// Convert an unsigned byte into a object::Type (if valid)
     pub fn from_u8(byte: u8) -> Result<Self, Error> {
         Ok(match byte {
             0x00 => AuditOption::Off,
@@ -92,7 +91,7 @@ pub(crate) enum AuditTag {
 }
 
 impl AuditTag {
-    /// Convert an unsigned byte into a ObjectType (if valid)
+    /// Convert an unsigned byte into a object::Type (if valid)
     pub fn from_u8(byte: u8) -> Result<Self, Error> {
         Ok(match byte {
             0x01 => AuditTag::Force,

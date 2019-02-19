@@ -1,4 +1,4 @@
-use yubihsm::{AsymmetricAlg, Capability, ObjectOrigin, ObjectType};
+use yubihsm::{object, AsymmetricAlg, Capability};
 
 use crate::test_vectors::ED25519_TEST_VECTORS;
 use crate::{put_asymmetric_key, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL};
@@ -14,14 +14,14 @@ fn ed25519_key_test() {
     put_asymmetric_key(&mut client, algorithm, capabilities, example_private_key);
 
     let object_info = client
-        .get_object_info(TEST_KEY_ID, ObjectType::AsymmetricKey)
+        .get_object_info(TEST_KEY_ID, object::Type::AsymmetricKey)
         .unwrap_or_else(|err| panic!("error getting object info: {}", err));
 
     assert_eq!(object_info.capabilities, capabilities);
     assert_eq!(object_info.object_id, TEST_KEY_ID);
     assert_eq!(object_info.domains, TEST_DOMAINS);
-    assert_eq!(object_info.object_type, ObjectType::AsymmetricKey);
+    assert_eq!(object_info.object_type, object::Type::AsymmetricKey);
     assert_eq!(object_info.algorithm, algorithm.into());
-    assert_eq!(object_info.origin, ObjectOrigin::Imported);
+    assert_eq!(object_info.origin, object::Origin::Imported);
     assert_eq!(&object_info.label.to_string().unwrap(), TEST_KEY_LABEL);
 }

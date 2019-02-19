@@ -2,22 +2,24 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Export_Wrapped.html>
 
-use crate::command::{Command, CommandCode};
-use crate::object::{ObjectId, ObjectType};
-use crate::response::Response;
-use crate::wrap::WrapMessage;
+use crate::{
+    command::{self, Command},
+    object,
+    response::Response,
+    wrap::WrapMessage,
+};
 
 /// Request parameters for `command::export_wrapped`
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct ExportWrappedCommand {
     /// ID of the wrap key to encrypt the object with
-    pub wrap_key_id: ObjectId,
+    pub wrap_key_id: object::Id,
 
     /// Type of object to be wrapped
-    pub object_type: ObjectType,
+    pub object_type: object::Type,
 
     /// Object ID of the object to be exported (in encrypted form)
-    pub object_id: ObjectId,
+    pub object_id: object::Id,
 }
 
 impl Command for ExportWrappedCommand {
@@ -29,5 +31,5 @@ impl Command for ExportWrappedCommand {
 pub(crate) struct ExportWrappedResponse(pub(crate) WrapMessage);
 
 impl Response for ExportWrappedResponse {
-    const COMMAND_CODE: CommandCode = CommandCode::ExportWrapped;
+    const COMMAND_CODE: command::Code = command::Code::ExportWrapped;
 }

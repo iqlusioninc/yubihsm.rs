@@ -2,71 +2,68 @@
 //!
 //! No logging is performed and these settings are not yet enforced
 
+use crate::{audit::*, command, serialization::serialize};
 use std::collections::BTreeMap;
-
-use crate::audit::*;
-use crate::command::CommandCode;
-use crate::serialization::serialize;
 
 /// Default per-command auditing options
 pub const DEFAULT_COMMAND_AUDIT_OPTIONS: &[AuditCommand] = &[
-    AuditCommand(CommandCode::Echo, AuditOption::Off),
-    AuditCommand(CommandCode::CreateSession, AuditOption::On),
-    AuditCommand(CommandCode::AuthenticateSession, AuditOption::On),
-    AuditCommand(CommandCode::SessionMessage, AuditOption::Off),
-    AuditCommand(CommandCode::DeviceInfo, AuditOption::Off),
-    AuditCommand(CommandCode::Bsl, AuditOption::Off),
-    AuditCommand(CommandCode::Command9, AuditOption::Off),
-    AuditCommand(CommandCode::ResetDevice, AuditOption::On),
-    AuditCommand(CommandCode::CloseSession, AuditOption::On),
-    AuditCommand(CommandCode::GetStorageInfo, AuditOption::On),
-    AuditCommand(CommandCode::PutOpaqueObject, AuditOption::On),
-    AuditCommand(CommandCode::GetOpaqueObject, AuditOption::On),
-    AuditCommand(CommandCode::PutAuthenticationKey, AuditOption::On),
-    AuditCommand(CommandCode::PutAsymmetricKey, AuditOption::On),
-    AuditCommand(CommandCode::GenerateAsymmetricKey, AuditOption::On),
-    AuditCommand(CommandCode::SignPkcs1, AuditOption::On),
-    AuditCommand(CommandCode::SignPss, AuditOption::On),
-    AuditCommand(CommandCode::SignEcdsa, AuditOption::On),
-    AuditCommand(CommandCode::ListObjects, AuditOption::On),
-    AuditCommand(CommandCode::DecryptPkcs1, AuditOption::On),
-    AuditCommand(CommandCode::DeriveEcdh, AuditOption::On),
-    AuditCommand(CommandCode::ExportWrapped, AuditOption::On),
-    AuditCommand(CommandCode::ImportWrapped, AuditOption::On),
-    AuditCommand(CommandCode::PutWrapKey, AuditOption::On),
-    AuditCommand(CommandCode::GetLogEntries, AuditOption::Off),
-    AuditCommand(CommandCode::SetLogIndex, AuditOption::On),
-    AuditCommand(CommandCode::GetObjectInfo, AuditOption::On),
-    AuditCommand(CommandCode::SetOption, AuditOption::On),
-    AuditCommand(CommandCode::GetOption, AuditOption::On),
-    AuditCommand(CommandCode::GetPseudoRandom, AuditOption::On),
-    AuditCommand(CommandCode::PutHmacKey, AuditOption::On),
-    AuditCommand(CommandCode::SignHmac, AuditOption::On),
-    AuditCommand(CommandCode::GetPublicKey, AuditOption::On),
-    AuditCommand(CommandCode::DeleteObject, AuditOption::On),
-    AuditCommand(CommandCode::DecryptOaep, AuditOption::On),
-    AuditCommand(CommandCode::GenerateHmacKey, AuditOption::On),
-    AuditCommand(CommandCode::GenerateWrapKey, AuditOption::On),
-    AuditCommand(CommandCode::VerifyHmac, AuditOption::On),
-    AuditCommand(CommandCode::SignSshCertificate, AuditOption::On),
-    AuditCommand(CommandCode::PutTemplate, AuditOption::On),
-    AuditCommand(CommandCode::GetTemplate, AuditOption::On),
-    AuditCommand(CommandCode::DecryptOtp, AuditOption::On),
-    AuditCommand(CommandCode::CreateOtpAead, AuditOption::On),
-    AuditCommand(CommandCode::RandomizeOtpAead, AuditOption::On),
-    AuditCommand(CommandCode::RewrapOtpAead, AuditOption::On),
-    AuditCommand(CommandCode::SignAttestationCertificate, AuditOption::On),
-    AuditCommand(CommandCode::PutOtpAead, AuditOption::On),
-    AuditCommand(CommandCode::GenerateOtpAead, AuditOption::On),
-    AuditCommand(CommandCode::WrapData, AuditOption::On),
-    AuditCommand(CommandCode::UnwrapData, AuditOption::On),
-    AuditCommand(CommandCode::SignEddsa, AuditOption::On),
-    AuditCommand(CommandCode::BlinkDevice, AuditOption::On),
+    AuditCommand(command::Code::Echo, AuditOption::Off),
+    AuditCommand(command::Code::CreateSession, AuditOption::On),
+    AuditCommand(command::Code::AuthenticateSession, AuditOption::On),
+    AuditCommand(command::Code::SessionMessage, AuditOption::Off),
+    AuditCommand(command::Code::DeviceInfo, AuditOption::Off),
+    AuditCommand(command::Code::Bsl, AuditOption::Off),
+    AuditCommand(command::Code::Command9, AuditOption::Off),
+    AuditCommand(command::Code::ResetDevice, AuditOption::On),
+    AuditCommand(command::Code::CloseSession, AuditOption::On),
+    AuditCommand(command::Code::GetStorageInfo, AuditOption::On),
+    AuditCommand(command::Code::PutOpaqueObject, AuditOption::On),
+    AuditCommand(command::Code::GetOpaqueObject, AuditOption::On),
+    AuditCommand(command::Code::PutAuthenticationKey, AuditOption::On),
+    AuditCommand(command::Code::PutAsymmetricKey, AuditOption::On),
+    AuditCommand(command::Code::GenerateAsymmetricKey, AuditOption::On),
+    AuditCommand(command::Code::SignPkcs1, AuditOption::On),
+    AuditCommand(command::Code::SignPss, AuditOption::On),
+    AuditCommand(command::Code::SignEcdsa, AuditOption::On),
+    AuditCommand(command::Code::ListObjects, AuditOption::On),
+    AuditCommand(command::Code::DecryptPkcs1, AuditOption::On),
+    AuditCommand(command::Code::DeriveEcdh, AuditOption::On),
+    AuditCommand(command::Code::ExportWrapped, AuditOption::On),
+    AuditCommand(command::Code::ImportWrapped, AuditOption::On),
+    AuditCommand(command::Code::PutWrapKey, AuditOption::On),
+    AuditCommand(command::Code::GetLogEntries, AuditOption::Off),
+    AuditCommand(command::Code::SetLogIndex, AuditOption::On),
+    AuditCommand(command::Code::GetObjectInfo, AuditOption::On),
+    AuditCommand(command::Code::SetOption, AuditOption::On),
+    AuditCommand(command::Code::GetOption, AuditOption::On),
+    AuditCommand(command::Code::GetPseudoRandom, AuditOption::On),
+    AuditCommand(command::Code::PutHmacKey, AuditOption::On),
+    AuditCommand(command::Code::SignHmac, AuditOption::On),
+    AuditCommand(command::Code::GetPublicKey, AuditOption::On),
+    AuditCommand(command::Code::DeleteObject, AuditOption::On),
+    AuditCommand(command::Code::DecryptOaep, AuditOption::On),
+    AuditCommand(command::Code::GenerateHmacKey, AuditOption::On),
+    AuditCommand(command::Code::GenerateWrapKey, AuditOption::On),
+    AuditCommand(command::Code::VerifyHmac, AuditOption::On),
+    AuditCommand(command::Code::SignSshCertificate, AuditOption::On),
+    AuditCommand(command::Code::PutTemplate, AuditOption::On),
+    AuditCommand(command::Code::GetTemplate, AuditOption::On),
+    AuditCommand(command::Code::DecryptOtp, AuditOption::On),
+    AuditCommand(command::Code::CreateOtpAead, AuditOption::On),
+    AuditCommand(command::Code::RandomizeOtpAead, AuditOption::On),
+    AuditCommand(command::Code::RewrapOtpAead, AuditOption::On),
+    AuditCommand(command::Code::SignAttestationCertificate, AuditOption::On),
+    AuditCommand(command::Code::PutOtpAead, AuditOption::On),
+    AuditCommand(command::Code::GenerateOtpAead, AuditOption::On),
+    AuditCommand(command::Code::WrapData, AuditOption::On),
+    AuditCommand(command::Code::UnwrapData, AuditOption::On),
+    AuditCommand(command::Code::SignEddsa, AuditOption::On),
+    AuditCommand(command::Code::BlinkDevice, AuditOption::On),
 ];
 
 /// Per-command auditing settings
 #[derive(Debug)]
-pub struct CommandAuditOptions(BTreeMap<CommandCode, AuditOption>);
+pub struct CommandAuditOptions(BTreeMap<command::Code, AuditOption>);
 
 impl CommandAuditOptions {
     /// Serialize these audit options for use as a `GetObjects` response
@@ -81,7 +78,7 @@ impl CommandAuditOptions {
     }
 
     /// Change a setting for a particular command
-    pub fn put(&mut self, command_type: CommandCode, audit_option: AuditOption) {
+    pub fn put(&mut self, command_type: command::Code, audit_option: AuditOption) {
         self.0.insert(command_type, audit_option);
     }
 }

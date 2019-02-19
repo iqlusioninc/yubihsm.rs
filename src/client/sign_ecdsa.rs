@@ -2,15 +2,17 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Sign_Ecdsa.html>
 
-use crate::command::{Command, CommandCode};
-use crate::object::ObjectId;
-use crate::response::Response;
+use crate::{
+    command::{self, Command},
+    object,
+    response::Response,
+};
 
 /// Request parameters for `command::sign_ecdsa*`
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct SignEcdsaCommand {
     /// ID of the key to perform the signature with
-    pub key_id: ObjectId,
+    pub key_id: object::Id,
 
     /// Digest of data to be signed
     pub digest: Vec<u8>,
@@ -25,7 +27,7 @@ impl Command for SignEcdsaCommand {
 pub struct EcdsaSignature(pub Vec<u8>);
 
 impl Response for EcdsaSignature {
-    const COMMAND_CODE: CommandCode = CommandCode::SignEcdsa;
+    const COMMAND_CODE: command::Code = command::Code::SignEcdsa;
 }
 
 #[allow(clippy::len_without_is_empty)]

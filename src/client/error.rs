@@ -1,9 +1,11 @@
 //! Errors that occur during sessions
 
-use crate::connector::{ConnectionError, ConnectionErrorKind};
-use crate::error::{Error, HsmErrorKind};
-use crate::serialization::SerializationError;
-use crate::session::{SessionError, SessionErrorKind};
+use crate::{
+    connector::{ConnectionError, ConnectionErrorKind},
+    error::{Error, HsmErrorKind},
+    serialization::SerializationError,
+    session::{SessionError, SessionErrorKind},
+};
 use std::{error::Error as StdError, io};
 
 /// Session errors

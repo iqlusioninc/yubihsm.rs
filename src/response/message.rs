@@ -8,25 +8,26 @@
 use byteorder::WriteBytesExt;
 use byteorder::{BigEndian, ByteOrder};
 
-use super::ResponseCode;
-use crate::command::CommandCode;
 #[cfg(feature = "mockhsm")]
 use crate::error::HsmErrorKind;
-use crate::session::{
-    securechannel::{Mac, MAC_SIZE},
-    SessionError,
-    SessionErrorKind::ProtocolError,
-    SessionId,
+use crate::{
+    command, response,
+    session::{
+        self,
+        securechannel::{Mac, MAC_SIZE},
+        SessionError,
+        SessionErrorKind::ProtocolError,
+    },
 };
 
 /// Command responses
 #[derive(Debug)]
-pub(crate) struct ResponseMessage {
+pub(crate) struct Message {
     /// Success (for a given command type) or an error type
-    pub code: ResponseCode,
+    pub code: response::Code,
 
     /// Session ID for this response
-    pub session_id: Option<SessionId>,
+    pub session_id: Option<session::Id>,
 
     /// "Response Data Field"
     pub data: Vec<u8>,
@@ -35,7 +36,7 @@ pub(crate) struct ResponseMessage {
     pub mac: Option<Mac>,
 }
 
-impl ResponseMessage {
+impl Message {
     /// Parse a response into a Response struct
     pub fn parse(mut bytes: Vec<u8>) -> Result<Self, SessionError> {
         if bytes.len() < 3 {
@@ -46,7 +47,7 @@ impl ResponseMessage {
             );
         }
 
-        let code = ResponseCode::from_u8(bytes[0]).map_err(|e| err!(ProtocolError, "{}", e))?;
+        let code = response::Code::from_u8(bytes[0]).map_err(|e| err!(ProtocolError, "{}", e))?;
         let length = BigEndian::read_u16(&bytes[1..3]) as usize;
 
         if length.checked_add(3).unwrap() != bytes.len() {
@@ -64,7 +65,7 @@ impl ResponseMessage {
             if bytes.is_empty() {
                 fail!(ProtocolError, "session ID missing");
             } else {
-                Some(SessionId::from_u8(bytes.remove(0))?)
+                Some(session::Id::from_u8(bytes.remove(0))?)
             }
         } else {
             None
@@ -91,11 +92,11 @@ impl ResponseMessage {
 
     /// Create a new response without an associated session
     #[cfg(feature = "mockhsm")]
-    pub fn new<T>(code: ResponseCode, response_data: T) -> ResponseMessage
+    pub fn new<T>(code: response::Code, response_data: T) -> Self
     where
         T: Into<Vec<u8>>,
     {
-        ResponseMessage {
+        Self {
             code,
             session_id: None,
             data: response_data.into(),
@@ -106,8 +107,8 @@ impl ResponseMessage {
     /// Create a new response message with a MAC
     #[cfg(feature = "mockhsm")]
     pub fn new_with_mac<D, M>(
-        code: ResponseCode,
-        session_id: SessionId,
+        code: response::Code,
+        session_id: session::Id,
         response_data: D,
         mac: M,
     ) -> Self
@@ -125,25 +126,25 @@ impl ResponseMessage {
 
     /// Create a successful response
     #[cfg(feature = "mockhsm")]
-    pub fn success<T>(command_type: CommandCode, response_data: T) -> ResponseMessage
+    pub fn success<T>(command_type: command::Code, response_data: T) -> Self
     where
         T: Into<Vec<u8>>,
     {
-        Self::new(ResponseCode::Success(command_type), response_data)
+        Self::new(response::Code::Success(command_type), response_data)
     }
 
     /// Did an error occur?
     pub fn is_err(&self) -> bool {
         match self.code {
-            ResponseCode::Success(_) => false,
+            response::Code::Success(_) => false,
             _ => true,
         }
     }
 
     /// Get the command being responded to
-    pub fn command(&self) -> Option<CommandCode> {
+    pub fn command(&self) -> Option<command::Code> {
         match self.code {
-            ResponseCode::Success(cmd) => Some(cmd),
+            response::Code::Success(cmd) => Some(cmd),
             _ => None,
         }
     }
@@ -165,14 +166,14 @@ impl ResponseMessage {
 }
 
 #[cfg(feature = "mockhsm")]
-impl From<HsmErrorKind> for ResponseMessage {
+impl From<HsmErrorKind> for Message {
     fn from(kind: HsmErrorKind) -> Self {
-        Self::new(ResponseCode::MemoryError, vec![kind.to_u8()])
+        Self::new(response::Code::MemoryError, vec![kind.to_u8()])
     }
 }
 
 #[cfg(feature = "mockhsm")]
-impl Into<Vec<u8>> for ResponseMessage {
+impl Into<Vec<u8>> for Message {
     /// Serialize this response, consuming it and producing a Vec<u8>
     fn into(mut self) -> Vec<u8> {
         let mut result = Vec::with_capacity(3 + self.len());
@@ -194,10 +195,10 @@ impl Into<Vec<u8>> for ResponseMessage {
 }
 
 /// Do responses with the given code include a session ID?
-fn has_session_id(code: ResponseCode) -> bool {
+fn has_session_id(code: response::Code) -> bool {
     match code {
-        ResponseCode::Success(cmd_type) => match cmd_type {
-            CommandCode::CreateSession | CommandCode::SessionMessage => true,
+        response::Code::Success(cmd_type) => match cmd_type {
+            command::Code::CreateSession | command::Code::SessionMessage => true,
             _ => false,
         },
         _ => false,
@@ -205,10 +206,10 @@ fn has_session_id(code: ResponseCode) -> bool {
 }
 
 /// Do responses with the given code have a Response-MAC (R-MAC) value?
-fn has_rmac(code: ResponseCode) -> bool {
+fn has_rmac(code: response::Code) -> bool {
     match code {
-        ResponseCode::Success(cmd_type) => match cmd_type {
-            CommandCode::SessionMessage => true,
+        response::Code::Success(cmd_type) => match cmd_type {
+            command::Code::SessionMessage => true,
             _ => false,
         },
         _ => false,

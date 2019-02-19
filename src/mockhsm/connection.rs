@@ -2,8 +2,10 @@ use std::sync::{Arc, Mutex};
 use uuid::Uuid;
 
 use super::{command, state::State, MockHsm};
-use crate::command::{CommandCode, CommandMessage};
-use crate::connector::{Connection, ConnectionError, ConnectionErrorKind::ConnectionFailed};
+use crate::{
+    command::{Code, Message},
+    connector::{Connection, ConnectionError, ConnectionErrorKind::ConnectionFailed},
+};
 
 /// A mocked connection to the MockHsm
 pub struct MockConnection(Arc<Mutex<State>>);
@@ -18,7 +20,7 @@ impl MockConnection {
 impl Connection for MockConnection {
     /// Send a message to the MockHsm
     fn send_message(&self, _uuid: Uuid, body: Vec<u8>) -> Result<Vec<u8>, ConnectionError> {
-        let command = CommandMessage::parse(body)
+        let command = Message::parse(body)
             .map_err(|e| err!(ConnectionFailed, "error parsing command: {}", e))?;
 
         let mut state = self
@@ -27,9 +29,9 @@ impl Connection for MockConnection {
             .map_err(|e| err!(ConnectionFailed, "error obtaining state lock: {}", e))?;
 
         match command.command_type {
-            CommandCode::CreateSession => command::create_session(&mut state, &command),
-            CommandCode::AuthenticateSession => command::authenticate_session(&mut state, &command),
-            CommandCode::SessionMessage => command::session_message(&mut state, command),
+            Code::CreateSession => command::create_session(&mut state, &command),
+            Code::AuthenticateSession => command::authenticate_session(&mut state, &command),
+            Code::SessionMessage => command::session_message(&mut state, command),
             unsupported => fail!(ConnectionFailed, "unsupported command: {:?}", unsupported),
         }
     }

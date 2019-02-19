@@ -1,9 +1,10 @@
+use crate::{
+    generate_asymmetric_key, put_asymmetric_key, test_vectors::ED25519_TEST_VECTORS, TEST_KEY_ID,
+    TEST_MESSAGE,
+};
 use ring;
 use untrusted;
 use yubihsm::{AsymmetricAlg, Capability};
-
-use crate::test_vectors::ED25519_TEST_VECTORS;
-use crate::{generate_asymmetric_key, put_asymmetric_key, TEST_KEY_ID, TEST_MESSAGE};
 
 /// Test Ed25519 against RFC 8032 test vectors
 #[test]

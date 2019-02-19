@@ -31,7 +31,6 @@ mod list_objects;
 mod put_asymmetric_key;
 mod put_authentication_key;
 mod put_hmac_key;
-mod put_object;
 mod put_opaque;
 mod put_otp_aead_key;
 mod put_wrap_key;
@@ -50,21 +49,7 @@ mod unwrap_data;
 mod verify_hmac;
 mod wrap_data;
 
-#[cfg(feature = "rsa")]
-use sha2::{Digest, Sha256};
-use std::time::{Duration, Instant};
-use uuid::Uuid;
-
 pub use self::error::{ClientError, ClientErrorKind};
-
-use self::error::ClientErrorKind::*;
-pub(crate) use self::{
-    blink_device::*, delete_object::*, echo::*, export_wrapped::*, generate_asymmetric_key::*,
-    generate_hmac_key::*, generate_key::*, generate_wrap_key::*, get_object_info::*, get_opaque::*,
-    get_option::*, get_pseudo_random::*, put_asymmetric_key::*, put_authentication_key::*,
-    put_hmac_key::*, put_object::*, put_opaque::*, put_otp_aead_key::*, put_wrap_key::*,
-    set_log_index::*, set_option::*, unwrap_data::*, verify_hmac::*, wrap_data::*,
-};
 pub use self::{
     device_info::*, get_log_entries::*, get_public_key::*, get_storage_info::*, import_wrapped::*,
     list_objects::*, reset_device::*, sign_attestation_certificate::*, sign_ecdsa::*,
@@ -72,20 +57,35 @@ pub use self::{
 };
 #[cfg(feature = "rsa")]
 pub use self::{sign_rsa_pkcs1v15::*, sign_rsa_pss::*};
-use crate::algorithm::*;
-use crate::audit::*;
-use crate::authentication_key::AuthenticationKey;
-use crate::capability::Capability;
-use crate::command::{Command, CommandCode};
-use crate::connector::Connector;
-use crate::credentials::Credentials;
-use crate::domain::Domain;
-use crate::object::{ObjectHandle, ObjectId, ObjectInfo, ObjectLabel, ObjectType};
-use crate::serialization::{deserialize, serialize};
-use crate::session::{Session, SessionId, SessionTimeout};
-use crate::wrap::WrapMessage;
+
+use self::error::ClientErrorKind::*;
+pub(crate) use self::{
+    blink_device::*, delete_object::*, echo::*, export_wrapped::*, generate_asymmetric_key::*,
+    generate_hmac_key::*, generate_key::*, generate_wrap_key::*, get_object_info::*, get_opaque::*,
+    get_option::*, get_pseudo_random::*, put_asymmetric_key::*, put_authentication_key::*,
+    put_hmac_key::*, put_opaque::*, put_otp_aead_key::*, put_wrap_key::*, set_log_index::*,
+    set_option::*, unwrap_data::*, verify_hmac::*, wrap_data::*,
+};
+use crate::{
+    algorithm::*,
+    audit::*,
+    authentication_key::AuthenticationKey,
+    capability::Capability,
+    command::{self, Command},
+    connector::Connector,
+    credentials::Credentials,
+    domain::Domain,
+    object,
+    serialization::{deserialize, serialize},
+    session::{self, Session},
+    wrap::WrapMessage,
+};
 #[cfg(feature = "rsa")]
 use byteorder::{BigEndian, ByteOrder};
+#[cfg(feature = "rsa")]
+use sha2::{Digest, Sha256};
+use std::time::{Duration, Instant};
+use uuid::Uuid;
 
 /// YubiHSM client: main API in this crate for accessing functions of the
 /// HSM hardware device.
@@ -154,7 +154,7 @@ impl Client {
     }
 
     /// Get the current session ID (if we have an open session).
-    pub fn session_id(&self) -> Option<SessionId> {
+    pub fn session_id(&self) -> Option<session::Id> {
         self.session.as_ref().and_then(|s| Some(s.id()))
     }
 
@@ -170,7 +170,7 @@ impl Client {
             self.credentials
                 .as_ref()
                 .ok_or_else(|| err!(AuthFail, "session reconnection disabled"))?,
-            SessionTimeout::default(),
+            session::Timeout::default(),
         )?;
 
         self.session = Some(session);
@@ -218,8 +218,8 @@ impl Client {
     /// <https://developers.yubico.com/YubiHSM2/Commands/Delete_Object.html>
     pub fn delete_object(
         &mut self,
-        object_id: ObjectId,
-        object_type: ObjectType,
+        object_id: object::Id,
+        object_type: object::Type,
     ) -> Result<(), ClientError> {
         self.send_command(DeleteObjectCommand {
             object_id,
@@ -254,9 +254,9 @@ impl Client {
     /// <https://developers.yubico.com/YubiHSM2/Commands/Export_Wrapped.html>
     pub fn export_wrapped(
         &mut self,
-        wrap_key_id: ObjectId,
-        object_type: ObjectType,
-        object_id: ObjectId,
+        wrap_key_id: object::Id,
+        object_type: object::Type,
+        object_id: object::Id,
     ) -> Result<WrapMessage, ClientError> {
         Ok(self
             .send_command(ExportWrappedCommand {
@@ -272,12 +272,12 @@ impl Client {
     /// <https://developers.yubico.com/YubiHSM2/Commands/Generate_Asymmetric_Key.html>
     pub fn generate_asymmetric_key(
         &mut self,
-        key_id: ObjectId,
-        label: ObjectLabel,
+        key_id: object::Id,
+        label: object::Label,
         domains: Domain,
         capabilities: Capability,
         algorithm: AsymmetricAlg,
-    ) -> Result<ObjectId, ClientError> {
+    ) -> Result<object::Id, ClientError> {
         Ok(self
             .send_command(GenAsymmetricKeyCommand(GenerateKeyParams {
                 key_id,
@@ -294,12 +294,12 @@ impl Client {
     /// <https://developers.yubico.com/YubiHSM2/Commands/Generate_Hmac_Key.html>
     pub fn generate_hmac_key(
         &mut self,
-        key_id: ObjectId,
-        label: ObjectLabel,
+        key_id: object::Id,
+        label: object::Label,
         domains: Domain,
         capabilities: Capability,
         algorithm: HmacAlg,
-    ) -> Result<ObjectId, ClientError> {
+    ) -> Result<object::Id, ClientError> {
         Ok(self
             .send_command(GenHMACKeyCommand(GenerateKeyParams {
                 key_id,
@@ -319,13 +319,13 @@ impl Client {
     /// <https://developers.yubico.com/YubiHSM2/Commands/Generate_Wrap_Key.html>
     pub fn generate_wrap_key(
         &mut self,
-        key_id: ObjectId,
-        label: ObjectLabel,
+        key_id: object::Id,
+        label: object::Label,
         domains: Domain,
         capabilities: Capability,
         delegated_capabilities: Capability,
         algorithm: WrapAlg,
-    ) -> Result<ObjectId, ClientError> {
+    ) -> Result<object::Id, ClientError> {
         Ok(self
             .send_command(GenWrapKeyCommand {
                 params: GenerateKeyParams {
@@ -352,11 +352,11 @@ impl Client {
     /// <https://developers.yubico.com/YubiHSM2/Commands/Get_Object_Info.html>
     pub fn get_object_info(
         &mut self,
-        object_id: ObjectId,
-        object_type: ObjectType,
-    ) -> Result<ObjectInfo, ClientError> {
+        object_id: object::Id,
+        object_type: object::Type,
+    ) -> Result<object::Info, ClientError> {
         Ok(self
-            .send_command(GetObjectInfoCommand(ObjectHandle::new(
+            .send_command(GetObjectInfoCommand(object::Handle::new(
                 object_id,
                 object_type,
             )))?
@@ -366,7 +366,7 @@ impl Client {
     /// Get an opaque object stored in the HSM.
     ///
     /// <https://developers.yubico.com/YubiHSM2/Commands/Get_Opaque.html>
-    pub fn get_opaque(&mut self, object_id: ObjectId) -> Result<Vec<u8>, ClientError> {
+    pub fn get_opaque(&mut self, object_id: object::Id) -> Result<Vec<u8>, ClientError> {
         Ok(self.send_command(GetOpaqueCommand { object_id })?.0)
     }
 
@@ -375,7 +375,7 @@ impl Client {
     /// <https://developers.yubico.com/YubiHSM2/Commands/Get_Option.html>
     pub fn get_command_audit_option(
         &mut self,
-        command: CommandCode,
+        command: command::Code,
     ) -> Result<AuditOption, ClientError> {
         let command_audit_options = self.get_commands_audit_options()?;
         Ok(command_audit_options
@@ -438,7 +438,7 @@ impl Client {
     /// Get the public key for an asymmetric key stored on the device.
     ///
     /// <https://developers.yubico.com/YubiHSM2/Commands/Get_Public_Key.html>
-    pub fn get_public_key(&mut self, key_id: ObjectId) -> Result<PublicKey, ClientError> {
+    pub fn get_public_key(&mut self, key_id: object::Id) -> Result<PublicKey, ClientError> {
         Ok(self.send_command(GetPubKeyCommand { key_id })?)
     }
 
@@ -454,7 +454,7 @@ impl Client {
     /// <https://developers.yubico.com/YubiHSM2/Commands/Import_Wrapped.html>
     pub fn import_wrapped<M>(
         &mut self,
-        wrap_key_id: ObjectId,
+        wrap_key_id: object::Id,
         wrap_message: M,
     ) -> Result<ImportWrappedResponse, ClientError>
     where
@@ -493,13 +493,13 @@ impl Client {
     /// <https://developers.yubico.com/YubiHSM2/Commands/Put_Asymmetric.html>
     pub fn put_asymmetric_key<K>(
         &mut self,
-        key_id: ObjectId,
-        label: ObjectLabel,
+        key_id: object::Id,
+        label: object::Label,
         domains: Domain,
         capabilities: Capability,
         algorithm: AsymmetricAlg,
         key_bytes: K,
-    ) -> Result<ObjectId, ClientError>
+    ) -> Result<object::Id, ClientError>
     where
         K: Into<Vec<u8>>,
     {
@@ -517,7 +517,7 @@ impl Client {
 
         Ok(self
             .send_command(PutAsymmetricKeyCommand {
-                params: PutObjectParams {
+                params: object::ImportParams {
                     id: key_id,
                     label,
                     domains,
@@ -534,20 +534,20 @@ impl Client {
     /// <https://developers.yubico.com/YubiHSM2/Commands/Put_Authentication_Key.html>
     pub fn put_authentication_key<K>(
         &mut self,
-        key_id: ObjectId,
-        label: ObjectLabel,
+        key_id: object::Id,
+        label: object::Label,
         domains: Domain,
         capabilities: Capability,
         delegated_capabilities: Capability,
         algorithm: AuthenticationAlg,
         authentication_key: K,
-    ) -> Result<ObjectId, ClientError>
+    ) -> Result<object::Id, ClientError>
     where
         K: Into<AuthenticationKey>,
     {
         Ok(self
             .send_command(PutAuthenticationKeyCommand {
-                params: PutObjectParams {
+                params: object::ImportParams {
                     id: key_id,
                     label,
                     domains,
@@ -565,13 +565,13 @@ impl Client {
     /// <https://developers.yubico.com/YubiHSM2/Commands/Put_Hmac_Key.html>
     pub fn put_hmac_key<K>(
         &mut self,
-        key_id: ObjectId,
-        label: ObjectLabel,
+        key_id: object::Id,
+        label: object::Label,
         domains: Domain,
         capabilities: Capability,
         algorithm: HmacAlg,
         key_bytes: K,
-    ) -> Result<ObjectId, ClientError>
+    ) -> Result<object::Id, ClientError>
     where
         K: Into<Vec<u8>>,
     {
@@ -590,7 +590,7 @@ impl Client {
 
         Ok(self
             .send_command(PutHMACKeyCommand {
-                params: PutObjectParams {
+                params: object::ImportParams {
                     id: key_id,
                     label,
                     domains,
@@ -607,19 +607,19 @@ impl Client {
     /// <https://developers.yubico.com/YubiHSM2/Commands/Put_Opaque.html>
     pub fn put_opaque<B>(
         &mut self,
-        object_id: ObjectId,
-        label: ObjectLabel,
+        object_id: object::Id,
+        label: object::Label,
         domains: Domain,
         capabilities: Capability,
         algorithm: OpaqueAlg,
         opaque_data: B,
-    ) -> Result<ObjectId, ClientError>
+    ) -> Result<object::Id, ClientError>
     where
         B: Into<Vec<u8>>,
     {
         Ok(self
             .send_command(PutOpaqueCommand {
-                params: PutObjectParams {
+                params: object::ImportParams {
                     id: object_id,
                     label,
                     domains,
@@ -653,13 +653,13 @@ impl Client {
     /// <https://developers.yubico.com/YubiHSM2/Commands/Put_Otp_Aead_Key.html>
     pub fn put_otp_aead_key<K>(
         &mut self,
-        key_id: ObjectId,
-        label: ObjectLabel,
+        key_id: object::Id,
+        label: object::Label,
         domains: Domain,
         capabilities: Capability,
         algorithm: YubicoOtpAlg,
         key_bytes: K,
-    ) -> Result<ObjectId, ClientError>
+    ) -> Result<object::Id, ClientError>
     where
         K: Into<Vec<u8>>,
     {
@@ -677,7 +677,7 @@ impl Client {
 
         Ok(self
             .send_command(PutOTPAEADKeyCommand {
-                params: PutObjectParams {
+                params: object::ImportParams {
                     id: key_id,
                     label,
                     domains,
@@ -694,14 +694,14 @@ impl Client {
     /// <https://developers.yubico.com/YubiHSM2/Commands/Put_Wrap_Key.html>
     pub fn put_wrap_key<K>(
         &mut self,
-        key_id: ObjectId,
-        label: ObjectLabel,
+        key_id: object::Id,
+        label: object::Label,
         domains: Domain,
         capabilities: Capability,
         delegated_capabilities: Capability,
         algorithm: WrapAlg,
         key_bytes: K,
-    ) -> Result<ObjectId, ClientError>
+    ) -> Result<object::Id, ClientError>
     where
         K: Into<Vec<u8>>,
     {
@@ -719,7 +719,7 @@ impl Client {
 
         Ok(self
             .send_command(PutWrapKeyCommand {
-                params: PutObjectParams {
+                params: object::ImportParams {
                     id: key_id,
                     label,
                     domains,
@@ -756,7 +756,7 @@ impl Client {
     /// <https://developers.yubico.com/YubiHSM2/Commands/Set_Option.html>
     pub fn set_audit_option(
         &mut self,
-        command: CommandCode,
+        command: command::Code,
         audit_option: AuditOption,
     ) -> Result<(), ClientError> {
         self.send_command(SetOptionCommand {
@@ -790,8 +790,8 @@ impl Client {
     /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Attestation_Certificate.html>
     pub fn sign_attestation_certificate(
         &mut self,
-        key_id: ObjectId,
-        attestation_key_id: Option<ObjectId>,
+        key_id: object::Id,
+        attestation_key_id: Option<object::Id>,
     ) -> Result<AttestationCertificate, ClientError> {
         Ok(self.send_command(SignAttestationCertificateCommand {
             key_id,
@@ -820,7 +820,7 @@ impl Client {
     /// [signatory-yubihsm]: https://docs.rs/signatory-yubihsm/latest/signatory_yubihsm/ecdsa/struct.ECDSASigner.html
     pub fn sign_ecdsa<T>(
         &mut self,
-        key_id: ObjectId,
+        key_id: object::Id,
         digest: T,
     ) -> Result<EcdsaSignature, ClientError>
     where
@@ -837,7 +837,7 @@ impl Client {
     /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Eddsa.html>
     pub fn sign_ed25519<T>(
         &mut self,
-        key_id: ObjectId,
+        key_id: object::Id,
         data: T,
     ) -> Result<Ed25519Signature, ClientError>
     where
@@ -852,7 +852,7 @@ impl Client {
     /// Compute an HMAC tag of the given data with the given key ID.
     ///
     /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Hmac.html>
-    pub fn sign_hmac<M>(&mut self, key_id: ObjectId, msg: M) -> Result<HmacTag, ClientError>
+    pub fn sign_hmac<M>(&mut self, key_id: object::Id, msg: M) -> Result<HmacTag, ClientError>
     where
         M: Into<Vec<u8>>,
     {
@@ -871,7 +871,7 @@ impl Client {
     #[cfg(feature = "rsa")]
     pub fn sign_rsa_pkcs1v15_sha256(
         &mut self,
-        key_id: ObjectId,
+        key_id: object::Id,
         data: &[u8],
     ) -> Result<RsaPkcs1Signature, ClientError> {
         Ok(self.send_command(SignPkcs1Command {
@@ -889,7 +889,7 @@ impl Client {
     #[cfg(feature = "rsa")]
     pub fn sign_rsa_pss_sha256(
         &mut self,
-        key_id: ObjectId,
+        key_id: object::Id,
         data: &[u8],
     ) -> Result<RsaPssSignature, ClientError> {
         ensure!(
@@ -920,7 +920,7 @@ impl Client {
     /// <https://developers.yubico.com/YubiHSM2/Commands/Unwrap_Data.html>
     pub fn unwrap_data<M>(
         &mut self,
-        wrap_key_id: ObjectId,
+        wrap_key_id: object::Id,
         wrap_message: M,
     ) -> Result<Vec<u8>, ClientError>
     where
@@ -940,7 +940,12 @@ impl Client {
     /// Verify an HMAC tag of the given data with the given key ID.
     ///
     /// <https://developers.yubico.com/YubiHSM2/Commands/Verify_Hmac.html>
-    pub fn verify_hmac<M, T>(&mut self, key_id: ObjectId, msg: M, tag: T) -> Result<(), ClientError>
+    pub fn verify_hmac<M, T>(
+        &mut self,
+        key_id: object::Id,
+        msg: M,
+        tag: T,
+    ) -> Result<(), ClientError>
     where
         M: Into<Vec<u8>>,
         T: Into<HmacTag>,
@@ -963,7 +968,7 @@ impl Client {
     /// <https://developers.yubico.com/YubiHSM2/Commands/Wrap_Data.html>
     pub fn wrap_data(
         &mut self,
-        wrap_key_id: ObjectId,
+        wrap_key_id: object::Id,
         plaintext: Vec<u8>,
     ) -> Result<WrapMessage, ClientError> {
         Ok(self

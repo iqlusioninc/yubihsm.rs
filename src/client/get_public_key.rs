@@ -3,16 +3,17 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/Get_Public_Key.html>
 
 use crate::{
-    command::{Command, CommandCode},
+    command::{self, Command},
+    object,
     response::Response,
-    AsymmetricAlg, ObjectId,
+    AsymmetricAlg,
 };
 
 /// Request parameters for `command::get_public_key`
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct GetPubKeyCommand {
     /// Object ID of the key to obtain the corresponding pubkey for
-    pub key_id: ObjectId,
+    pub key_id: object::Id,
 }
 
 impl Command for GetPubKeyCommand {
@@ -41,7 +42,7 @@ pub struct PublicKey {
 }
 
 impl Response for PublicKey {
-    const COMMAND_CODE: CommandCode = CommandCode::GetPublicKey;
+    const COMMAND_CODE: command::Code = command::Code::GetPublicKey;
 }
 
 #[allow(clippy::len_without_is_empty)]

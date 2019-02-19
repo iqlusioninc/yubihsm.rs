@@ -1,6 +1,5 @@
-use yubihsm::{client::Filter, AsymmetricAlg, Capability, ObjectType};
-
 use crate::{generate_asymmetric_key, TEST_KEY_ID};
+use yubihsm::{client::Filter, object, AsymmetricAlg, Capability};
 
 /// List the objects in the YubiHSM2
 #[test]
@@ -16,7 +15,7 @@ fn list_objects_test() {
     // Look for the asymmetric key we just generated
     assert!(objects
         .iter()
-        .find(|i| i.object_id == TEST_KEY_ID && i.object_type == ObjectType::AsymmetricKey)
+        .find(|i| i.object_id == TEST_KEY_ID && i.object_type == object::Type::AsymmetricKey)
         .is_some());
 }
 
@@ -26,10 +25,10 @@ fn list_objects_with_filter() {
     let mut client = crate::get_hsm_client();
 
     let objects = client
-        .list_objects(&[Filter::Type(ObjectType::AuthenticationKey)])
+        .list_objects(&[Filter::Type(object::Type::AuthenticationKey)])
         .unwrap_or_else(|err| panic!("error listing objects: {}", err));
 
     assert!(objects
         .iter()
-        .all(|obj| obj.object_type == ObjectType::AuthenticationKey));
+        .all(|obj| obj.object_type == object::Type::AuthenticationKey));
 }

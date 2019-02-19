@@ -2,18 +2,20 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Delete_Object.html>
 
-use crate::command::{Command, CommandCode};
-use crate::object::{ObjectId, ObjectType};
-use crate::response::Response;
+use crate::{
+    command::{self, Command},
+    object,
+    response::Response,
+};
 
 /// Request parameters for `command::delete_object`
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct DeleteObjectCommand {
     /// Object ID to delete
-    pub object_id: ObjectId,
+    pub object_id: object::Id,
 
     /// Type of object to delete
-    pub object_type: ObjectType,
+    pub object_type: object::Type,
 }
 
 impl Command for DeleteObjectCommand {
@@ -25,5 +27,5 @@ impl Command for DeleteObjectCommand {
 pub(crate) struct DeleteObjectResponse {}
 
 impl Response for DeleteObjectResponse {
-    const COMMAND_CODE: CommandCode = CommandCode::DeleteObject;
+    const COMMAND_CODE: command::Code = command::Code::DeleteObject;
 }
