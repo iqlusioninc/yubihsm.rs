@@ -2,16 +2,18 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Unwrap_Data.html>
 
-use crate::command::{Command, CommandCode};
-use crate::object::ObjectId;
-use crate::response::Response;
-use crate::wrap::WrapNonce;
+use crate::{
+    command::{self, Command},
+    object,
+    response::Response,
+    wrap::WrapNonce,
+};
 
 /// Request parameters for `command::unwrap_data`
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct UnwrapDataCommand {
     /// ID of the wrap key to decrypt the object with
-    pub wrap_key_id: ObjectId,
+    pub wrap_key_id: object::Id,
 
     /// Nonce used to encrypt the wrapped data
     pub nonce: WrapNonce,
@@ -29,5 +31,5 @@ impl Command for UnwrapDataCommand {
 pub(crate) struct UnwrapDataResponse(pub(crate) Vec<u8>);
 
 impl Response for UnwrapDataResponse {
-    const COMMAND_CODE: CommandCode = CommandCode::UnwrapData;
+    const COMMAND_CODE: command::Code = command::Code::UnwrapData;
 }

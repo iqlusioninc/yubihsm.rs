@@ -3,10 +3,12 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/Generate_Wrap_Key.html>
 
 use super::generate_key::GenerateKeyParams;
-use crate::capability::Capability;
-use crate::command::{Command, CommandCode};
-use crate::object::ObjectId;
-use crate::response::Response;
+use crate::{
+    capability::Capability,
+    command::{self, Command},
+    object,
+    response::Response,
+};
 
 /// Request parameters for `command::generate_wrap_key`
 #[derive(Serialize, Deserialize, Debug)]
@@ -26,9 +28,9 @@ impl Command for GenWrapKeyCommand {
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct GenWrapKeyResponse {
     /// ID of the key
-    pub key_id: ObjectId,
+    pub key_id: object::Id,
 }
 
 impl Response for GenWrapKeyResponse {
-    const COMMAND_CODE: CommandCode = CommandCode::GenerateWrapKey;
+    const COMMAND_CODE: command::Code = command::Code::GenerateWrapKey;
 }

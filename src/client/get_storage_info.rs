@@ -2,8 +2,10 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Get_Storage_Info.html>
 
-use crate::command::{Command, CommandCode};
-use crate::response::Response;
+use crate::{
+    command::{self, Command},
+    response::Response,
+};
 
 /// Request parameters for `command::get_storage_info`
 #[derive(Serialize, Deserialize, Debug)]
@@ -33,5 +35,5 @@ pub struct GetStorageInfoResponse {
 }
 
 impl Response for GetStorageInfoResponse {
-    const COMMAND_CODE: CommandCode = CommandCode::GetStorageInfo;
+    const COMMAND_CODE: command::Code = command::Code::GetStorageInfo;
 }

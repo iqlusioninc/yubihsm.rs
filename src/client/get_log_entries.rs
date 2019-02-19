@@ -2,11 +2,12 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Get_Log_Entries.html>
 
+use crate::{
+    command::{self, Command},
+    object,
+    response::{self, Response},
+};
 use std::fmt::{self, Debug};
-
-use crate::command::{Command, CommandCode};
-use crate::object::ObjectId;
-use crate::response::{Response, ResponseCode};
 
 /// Request parameters for `command::get_log_entries`
 #[derive(Serialize, Deserialize, Debug)]
@@ -33,7 +34,7 @@ pub struct LogEntries {
 }
 
 impl Response for LogEntries {
-    const COMMAND_CODE: CommandCode = CommandCode::GetLogEntries;
+    const COMMAND_CODE: command::Code = command::Code::GetLogEntries;
 }
 
 /// Entry in the log response
@@ -43,22 +44,22 @@ pub struct LogEntry {
     pub item: u16,
 
     /// Command type
-    pub cmd: CommandCode,
+    pub cmd: command::Code,
 
     /// Command length
     pub length: u16,
 
     /// Session key ID
-    pub session_key: ObjectId,
+    pub session_key: object::Id,
 
     /// Target key ID
-    pub target_key: ObjectId,
+    pub target_key: object::Id,
 
     /// Second key affected
-    pub second_key: ObjectId,
+    pub second_key: object::Id,
 
     /// Result of the operation
-    pub result: ResponseCode,
+    pub result: response::Code,
 
     /// Tick count of the HSM's internal clock
     pub tick: u32,

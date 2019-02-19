@@ -4,8 +4,10 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Set_Log_Index.html>
 
-use crate::command::{Command, CommandCode};
-use crate::response::Response;
+use crate::{
+    command::{self, Command},
+    response::Response,
+};
 
 /// Request parameters for `command::set_log_index`
 #[derive(Serialize, Deserialize, Debug)]
@@ -23,5 +25,5 @@ impl Command for SetLogIndexCommand {
 pub(crate) struct SetLogIndexResponse {}
 
 impl Response for SetLogIndexResponse {
-    const COMMAND_CODE: CommandCode = CommandCode::SetLogIndex;
+    const COMMAND_CODE: command::Code = command::Code::SetLogIndex;
 }

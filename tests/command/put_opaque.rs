@@ -1,4 +1,4 @@
-use yubihsm::{Capability, ObjectType, OpaqueAlg};
+use yubihsm::{object, Capability, OpaqueAlg};
 
 use crate::{clear_test_key_slot, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL, TEST_MESSAGE};
 
@@ -7,7 +7,7 @@ use crate::{clear_test_key_slot, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL, TEST
 fn opaque_object_test() {
     let mut client = crate::get_hsm_client();
 
-    clear_test_key_slot(&mut client, ObjectType::Opaque);
+    clear_test_key_slot(&mut client, object::Type::Opaque);
 
     let object_id = client
         .put_opaque(

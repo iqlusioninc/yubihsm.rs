@@ -5,7 +5,7 @@
 
 use crate::{
     audit::*,
-    command::{Command, CommandCode},
+    command::{self, Command},
     response::Response,
 };
 
@@ -31,5 +31,5 @@ impl Command for SetOptionCommand {
 pub(crate) struct PutOptionResponse {}
 
 impl Response for PutOptionResponse {
-    const COMMAND_CODE: CommandCode = CommandCode::SetOption;
+    const COMMAND_CODE: command::Code = command::Code::SetOption;
 }

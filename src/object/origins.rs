@@ -20,7 +20,7 @@ pub enum Origin {
 }
 
 impl Origin {
-    /// Convert an unsigned byte into a ObjectOrigin (if valid)
+    /// Convert an unsigned byte into a object::Origin (if valid)
     pub fn from_u8(byte: u8) -> Result<Self, Error> {
         Ok(match byte {
             0x01 => Origin::Generated,

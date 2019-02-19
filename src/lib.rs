@@ -148,28 +148,31 @@ pub mod response;
 /// HSM serial numbers.
 mod serial_number;
 
+/// Support for initial HSM provisioning including creating authentication
+/// keys, wrap keys, and configuring auditing
+
 /// Object wrapping support, i.e. encrypt objects from one HSM to another.
 pub mod wrap;
 
-pub use crate::algorithm::*;
-pub use crate::audit::AuditOption;
-pub use crate::authentication_key::{AuthenticationKey, AUTHENTICATION_KEY_SIZE};
-pub use crate::capability::Capability;
-pub use crate::client::{Client, ClientError};
-pub use crate::command::CommandCode;
 #[cfg(feature = "http")]
 pub use crate::connector::http::{HttpConfig, HttpConnector};
 #[cfg(feature = "usb")]
 pub use crate::connector::usb::{UsbConfig, UsbConnector};
-pub use crate::connector::{Connection, ConnectionError, Connector};
-pub use crate::credentials::Credentials;
-pub use crate::domain::Domain;
-pub use crate::error::*;
 #[cfg(feature = "mockhsm")]
 pub use crate::mockhsm::MockHsm;
-pub use crate::object::*;
-pub use crate::response::ResponseCode;
-pub use crate::serial_number::SerialNumber;
-pub use crate::session::SessionId;
-pub use crate::wrap::{WrapMessage, WrapNonce};
+
+pub use crate::{
+    algorithm::*,
+    audit::AuditOption,
+    authentication_key::{AuthenticationKey, AUTHENTICATION_KEY_SIZE},
+    capability::Capability,
+    client::{Client, ClientError},
+    connector::{Connection, ConnectionError, Connector},
+    credentials::Credentials,
+    domain::Domain,
+    error::*,
+    object::*,
+    serial_number::SerialNumber,
+    wrap::{WrapMessage, WrapNonce},
+};
 pub use uuid::Uuid;

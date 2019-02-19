@@ -8,7 +8,7 @@ use serde::{
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 #[allow(missing_docs)]
 #[repr(u8)]
-pub enum CommandCode {
+pub enum Code {
     Unknown = 0x00,
     Echo = 0x01,
     CreateSession = 0x03,
@@ -66,65 +66,65 @@ pub enum CommandCode {
     Error = 0x7f,
 }
 
-impl CommandCode {
-    /// Convert an unsigned byte into a `CommandCode` (if valid)
+impl Code {
+    /// Convert an unsigned byte into a `command::Code` (if valid)
     pub fn from_u8(byte: u8) -> Result<Self, Error> {
         Ok(match byte {
-            0x00 => CommandCode::Unknown,
-            0x01 => CommandCode::Echo,
-            0x03 => CommandCode::CreateSession,
-            0x04 => CommandCode::AuthenticateSession,
-            0x05 => CommandCode::SessionMessage,
-            0x06 => CommandCode::DeviceInfo,
-            0x07 => CommandCode::Bsl,
-            0x08 => CommandCode::ResetDevice,
-            0x09 => CommandCode::Command9,
-            0x40 => CommandCode::CloseSession,
-            0x41 => CommandCode::GetStorageInfo,
-            0x42 => CommandCode::PutOpaqueObject,
-            0x43 => CommandCode::GetOpaqueObject,
-            0x44 => CommandCode::PutAuthenticationKey,
-            0x45 => CommandCode::PutAsymmetricKey,
-            0x46 => CommandCode::GenerateAsymmetricKey,
-            0x47 => CommandCode::SignPkcs1,
-            0x48 => CommandCode::ListObjects,
-            0x49 => CommandCode::DecryptPkcs1,
-            0x4a => CommandCode::ExportWrapped,
-            0x4b => CommandCode::ImportWrapped,
-            0x4c => CommandCode::PutWrapKey,
-            0x4d => CommandCode::GetLogEntries,
-            0x4e => CommandCode::GetObjectInfo,
-            0x4f => CommandCode::SetOption,
-            0x50 => CommandCode::GetOption,
-            0x51 => CommandCode::GetPseudoRandom,
-            0x52 => CommandCode::PutHmacKey,
-            0x53 => CommandCode::SignHmac,
-            0x54 => CommandCode::GetPublicKey,
-            0x55 => CommandCode::SignPss,
-            0x56 => CommandCode::SignEcdsa,
-            0x57 => CommandCode::DeriveEcdh,
-            0x58 => CommandCode::DeleteObject,
-            0x59 => CommandCode::DecryptOaep,
-            0x5a => CommandCode::GenerateHmacKey,
-            0x5b => CommandCode::GenerateWrapKey,
-            0x5c => CommandCode::VerifyHmac,
-            0x5d => CommandCode::SignSshCertificate,
-            0x5e => CommandCode::PutTemplate,
-            0x5f => CommandCode::GetTemplate,
-            0x60 => CommandCode::DecryptOtp,
-            0x61 => CommandCode::CreateOtpAead,
-            0x62 => CommandCode::RandomizeOtpAead,
-            0x63 => CommandCode::RewrapOtpAead,
-            0x64 => CommandCode::SignAttestationCertificate,
-            0x65 => CommandCode::PutOtpAead,
-            0x66 => CommandCode::GenerateOtpAead,
-            0x67 => CommandCode::SetLogIndex,
-            0x68 => CommandCode::WrapData,
-            0x69 => CommandCode::UnwrapData,
-            0x6a => CommandCode::SignEddsa,
-            0x6b => CommandCode::BlinkDevice,
-            0x6c => CommandCode::ChangeAuthenticationKey,
-            0x7f => CommandCode::Error,
+            0x00 => Code::Unknown,
+            0x01 => Code::Echo,
+            0x03 => Code::CreateSession,
+            0x04 => Code::AuthenticateSession,
+            0x05 => Code::SessionMessage,
+            0x06 => Code::DeviceInfo,
+            0x07 => Code::Bsl,
+            0x08 => Code::ResetDevice,
+            0x09 => Code::Command9,
+            0x40 => Code::CloseSession,
+            0x41 => Code::GetStorageInfo,
+            0x42 => Code::PutOpaqueObject,
+            0x43 => Code::GetOpaqueObject,
+            0x44 => Code::PutAuthenticationKey,
+            0x45 => Code::PutAsymmetricKey,
+            0x46 => Code::GenerateAsymmetricKey,
+            0x47 => Code::SignPkcs1,
+            0x48 => Code::ListObjects,
+            0x49 => Code::DecryptPkcs1,
+            0x4a => Code::ExportWrapped,
+            0x4b => Code::ImportWrapped,
+            0x4c => Code::PutWrapKey,
+            0x4d => Code::GetLogEntries,
+            0x4e => Code::GetObjectInfo,
+            0x4f => Code::SetOption,
+            0x50 => Code::GetOption,
+            0x51 => Code::GetPseudoRandom,
+            0x52 => Code::PutHmacKey,
+            0x53 => Code::SignHmac,
+            0x54 => Code::GetPublicKey,
+            0x55 => Code::SignPss,
+            0x56 => Code::SignEcdsa,
+            0x57 => Code::DeriveEcdh,
+            0x58 => Code::DeleteObject,
+            0x59 => Code::DecryptOaep,
+            0x5a => Code::GenerateHmacKey,
+            0x5b => Code::GenerateWrapKey,
+            0x5c => Code::VerifyHmac,
+            0x5d => Code::SignSshCertificate,
+            0x5e => Code::PutTemplate,
+            0x5f => Code::GetTemplate,
+            0x60 => Code::DecryptOtp,
+            0x61 => Code::CreateOtpAead,
+            0x62 => Code::RandomizeOtpAead,
+            0x63 => Code::RewrapOtpAead,
+            0x64 => Code::SignAttestationCertificate,
+            0x65 => Code::PutOtpAead,
+            0x66 => Code::GenerateOtpAead,
+            0x67 => Code::SetLogIndex,
+            0x68 => Code::WrapData,
+            0x69 => Code::UnwrapData,
+            0x6a => Code::SignEddsa,
+            0x6b => Code::BlinkDevice,
+            0x6c => Code::ChangeAuthenticationKey,
+            0x7f => Code::Error,
             _ => bail!("invalid command type: {}", byte),
         })
     }
@@ -135,7 +135,7 @@ impl CommandCode {
     }
 }
 
-impl Serialize for CommandCode {
+impl Serialize for Code {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -144,12 +144,12 @@ impl Serialize for CommandCode {
     }
 }
 
-impl<'de> Deserialize<'de> for CommandCode {
-    fn deserialize<D>(deserializer: D) -> Result<CommandCode, D::Error>
+impl<'de> Deserialize<'de> for Code {
+    fn deserialize<D>(deserializer: D) -> Result<Code, D::Error>
     where
         D: Deserializer<'de>,
     {
-        CommandCode::from_u8(u8::deserialize(deserializer)?)
+        Code::from_u8(u8::deserialize(deserializer)?)
             .or_else(|e| Err(D::Error::custom(format!("{}", e))))
     }
 }

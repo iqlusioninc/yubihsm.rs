@@ -17,7 +17,7 @@ pub mod put_authentication_key;
 pub mod put_opaque;
 pub mod put_option;
 #[cfg(feature = "mockhsm")]
-pub mod reset;
+pub mod reset_device;
 #[cfg(not(feature = "mockhsm"))]
 pub mod sign_attestation_certificate;
 // TODO: fix MockHsm ECDSA support

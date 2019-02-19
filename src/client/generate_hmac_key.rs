@@ -3,9 +3,11 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/Generate_Hmac_Key.html>
 
 use super::generate_key::GenerateKeyParams;
-use crate::command::{Command, CommandCode};
-use crate::object::ObjectId;
-use crate::response::Response;
+use crate::{
+    command::{self, Command},
+    object,
+    response::Response,
+};
 
 /// Request parameters for `command::generate_hmac_key`
 #[derive(Serialize, Deserialize, Debug)]
@@ -19,9 +21,9 @@ impl Command for GenHMACKeyCommand {
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct GenHMACKeyResponse {
     /// ID of the key
-    pub key_id: ObjectId,
+    pub key_id: object::Id,
 }
 
 impl Response for GenHMACKeyResponse {
-    const COMMAND_CODE: CommandCode = CommandCode::GenerateHmacKey;
+    const COMMAND_CODE: command::Code = command::Code::GenerateHmacKey;
 }

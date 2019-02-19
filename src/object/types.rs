@@ -31,7 +31,7 @@ pub enum Type {
 }
 
 impl Type {
-    /// Convert an unsigned byte into a ObjectType (if valid)
+    /// Convert an unsigned byte into a object::Type (if valid)
     pub fn from_u8(byte: u8) -> Result<Self, Error> {
         Ok(match byte {
             0x01 => Type::Opaque,

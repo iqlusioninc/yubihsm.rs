@@ -2,17 +2,18 @@
 
 use std::fmt::{self, Debug};
 
-use crate::command::CommandMessage;
-use crate::response::ResponseMessage;
-use crate::session::{
-    securechannel::{Challenge, Cryptogram, SecureChannel},
-    SessionId,
+use crate::{
+    command, response,
+    session::{
+        securechannel::{Challenge, Cryptogram, SecureChannel},
+        Id,
+    },
 };
 
 /// Session with the `MockHsm`
 pub(crate) struct HsmSession {
     /// ID of the session
-    pub id: SessionId,
+    pub id: Id,
 
     /// Card challenge for this session
     pub card_challenge: Challenge,
@@ -23,7 +24,7 @@ pub(crate) struct HsmSession {
 
 impl HsmSession {
     /// Create a new session
-    pub fn new(id: SessionId, card_challenge: Challenge, channel: SecureChannel) -> Self {
+    pub fn new(id: Id, card_challenge: Challenge, channel: SecureChannel) -> Self {
         Self {
             id,
             card_challenge,
@@ -42,12 +43,12 @@ impl HsmSession {
     }
 
     /// Decrypt an incoming command
-    pub fn decrypt_command(&mut self, command: CommandMessage) -> CommandMessage {
+    pub fn decrypt_command(&mut self, command: command::Message) -> command::Message {
         self.channel.decrypt_command(command).unwrap()
     }
 
     /// Encrypt an outgoing response
-    pub fn encrypt_response(&mut self, response: ResponseMessage) -> ResponseMessage {
+    pub fn encrypt_response(&mut self, response: response::Message) -> response::Message {
         self.channel.encrypt_response(response).unwrap()
     }
 }

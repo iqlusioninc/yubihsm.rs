@@ -2,8 +2,10 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Blink_Device.html>
 
-use crate::command::{Command, CommandCode};
-use crate::response::Response;
+use crate::{
+    command::{self, Command},
+    response::Response,
+};
 
 /// Request parameters for `command::blink_device`
 #[derive(Serialize, Deserialize, Debug)]
@@ -21,5 +23,5 @@ impl Command for BlinkDeviceCommand {
 pub(crate) struct BlinkDeviceResponse {}
 
 impl Response for BlinkDeviceResponse {
-    const COMMAND_CODE: CommandCode = CommandCode::BlinkDevice;
+    const COMMAND_CODE: command::Code = command::Code::BlinkDevice;
 }

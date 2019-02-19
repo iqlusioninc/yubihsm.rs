@@ -1,7 +1,8 @@
-use yubihsm::{Capability, HmacAlg, ObjectType};
-
-use crate::test_vectors::HMAC_SHA256_TEST_VECTORS;
-use crate::{clear_test_key_slot, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL};
+use crate::{
+    clear_test_key_slot, object, test_vectors::HMAC_SHA256_TEST_VECTORS, TEST_DOMAINS, TEST_KEY_ID,
+    TEST_KEY_LABEL,
+};
+use yubihsm::{Capability, HmacAlg};
 
 /// Test HMAC against RFC 4231 test vectors
 #[test]
@@ -11,7 +12,7 @@ fn hmac_test_vectors() {
     let capabilities = Capability::SIGN_HMAC | Capability::VERIFY_HMAC;
 
     for vector in HMAC_SHA256_TEST_VECTORS {
-        clear_test_key_slot(&mut client, ObjectType::HmacKey);
+        clear_test_key_slot(&mut client, object::Type::HmacKey);
 
         let key_id = client
             .put_hmac_key(

@@ -3,8 +3,8 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/Sign_Hmac.html>
 
 use crate::{
-    command::{Command, CommandCode},
-    object::ObjectId,
+    command::{self, Command},
+    object,
     response::Response,
 };
 
@@ -12,7 +12,7 @@ use crate::{
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct SignHmacCommand {
     /// ID of the HMAC key
-    pub key_id: ObjectId,
+    pub key_id: object::Id,
 
     /// Data to be authenticated
     pub data: Vec<u8>,
@@ -27,7 +27,7 @@ impl Command for SignHmacCommand {
 pub struct HmacTag(pub Vec<u8>);
 
 impl Response for HmacTag {
-    const COMMAND_CODE: CommandCode = CommandCode::SignHmac;
+    const COMMAND_CODE: command::Code = command::Code::SignHmac;
 }
 
 #[allow(clippy::len_without_is_empty)]

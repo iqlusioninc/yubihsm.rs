@@ -2,18 +2,19 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Put_Authentication_Key.html>
 
-use super::put_object::PutObjectParams;
-use crate::authentication_key::AuthenticationKey;
-use crate::capability::Capability;
-use crate::command::{Command, CommandCode};
-use crate::object::ObjectId;
-use crate::response::Response;
+use crate::{
+    authentication_key::AuthenticationKey,
+    capability::Capability,
+    command::{self, Command},
+    object,
+    response::Response,
+};
 
 /// Request parameters for `command::put_authentication_key`
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct PutAuthenticationKeyCommand {
     /// Common parameters to all put object command
-    pub params: PutObjectParams,
+    pub params: object::ImportParams,
 
     /// Delegated capabilities
     pub delegated_capabilities: Capability,
@@ -30,9 +31,9 @@ impl Command for PutAuthenticationKeyCommand {
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct PutAuthenticationKeyResponse {
     /// ID of the key
-    pub key_id: ObjectId,
+    pub key_id: object::Id,
 }
 
 impl Response for PutAuthenticationKeyResponse {
-    const COMMAND_CODE: CommandCode = CommandCode::PutAuthenticationKey;
+    const COMMAND_CODE: command::Code = command::Code::PutAuthenticationKey;
 }

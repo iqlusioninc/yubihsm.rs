@@ -36,11 +36,8 @@ pub use self::{
     cryptogram::{Cryptogram, CRYPTOGRAM_SIZE},
 };
 
-use super::{CommandMessage, ResponseMessage, SessionError, SessionErrorKind::*, SessionId};
-use crate::authentication_key::AuthenticationKey;
-use crate::command::CommandCode;
-#[cfg(feature = "mockhsm")]
-use crate::response::ResponseCode;
+use super::{SessionError, SessionErrorKind::*};
+use crate::{authentication_key::AuthenticationKey, command, response, session};
 use aes::{
     block_cipher_trait::{
         generic_array::{typenum::U16, GenericArray},
@@ -64,7 +61,7 @@ type Aes128Cbc = Cbc<Aes128, Iso7816>;
 /// SCP03 Secure Channel
 pub(crate) struct SecureChannel {
     /// ID of this channel (a.k.a. session ID)
-    id: SessionId,
+    id: session::Id,
 
     /// Number of messages sent over this channel
     counter: u32,
@@ -91,7 +88,7 @@ pub(crate) struct SecureChannel {
 impl SecureChannel {
     /// Create a new channel with the given ID, auth key, and host/card challenges
     pub fn new(
-        id: SessionId,
+        id: session::Id,
         authentication_key: &AuthenticationKey,
         host_challenge: Challenge,
         card_challenge: Challenge,
@@ -115,7 +112,7 @@ impl SecureChannel {
     }
 
     /// Get the channel (i.e. session) ID
-    pub fn id(&self) -> SessionId {
+    pub fn id(&self) -> session::Id {
         self.id
     }
 
@@ -144,9 +141,9 @@ impl SecureChannel {
     /// Compute a command message with a MAC value for this session
     pub fn command_with_mac(
         &mut self,
-        command_type: CommandCode,
+        command_type: command::Code,
         command_data: &[u8],
-    ) -> Result<CommandMessage, SessionError> {
+    ) -> Result<command::Message, SessionError> {
         if self.counter >= MAX_COMMANDS_PER_SESSION {
             self.terminate();
             fail!(
@@ -169,7 +166,7 @@ impl SecureChannel {
         let tag = mac.result().code();
         self.mac_chaining_value.copy_from_slice(tag.as_slice());
 
-        Ok(CommandMessage::new_with_mac(
+        Ok(command::Message::new_with_mac(
             command_type,
             self.id,
             command_data,
@@ -178,18 +175,21 @@ impl SecureChannel {
     }
 
     /// Compute a message for authenticating the host to the card
-    pub fn authenticate_session(&mut self) -> Result<CommandMessage, SessionError> {
+    pub fn authenticate_session(&mut self) -> Result<command::Message, SessionError> {
         assert_eq!(self.security_level, SecurityLevel::None);
         assert_eq!(self.mac_chaining_value, [0u8; MAC_SIZE * 2]);
 
         let host_cryptogram = self.host_cryptogram();
-        self.command_with_mac(CommandCode::AuthenticateSession, host_cryptogram.as_slice())
+        self.command_with_mac(
+            command::Code::AuthenticateSession,
+            host_cryptogram.as_slice(),
+        )
     }
 
     /// Handle the authenticate session response from the card
     pub fn finish_authenticate_session(
         &mut self,
-        response: &ResponseMessage,
+        response: &response::Message,
     ) -> Result<(), SessionError> {
         // The EXTERNAL_AUTHENTICATE command does not send an R-MAC value
         if !response.data.is_empty() {
@@ -214,8 +214,8 @@ impl SecureChannel {
     /// Encrypt a command to be sent to the card
     pub fn encrypt_command(
         &mut self,
-        command: CommandMessage,
-    ) -> Result<CommandMessage, SessionError> {
+        command: command::Message,
+    ) -> Result<command::Message, SessionError> {
         assert_eq!(self.security_level, SecurityLevel::Authenticated);
 
         let mut message: Vec<u8> = command.into();
@@ -229,14 +229,14 @@ impl SecureChannel {
         let cbc_encryptor = Aes128Cbc::new(cipher, &icv);
         let ciphertext = cbc_encryptor.encrypt_pad(&mut message, pos).unwrap();
 
-        self.command_with_mac(CommandCode::SessionMessage, ciphertext)
+        self.command_with_mac(command::Code::SessionMessage, ciphertext)
     }
 
     /// Verify and decrypt a response from the card
     pub fn decrypt_response(
         &mut self,
-        encrypted_response: ResponseMessage,
-    ) -> Result<ResponseMessage, SessionError> {
+        encrypted_response: response::Message,
+    ) -> Result<response::Message, SessionError> {
         assert_eq!(self.security_level, SecurityLevel::Authenticated);
 
         let cipher = Aes128::new_varkey(&self.enc_key).unwrap();
@@ -257,14 +257,17 @@ impl SecureChannel {
             .len();
 
         response_message.truncate(response_len);
-        let mut decrypted_response = ResponseMessage::parse(response_message)?;
+        let mut decrypted_response = response::Message::parse(response_message)?;
         decrypted_response.session_id = encrypted_response.session_id;
 
         Ok(decrypted_response)
     }
 
     /// Ensure message authenticity by verifying the response MAC (R-MAC) sent from the card
-    pub fn verify_response_mac(&mut self, response: &ResponseMessage) -> Result<(), SessionError> {
+    pub fn verify_response_mac(
+        &mut self,
+        response: &response::Message,
+    ) -> Result<(), SessionError> {
         assert_eq!(self.security_level, SecurityLevel::Authenticated);
 
         let session_id = response.session_id.ok_or_else(|| {
@@ -311,8 +314,8 @@ impl SecureChannel {
     #[cfg(feature = "mockhsm")]
     pub fn verify_authenticate_session(
         &mut self,
-        command: &CommandMessage,
-    ) -> Result<ResponseMessage, SessionError> {
+        command: &command::Message,
+    ) -> Result<response::Message, SessionError> {
         assert_eq!(self.security_level, SecurityLevel::None);
         assert_eq!(self.mac_chaining_value, [0u8; MAC_SIZE * 2]);
 
@@ -346,8 +349,8 @@ impl SecureChannel {
         // command." -- GPC_SPE_014 section 6.2.6
         self.counter = 1;
 
-        Ok(ResponseMessage::success(
-            CommandCode::AuthenticateSession,
+        Ok(response::Message::success(
+            command::Code::AuthenticateSession,
             vec![],
         ))
     }
@@ -356,8 +359,8 @@ impl SecureChannel {
     #[cfg(feature = "mockhsm")]
     pub fn decrypt_command(
         &mut self,
-        encrypted_command: CommandMessage,
-    ) -> Result<CommandMessage, SessionError> {
+        encrypted_command: command::Message,
+    ) -> Result<command::Message, SessionError> {
         assert_eq!(self.security_level, SecurityLevel::Authenticated);
 
         let cipher = Aes128::new_varkey(&self.enc_key).unwrap();
@@ -378,7 +381,7 @@ impl SecureChannel {
             .len();
 
         command_data.truncate(command_len);
-        let mut decrypted_command = CommandMessage::parse(command_data)?;
+        let mut decrypted_command = command::Message::parse(command_data)?;
         decrypted_command.session_id = encrypted_command.session_id;
 
         Ok(decrypted_command)
@@ -386,7 +389,7 @@ impl SecureChannel {
 
     /// Verify a Command MAC (C-MAC) value, updating the internal session state
     #[cfg(feature = "mockhsm")]
-    pub fn verify_command_mac(&mut self, command: &CommandMessage) -> Result<(), SessionError> {
+    pub fn verify_command_mac(&mut self, command: &command::Message) -> Result<(), SessionError> {
         assert_eq!(
             command.session_id.unwrap(),
             self.id,
@@ -425,8 +428,8 @@ impl SecureChannel {
     #[cfg(feature = "mockhsm")]
     pub fn encrypt_response(
         &mut self,
-        response: ResponseMessage,
-    ) -> Result<ResponseMessage, SessionError> {
+        response: response::Message,
+    ) -> Result<response::Message, SessionError> {
         assert_eq!(self.security_level, SecurityLevel::Authenticated);
 
         let mut message: Vec<u8> = response.into();
@@ -442,16 +445,19 @@ impl SecureChannel {
         let ct_len = cbc_encryptor.encrypt_pad(&mut message, pos).unwrap().len();
         message.truncate(ct_len);
 
-        self.response_with_mac(ResponseCode::Success(CommandCode::SessionMessage), message)
+        self.response_with_mac(
+            response::Code::Success(command::Code::SessionMessage),
+            message,
+        )
     }
 
     /// Compute the MAC for a response message
     #[cfg(feature = "mockhsm")]
     pub fn response_with_mac<T>(
         &mut self,
-        code: ResponseCode,
+        code: response::Code,
         response_data: T,
-    ) -> Result<ResponseMessage, SessionError>
+    ) -> Result<response::Message, SessionError>
     where
         T: Into<Vec<u8>>,
     {
@@ -470,7 +476,7 @@ impl SecureChannel {
 
         self.increment_counter();
 
-        Ok(ResponseMessage::new_with_mac(
+        Ok(response::Message::new_with_mac(
             code,
             self.id,
             body,
@@ -548,12 +554,11 @@ fn compute_icv(cipher: &Aes128, counter: u32) -> GenericArray<u8, U16> {
 mod tests {
     use super::*;
     use crate::authentication_key::AuthenticationKey;
-    use crate::command::CommandCode;
 
     const PASSWORD: &[u8] = b"password";
     const HOST_CHALLENGE: &[u8] = &[0u8; 8];
     const CARD_CHALLENGE: &[u8] = &[0u8; 8];
-    const COMMAND_CODE: CommandCode = CommandCode::Echo;
+    const COMMAND_CODE: command::Code = command::Code::Echo;
     const COMMAND_DATA: &[u8] = b"Hello, world!";
 
     fn create_channel_pair() -> (SecureChannel, SecureChannel) {
@@ -562,7 +567,7 @@ mod tests {
         let host_challenge = Challenge::from_slice(HOST_CHALLENGE);
         let card_challenge = Challenge::from_slice(CARD_CHALLENGE);
 
-        let session_id = SessionId::from_u8(0).unwrap();
+        let session_id = session::Id::from_u8(0).unwrap();
 
         // Create channels
         let mut host_channel = SecureChannel::new(
@@ -597,7 +602,9 @@ mod tests {
 
         // Host sends encrypted command
         let command_ciphertext = host_channel
-            .encrypt_command(CommandMessage::create(COMMAND_CODE, Vec::from(COMMAND_DATA)).unwrap())
+            .encrypt_command(
+                command::Message::create(COMMAND_CODE, Vec::from(COMMAND_DATA)).unwrap(),
+            )
             .unwrap();
 
         // Card decrypts command
@@ -605,7 +612,7 @@ mod tests {
 
         // Card sends decrypted response
         let response_ciphertext = card_channel
-            .encrypt_response(ResponseMessage::success(
+            .encrypt_response(response::Message::success(
                 decrypted_command.command_type,
                 decrypted_command.data,
             ))
@@ -624,7 +631,9 @@ mod tests {
 
         // Host sends encrypted command
         let command_ciphertext = host_channel
-            .encrypt_command(CommandMessage::create(COMMAND_CODE, Vec::from(COMMAND_DATA)).unwrap())
+            .encrypt_command(
+                command::Message::create(COMMAND_CODE, Vec::from(COMMAND_DATA)).unwrap(),
+            )
             .unwrap();
 
         // Card decrypts command
@@ -632,7 +641,7 @@ mod tests {
 
         // Card sends decrypted response
         let mut response_ciphertext = card_channel
-            .encrypt_response(ResponseMessage::success(
+            .encrypt_response(response::Message::success(
                 decrypted_command.command_type,
                 decrypted_command.data,
             ))

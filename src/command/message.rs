@@ -8,31 +8,33 @@
 
 // TODO: this code predates the serde serializers. It could be rewritten with serde.
 
+use super::MAX_MSG_SIZE;
+use crate::{
+    command,
+    session::{
+        self,
+        securechannel::{Mac, MAC_SIZE},
+        SessionError,
+        SessionErrorKind::ProtocolError,
+    },
+};
 #[cfg(feature = "mockhsm")]
 use byteorder::ByteOrder;
 use byteorder::{BigEndian, WriteBytesExt};
 use uuid::Uuid;
 
-use super::{CommandCode, MAX_MSG_SIZE};
-use crate::session::{
-    securechannel::{Mac, MAC_SIZE},
-    SessionError,
-    SessionErrorKind::ProtocolError,
-    SessionId,
-};
-
 /// A command sent from the host to the `YubiHSM2`. May or may not be
 /// authenticated using SCP03's chained/evolving MAC protocol.
 #[derive(Debug)]
-pub(crate) struct CommandMessage {
+pub(crate) struct Message {
     /// UUID which uniquely identifies this command
     pub uuid: Uuid,
 
     /// Type of command to be invoked
-    pub command_type: CommandCode,
+    pub command_type: command::Code,
 
     /// Session ID for this command
-    pub session_id: Option<SessionId>,
+    pub session_id: Option<session::Id>,
 
     /// Command Data field (i.e. message payload)
     pub data: Vec<u8>,
@@ -41,9 +43,9 @@ pub(crate) struct CommandMessage {
     pub mac: Option<Mac>,
 }
 
-impl CommandMessage {
+impl Message {
     /// Create a new command message without a MAC
-    pub fn create<T>(command_type: CommandCode, command_data: T) -> Result<Self, SessionError>
+    pub fn create<T>(command_type: command::Code, command_data: T) -> Result<Self, SessionError>
     where
         T: Into<Vec<u8>>,
     {
@@ -68,8 +70,8 @@ impl CommandMessage {
 
     /// Create a new command message with a MAC
     pub fn new_with_mac<D, M>(
-        command_type: CommandCode,
-        session_id: SessionId,
+        command_type: command::Code,
+        session_id: session::Id,
         command_data: D,
         mac: M,
     ) -> Result<Self, SessionError>
@@ -108,7 +110,7 @@ impl CommandMessage {
         }
 
         let command_type =
-            CommandCode::from_u8(bytes[0]).map_err(|e| err!(ProtocolError, "{}", e))?;
+            command::Code::from_u8(bytes[0]).map_err(|e| err!(ProtocolError, "{}", e))?;
 
         let length = BigEndian::read_u16(&bytes[1..3]) as usize;
 
@@ -124,7 +126,7 @@ impl CommandMessage {
         bytes.drain(..3);
 
         let (session_id, mac) = match command_type {
-            CommandCode::AuthenticateSession | CommandCode::SessionMessage => {
+            command::Code::AuthenticateSession | command::Code::SessionMessage => {
                 if bytes.is_empty() {
                     fail!(
                         ProtocolError,
@@ -132,7 +134,7 @@ impl CommandMessage {
                     );
                 }
 
-                let id = SessionId::from_u8(bytes.remove(0))?;
+                let id = session::Id::from_u8(bytes.remove(0))?;
 
                 if bytes.len() < MAC_SIZE {
                     fail!(
@@ -175,7 +177,7 @@ impl CommandMessage {
     }
 }
 
-impl Into<Vec<u8>> for CommandMessage {
+impl Into<Vec<u8>> for Message {
     /// Serialize this Command, consuming it and creating a Vec<u8>
     fn into(mut self) -> Vec<u8> {
         let mut result = Vec::with_capacity(3 + self.len());

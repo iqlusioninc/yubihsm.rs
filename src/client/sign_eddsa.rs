@@ -2,11 +2,12 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Sign_Eddsa.html>
 
+use crate::{
+    command::{self, Command},
+    object,
+    response::Response,
+};
 use std::fmt::{self, Debug};
-
-use crate::command::{Command, CommandCode};
-use crate::object::ObjectId;
-use crate::response::Response;
 
 /// Size of an Ed25519 signature
 pub const ED25519_SIGNATURE_SIZE: usize = 64;
@@ -15,7 +16,7 @@ pub const ED25519_SIGNATURE_SIZE: usize = 64;
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct SignDataEddsaCommand {
     /// ID of the key to perform the signature with
-    pub key_id: ObjectId,
+    pub key_id: object::Id,
 
     /// Data to be signed
     pub data: Vec<u8>,
@@ -29,7 +30,7 @@ impl Command for SignDataEddsaCommand {
 pub struct Ed25519Signature(pub [u8; ED25519_SIGNATURE_SIZE]);
 
 impl Response for Ed25519Signature {
-    const COMMAND_CODE: CommandCode = CommandCode::SignEddsa;
+    const COMMAND_CODE: command::Code = command::Code::SignEddsa;
 }
 
 impl AsRef<[u8]> for Ed25519Signature {

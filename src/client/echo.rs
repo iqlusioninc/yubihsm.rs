@@ -2,8 +2,10 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Echo.html>
 
-use crate::command::{Command, CommandCode};
-use crate::response::Response;
+use crate::{
+    command::{self, Command},
+    response::Response,
+};
 
 /// Request parameters for `command::echo`
 #[derive(Serialize, Deserialize, Debug)]
@@ -21,5 +23,5 @@ impl Command for EchoCommand {
 pub(crate) struct EchoResponse(pub(crate) Vec<u8>);
 
 impl Response for EchoResponse {
-    const COMMAND_CODE: CommandCode = CommandCode::Echo;
+    const COMMAND_CODE: command::Code = command::Code::Echo;
 }

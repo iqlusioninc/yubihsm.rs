@@ -1,9 +1,8 @@
+use crate::{generate_asymmetric_key, TEST_KEY_ID, TEST_MESSAGE};
 use ring;
 use sha2::{Digest, Sha256};
 use untrusted;
 use yubihsm::{AsymmetricAlg, Capability};
-
-use crate::{generate_asymmetric_key, TEST_KEY_ID, TEST_MESSAGE};
 
 /// Test ECDSA signatures (using NIST P-256)
 #[test]

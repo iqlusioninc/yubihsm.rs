@@ -1,15 +1,16 @@
 //! `MockHsm` presents a thread-safe API by locking interior mutable state,
 //! contained in the `State` struct defined in this module.
 
-use std::collections::BTreeMap;
-
-use crate::audit::AuditOption;
-use crate::connector::{ConnectionError, ConnectionErrorKind};
-use crate::object::{ObjectId, ObjectType};
-use crate::session::{
-    securechannel::{Challenge, SecureChannel},
-    SessionId,
+use crate::{
+    audit::AuditOption,
+    connector::{ConnectionError, ConnectionErrorKind},
+    object,
+    session::{
+        self,
+        securechannel::{Challenge, SecureChannel},
+    },
 };
+use std::collections::BTreeMap;
 
 use super::{audit::CommandAuditOptions, object::Objects, session::HsmSession};
 
@@ -24,7 +25,7 @@ pub(crate) struct State {
     pub(super) force_audit: AuditOption,
 
     /// Active sessions with the MockHsm
-    sessions: BTreeMap<SessionId, HsmSession>,
+    sessions: BTreeMap<session::Id, HsmSession>,
 
     /// Objects within the MockHsm (i.e. keys)
     pub(super) objects: Objects,
@@ -44,7 +45,7 @@ impl State {
     /// Create a new session with the MockHsm
     pub fn create_session(
         &mut self,
-        authentication_key_id: ObjectId,
+        authentication_key_id: object::Id,
         host_challenge: Challenge,
     ) -> &HsmSession {
         // Generate a random card challenge to send back to the client
@@ -55,12 +56,12 @@ impl State {
             .keys()
             .max()
             .map(|id| id.succ().expect("session count exceeded"))
-            .unwrap_or_else(|| SessionId::from_u8(0).unwrap());
+            .unwrap_or_else(|| session::Id::from_u8(0).unwrap());
 
         let channel = {
             let authentication_key_obj = self
                 .objects
-                .get(authentication_key_id, ObjectType::AuthenticationKey)
+                .get(authentication_key_id, object::Type::AuthenticationKey)
                 .unwrap_or_else(|| {
                     panic!(
                         "MockHsm has no AuthenticationKey in slot {:?}",
@@ -86,7 +87,7 @@ impl State {
     }
 
     /// Obtain the channel for a session by its ID
-    pub fn get_session(&mut self, id: SessionId) -> Result<&mut HsmSession, ConnectionError> {
+    pub fn get_session(&mut self, id: session::Id) -> Result<&mut HsmSession, ConnectionError> {
         self.sessions.get_mut(&id).ok_or_else(|| {
             ConnectionError::new(
                 ConnectionErrorKind::RequestError,
@@ -96,7 +97,7 @@ impl State {
     }
 
     /// Close an active session
-    pub fn close_session(&mut self, id: SessionId) {
+    pub fn close_session(&mut self, id: session::Id) {
         assert!(self.sessions.remove(&id).is_some());
     }
 

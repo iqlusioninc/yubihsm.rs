@@ -3,10 +3,10 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/Sign_Pss.html>
 
 use crate::{
-    algorithm::Algorithm,
-    command::{Command, CommandCode},
-    object::ObjectId,
+    command::{self, Command},
+    object,
     response::Response,
+    Algorithm,
 };
 
 /// Maximum message size supported for RSASSA-PSS
@@ -16,7 +16,7 @@ pub const RSA_PSS_MAX_MESSAGE_SIZE: usize = 0xFFFF;
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct SignPssCommand {
     /// ID of the key to perform the signature with
-    pub key_id: ObjectId,
+    pub key_id: object::Id,
 
     /// Hash algorithm to use for MGF1
     pub mgf1_hash_alg: Algorithm,
@@ -37,7 +37,7 @@ impl Command for SignPssCommand {
 pub struct RsaPssSignature(pub Vec<u8>);
 
 impl Response for RsaPssSignature {
-    const COMMAND_CODE: CommandCode = CommandCode::SignPss;
+    const COMMAND_CODE: command::Code = command::Code::SignPss;
 }
 
 #[allow(clippy::len_without_is_empty)]

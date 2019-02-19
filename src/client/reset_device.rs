@@ -3,8 +3,10 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Reset_Device.html>
 
-use crate::command::{Command, CommandCode};
-use crate::response::Response;
+use crate::{
+    command::{self, Command},
+    response::Response,
+};
 
 /// Request parameters for `command::reset_device`
 #[derive(Serialize, Deserialize, Debug)]
@@ -19,5 +21,5 @@ impl Command for ResetDeviceCommand {
 pub struct ResetDeviceResponse(pub(crate) u8);
 
 impl Response for ResetDeviceResponse {
-    const COMMAND_CODE: CommandCode = CommandCode::ResetDevice;
+    const COMMAND_CODE: command::Code = command::Code::ResetDevice;
 }

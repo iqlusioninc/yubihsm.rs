@@ -1,16 +1,15 @@
+use crate::command;
 use failure::Error;
 use serde::{
     de::{Deserialize, Deserializer, Error as DeError},
     ser::{Serialize, Serializer},
 };
 
-use crate::command::CommandCode;
-
 /// Codes associated with HSM responses
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub enum ResponseCode {
+pub enum Code {
     /// Successful response for the given command type
-    Success(CommandCode),
+    Success(command::Code),
 
     /// HSM memory error (or generic error)
     MemoryError,
@@ -103,81 +102,81 @@ pub enum ResponseCode {
     DeviceSshCaConstraintViolation,
 }
 
-impl ResponseCode {
-    /// Convert an unsigned byte into a ResponseCode (if valid)
+impl Code {
+    /// Convert an unsigned byte into a Code (if valid)
     pub fn from_u8(byte: u8) -> Result<Self, Error> {
         let code = i16::from(byte).checked_sub(0x80).unwrap() as i8;
 
         Ok(match code {
-            0..=0x7F => ResponseCode::Success(CommandCode::from_u8(code as u8)?),
-            -1 => ResponseCode::MemoryError,
-            -2 => ResponseCode::InitError,
-            -3 => ResponseCode::ConnectionError,
-            -4 => ResponseCode::ConnectorNotFound,
-            -5 => ResponseCode::InvalidParameters,
-            -6 => ResponseCode::WrongLength,
-            -7 => ResponseCode::BufferTooSmall,
-            -8 => ResponseCode::CryptogramMismatch,
-            -9 => ResponseCode::SessionAuthenticationFailed,
-            -10 => ResponseCode::MacMismatch,
-            -11 => ResponseCode::DeviceOK,
-            -12 => ResponseCode::DeviceInvalidCommand,
-            -13 => ResponseCode::DeviceInvalidData,
-            -14 => ResponseCode::DeviceInvalidSession,
-            -15 => ResponseCode::DeviceAuthenticationFailed,
-            -16 => ResponseCode::DeviceSessionsFull,
-            -17 => ResponseCode::DeviceSessionFailed,
-            -18 => ResponseCode::DeviceStorageFailed,
-            -19 => ResponseCode::DeviceWrongLength,
-            -20 => ResponseCode::DeviceInsufficientPermissions,
-            -21 => ResponseCode::DeviceLogFull,
-            -22 => ResponseCode::DeviceObjectNotFound,
-            -23 => ResponseCode::DeviceInvalidId,
-            -24 => ResponseCode::DeviceInvalidOtp,
-            -25 => ResponseCode::DeviceDemoMode,
-            -26 => ResponseCode::DeviceCommandUnexecuted,
-            -27 => ResponseCode::GenericError,
-            -28 => ResponseCode::DeviceObjectExists,
-            -29 => ResponseCode::ConnectorError,
-            -30 => ResponseCode::DeviceSshCaConstraintViolation,
+            0..=0x7F => Code::Success(command::Code::from_u8(code as u8)?),
+            -1 => Code::MemoryError,
+            -2 => Code::InitError,
+            -3 => Code::ConnectionError,
+            -4 => Code::ConnectorNotFound,
+            -5 => Code::InvalidParameters,
+            -6 => Code::WrongLength,
+            -7 => Code::BufferTooSmall,
+            -8 => Code::CryptogramMismatch,
+            -9 => Code::SessionAuthenticationFailed,
+            -10 => Code::MacMismatch,
+            -11 => Code::DeviceOK,
+            -12 => Code::DeviceInvalidCommand,
+            -13 => Code::DeviceInvalidData,
+            -14 => Code::DeviceInvalidSession,
+            -15 => Code::DeviceAuthenticationFailed,
+            -16 => Code::DeviceSessionsFull,
+            -17 => Code::DeviceSessionFailed,
+            -18 => Code::DeviceStorageFailed,
+            -19 => Code::DeviceWrongLength,
+            -20 => Code::DeviceInsufficientPermissions,
+            -21 => Code::DeviceLogFull,
+            -22 => Code::DeviceObjectNotFound,
+            -23 => Code::DeviceInvalidId,
+            -24 => Code::DeviceInvalidOtp,
+            -25 => Code::DeviceDemoMode,
+            -26 => Code::DeviceCommandUnexecuted,
+            -27 => Code::GenericError,
+            -28 => Code::DeviceObjectExists,
+            -29 => Code::ConnectorError,
+            -30 => Code::DeviceSshCaConstraintViolation,
             _ => bail!("invalid response code: {}", code),
         })
     }
 
-    /// Convert a ResponseCode back into its original byte form
+    /// Convert a Code back into its original byte form
     pub fn to_u8(self) -> u8 {
         let code: i8 = match self {
-            ResponseCode::Success(cmd_type) => cmd_type as i8,
-            ResponseCode::MemoryError => -1,
-            ResponseCode::InitError => -2,
-            ResponseCode::ConnectionError => -3,
-            ResponseCode::ConnectorNotFound => -4,
-            ResponseCode::InvalidParameters => -5,
-            ResponseCode::WrongLength => -6,
-            ResponseCode::BufferTooSmall => -7,
-            ResponseCode::CryptogramMismatch => -8,
-            ResponseCode::SessionAuthenticationFailed => -9,
-            ResponseCode::MacMismatch => -10,
-            ResponseCode::DeviceOK => -11,
-            ResponseCode::DeviceInvalidCommand => -12,
-            ResponseCode::DeviceInvalidData => -13,
-            ResponseCode::DeviceInvalidSession => -14,
-            ResponseCode::DeviceAuthenticationFailed => -15,
-            ResponseCode::DeviceSessionsFull => -16,
-            ResponseCode::DeviceSessionFailed => -17,
-            ResponseCode::DeviceStorageFailed => -18,
-            ResponseCode::DeviceWrongLength => -19,
-            ResponseCode::DeviceInsufficientPermissions => -20,
-            ResponseCode::DeviceLogFull => -21,
-            ResponseCode::DeviceObjectNotFound => -22,
-            ResponseCode::DeviceInvalidId => -23,
-            ResponseCode::DeviceInvalidOtp => -24,
-            ResponseCode::DeviceDemoMode => -25,
-            ResponseCode::DeviceCommandUnexecuted => -26,
-            ResponseCode::GenericError => -27,
-            ResponseCode::DeviceObjectExists => -28,
-            ResponseCode::ConnectorError => -29,
-            ResponseCode::DeviceSshCaConstraintViolation => -30,
+            Code::Success(cmd_type) => cmd_type as i8,
+            Code::MemoryError => -1,
+            Code::InitError => -2,
+            Code::ConnectionError => -3,
+            Code::ConnectorNotFound => -4,
+            Code::InvalidParameters => -5,
+            Code::WrongLength => -6,
+            Code::BufferTooSmall => -7,
+            Code::CryptogramMismatch => -8,
+            Code::SessionAuthenticationFailed => -9,
+            Code::MacMismatch => -10,
+            Code::DeviceOK => -11,
+            Code::DeviceInvalidCommand => -12,
+            Code::DeviceInvalidData => -13,
+            Code::DeviceInvalidSession => -14,
+            Code::DeviceAuthenticationFailed => -15,
+            Code::DeviceSessionsFull => -16,
+            Code::DeviceSessionFailed => -17,
+            Code::DeviceStorageFailed => -18,
+            Code::DeviceWrongLength => -19,
+            Code::DeviceInsufficientPermissions => -20,
+            Code::DeviceLogFull => -21,
+            Code::DeviceObjectNotFound => -22,
+            Code::DeviceInvalidId => -23,
+            Code::DeviceInvalidOtp => -24,
+            Code::DeviceDemoMode => -25,
+            Code::DeviceCommandUnexecuted => -26,
+            Code::GenericError => -27,
+            Code::DeviceObjectExists => -28,
+            Code::ConnectorError => -29,
+            Code::DeviceSshCaConstraintViolation => -30,
         };
 
         (i16::from(code) + 0x80) as u8
@@ -186,7 +185,7 @@ impl ResponseCode {
     /// Is this a successful response?
     pub fn is_success(self) -> bool {
         match self {
-            ResponseCode::Success(_) => true,
+            Code::Success(_) => true,
             _ => false,
         }
     }
@@ -197,7 +196,7 @@ impl ResponseCode {
     }
 }
 
-impl Serialize for ResponseCode {
+impl Serialize for Code {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -206,15 +205,15 @@ impl Serialize for ResponseCode {
     }
 }
 
-impl<'de> Deserialize<'de> for ResponseCode {
-    fn deserialize<D>(deserializer: D) -> Result<ResponseCode, D::Error>
+impl<'de> Deserialize<'de> for Code {
+    fn deserialize<D>(deserializer: D) -> Result<Code, D::Error>
     where
         D: Deserializer<'de>,
     {
         let value = u8::deserialize(deserializer)?;
 
-        ResponseCode::from_u8(value)
-            .or_else(|_| ResponseCode::from_u8(ResponseCode::DeviceOK.to_u8() - value))
+        Code::from_u8(value)
+            .or_else(|_| Code::from_u8(Code::DeviceOK.to_u8() - value))
             .or_else(|e| Err(D::Error::custom(format!("{}", e))))
     }
 }

@@ -1,35 +1,39 @@
 //! Encrypted connection to the HSM through a particular connection
 
+mod error;
+mod id;
+pub(crate) mod securechannel;
+mod timeout;
+#[macro_use]
+mod macros;
+pub(crate) mod close;
+pub(crate) mod create;
+
+pub use self::{
+    error::{SessionError, SessionErrorKind},
+    id::Id,
+    timeout::Timeout,
+};
+
+use self::{
+    close::CloseSessionCommand,
+    create::create_session,
+    securechannel::{Challenge, SecureChannel},
+    SessionErrorKind::*,
+};
+use crate::{
+    command::{self, Command},
+    connector::{Connection, Connector},
+    credentials::Credentials,
+    error::HsmErrorKind,
+    response,
+    serialization::deserialize,
+};
 use std::{
     panic::{self, AssertUnwindSafe},
     time::{Duration, Instant},
 };
 use subtle::ConstantTimeEq;
-
-use crate::command::{Command, CommandCode, CommandMessage};
-use crate::connector::{Connection, Connector};
-use crate::credentials::Credentials;
-use crate::error::HsmErrorKind;
-use crate::response::ResponseMessage;
-use crate::serialization::deserialize;
-
-#[macro_use]
-mod macros;
-
-pub(crate) mod command;
-mod error;
-mod id;
-pub(crate) mod securechannel;
-mod timeout;
-
-use self::command::close::*;
-pub use self::id::SessionId;
-use self::securechannel::{Challenge, SecureChannel};
-use self::SessionErrorKind::*;
-pub use self::{
-    error::{SessionError, SessionErrorKind},
-    timeout::SessionTimeout,
-};
 
 /// Timeout fuzz factor: to avoid races/skew with the YubiHSM's clock,
 /// we consider sessions to be timed out slightly earlier than the actual
@@ -45,7 +49,7 @@ const TIMEOUT_FUZZ_FACTOR: Duration = Duration::from_secs(1);
 /// resources and wiping the ephemeral keys used to encrypt the session.
 pub struct Session {
     /// ID for this session
-    id: SessionId,
+    id: Id,
 
     /// Connection which communicates with the HSM (HTTP or USB)
     connection: Box<dyn Connection>,
@@ -60,7 +64,7 @@ pub struct Session {
     last_active: Instant,
 
     /// Inactivity timeout for this session
-    timeout: SessionTimeout,
+    timeout: Timeout,
 }
 
 impl Session {
@@ -68,7 +72,7 @@ impl Session {
     pub(super) fn open(
         connector: &dyn Connector,
         credentials: &Credentials,
-        timeout: SessionTimeout,
+        timeout: Timeout,
     ) -> Result<Self, SessionError> {
         ensure!(
             timeout.duration() > TIMEOUT_FUZZ_FACTOR,
@@ -83,7 +87,7 @@ impl Session {
         let connection = connector.connect()?;
         let host_challenge = Challenge::random();
 
-        let (session_id, session_response) = command::create_session(
+        let (session_id, session_response) = create_session(
             &*connection,
             credentials.authentication_key_id,
             host_challenge,
@@ -131,7 +135,7 @@ impl Session {
     }
 
     /// Session ID value (1-16)
-    pub fn id(&self) -> SessionId {
+    pub fn id(&self) -> Id {
         self.id
     }
 
@@ -160,7 +164,7 @@ impl Session {
         &mut self,
         command: C,
     ) -> Result<C::ResponseType, SessionError> {
-        let plaintext_cmd: CommandMessage = command.into();
+        let plaintext_cmd: command::Message = command.into();
         let cmd_type = plaintext_cmd.command_type;
 
         let encrypted_cmd = self
@@ -215,13 +219,13 @@ impl Session {
     }
 
     /// Send a command message to the HSM and parse the response
-    fn send_message(&mut self, cmd: CommandMessage) -> Result<ResponseMessage, SessionError> {
+    fn send_message(&mut self, cmd: command::Message) -> Result<response::Message, SessionError> {
         let cmd_type = cmd.command_type;
         let uuid = cmd.uuid;
         self.last_active = Instant::now();
 
         // We log the plaintext of all `SessionMessage` commands, so ignore those
-        if cmd_type != CommandCode::SessionMessage {
+        if cmd_type != command::Code::SessionMessage {
             session_debug!(
                 self,
                 "n={} uuid={} msg={:?}",
@@ -232,7 +236,7 @@ impl Session {
         }
 
         let response = match self.connection.send_message(uuid, cmd.into()) {
-            Ok(response_bytes) => ResponseMessage::parse(response_bytes)?,
+            Ok(response_bytes) => response::Message::parse(response_bytes)?,
             Err(e) => {
                 self.secure_channel = None;
                 return Err(e.into());
@@ -252,7 +256,7 @@ impl Session {
         session_debug!(
             self,
             "command={:?} key={}",
-            CommandCode::AuthenticateSession,
+            command::Code::AuthenticateSession,
             credentials.authentication_key_id
         );
 
@@ -266,7 +270,7 @@ impl Session {
             session_error!(
                 self,
                 "failed={:?} key={} err={:?}",
-                CommandCode::AuthenticateSession,
+                command::Code::AuthenticateSession,
                 credentials.authentication_key_id,
                 e.to_string()
             );

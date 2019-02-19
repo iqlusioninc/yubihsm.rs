@@ -1,6 +1,4 @@
-use crate::{
-    Algorithm, Capability, Domain, ObjectId, ObjectLabel, ObjectOrigin, ObjectType, SequenceId,
-};
+use crate::{object, Algorithm, Capability, Domain, SequenceId};
 
 /// Information about an object
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -9,7 +7,7 @@ pub struct Info {
     pub capabilities: Capability,
 
     /// Object identifier
-    pub object_id: ObjectId,
+    pub object_id: object::Id,
 
     /// Length of object in bytes
     pub length: u16,
@@ -18,7 +16,7 @@ pub struct Info {
     pub domains: Domain,
 
     /// Object type
-    pub object_type: ObjectType,
+    pub object_type: object::Type,
 
     /// Algorithm this object is intended to be used with
     pub algorithm: Algorithm,
@@ -28,10 +26,10 @@ pub struct Info {
     pub sequence: SequenceId,
 
     /// How did this object originate? (generated, imported, etc)
-    pub origin: ObjectOrigin,
+    pub origin: object::Origin,
 
     /// Label of object
-    pub label: ObjectLabel,
+    pub label: object::Label,
 
     /// Delegated Capabilities (bitfield)
     pub delegated_capabilities: Capability,

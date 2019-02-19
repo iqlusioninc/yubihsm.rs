@@ -3,8 +3,8 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/Sign_Pkcs1.html>
 
 use crate::{
-    command::{Command, CommandCode},
-    object::ObjectId,
+    command::{self, Command},
+    object,
     response::Response,
 };
 
@@ -12,7 +12,7 @@ use crate::{
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct SignPkcs1Command {
     /// ID of the key to perform the signature with
-    pub key_id: ObjectId,
+    pub key_id: object::Id,
 
     /// Digest of data to be signed
     pub digest: Vec<u8>,
@@ -27,7 +27,7 @@ impl Command for SignPkcs1Command {
 pub struct RsaPkcs1Signature(pub Vec<u8>);
 
 impl Response for RsaPkcs1Signature {
-    const COMMAND_CODE: CommandCode = CommandCode::SignPkcs1;
+    const COMMAND_CODE: command::Code = command::Code::SignPkcs1;
 }
 
 #[allow(clippy::len_without_is_empty)]

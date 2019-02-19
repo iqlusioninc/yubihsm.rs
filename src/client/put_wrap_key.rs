@@ -2,17 +2,18 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Put_Wrap_Key.html>
 
-use super::put_object::PutObjectParams;
-use crate::capability::Capability;
-use crate::command::{Command, CommandCode};
-use crate::object::ObjectId;
-use crate::response::Response;
+use crate::{
+    capability::Capability,
+    command::{self, Command},
+    object,
+    response::Response,
+};
 
 /// Request parameters for `command::put_wrap_key`
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct PutWrapKeyCommand {
     /// Common parameters to all put object commands
-    pub params: PutObjectParams,
+    pub params: object::ImportParams,
 
     /// Delegated capabilities
     pub delegated_capabilities: Capability,
@@ -29,9 +30,9 @@ impl Command for PutWrapKeyCommand {
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct PutWrapKeyResponse {
     /// ID of the key
-    pub key_id: ObjectId,
+    pub key_id: object::Id,
 }
 
 impl Response for PutWrapKeyResponse {
-    const COMMAND_CODE: CommandCode = CommandCode::PutWrapKey;
+    const COMMAND_CODE: command::Code = command::Code::PutWrapKey;
 }

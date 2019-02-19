@@ -6,12 +6,12 @@ pub const SESSION_INACTIVITY_TIMEOUT: Duration = Duration::from_secs(30);
 
 /// Session timeouts (i.e. YubiHSM's session inactivity timeout)
 #[derive(Copy, Clone, Debug, Deserialize, Serialize)]
-pub struct SessionTimeout(Duration);
+pub struct Timeout(Duration);
 
-impl SessionTimeout {
+impl Timeout {
     /// Create a new timeout from the given duration
     pub fn new(duration: Duration) -> Self {
-        SessionTimeout(duration)
+        Timeout(duration)
     }
 
     /// Create a new timeout from the given number of secs
@@ -25,14 +25,14 @@ impl SessionTimeout {
     }
 }
 
-impl Default for SessionTimeout {
+impl Default for Timeout {
     /// Default timeout: 30 seconds
     fn default() -> Self {
         Self::new(SESSION_INACTIVITY_TIMEOUT)
     }
 }
 
-impl From<Duration> for SessionTimeout {
+impl From<Duration> for Timeout {
     fn from(duration: Duration) -> Self {
         Self::new(duration)
     }

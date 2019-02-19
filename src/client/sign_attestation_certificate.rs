@@ -3,8 +3,8 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/Sign_Attestation_Certificate.html>
 
 use crate::{
-    command::{Command, CommandCode},
-    object::ObjectId,
+    command::{self, Command},
+    object,
     response::Response,
 };
 
@@ -12,10 +12,10 @@ use crate::{
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct SignAttestationCertificateCommand {
     /// Key that attestation certificate will be generated for
-    pub key_id: ObjectId,
+    pub key_id: object::Id,
 
     /// Key to use to sign attestation certificate
-    pub attestation_key_id: ObjectId,
+    pub attestation_key_id: object::Id,
 }
 
 impl Command for SignAttestationCertificateCommand {
@@ -27,7 +27,7 @@ impl Command for SignAttestationCertificateCommand {
 pub struct AttestationCertificate(pub Vec<u8>);
 
 impl Response for AttestationCertificate {
-    const COMMAND_CODE: CommandCode = CommandCode::SignAttestationCertificate;
+    const COMMAND_CODE: command::Code = command::Code::SignAttestationCertificate;
 }
 
 #[allow(clippy::len_without_is_empty)]
