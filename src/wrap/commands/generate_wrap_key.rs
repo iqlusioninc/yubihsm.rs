@@ -2,9 +2,9 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Generate_Wrap_Key.html>
 
-use super::generate_key::GenerateKeyParams;
 use crate::{
     capability::Capability,
+    client::GenerateKeyParams,
     command::{self, Command},
     object,
     response::Response,

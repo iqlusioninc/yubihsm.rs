@@ -1,11 +1,11 @@
 //! The `YubiHSM2` doesnt' have a unified put object command, however all of the put object
-//! commands share a common structure, i.e. `object::ImportParams`
+//! commands share a common structure, i.e. `object::import::Params`
 
 use crate::{object, Algorithm, Capability, Domain};
 
 /// Parameters used when importing objects into the HSM
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct ImportParams {
+pub struct Params {
     /// ID of the object
     pub id: object::Id,
 
@@ -22,8 +22,8 @@ pub struct ImportParams {
     pub algorithm: Algorithm,
 }
 
-impl ImportParams {
-    /// Create minimal `ImportParams` using the given `object::Id` and algorithm
+impl Params {
+    /// Create minimal `import::Params` using the given `object::Id` and algorithm
     pub fn new(id: object::Id, algorithm: Algorithm) -> Self {
         Self {
             id,

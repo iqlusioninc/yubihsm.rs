@@ -54,6 +54,11 @@ impl HttpConnector {
 }
 
 impl Connector for HttpConnector {
+    /// Create a clone of this connector as a boxed trait object
+    fn box_clone(&self) -> Box<dyn Connector> {
+        Box::new(self.clone())
+    }
+
     /// Open a connection to `yubihsm-connector`
     fn connect(&self) -> Result<Box<dyn Connection>, ConnectionError> {
         Ok(Box::new(HttpConnection::open(&self.0)?))

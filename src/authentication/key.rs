@@ -1,6 +1,6 @@
 //! `YubiHSM2` authentication keys (2 * AES-128 symmetric PSK) from which session keys are derived
 
-use crate::error::Error;
+use super::{KeyError, KeyErrorKind};
 #[cfg(feature = "hmac")]
 use hmac::Hmac;
 #[cfg(feature = "pbkdf2")]
@@ -29,15 +29,15 @@ pub const DEFAULT_PBKDF2_ITERATIONS: usize = 10_000;
 /// `YubiHSM2` authentication keys (2 * AES-128 symmetric PSK) from which
 /// session keys are derived.c
 #[derive(Clone)]
-pub struct AuthenticationKey(pub(crate) [u8; AUTHENTICATION_KEY_SIZE]);
+pub struct Key(pub(crate) [u8; AUTHENTICATION_KEY_SIZE]);
 
-impl AuthenticationKey {
-    /// Generate a random `AuthenticationKey` using `OsRng`.
+impl Key {
+    /// Generate a random `Key` using `OsRng`.
     pub fn random() -> Self {
         let mut rng = OsRng::new().expect("RNG failure!");
         let mut challenge = [0u8; AUTHENTICATION_KEY_SIZE];
         rng.fill_bytes(&mut challenge);
-        AuthenticationKey(challenge)
+        Key(challenge)
     }
 
     /// Derive an auth key from a password (using PBKDF2 + static salt).
@@ -56,12 +56,12 @@ impl AuthenticationKey {
         Self::new(kdf_output)
     }
 
-    /// Create an AuthenticationKey from a 32-byte slice, returning an error if the key
-    /// is the wrong length
-    pub fn from_slice(key_slice: &[u8]) -> Result<Self, AuthenticationKeyError> {
+    /// Create an `authentication::Key` from a 32-byte slice, returning an
+    /// error if the key is the wrong length
+    pub fn from_slice(key_slice: &[u8]) -> Result<Self, KeyError> {
         ensure!(
             key_slice.len() == AUTHENTICATION_KEY_SIZE,
-            AuthenticationKeyErrorKind::SizeInvalid,
+            KeyErrorKind::SizeInvalid,
             "expected {}-byte key, got {}",
             AUTHENTICATION_KEY_SIZE,
             key_slice.len()
@@ -70,12 +70,12 @@ impl AuthenticationKey {
         let mut key_bytes = [0u8; AUTHENTICATION_KEY_SIZE];
         key_bytes.copy_from_slice(key_slice);
 
-        Ok(AuthenticationKey(key_bytes))
+        Ok(Key(key_bytes))
     }
 
-    /// Create a new AuthenticationKey from the given byte array
+    /// Create a new Key from the given byte array
     pub fn new(key_bytes: [u8; AUTHENTICATION_KEY_SIZE]) -> Self {
-        AuthenticationKey(key_bytes)
+        Key(key_bytes)
     }
 
     /// Borrow the secret authentication keys
@@ -94,42 +94,31 @@ impl AuthenticationKey {
     }
 }
 
-impl Debug for AuthenticationKey {
+impl Debug for Key {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // Avoid leaking secrets in debug messages
-        write!(f, "yubihsm::AuthenticationKey(...)")
+        write!(f, "yubihsm::authentication::Key(...)")
     }
 }
 
 /// Derive the default authentication key for all YubiHSM2s
 #[cfg(feature = "passwords")]
-impl Default for AuthenticationKey {
+impl Default for Key {
     fn default() -> Self {
-        AuthenticationKey::derive_from_password(DEFAULT_PASSWORD)
+        Key::derive_from_password(DEFAULT_PASSWORD)
     }
 }
 
-impl Drop for AuthenticationKey {
+impl Drop for Key {
     fn drop(&mut self) {
         self.0.zeroize();
     }
 }
 
-impl From<[u8; AUTHENTICATION_KEY_SIZE]> for AuthenticationKey {
-    fn from(key_bytes: [u8; AUTHENTICATION_KEY_SIZE]) -> AuthenticationKey {
-        AuthenticationKey::new(key_bytes)
+impl From<[u8; AUTHENTICATION_KEY_SIZE]> for Key {
+    fn from(key_bytes: [u8; AUTHENTICATION_KEY_SIZE]) -> Key {
+        Key::new(key_bytes)
     }
 }
 
-impl_array_serializers!(AuthenticationKey, AUTHENTICATION_KEY_SIZE);
-
-/// `AuthenticationKey`-related errors
-pub type AuthenticationKeyError = Error<AuthenticationKeyErrorKind>;
-
-/// Kinds of `AuthenticationKey`-related errors
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
-pub enum AuthenticationKeyErrorKind {
-    /// Size is invalid
-    #[fail(display = "invalid size")]
-    SizeInvalid,
-}
+impl_array_serializers!(Key, AUTHENTICATION_KEY_SIZE);

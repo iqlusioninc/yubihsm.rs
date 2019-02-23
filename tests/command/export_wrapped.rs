@@ -74,7 +74,7 @@ fn wrap_key_test() {
     assert_eq!(imported_key_info.algorithm, exported_key_algorithm.into());
     assert_eq!(imported_key_info.origin, object::Origin::WrappedGenerated);
     assert_eq!(
-        &imported_key_info.label.to_string().unwrap(),
+        &imported_key_info.label.to_string(),
         TEST_EXPORTED_KEY_LABEL
     );
 }

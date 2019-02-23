@@ -51,6 +51,11 @@ impl UsbConnector {
 }
 
 impl Connector for UsbConnector {
+    /// Create a clone of this connector as a boxed trait object
+    fn box_clone(&self) -> Box<dyn Connector> {
+        Box::new(self.clone())
+    }
+
     /// Open a connection to `yubihsm-connector`
     fn connect(&self) -> Result<Box<Connection>, ConnectionError> {
         Ok(Box::new(UsbConnection::open(&self.0)?))

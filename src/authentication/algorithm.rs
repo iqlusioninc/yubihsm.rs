@@ -1,19 +1,19 @@
-use super::{Algorithm, AlgorithmError, AlgorithmErrorKind::TagInvalid};
+use crate::algorithm::{AlgorithmError, AlgorithmErrorKind::TagInvalid};
 
 /// Valid algorithms for auth keys
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[allow(non_camel_case_types)]
 #[repr(u8)]
-pub enum AuthenticationAlg {
+pub enum Algorithm {
     /// YubiHSM AES PSK authentication
     YUBICO_AES = 0x26,
 }
 
-impl AuthenticationAlg {
-    /// Convert an unsigned byte tag into an `AuthAlgorithm` (if valid)
+impl Algorithm {
+    /// Convert an unsigned byte tag into an `authentication::Algorithm` (if valid)
     pub fn from_u8(tag: u8) -> Result<Self, AlgorithmError> {
         Ok(match tag {
-            0x26 => AuthenticationAlg::YUBICO_AES,
+            0x26 => Algorithm::YUBICO_AES,
             _ => fail!(TagInvalid, "unknown auth algorithm ID: 0x{:02x}", tag),
         })
     }
@@ -26,15 +26,21 @@ impl AuthenticationAlg {
     /// Return the size of the given key (as expected by the `YubiHSM2`) in bytes
     pub fn key_len(self) -> usize {
         match self {
-            AuthenticationAlg::YUBICO_AES => 32,
+            Algorithm::YUBICO_AES => 32,
         }
     }
 }
 
-impl From<AuthenticationAlg> for Algorithm {
-    fn from(alg: AuthenticationAlg) -> Algorithm {
-        Algorithm::Auth(alg)
+impl Default for Algorithm {
+    fn default() -> Self {
+        Algorithm::YUBICO_AES
     }
 }
 
-impl_algorithm_serializers!(AuthenticationAlg);
+impl From<Algorithm> for crate::Algorithm {
+    fn from(alg: Algorithm) -> crate::Algorithm {
+        crate::Algorithm::Authentication(alg)
+    }
+}
+
+impl_algorithm_serializers!(Algorithm);

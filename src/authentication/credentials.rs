@@ -1,4 +1,6 @@
-use crate::{authentication_key::AuthenticationKey, object};
+//! Credentials used to authenticate to the HSM (key ID + `authentication::Key`).
+
+use crate::{authentication, object};
 
 /// Default auth key ID slot
 pub const DEFAULT_AUTHENTICATION_KEY_ID: object::Id = 1;
@@ -10,12 +12,12 @@ pub struct Credentials {
     pub authentication_key_id: object::Id,
 
     /// Auth key to authenticate with
-    pub authentication_key: AuthenticationKey,
+    pub authentication_key: authentication::Key,
 }
 
 impl Credentials {
-    /// Create new `Credentials` (auth key ID + `AuthenticationKey`)
-    pub fn new(authentication_key_id: object::Id, authentication_key: AuthenticationKey) -> Self {
+    /// Create new `Credentials` (auth key ID + `authentication::Key`)
+    pub fn new(authentication_key_id: object::Id, authentication_key: authentication::Key) -> Self {
         Self {
             authentication_key_id,
             authentication_key,
@@ -30,7 +32,7 @@ impl Credentials {
     pub fn from_password(authentication_key_id: object::Id, password: &[u8]) -> Self {
         Self::new(
             authentication_key_id,
-            AuthenticationKey::derive_from_password(password),
+            authentication::Key::derive_from_password(password),
         )
     }
 }
@@ -38,6 +40,9 @@ impl Credentials {
 #[cfg(feature = "passwords")]
 impl Default for Credentials {
     fn default() -> Self {
-        Self::new(DEFAULT_AUTHENTICATION_KEY_ID, AuthenticationKey::default())
+        Self::new(
+            DEFAULT_AUTHENTICATION_KEY_ID,
+            authentication::Key::default(),
+        )
     }
 }

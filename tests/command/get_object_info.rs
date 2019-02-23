@@ -1,6 +1,7 @@
 use crate::DEFAULT_AUTHENTICATION_KEY_LABEL;
 use yubihsm::{
-    credentials::DEFAULT_AUTHENTICATION_KEY_ID, object, AuthenticationAlg, Capability, Domain,
+    authentication::{self, DEFAULT_AUTHENTICATION_KEY_ID},
+    object, Capability, Domain,
 };
 
 /// Get object info on default auth key
@@ -19,10 +20,13 @@ fn default_authkey_test() {
     assert_eq!(object_info.object_id, DEFAULT_AUTHENTICATION_KEY_ID);
     assert_eq!(object_info.domains, Domain::all());
     assert_eq!(object_info.object_type, object::Type::AuthenticationKey);
-    assert_eq!(object_info.algorithm, AuthenticationAlg::YUBICO_AES.into());
+    assert_eq!(
+        object_info.algorithm,
+        authentication::Algorithm::YUBICO_AES.into()
+    );
     assert_eq!(object_info.origin, object::Origin::Imported);
     assert_eq!(
-        &object_info.label.to_string().unwrap(),
+        &object_info.label.to_string(),
         DEFAULT_AUTHENTICATION_KEY_LABEL
     );
 }

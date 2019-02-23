@@ -75,6 +75,10 @@ extern crate log;
 #[macro_use]
 extern crate serde_derive;
 
+/// Macros used internally within this crate
+#[macro_use]
+mod macros;
+
 /// Error types
 #[macro_use]
 pub mod error;
@@ -89,8 +93,7 @@ pub mod algorithm;
 /// Auditing options (for use with the `get_option` and `put_option` command)
 pub(crate) mod audit;
 
-/// Authentication keys used to establish encrypted sessions with the HSM
-pub mod authentication_key;
+pub mod authentication;
 
 /// Object attributes specifying which operations are allowed to be performed
 pub mod capability;
@@ -120,9 +123,6 @@ pub mod command;
 /// [MockHsm]: https://docs.rs/yubihsm/latest/yubihsm/mockhsm/struct.MockHsm.html
 pub mod connector;
 
-/// Credentials used to authenticate to the HSM (key ID + `AuthenticationKey`).
-pub mod credentials;
-
 /// Logical partitions within the HSM, allowing several applications to share the device.
 pub mod domain;
 
@@ -135,6 +135,10 @@ pub mod mockhsm;
 /// For more information, see:
 /// <https://developers.yubico.com/YubiHSM2/Concepts/Session.html>
 pub mod session;
+
+/// Device provisioning support including creating initial accounts and wrap keys
+#[cfg(feature = "setup")]
+pub mod setup;
 
 /// Objects stored in the HSM.
 ///
@@ -164,11 +168,10 @@ pub use crate::mockhsm::MockHsm;
 pub use crate::{
     algorithm::*,
     audit::AuditOption,
-    authentication_key::{AuthenticationKey, AUTHENTICATION_KEY_SIZE},
+    authentication::{Credentials, AUTHENTICATION_KEY_SIZE},
     capability::Capability,
     client::{Client, ClientError},
     connector::{Connection, ConnectionError, Connector},
-    credentials::Credentials,
     domain::Domain,
     error::*,
     object::*,

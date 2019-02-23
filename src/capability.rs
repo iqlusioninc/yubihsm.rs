@@ -46,7 +46,7 @@ bitflags! {
         /// `delete-asymmetric-key`: delete asymmetric key objects
         const DELETE_ASYMMETRIC_KEY = 0x200_0000_0000;
 
-        /// `delete-authentication-key`: delete AuthenticationKey objects
+        /// `delete-authentication-key`: delete authentication::Key objects
         const DELETE_AUTHENTICATION_KEY = 0x100_0000_0000;
 
         /// `delete-hmac-key`: delete HMACKey objects

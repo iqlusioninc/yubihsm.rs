@@ -1,10 +1,10 @@
 //! Objects within the `YubiHSM2` (keys, certificates, or other opaque data)
 
 mod handle;
+pub mod import;
 mod info;
 mod label;
 mod origins;
-mod params;
 mod types;
 
 pub(crate) use self::handle::Handle;
@@ -12,7 +12,6 @@ pub use self::{
     info::Info,
     label::{Label, LABEL_SIZE},
     origins::Origin,
-    params::ImportParams,
     types::Type,
 };
 

@@ -8,8 +8,8 @@ use ring::{
 use untrusted;
 
 use crate::{
-    algorithm::{Algorithm, AsymmetricAlg, AuthenticationAlg, HmacAlg, OpaqueAlg, WrapAlg},
-    authentication_key::{AuthenticationKey, AUTHENTICATION_KEY_SIZE},
+    algorithm::{Algorithm, AsymmetricAlg, HmacAlg, OpaqueAlg, WrapAlg},
+    authentication::{self, AUTHENTICATION_KEY_SIZE},
 };
 
 /// Size of an Ed25519 seed
@@ -19,7 +19,7 @@ pub(crate) const ED25519_SEED_SIZE: usize = 32;
 #[derive(Debug)]
 pub(crate) enum Payload {
     /// Authentication keys
-    AuthenticationKey(AuthenticationKey),
+    AuthenticationKey(authentication::Key),
 
     /// Ed25519 signing keys
     Ed25519KeyPair([u8; ED25519_SEED_SIZE]),
@@ -48,8 +48,8 @@ impl Payload {
             }
             Algorithm::Hmac(alg) => Payload::HmacKey(alg, data.into()),
             Algorithm::Opaque(alg) => Payload::Opaque(alg, data.into()),
-            Algorithm::Auth(_) => {
-                Payload::AuthenticationKey(AuthenticationKey::from_slice(data).unwrap())
+            Algorithm::Authentication(_) => {
+                Payload::AuthenticationKey(authentication::Key::from_slice(data).unwrap())
             }
             _ => panic!("MockHsm does not support putting {:?} objects", algorithm),
         }
@@ -91,7 +91,9 @@ impl Payload {
     /// Get the algorithm type for this payload
     pub fn algorithm(&self) -> Algorithm {
         match *self {
-            Payload::AuthenticationKey(_) => Algorithm::Auth(AuthenticationAlg::YUBICO_AES),
+            Payload::AuthenticationKey(_) => {
+                Algorithm::Authentication(authentication::Algorithm::YUBICO_AES)
+            }
             Payload::Ed25519KeyPair(_) => Algorithm::Asymmetric(AsymmetricAlg::Ed25519),
             Payload::HmacKey(alg, _) => alg.into(),
             Payload::Opaque(alg, _) => alg.into(),
@@ -126,7 +128,7 @@ impl Payload {
     }
 
     /// If this payload is an auth key, return a reference to it
-    pub fn authentication_key(&self) -> Option<&AuthenticationKey> {
+    pub fn authentication_key(&self) -> Option<&authentication::Key> {
         match *self {
             Payload::AuthenticationKey(ref k) => Some(k),
             _ => None,

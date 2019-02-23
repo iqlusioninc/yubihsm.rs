@@ -1,9 +1,15 @@
 use failure::Error;
-use std::fmt;
-use std::ops::{Deref, DerefMut};
+use std::{
+    fmt::{self, Debug, Display},
+    ops::{Deref, DerefMut},
+    str::{self, FromStr},
+};
 
 /// Number of bytes in a label on an object (fixed-size)
 pub const LABEL_SIZE: usize = 40;
+
+/// Placeholder text in event labels contain invalid UTF-8 characters
+const INVALID_LABEL_STR_PLACEHOLDER: &str = "[INVALID UTF-8 CHARACTER IN LABEL]";
 
 /// Labels attached to objects
 pub struct Label(pub [u8; LABEL_SIZE]);
@@ -24,14 +30,13 @@ impl Label {
         Ok(Label(bytes))
     }
 
-    /// Create a string representation of this label
-    pub fn to_string(&self) -> Result<String, Error> {
-        let slice = match self.0.iter().position(|b| *b == b'\0') {
+    /// Borrow this label as a string ref
+    pub fn try_as_str(&self) -> Result<&str, Error> {
+        str::from_utf8(match self.0.iter().position(|b| *b == b'\0') {
             Some(pos) => &self.0.as_ref()[..pos],
             None => self.0.as_ref(),
-        };
-
-        Ok(String::from_utf8(slice.into())?)
+        })
+        .map_err(|err| format_err!("{}", err))
     }
 }
 
@@ -53,19 +58,39 @@ impl Default for Label {
     }
 }
 
-impl fmt::Debug for Label {
+impl Debug for Label {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let string = self
-            .to_string()
-            .unwrap_or_else(|_| "[INVALID UTF-8 CHARACTER IN LABEL]".to_owned());
+        write!(
+            f,
+            "{}",
+            self.try_as_str()
+                .unwrap_or_else(|_| INVALID_LABEL_STR_PLACEHOLDER)
+        )
+    }
+}
 
-        write!(f, "{:?}", string)
+impl Display for Label {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            self.try_as_str()
+                .unwrap_or_else(|_| INVALID_LABEL_STR_PLACEHOLDER)
+        )
+    }
+}
+
+impl FromStr for Label {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Error> {
+        Self::from_bytes(s.as_bytes())
     }
 }
 
 impl<'a> From<&'a str> for Label {
-    fn from(string: &'a str) -> Self {
-        Self::from_bytes(string.as_bytes()).unwrap()
+    fn from(s: &'a str) -> Self {
+        Self::from_str(s).unwrap()
     }
 }
 

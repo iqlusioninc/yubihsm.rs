@@ -14,11 +14,9 @@ mod blink_device;
 mod delete_object;
 mod device_info;
 mod echo;
-mod export_wrapped;
 mod generate_asymmetric_key;
 mod generate_hmac_key;
 mod generate_key;
-mod generate_wrap_key;
 mod get_log_entries;
 mod get_object_info;
 mod get_opaque;
@@ -26,14 +24,11 @@ mod get_option;
 mod get_pseudo_random;
 mod get_public_key;
 mod get_storage_info;
-mod import_wrapped;
 mod list_objects;
 mod put_asymmetric_key;
-mod put_authentication_key;
 mod put_hmac_key;
 mod put_opaque;
 mod put_otp_aead_key;
-mod put_wrap_key;
 mod reset_device;
 mod set_log_index;
 mod set_option;
@@ -45,40 +40,35 @@ mod sign_hmac;
 mod sign_rsa_pkcs1v15;
 #[cfg(feature = "rsa")]
 mod sign_rsa_pss;
-mod unwrap_data;
 mod verify_hmac;
-mod wrap_data;
 
 pub use self::error::{ClientError, ClientErrorKind};
 pub use self::{
-    device_info::*, get_log_entries::*, get_public_key::*, get_storage_info::*, import_wrapped::*,
-    list_objects::*, reset_device::*, sign_attestation_certificate::*, sign_ecdsa::*,
-    sign_eddsa::*, sign_hmac::*,
+    device_info::*, get_log_entries::*, get_public_key::*, get_storage_info::*, list_objects::*,
+    reset_device::*, sign_attestation_certificate::*, sign_ecdsa::*, sign_eddsa::*, sign_hmac::*,
 };
 #[cfg(feature = "rsa")]
 pub use self::{sign_rsa_pkcs1v15::*, sign_rsa_pss::*};
 
 use self::error::ClientErrorKind::*;
 pub(crate) use self::{
-    blink_device::*, delete_object::*, echo::*, export_wrapped::*, generate_asymmetric_key::*,
-    generate_hmac_key::*, generate_key::*, generate_wrap_key::*, get_object_info::*, get_opaque::*,
-    get_option::*, get_pseudo_random::*, put_asymmetric_key::*, put_authentication_key::*,
-    put_hmac_key::*, put_opaque::*, put_otp_aead_key::*, put_wrap_key::*, set_log_index::*,
-    set_option::*, unwrap_data::*, verify_hmac::*, wrap_data::*,
+    blink_device::*, delete_object::*, echo::*, generate_asymmetric_key::*, generate_hmac_key::*,
+    generate_key::*, get_object_info::*, get_opaque::*, get_option::*, get_pseudo_random::*,
+    put_asymmetric_key::*, put_hmac_key::*, put_opaque::*, put_otp_aead_key::*, set_log_index::*,
+    set_option::*, verify_hmac::*,
 };
 use crate::{
     algorithm::*,
     audit::*,
-    authentication_key::AuthenticationKey,
+    authentication::{self, commands::*, Credentials},
     capability::Capability,
     command::{self, Command},
     connector::Connector,
-    credentials::Credentials,
     domain::Domain,
     object,
     serialization::{deserialize, serialize},
     session::{self, Session},
-    wrap,
+    wrap::{self, commands::*},
 };
 #[cfg(feature = "rsa")]
 use byteorder::{BigEndian, ByteOrder};
@@ -517,7 +507,7 @@ impl Client {
 
         Ok(self
             .send_command(PutAsymmetricKeyCommand {
-                params: object::ImportParams {
+                params: object::import::Params {
                     id: key_id,
                     label,
                     domains,
@@ -529,7 +519,7 @@ impl Client {
             .key_id)
     }
 
-    /// Put an existing `AuthenticationKey` into the HSM.
+    /// Put an existing `authentication::Key` into the HSM.
     ///
     /// <https://developers.yubico.com/YubiHSM2/Commands/Put_Authentication_Key.html>
     pub fn put_authentication_key<K>(
@@ -539,15 +529,15 @@ impl Client {
         domains: Domain,
         capabilities: Capability,
         delegated_capabilities: Capability,
-        algorithm: AuthenticationAlg,
+        algorithm: authentication::Algorithm,
         authentication_key: K,
     ) -> Result<object::Id, ClientError>
     where
-        K: Into<AuthenticationKey>,
+        K: Into<authentication::Key>,
     {
         Ok(self
             .send_command(PutAuthenticationKeyCommand {
-                params: object::ImportParams {
+                params: object::import::Params {
                     id: key_id,
                     label,
                     domains,
@@ -590,7 +580,7 @@ impl Client {
 
         Ok(self
             .send_command(PutHMACKeyCommand {
-                params: object::ImportParams {
+                params: object::import::Params {
                     id: key_id,
                     label,
                     domains,
@@ -619,7 +609,7 @@ impl Client {
     {
         Ok(self
             .send_command(PutOpaqueCommand {
-                params: object::ImportParams {
+                params: object::import::Params {
                     id: object_id,
                     label,
                     domains,
@@ -629,23 +619,6 @@ impl Client {
                 data: opaque_data.into(),
             })?
             .object_id)
-    }
-
-    /// Put the forced auditing global option: when enabled, the device will
-    /// refuse operations if the [log store] becomes full.
-    ///
-    /// Options are `On`, `Off`, or `Fix` (i.e. fixed permanently on)
-    ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Put_Option.html>
-    /// [log store]: https://developers.yubico.com/YubiHSM2/Concepts/Logs.html
-    pub fn put_force_audit_option(&mut self, option: AuditOption) -> Result<(), ClientError> {
-        self.send_command(SetOptionCommand {
-            tag: AuditTag::Force,
-            length: 1,
-            value: vec![option.to_u8()],
-        })?;
-
-        Ok(())
     }
 
     /// Put an existing OTP AEAD key into the HSM.
@@ -677,7 +650,7 @@ impl Client {
 
         Ok(self
             .send_command(PutOTPAEADKeyCommand {
-                params: object::ImportParams {
+                params: object::import::Params {
                     id: key_id,
                     label,
                     domains,
@@ -719,7 +692,7 @@ impl Client {
 
         Ok(self
             .send_command(PutWrapKeyCommand {
-                params: object::ImportParams {
+                params: object::import::Params {
                     id: key_id,
                     label,
                     domains,
@@ -754,7 +727,7 @@ impl Client {
     /// should be `On`, `Off`, or `Fix` (i.e. fixed permanently on).
     ///
     /// <https://developers.yubico.com/YubiHSM2/Commands/Set_Option.html>
-    pub fn set_audit_option(
+    pub fn set_command_audit_option(
         &mut self,
         command: command::Code,
         audit_option: AuditOption,
@@ -763,6 +736,24 @@ impl Client {
             tag: AuditTag::Command,
             length: 2,
             value: serialize(&AuditCommand(command, audit_option))?,
+        })?;
+
+        Ok(())
+    }
+
+    /// Put the forced auditing global option: when enabled, the device will
+    /// refuse operations if the [log store] becomes full.
+    ///
+    /// Options are `On`, `Off`, or `Fix` (i.e. fixed permanently on)
+    ///
+    /// <https://developers.yubico.com/YubiHSM2/Commands/Put_Option.html>
+    ///
+    /// [log store]: https://developers.yubico.com/YubiHSM2/Concepts/Logs.html
+    pub fn set_force_audit_option(&mut self, option: AuditOption) -> Result<(), ClientError> {
+        self.send_command(SetOptionCommand {
+            tag: AuditTag::Force,
+            length: 1,
+            value: vec![option.to_u8()],
         })?;
 
         Ok(())

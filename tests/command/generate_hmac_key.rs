@@ -33,5 +33,5 @@ fn hmac_key_test() {
     assert_eq!(object_info.object_type, object::Type::HmacKey);
     assert_eq!(object_info.algorithm, algorithm.into());
     assert_eq!(object_info.origin, object::Origin::Generated);
-    assert_eq!(&object_info.label.to_string().unwrap(), TEST_KEY_LABEL);
+    assert_eq!(&object_info.label.to_string(), TEST_KEY_LABEL);
 }

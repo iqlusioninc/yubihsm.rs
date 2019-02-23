@@ -12,7 +12,7 @@ use crate::{
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct PutOTPAEADKeyCommand {
     /// Common parameters to all put object commands
-    pub params: object::ImportParams,
+    pub params: object::import::Params,
 
     /// Serialized object
     pub data: Vec<u8>,

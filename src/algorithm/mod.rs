@@ -1,44 +1,7 @@
-macro_rules! impl_algorithm_serializers {
-    ($alg:ident) => {
-        impl ::serde::Serialize for $alg {
-            fn serialize<S: ::serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-                serializer.serialize_u8(self.to_u8())
-            }
-        }
-
-        impl<'de> ::serde::Deserialize<'de> for $alg {
-            fn deserialize<D: ::serde::de::Deserializer<'de>>(
-                deserializer: D,
-            ) -> Result<$alg, D::Error> {
-                use serde::de::{self, Visitor};
-                use std::fmt;
-
-                struct AlgorithmVisitor;
-
-                impl<'de> Visitor<'de> for AlgorithmVisitor {
-                    type Value = $alg;
-
-                    fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-                        // TODO: customize this per algorithm
-                        formatter.write_str("an unsigned tag byte")
-                    }
-
-                    fn visit_u8<E: de::Error>(self, value: u8) -> Result<$alg, E> {
-                        $alg::from_u8(value).or_else(|e| Err(E::custom(format!("{}", e))))
-                    }
-                }
-
-                deserializer.deserialize_u8(AlgorithmVisitor)
-            }
-        }
-    };
-}
-
 mod error;
 pub use self::error::{AlgorithmError, AlgorithmErrorKind};
 
 mod asymmetric;
-mod authentication;
 mod ecdsa;
 mod hmac;
 mod kex;
@@ -50,10 +13,10 @@ mod wrap;
 mod yubico_otp;
 
 pub use self::{
-    asymmetric::AsymmetricAlg, authentication::AuthenticationAlg, ecdsa::EcdsaAlg, hmac::HmacAlg,
-    kex::KexAlg, mgf::MgfAlg, opaque::OpaqueAlg, rsa::RsaAlg, template::TemplateAlg, wrap::WrapAlg,
-    yubico_otp::YubicoOtpAlg,
+    asymmetric::AsymmetricAlg, ecdsa::EcdsaAlg, hmac::HmacAlg, kex::KexAlg, mgf::MgfAlg,
+    opaque::OpaqueAlg, rsa::RsaAlg, template::TemplateAlg, wrap::WrapAlg, yubico_otp::YubicoOtpAlg,
 };
+use crate::authentication;
 
 /// Cryptographic algorithm types supported by the `YubiHSM2`
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -64,7 +27,7 @@ pub enum Algorithm {
     Asymmetric(AsymmetricAlg),
 
     /// YubiHSM2 PSK authentication
-    Auth(AuthenticationAlg),
+    Authentication(authentication::Algorithm),
 
     /// ECDSA algorithms
     Ecdsa(EcdsaAlg),
@@ -108,7 +71,7 @@ impl Algorithm {
             0x20..=0x23 => Algorithm::Mgf(MgfAlg::from_u8(byte)?),
             0x24 => Algorithm::Template(TemplateAlg::from_u8(byte)?),
             0x25 | 0x27 | 0x28 => Algorithm::YubicoOtp(YubicoOtpAlg::from_u8(byte)?),
-            0x26 => Algorithm::Auth(AuthenticationAlg::from_u8(byte)?),
+            0x26 => Algorithm::Authentication(authentication::Algorithm::from_u8(byte)?),
             _ => fail!(
                 AlgorithmErrorKind::TagInvalid,
                 "unknown algorithm ID: 0x{:02x}",
@@ -121,7 +84,7 @@ impl Algorithm {
     pub fn to_u8(self) -> u8 {
         match self {
             Algorithm::Asymmetric(alg) => alg.to_u8(),
-            Algorithm::Auth(alg) => alg.to_u8(),
+            Algorithm::Authentication(alg) => alg.to_u8(),
             Algorithm::Ecdsa(alg) => alg.to_u8(),
             Algorithm::Hmac(alg) => alg.to_u8(),
             Algorithm::Kex(alg) => alg.to_u8(),
@@ -142,10 +105,10 @@ impl Algorithm {
         }
     }
 
-    /// Get `AuthAlg`
-    pub fn auth(self) -> Option<AuthenticationAlg> {
+    /// Get `authentication::Algorithm`
+    pub fn authentication(self) -> Option<authentication::Algorithm> {
         match self {
-            Algorithm::Auth(alg) => Some(alg),
+            Algorithm::Authentication(alg) => Some(alg),
             _ => None,
         }
     }
@@ -267,7 +230,10 @@ mod tests {
         (0x23, Algorithm::Mgf(MgfAlg::SHA512)),
         (0x24, Algorithm::Template(TemplateAlg::SSH)),
         (0x25, Algorithm::YubicoOtp(YubicoOtpAlg::AES128)),
-        (0x26, Algorithm::Auth(AuthenticationAlg::YUBICO_AES)),
+        (
+            0x26,
+            Algorithm::Authentication(authentication::Algorithm::YUBICO_AES),
+        ),
         (0x27, Algorithm::YubicoOtp(YubicoOtpAlg::AES192)),
         (0x28, Algorithm::YubicoOtp(YubicoOtpAlg::AES256)),
         (0x29, Algorithm::Wrap(WrapAlg::AES192_CCM)),
