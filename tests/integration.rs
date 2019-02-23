@@ -19,6 +19,10 @@ pub mod command;
 /// Cryptographic test vectors taken from standards documents
 mod test_vectors;
 
+/// Signatory tests
+#[cfg(feature = "signatory")]
+mod signatory;
+
 /// Key ID to use for testing keygen/signing
 const TEST_KEY_ID: object::Id = 100;
 
