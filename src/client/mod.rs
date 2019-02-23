@@ -803,12 +803,8 @@ impl Client {
     /// the signatures. One option for this is the `secp256k1` crate's
     /// [Signature::normalize_s] function.
     ///
-    /// The [signatory-yubihsm] crate automatically normalizes secp256k1 ECDSA
-    /// signatures to "low S" form. Consider using that if you'd like a ready-made
-    /// solution for cryptocurrency applications.
-    ///
-    /// [Signature::normalize_s]: https://docs.rs/secp256k1/latest/secp256k1/struct.Signature.html#method.normalize_s
-    /// [signatory-yubihsm]: https://docs.rs/signatory-yubihsm/latest/signatory_yubihsm/ecdsa/struct.ECDSASigner.html
+    /// Normalization functionality is built into the `yubihsm::signatory` API
+    /// found in this crate (when the `secp256k1` feature is enabled).
     pub fn sign_ecdsa<T>(
         &mut self,
         key_id: object::Id,

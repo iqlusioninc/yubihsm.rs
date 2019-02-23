@@ -140,6 +140,10 @@ pub mod session;
 #[cfg(feature = "setup")]
 pub mod setup;
 
+/// Implementations of the Signatory abstract signature API
+#[cfg(feature = "signatory")]
+pub mod signatory;
+
 /// Objects stored in the HSM.
 ///
 /// For more information, see:
