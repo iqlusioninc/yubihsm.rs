@@ -719,7 +719,10 @@ impl Client {
         }
 
         // Resetting the HSM invalidates our session
-        self.session = None;
+        if let Some(ref mut session) = self.session {
+            session.abort();
+        }
+
         Ok(())
     }
 

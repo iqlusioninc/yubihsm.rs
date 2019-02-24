@@ -65,7 +65,7 @@ where
         temp_auth_key.clone(),
     )?;
 
-    debug!(
+    info!(
         "installed temporary setup authentication key into slot {}",
         setup_auth_key_id
     );
