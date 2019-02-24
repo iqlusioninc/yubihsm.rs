@@ -4,7 +4,7 @@
 
 #![allow(clippy::new_without_default)]
 
-use crate::{object, Capability, Client, Domain, OpaqueAlg};
+use crate::{object, Capability, Client, Domain, OpaqueAlg, Uuid};
 use chrono::{DateTime, Utc};
 use failure::Error;
 use std::{env, str::FromStr};
@@ -28,6 +28,9 @@ pub struct Report {
     /// Version of the report
     pub version: Version,
 
+    /// UUID which uniquely identifies this provisioning report
+    pub uuid: Uuid,
+
     /// Hostname the device was provisioned on
     pub hostname: Option<String>,
 
@@ -47,6 +50,7 @@ impl Report {
         // TODO: handle these better on operating systems other than *IX
         Report {
             version: Version::default(),
+            uuid: Uuid::new_v4(),
             username: env::var("LOGNAME").map(|u| u.to_owned()).ok(),
             hostname: env::var("HOSTNAME").map(|h| h.to_owned()).ok(),
             date: Utc::now(),

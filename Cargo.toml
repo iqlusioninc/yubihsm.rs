@@ -62,7 +62,7 @@ mockhsm = ["passwords", "ring", "untrusted"]
 nightly = ["subtle/nightly", "zeroize/nightly"]
 passwords = ["hmac", "pbkdf2", "sha2"]
 rsa = ["sha2"]
-setup = ["chrono", "passwords", "serde_json"]
+setup = ["chrono", "passwords", "serde_json", "uuid/serde"]
 usb = ["lazy_static", "libusb"]
 
 [package.metadata.docs.rs]
