@@ -99,23 +99,27 @@ impl Profile {
     /// Use this profile to provision the YubiHSM2 with the given client
     pub fn provision(&self, client: &mut Client) -> Result<Report, Error> {
         for role in &self.roles {
-            debug!("installing role: {}", role.authentication_key_label);
+            info!("installing role: {}", role.authentication_key_label);
             role.create(client)?;
         }
 
         for wrap_key in &self.wrap_keys {
-            debug!("installing wrap key: {}", &wrap_key.import_params.label);
+            info!("installing wrap key: {}", &wrap_key.import_params.label);
             wrap_key.create(client)?;
         }
 
         if self.audit_option != AuditOption::Off {
-            debug!("setting force audit to: {:?}", self.audit_option);
+            info!("setting force audit to: {:?}", self.audit_option);
             client.set_force_audit_option(self.audit_option)?;
         }
 
         let report = Report::new();
 
         if let Some(report_object_id) = self.report_object_id {
+            info!(
+                "storing provisioning report in opaque object 0x{:x}",
+                report_object_id
+            );
             report.store(client, report_object_id)?;
         }
 
