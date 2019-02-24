@@ -6,11 +6,13 @@ use crate::{object, wrap, AuditOption, Client};
 use failure::Error;
 use std::time::Duration;
 
-/// Temporary account key to use for device provisioning
-pub const DEFAULT_SETUP_KEY_ID: object::Id = 0xFFFF;
+/// Temporary account key to use for device provisioning.
+/// Uses key ID #65534 as 65535 is reserved for internal use.
+pub const DEFAULT_SETUP_KEY_ID: object::Id = 0xFFFE;
 
 /// Object ID to write reports into after provisioning is complete
-pub const DEFAULT_REPORT_OBJECT_ID: object::Id = 0xFFFF;
+/// Uses key ID #65534 as 65535 is reserved for internal use.
+pub const DEFAULT_REPORT_OBJECT_ID: object::Id = 0xFFFE;
 
 /// YubiHSM2 provisioning profile: a declarative profile specifying how a
 /// device should be (re)provisioned.
@@ -57,6 +59,11 @@ impl Default for Profile {
 }
 
 impl Profile {
+    /// Create a new empty profile
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     /// Configure the auth key ID to use when performing device setup
     pub fn setup_auth_key_id(mut self, key_id: Option<object::Id>) -> Self {
         self.setup_auth_key_id = key_id;
