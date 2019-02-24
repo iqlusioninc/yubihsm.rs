@@ -28,7 +28,7 @@ impl Params {
         Self {
             id,
             label: object::Label::default(),
-            domains: Domain::all(),
+            domains: Domain::empty(),
             capabilities: Capability::empty(),
             algorithm,
         }
