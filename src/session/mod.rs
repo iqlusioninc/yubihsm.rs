@@ -108,8 +108,9 @@ impl Session {
         {
             fail!(
                 AuthFail,
-                "(session: {}) card cryptogram mismatch!",
-                channel.id().to_u8()
+                "(session: {}) invalid credentials for authentication key #{} (cryptogram mismatch)",
+                channel.id().to_u8(),
+                credentials.authentication_key_id,
             );
         }
 
@@ -159,6 +160,11 @@ impl Session {
         idle_time >= timeout_with_fuzz
     }
 
+    /// Abort this session, terminating it without closing it
+    pub(crate) fn abort(&mut self) {
+        self.secure_channel = None;
+    }
+
     /// Encrypt a command, send it to the HSM, then read and decrypt the response
     pub(crate) fn send_command<C: Command>(
         &mut self,
@@ -171,8 +177,8 @@ impl Session {
             .secure_channel()?
             .encrypt_command(plaintext_cmd)
             .map_err(|e| {
-                // Clear the secure channel in the event of any cryptographic errors
-                self.secure_channel = None;
+                // Abort the session in the event of any cryptographic errors
+                self.abort();
                 e
             })?;
 
@@ -191,8 +197,8 @@ impl Session {
             .secure_channel()?
             .decrypt_response(encrypted_response)
             .map_err(|e| {
-                // Clear the secure channel in the event of any cryptographic errors
-                self.secure_channel = None;
+                // Abort the session in the event of any cryptographic errors
+                self.abort();
                 e
             })?;
 
@@ -238,7 +244,8 @@ impl Session {
         let response = match self.connection.send_message(uuid, cmd.into()) {
             Ok(response_bytes) => response::Message::parse(response_bytes)?,
             Err(e) => {
-                self.secure_channel = None;
+                // Abort the session in the event of errors
+                self.abort();
                 return Err(e.into());
             }
         };
@@ -293,13 +300,12 @@ impl Session {
 impl Drop for Session {
     /// Make a best effort to close the session if it's still healthy
     fn drop(&mut self) {
-        // Don't do anything if the session already timed out
-        if self.is_timed_out() {
-            return;
+        // Only attempt to close the session if we have an active secure
+        // channel and our session hasn't already timed out
+        if self.secure_channel.is_some() && !self.is_timed_out() {
+            session_debug!(self, "closing dropped session");
+            close_session(self);
         }
-
-        session_debug!(self, "closing dropped session");
-        close_session(self);
     }
 }
 
