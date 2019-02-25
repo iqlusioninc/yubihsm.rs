@@ -1,4 +1,4 @@
-//! Get audit logs from the `YubiHSM2` device
+//! Get audit logs from the `YubiHSM 2` device
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Get_Log_Entries.html>
 

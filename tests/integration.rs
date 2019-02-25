@@ -1,19 +1,13 @@
-//! Integration tests (using live YubiHSM2 or MockHsm)
+//! Integration tests (using live YubiHSM 2 or MockHsm)
+
+use std::sync::{Mutex, MutexGuard};
 
 #[macro_use]
 extern crate lazy_static;
 
-use std::sync::{Mutex, MutexGuard};
+use yubihsm::{object, AsymmetricAlg, Capability, Client, Connector, DeviceErrorKind, Domain};
 
-#[cfg(feature = "http")]
-use yubihsm::HttpConnector;
-#[cfg(feature = "mockhsm")]
-use yubihsm::MockHsm;
-#[cfg(feature = "usb")]
-use yubihsm::UsbConnector;
-use yubihsm::{object, AsymmetricAlg, Capability, Client, Connector, Domain};
-
-/// Integration tests for individual YubiHSM2 commands
+/// Integration tests for individual YubiHSM 2 commands
 pub mod command;
 
 /// Cryptographic test vectors taken from standards documents
@@ -42,19 +36,19 @@ const TEST_EXPORTED_KEY_LABEL: &str = "yubihsm.rs exported test key";
 const TEST_DOMAINS: Domain = Domain::DOM1;
 
 /// Message to sign when performing tests
-const TEST_MESSAGE: &[u8] = b"The YubiHSM2 is a simple, affordable, and secure HSM solution";
+const TEST_MESSAGE: &[u8] = b"The YubiHSM 2 is a simple, affordable, and secure HSM solution";
 
 /// Size of a NIST P-256 public key
 pub const EC_P256_PUBLIC_KEY_SIZE: usize = 64;
 
 lazy_static! {
-    static ref HSM_CLIENT: Mutex<Client> =
-        { Mutex::new(Client::open(create_hsm_connector(), Default::default(), true).unwrap()) };
+    static ref HSM_CONNECTOR: Connector = create_hsm_connector();
 }
 
-//
-// Helper Functions
-//
+lazy_static! {
+    static ref HSM_CLIENT: Mutex<Client> =
+        { Mutex::new(Client::open(HSM_CONNECTOR.clone(), Default::default(), true).unwrap()) };
+}
 
 /// Create a `yubihsm::Client` to run the test suite against
 pub fn get_hsm_client() -> MutexGuard<'static, Client> {
@@ -72,7 +66,7 @@ pub fn get_hsm_client() -> MutexGuard<'static, Client> {
 ///
 /// Panics if none of the above features are enabled
 #[allow(unreachable_code)]
-pub fn create_hsm_connector() -> Box<dyn Connector> {
+pub fn create_hsm_connector() -> Connector {
     // MockHSM has highest priority when testing
     #[cfg(feature = "mockhsm")]
     return create_mockhsm_connector();
@@ -93,33 +87,45 @@ pub fn create_hsm_connector() -> Box<dyn Connector> {
 
 /// Connect to the HSM via HTTP using `yubihsm-connector`
 #[cfg(feature = "http")]
-pub fn create_http_connector() -> Box<dyn Connector> {
-    HttpConnector::create(&Default::default()).unwrap().into()
+pub fn create_http_connector() -> Connector {
+    Connector::http(&Default::default())
 }
 
 /// Connect to the HSM via USB
 #[cfg(feature = "usb")]
-pub fn create_usb_connector() -> Box<Connector> {
-    UsbConnector::create(&Default::default()).unwrap().into()
+pub fn create_usb_connector() -> Connector {
+    Connector::usb(&Default::default())
 }
 
 /// Create a mock HSM for testing in situations where a hardware device is
 /// unavailable/impractical (e.g. CI)
 #[cfg(feature = "mockhsm")]
-pub fn create_mockhsm_connector() -> Box<Connector> {
-    MockHsm::default().into()
+pub fn create_mockhsm_connector() -> Connector {
+    Connector::mockhsm()
 }
 
 /// Delete the key in the test key slot (if it exists, otherwise do nothing)
 pub fn clear_test_key_slot(client: &mut Client, object_type: object::Type) {
+    println!("clearing test key slot: {:?} {}", object_type, TEST_KEY_ID);
+
     // Delete the key in TEST_KEY_ID slot it exists (we use it for testing)
-    // Ignore errors since the object may not exist yet
     if let Err(e) = client.delete_object(TEST_KEY_ID, object_type) {
-        eprintln!("error clearing test key: {}", e);
+        // Ignore errors for nonexistent objects. We're here to make sure the
+        // slot is clear, so it's irrelevant if there was no obj to begin with
+        if e.kind().device_error() != Some(DeviceErrorKind::ObjectNotFound) {
+            panic!("error clearing test key: {}", e);
+        }
     }
 
-    // Ensure the object does not already exist
-    assert!(client.get_object_info(TEST_KEY_ID, object_type).is_err());
+    // Ensure the object does not exist
+    match client.get_object_info(TEST_KEY_ID, object_type) {
+        Ok(obj) => panic!("expected test key to be deleted! {:?}", obj),
+        Err(e) => {
+            if e.kind().device_error() != Some(DeviceErrorKind::ObjectNotFound) {
+                panic!("error ensuring test key slot is clear: {}", e);
+            }
+        }
+    }
 }
 
 /// Create a public key for use in a test
@@ -130,17 +136,16 @@ pub fn generate_asymmetric_key(
 ) {
     clear_test_key_slot(client, object::Type::AsymmetricKey);
 
-    let key_id = client
-        .generate_asymmetric_key(
-            TEST_KEY_ID,
-            TEST_KEY_LABEL.into(),
-            TEST_DOMAINS,
-            capabilities,
-            algorithm,
-        )
-        .unwrap_or_else(|err| panic!("error generating asymmetric key: {}", err));
-
-    assert_eq!(key_id, TEST_KEY_ID);
+    match client.generate_asymmetric_key(
+        TEST_KEY_ID,
+        TEST_KEY_LABEL.into(),
+        TEST_DOMAINS,
+        capabilities,
+        algorithm,
+    ) {
+        Ok(key_id) => assert_eq!(key_id, TEST_KEY_ID),
+        Err(e) => panic!("error generating asymmetric key: {}", e),
+    }
 }
 
 /// Put an asymmetric private key into the HSM

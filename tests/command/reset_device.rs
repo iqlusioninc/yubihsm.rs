@@ -1,4 +1,4 @@
-/// Reset the YubiHSM2 to a factory default state
+/// Reset the YubiHSM 2 to a factory default state
 #[test]
 fn reset_test() {
     let mut client = crate::get_hsm_client();

@@ -23,7 +23,7 @@ impl Algorithm {
         self as u8
     }
 
-    /// Return the size of the given key (as expected by the `YubiHSM2`) in bytes
+    /// Return the size of the given key (as expected by the `YubiHSM 2`) in bytes
     pub fn key_len(self) -> usize {
         match self {
             Algorithm::YUBICO_AES => 32,

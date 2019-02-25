@@ -1,4 +1,4 @@
-//! Set the index of the last consumed entry in the `YubiHSM2` audit log.
+//! Set the index of the last consumed entry in the `YubiHSM 2` audit log.
 //! Useful in conjunction with the force audit option, which blocks performing
 //! audited HSM operations until audit data has been consumed from the device.
 //!

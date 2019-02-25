@@ -1,3 +1,17 @@
+//! Support for connecting to the YubiHSM 2 USB device using libusb
+
+use super::{
+    UsbConnection, UsbTimeout, YUBICO_VENDOR_ID, YUBIHSM2_BULK_IN_ENDPOINT, YUBIHSM2_INTERFACE_NUM,
+    YUBIHSM2_PRODUCT_ID,
+};
+use crate::{
+    command::MAX_MSG_SIZE,
+    connector::{
+        ConnectionError,
+        ConnectionErrorKind::{AddrInvalid, DeviceBusyError, UsbError},
+    },
+    device::SerialNumber,
+};
 use libusb;
 use std::{
     fmt::{self, Debug},
@@ -8,19 +22,8 @@ use std::{
     vec::IntoIter,
 };
 
-use super::{UsbConnection, UsbTimeout};
-use super::{
-    YUBICO_VENDOR_ID, YUBIHSM2_BULK_IN_ENDPOINT, YUBIHSM2_INTERFACE_NUM, YUBIHSM2_PRODUCT_ID,
-};
-use crate::command::MAX_MSG_SIZE;
-use crate::connector::{
-    ConnectionError,
-    ConnectionErrorKind::{DeviceBusyError, UsbError},
-};
-use crate::serial_number::SerialNumber;
-
 lazy_static! {
-    /// Global USB context for accessing YubiHSM2s
+    /// Global USB context for accessing YubiHSM 2s
     static ref GLOBAL_USB_CONTEXT: libusb::Context = libusb::Context::new().unwrap_or_else(|e| {
         eprintln!("*** ERROR: yubihsm-rs USB context init failed: {}", e);
         exit(1);
@@ -31,14 +34,14 @@ lazy_static! {
 pub struct Devices(Vec<Device>);
 
 impl Devices {
-    /// Return the serial numbers of all connected YubiHSM2s
+    /// Return the serial numbers of all connected YubiHSM 2s
     pub fn serial_numbers() -> Result<Vec<SerialNumber>, ConnectionError> {
         let devices = Self::detect(UsbTimeout::default())?;
         let serials: Vec<_> = devices.iter().map(|a| a.serial_number).collect();
         Ok(serials)
     }
 
-    /// Open a YubiHSM2, either selecting one with a particular serial number
+    /// Open a YubiHSM 2, either selecting one with a particular serial number
     /// or opening the only available one if `None`there is only one connected
     pub fn open(
         serial_number: Option<SerialNumber>,
@@ -55,21 +58,21 @@ impl Devices {
 
             fail!(
                 UsbError,
-                "no YubiHSM2 found with serial number: {:?}",
+                "no YubiHSM 2 found with serial number: {:?}",
                 serial_number
             )
         } else {
             match devices.0.len() {
                 1 => devices.0.remove(0).open(timeout),
-                0 => fail!(UsbError, "no YubiHSM2 devices detected"),
+                0 => fail!(UsbError, "no YubiHSM 2 devices detected"),
                 _ => fail!(
                     UsbError,
-                    "expected a single YubiHSM2 device to be connected, found {}: {}",
+                    "expected a single YubiHSM 2 device to be connected, found {}: {}",
                     devices.0.len(),
                     devices
                         .0
                         .iter()
-                        .map(|d| d.serial_number.as_str().to_owned())
+                        .map(|d| d.serial_number.to_string())
                         .collect::<Vec<_>>()
                         .join(", ")
                 ),
@@ -120,22 +123,20 @@ impl Devices {
             let t = timeout.duration();
             let manufacturer = handle.read_manufacturer_string(language, &desc, t)?;
             let product = handle.read_product_string(language, &desc, t)?;
-            let serial_number = handle.read_serial_number_string(language, &desc, t)?;
             let product_name = format!("{} {}", manufacturer, product);
+            let serial_number =
+                SerialNumber::from_str(&handle.read_serial_number_string(language, &desc, t)?)
+                    .map_err(|e| err!(AddrInvalid, "{}", e))?;
 
             debug!(
                 "USB(bus={},addr={}): found {} (serial #{})",
                 device.bus_number(),
                 device.address(),
-                &product_name,
-                serial_number.as_str(),
+                product_name,
+                serial_number,
             );
 
-            devices.push(Device::new(
-                device,
-                product_name,
-                SerialNumber::from_str(&serial_number)?,
-            ));
+            devices.push(Device::new(device, product_name, serial_number));
         }
 
         if devices.is_empty() {
@@ -150,7 +151,7 @@ impl Devices {
         self.0.len()
     }
 
-    /// Did we fail to find any YubiHSM2 devices?
+    /// Did we fail to find any YubiHSM 2 devices?
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
@@ -175,7 +176,7 @@ impl IntoIterator for Devices {
     }
 }
 
-/// A USB device we've identified as a YubiHSM2
+/// A USB device we've identified as a YubiHSM 2
 pub struct Device {
     /// Underlying `libusb` device
     pub(super) device: libusb::Device<'static>,
@@ -183,7 +184,7 @@ pub struct Device {
     /// Product vendor and name
     pub product_name: String,
 
-    /// Serial number of the YubiHSM2 device
+    /// Serial number of the YubiHSM 2 device
     pub serial_number: SerialNumber,
 }
 
@@ -209,8 +210,8 @@ impl Device {
             "USB(bus={},addr={}): successfully opened {} (serial #{})",
             connection.device().bus_number(),
             connection.device().address(),
-            connection.device().product_name.as_str(),
-            connection.device().serial_number.as_str(),
+            connection.device().product_name,
+            connection.device().serial_number,
         );
 
         Ok(connection)
@@ -243,7 +244,7 @@ impl Debug for Device {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "yubihsm::usb::Device(bus={} addr={} serial=#{})",
+            "yubihsm::connector::usb::Device(bus={} addr={} serial=#{})",
             self.bus_number(),
             self.address(),
             self.serial_number,

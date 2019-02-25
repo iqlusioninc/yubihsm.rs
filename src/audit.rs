@@ -1,3 +1,5 @@
+//! Auditing options (for use with the `get_option` and `put_option` command)
+
 use crate::command;
 use failure::Error;
 use serde::de::{self, Deserialize, Deserializer, Visitor};

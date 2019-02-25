@@ -3,7 +3,7 @@
 use super::{Challenge, CHALLENGE_SIZE};
 
 /// Size of a session context
-pub const CONTEXT_SIZE: usize = CHALLENGE_SIZE * 2;
+const CONTEXT_SIZE: usize = CHALLENGE_SIZE * 2;
 
 /// Derivation context (i.e. concatenated challenges)
 pub struct Context([u8; CONTEXT_SIZE]);

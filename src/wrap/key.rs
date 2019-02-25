@@ -9,7 +9,7 @@
 use crate::{
     algorithm::WrapAlg,
     client::ClientError,
-    error::{HsmError, HsmErrorKind::*},
+    device::{DeviceError, DeviceErrorKind::*},
     object, Capability, Client, Domain,
 };
 use rand_os::{rand_core::RngCore, OsRng};
@@ -42,7 +42,7 @@ impl Key {
     }
 
     /// Create a new `wrap::Key` instance. Must be 16, 24, or 32-bytes long.
-    pub fn from_bytes(key_id: object::Id, bytes: &[u8]) -> Result<Self, HsmError> {
+    pub fn from_bytes(key_id: object::Id, bytes: &[u8]) -> Result<Self, DeviceError> {
         let alg = match bytes.len() {
             16 => WrapAlg::AES128_CCM,
             24 => WrapAlg::AES192_CCM,

@@ -1,3 +1,6 @@
+//! Macros used internally within this crate
+
+/// Implement serde serializers for an algorithm type
 macro_rules! impl_algorithm_serializers {
     ($alg:ident) => {
         impl ::serde::Serialize for $alg {

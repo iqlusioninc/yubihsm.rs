@@ -1,8 +1,8 @@
-//! Messages sent to/from the `YubiHSM2`, i.e Application Protocol Data Units
+//! Messages sent to/from the `YubiHSM 2`, i.e Application Protocol Data Units
 //! (a.k.a. APDU)
 //!
 //! Documentation for the available command and their message structure
-//! is available on Yubico's `YubiHSM2` web site:
+//! is available on Yubico's `YubiHSM 2` web site:
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/>
 
@@ -16,13 +16,13 @@ use super::{
 };
 use command::command::Code;
 #[cfg(feature = "mockhsm")]
-use error::HsmErrorKind;
+use error::DeviceErrorKind;
 use response::response::Code;
 
 /// Maximum size of a message sent to/from the YubiHSM
 pub const MAX_MSG_SIZE: usize = 2048;
 
-/// A command sent from the host to the `YubiHSM2`. May or may not be
+/// A command sent from the host to the `YubiHSM 2`. May or may not be
 /// authenticated using SCP03's chained/evolving MAC protocol.
 #[derive(Debug)]
 pub(crate) struct command::Message {
@@ -343,8 +343,8 @@ impl response::Message {
 }
 
 #[cfg(feature = "mockhsm")]
-impl From<HsmErrorKind> for response::Message {
-    fn from(kind: HsmErrorKind) -> Self {
+impl From<DeviceErrorKind> for response::Message {
+    fn from(kind: DeviceErrorKind) -> Self {
         Self::new(response::Code::MemoryError, vec![kind.to_u8()])
     }
 }

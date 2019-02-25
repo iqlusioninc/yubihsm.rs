@@ -4,7 +4,7 @@ use serde::{
     ser::{Serialize, Serializer},
 };
 
-/// Command IDs for `YubiHSM2` operations
+/// Command IDs for `YubiHSM 2` operations
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 #[allow(missing_docs)]
 #[repr(u8)]

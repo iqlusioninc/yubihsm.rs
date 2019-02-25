@@ -1,4 +1,4 @@
-//! Nonces used by the YubiHSM2's AES-CCM encrypted `wrap::Message`
+//! Nonces used by the YubiHSM 2's AES-CCM encrypted `wrap::Message`
 
 #[cfg(feature = "mockhsm")]
 use rand_os::{rand_core::RngCore, OsRng};

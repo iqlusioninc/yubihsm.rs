@@ -1,4 +1,7 @@
-use crate::{object, Algorithm, Capability, Domain, SequenceId};
+//! Information about objects
+
+use super::SequenceId;
+use crate::{object, Algorithm, Capability, Domain};
 
 /// Information about an object
 #[derive(Serialize, Deserialize, Clone, Debug)]

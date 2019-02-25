@@ -1,6 +1,8 @@
+//! USB timeouts
+
 use std::time::Duration;
 
-/// Number of seconds to wait when communicating with the YubiHSM2
+/// Number of seconds to wait when communicating with the YubiHSM 2
 pub const DEFAULT_USB_TIMEOUT_SECS: u64 = 1; // 1 second
 
 /// Timeouts when performing USB operations

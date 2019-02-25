@@ -1,4 +1,4 @@
-//! Generate a new HMAC key within the `YubiHSM2`
+//! Generate a new HMAC key within the `YubiHSM 2`
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Generate_Hmac_Key.html>
 

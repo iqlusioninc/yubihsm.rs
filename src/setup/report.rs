@@ -1,4 +1,4 @@
-//! YubiHSM2 provisioning reports which record the server where the HSM was
+//! YubiHSM 2 provisioning reports which record the server where the HSM was
 //! provisioned, the username which performed the provisioning operation,
 //! and the date provisioning occurred.
 

@@ -1,10 +1,10 @@
+//! Simulation of the HSM for integration testing.
+
+// TESTING ONLY DO NOT PRODUCTIONIZE IT IS NOT SAFE!!!
 #[cfg(not(debug_assertions))]
 compile_error!("MockHsm is not intended for use in release builds");
 
-use std::{
-    str::FromStr,
-    sync::{Arc, Mutex},
-};
+use std::sync::{Arc, Mutex};
 
 mod audit;
 mod command;
@@ -15,13 +15,12 @@ mod state;
 
 pub use self::connection::MockConnection;
 use self::state::State;
-use crate::connector::{Connection, ConnectionError, Connector};
-use crate::serial_number::SerialNumber;
+use crate::connector::{Connectable, Connection, ConnectionError};
 
 /// Mock serial number for the MockHsm
 pub const MOCK_SERIAL_NUMBER: &str = "0123456789";
 
-/// Software simulation of a `YubiHSM2` intended for testing
+/// Software simulation of a `YubiHSM 2` intended for testing
 /// implemented as a `yubihsm::Connection`.
 ///
 /// This only implements a subset of the YubiHSM's functionality, and does
@@ -40,25 +39,15 @@ impl MockHsm {
     }
 }
 
-impl Connector for MockHsm {
-    /// Create a clone of this connector as a boxed trait object
-    fn box_clone(&self) -> Box<dyn Connector> {
-        Box::new(self.clone())
+impl Connectable for MockHsm {
+    /// Make a clone of this connectable as boxed trait object
+    fn box_clone(&self) -> Box<dyn Connectable> {
+        Box::new(MockHsm(self.0.clone()))
     }
 
     /// Create a new connection with a clone of the MockHsm state
     fn connect(&self) -> Result<Box<Connection>, ConnectionError> {
         Ok(Box::new(MockConnection::new(self)))
-    }
-
-    /// Rust never sleeps
-    fn healthcheck(&self) -> Result<(), ConnectionError> {
-        Ok(())
-    }
-
-    /// Get the serial number for the current YubiHSM2 (if available)
-    fn serial_number(&self) -> Result<SerialNumber, ConnectionError> {
-        Ok(SerialNumber::from_str(MOCK_SERIAL_NUMBER).unwrap())
     }
 }
 
@@ -68,8 +57,8 @@ impl Default for MockHsm {
     }
 }
 
-impl Into<Box<Connector>> for MockHsm {
-    fn into(self) -> Box<Connector> {
+impl Into<Box<dyn Connectable>> for MockHsm {
+    fn into(self) -> Box<Connectable> {
         Box::new(self)
     }
 }

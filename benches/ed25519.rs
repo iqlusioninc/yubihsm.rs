@@ -41,10 +41,10 @@ fn generate_key(hsm: &mut yubihsm::Client) {
 
 fn sign_ed25519(c: &mut Criterion) {
     #[cfg(not(feature = "usb"))]
-    let connector = yubihsm::HttpConnector::default();
+    let connector = yubihsm::Connector::http(&Default::default());
 
     #[cfg(feature = "usb")]
-    let connector = yubihsm::UsbConnector::default();
+    let connector = yubihsm::Connector::usb(&Default::default());
 
     let mut hsm = yubihsm::Client::open(connector, Default::default(), true).unwrap();
     generate_key(&mut hsm);

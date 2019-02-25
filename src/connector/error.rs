@@ -24,11 +24,11 @@ pub enum ConnectionErrorKind {
     #[fail(display = "access denied")]
     AccessDenied,
 
-    /// YubiHSM2 is busy (in use by another client / process)
+    /// YubiHSM 2 is busy (in use by another client / process)
     #[fail(display = "device already in use")]
     DeviceBusyError,
 
-    /// Couldn't connect to the YubiHSM2
+    /// Couldn't connect to the YubiHSM 2
     #[fail(display = "connection failed")]
     ConnectionFailed,
 

@@ -1,4 +1,4 @@
-//! Generate keys within the `YubiHSM2`
+//! Generate keys within the `YubiHSM 2`
 
 use crate::{object, Algorithm, Capability, Domain};
 

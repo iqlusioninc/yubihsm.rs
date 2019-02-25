@@ -9,9 +9,9 @@ use byteorder::WriteBytesExt;
 use byteorder::{BigEndian, ByteOrder};
 
 #[cfg(feature = "mockhsm")]
-use crate::error::HsmErrorKind;
+use crate::device::DeviceErrorKind;
 use crate::{
-    command, response,
+    command, connector, response,
     session::{
         self,
         securechannel::{Mac, MAC_SIZE},
@@ -38,7 +38,9 @@ pub(crate) struct Message {
 
 impl Message {
     /// Parse a response into a Response struct
-    pub fn parse(mut bytes: Vec<u8>) -> Result<Self, SessionError> {
+    pub fn parse(message: connector::Message) -> Result<Self, SessionError> {
+        let connector::Message(mut bytes) = message;
+
         if bytes.len() < 3 {
             fail!(
                 ProtocolError,
@@ -166,8 +168,8 @@ impl Message {
 }
 
 #[cfg(feature = "mockhsm")]
-impl From<HsmErrorKind> for Message {
-    fn from(kind: HsmErrorKind) -> Self {
+impl From<DeviceErrorKind> for Message {
+    fn from(kind: DeviceErrorKind) -> Self {
         Self::new(response::Code::MemoryError, vec![kind.to_u8()])
     }
 }

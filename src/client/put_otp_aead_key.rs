@@ -1,4 +1,4 @@
-//! Put an existing OTP AEAD key into the `YubiHSM2`
+//! Put an existing OTP AEAD key into the `YubiHSM 2`
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Put_Otp_Aead_Key.html>
 

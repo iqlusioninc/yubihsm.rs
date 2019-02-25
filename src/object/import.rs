@@ -1,4 +1,4 @@
-//! The `YubiHSM2` doesnt' have a unified put object command, however all of the put object
+//! The `YubiHSM 2` doesnt' have a unified put object command, however all of the put object
 //! commands share a common structure, i.e. `object::import::Params`
 
 use crate::{object, Algorithm, Capability, Domain};
