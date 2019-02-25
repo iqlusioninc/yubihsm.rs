@@ -1,7 +1,9 @@
-use super::support;
 use signatory::PublicKeyed;
 use signatory_ring::ed25519::Ed25519Verifier;
-use yubihsm::signatory::{Session, Signer};
+use yubihsm::{
+    signatory::{Ed25519Signer, Signer},
+    Client,
+};
 
 /// Key ID to use for test key
 const TEST_SIGNING_KEY_ID: yubihsm::object::Id = 200;
@@ -21,31 +23,29 @@ const TEST_MESSAGE: &[u8] =
         variant of Schnorr's signature system with (possibly twisted) Edwards curves.";
 
 /// Create the key on the YubiHSM to use for this test
-fn create_yubihsm_key(session: &mut Session) {
-    let client_guard = session.client();
-    let mut hsm = client_guard.lock().unwrap();
-
+fn create_yubihsm_key(client: &mut Client) {
     // Delete the key in TEST_KEY_ID slot it exists
     // Ignore errors since the object may not exist yet
-    let _ = hsm.delete_object(TEST_SIGNING_KEY_ID, yubihsm::object::Type::AsymmetricKey);
+    let _ = client.delete_object(TEST_SIGNING_KEY_ID, yubihsm::object::Type::AsymmetricKey);
 
     // Create a new key for testing
-    hsm.generate_asymmetric_key(
-        TEST_SIGNING_KEY_ID,
-        TEST_SIGNING_KEY_LABEL.into(),
-        TEST_SIGNING_KEY_DOMAINS,
-        TEST_SIGNING_KEY_CAPABILITIES,
-        yubihsm::AsymmetricAlg::Ed25519,
-    )
-    .unwrap();
+    client
+        .generate_asymmetric_key(
+            TEST_SIGNING_KEY_ID,
+            TEST_SIGNING_KEY_LABEL.into(),
+            TEST_SIGNING_KEY_DOMAINS,
+            TEST_SIGNING_KEY_CAPABILITIES,
+            yubihsm::AsymmetricAlg::Ed25519,
+        )
+        .unwrap();
 }
 
 #[test]
 fn ed25519_sign_test() {
-    let mut session = support::get_session();
-    create_yubihsm_key(&mut session);
+    let mut client = Client::open(crate::HSM_CONNECTOR.clone(), Default::default(), true).unwrap();
+    create_yubihsm_key(&mut client);
 
-    let signer = session.ed25519_signer(TEST_SIGNING_KEY_ID).unwrap();
+    let signer = Ed25519Signer::create(client, TEST_SIGNING_KEY_ID).unwrap();
     let signature = signer.sign(TEST_MESSAGE).unwrap();
     let verifier = Ed25519Verifier::from(&signer.public_key().unwrap());
 

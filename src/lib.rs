@@ -1,4 +1,4 @@
-//! **yubihsm.rs**: pure Rust client for YubiHSM2 hardware security modules
+//! **yubihsm.rs**: pure Rust client for YubiHSM 2 hardware security modules
 //!
 //! ## Prerequisites
 //!
@@ -30,10 +30,10 @@
 //! extern crate yubihsm;
 //! use yubihsm::{Client, Credentials, UsbConnector};
 //!
-//! // Connect to the first YubiHSM2 we detect
+//! // Connect to the first YubiHSM 2 we detect
 //! let connector = UsbConnector::default();
 //!
-//! // Default auth key ID and password for YubiHSM2
+//! // Default auth key ID and password for YubiHSM 2
 //! // NOTE: DON'T USE THIS IN PRODUCTION!
 //! let credentials = Credentials::default();
 //!
@@ -75,97 +75,37 @@ extern crate log;
 #[macro_use]
 extern crate serde_derive;
 
-/// Macros used internally within this crate
 #[macro_use]
 mod macros;
-
-/// Error types
 #[macro_use]
 pub mod error;
-
-/// Serde-powered serializers for the HSM wire format
 #[macro_use]
 mod serialization;
 
-/// Cryptographic algorithms supported by the HSM
 pub mod algorithm;
-
-/// Auditing options (for use with the `get_option` and `put_option` command)
-pub(crate) mod audit;
-
+pub mod audit;
 pub mod authentication;
-
-/// Object attributes specifying which operations are allowed to be performed
 pub mod capability;
-
-/// YubiHSM client: main functionality of this crate
 pub mod client;
-
-/// Commands supported by the HSM.
-///
-/// Functions defined in the `yubihsm::command` module are reimported
-/// and available from the toplevel `yubihsm` module as well.
-///
-/// For more information, see:
-/// <https://developers.yubico.com/YubiHSM2/Commands/>
 pub mod command;
-
-/// Methods of connecting to a YubiHSM2:
-///
-/// - [HttpConnector]: communicates with HSM via the `yubihsm-connector` service's HTTP API
-/// - [UsbConnector]: communicates with the HSM directly via USB using `libusb`.
-///
-/// Additionally, [MockHsm] implements the `Connector` API and can be used as a drop-in replacement
-/// in places where you would like a simulated HSM for testing (e.g. CI).
-///
-/// [HttpConnector]: https://docs.rs/yubihsm/latest/yubihsm/connector/http/struct.HttpConnector.html
-/// [UsbConnector]: https://docs.rs/yubihsm/latest/yubihsm/connector/usb/struct.UsbConnector.html
-/// [MockHsm]: https://docs.rs/yubihsm/latest/yubihsm/mockhsm/struct.MockHsm.html
 pub mod connector;
-
-/// Logical partitions within the HSM, allowing several applications to share the device.
+pub mod device;
 pub mod domain;
-
-/// Simulation of the HSM for integration testing.
 #[cfg(feature = "mockhsm")]
 pub mod mockhsm;
-
-/// Authenticated/encrypted sessions with the HSM.
-///
-/// For more information, see:
-/// <https://developers.yubico.com/YubiHSM2/Concepts/Session.html>
+pub mod object;
+pub mod response;
 pub mod session;
-
-/// Device provisioning support including creating initial accounts and wrap keys
 #[cfg(feature = "setup")]
 pub mod setup;
-
-/// Implementations of the Signatory abstract signature API
 #[cfg(feature = "signatory")]
 pub mod signatory;
-
-/// Objects stored in the HSM.
-///
-/// For more information, see:
-/// <https://developers.yubico.com/YubiHSM2/Concepts/Object.html>
-pub mod object;
-
-/// Responses to command sent from the HSM.
-pub mod response;
-
-/// HSM serial numbers.
-mod serial_number;
-
-/// Support for initial HSM provisioning including creating authentication
-/// keys, wrap keys, and configuring auditing
-
-/// Object wrapping support, i.e. encrypt objects from one HSM to another.
 pub mod wrap;
 
 #[cfg(feature = "http")]
-pub use crate::connector::http::{HttpConfig, HttpConnector};
+pub use crate::connector::HttpConfig;
 #[cfg(feature = "usb")]
-pub use crate::connector::usb::{UsbConfig, UsbConnector};
+pub use crate::connector::UsbConfig;
 #[cfg(feature = "mockhsm")]
 pub use crate::mockhsm::MockHsm;
 
@@ -175,10 +115,9 @@ pub use crate::{
     authentication::{Credentials, AUTHENTICATION_KEY_SIZE},
     capability::Capability,
     client::{Client, ClientError},
-    connector::{Connection, ConnectionError, Connector},
+    connector::{ConnectionError, Connector},
+    device::{DeviceError, DeviceErrorKind},
     domain::Domain,
     error::*,
-    object::*,
-    serial_number::SerialNumber,
 };
 pub use uuid::Uuid;

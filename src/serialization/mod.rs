@@ -1,3 +1,5 @@
+//! Serde-powered serializers for the HSM wire format
+
 #[macro_use]
 mod error;
 mod de;

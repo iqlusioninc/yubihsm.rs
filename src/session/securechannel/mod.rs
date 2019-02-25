@@ -8,13 +8,13 @@
 //!
 //! While SCP03 is a multipurpose protocol, this implementation has been
 //! written with the specific intention of communicating with Yubico's
-//! YubiHSM2 devices and therefore omits certain features (e.g. additional
-//! key sizes besides 128-bit) which are not relevant to the YubiHSM2 use case.
+//! YubiHSM 2 devices and therefore omits certain features (e.g. additional
+//! key sizes besides 128-bit) which are not relevant to the YubiHSM 2 use case.
 //!
-//! It also follows the APDU format as described in Yubico's YubiHSM2
+//! It also follows the APDU format as described in Yubico's YubiHSM 2
 //! documentation as opposed to the one specified in GPC_SPE_014.
 //!
-//! For more information on the YubiHSM2 command format, see:
+//! For more information on the YubiHSM 2 command format, see:
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/>
 
@@ -25,19 +25,30 @@ mod kdf;
 mod mac;
 
 /// AES key size in bytes. SCP03 theoretically supports other key sizes, but
-/// the YubiHSM2 does not. Since this crate is somewhat specialized to the `YubiHSM2` (at least for now)
+/// the YubiHSM 2 does not. Since this crate is somewhat specialized to the `YubiHSM 2` (at least for now)
 /// we hardcode to 128-bit for simplicity.
-pub const KEY_SIZE: usize = 16;
+pub(crate) const KEY_SIZE: usize = 16;
 
-pub(crate) use self::mac::{Mac, MAC_SIZE};
-pub use self::{
+pub(crate) use self::{
     challenge::{Challenge, CHALLENGE_SIZE},
-    context::{Context, CONTEXT_SIZE},
+    context::Context,
     cryptogram::{Cryptogram, CRYPTOGRAM_SIZE},
+    mac::{Mac, MAC_SIZE},
 };
 
-use super::{SessionError, SessionErrorKind::*};
-use crate::{authentication, command, response, session};
+use super::{
+    commands::{CreateSessionCommand, CreateSessionResponse},
+    SessionError,
+    SessionErrorKind::*,
+};
+use crate::{
+    authentication::{self, Credentials},
+    command,
+    connector::Connector,
+    response,
+    serialization::deserialize,
+    session,
+};
 use aes::{
     block_cipher_trait::{
         generic_array::{typenum::U16, GenericArray},
@@ -48,7 +59,6 @@ use aes::{
 use block_modes::{block_padding::Iso7816, BlockMode, BlockModeIv, Cbc};
 use byteorder::{BigEndian, ByteOrder};
 use cmac::{crypto_mac::Mac as CryptoMac, Cmac};
-#[cfg(feature = "mockhsm")]
 use subtle::ConstantTimeEq;
 use zeroize::Zeroize;
 
@@ -67,6 +77,7 @@ pub(crate) struct SecureChannel {
     counter: u32,
 
     /// External authentication state
+    // TODO(tarcieri): use session types to model the protocol state machine?
     security_level: SecurityLevel,
 
     /// Context (card + host challenges)
@@ -86,8 +97,72 @@ pub(crate) struct SecureChannel {
 }
 
 impl SecureChannel {
+    /// Open a SecureChannel, performing challenge/response authentication and
+    /// establishing a session key
+    pub(crate) fn open(
+        connector: &Connector,
+        credentials: &Credentials,
+    ) -> Result<Self, SessionError> {
+        let host_challenge = Challenge::random();
+
+        let command_message: command::Message = CreateSessionCommand {
+            authentication_key_id: credentials.authentication_key_id,
+            host_challenge,
+        }
+        .into();
+
+        let uuid = command_message.uuid;
+        let response_body = connector.send_message(uuid, command_message.into())?;
+        let response_message = response::Message::parse(response_body)?;
+
+        if response_message.is_err() {
+            fail!(ResponseError, "HSM error: {:?}", response_message.code);
+        }
+
+        if response_message.command().unwrap() != command::Code::CreateSession {
+            fail!(
+                ProtocolError,
+                "command type mismatch: expected {:?}, got {:?}",
+                command::Code::CreateSession,
+                response_message.command().unwrap()
+            );
+        }
+
+        let id = response_message
+            .session_id
+            .ok_or_else(|| err!(CreateFailed, "no session ID in response"))?;
+
+        let session_response: CreateSessionResponse = deserialize(response_message.data.as_ref())?;
+
+        // Derive session keys from the combination of host and card challenges.
+        // If either of them are incorrect (indicating a key mismatch) it will
+        // result in a cryptogram verification failure.
+        let channel = Self::new(
+            id,
+            &credentials.authentication_key,
+            host_challenge,
+            session_response.card_challenge,
+        );
+
+        if channel
+            .card_cryptogram()
+            .ct_eq(&session_response.card_cryptogram)
+            .unwrap_u8()
+            != 1
+        {
+            fail!(
+                AuthenticationError,
+                "(session: {}) invalid credentials for authentication key #{} (cryptogram mismatch)",
+                channel.id().to_u8(),
+                credentials.authentication_key_id,
+            );
+        }
+
+        Ok(channel)
+    }
+
     /// Create a new channel with the given ID, auth key, and host/card challenges
-    pub fn new(
+    pub(crate) fn new(
         id: session::Id,
         authentication_key: &authentication::Key,
         host_challenge: Challenge,
@@ -218,7 +293,7 @@ impl SecureChannel {
     ) -> Result<command::Message, SessionError> {
         assert_eq!(self.security_level, SecurityLevel::Authenticated);
 
-        let mut message: Vec<u8> = command.into();
+        let mut message = command.serialize();
         let pos = message.len();
 
         // Provide space at the end of the vec for the padding
@@ -257,7 +332,7 @@ impl SecureChannel {
             .len();
 
         response_message.truncate(response_len);
-        let mut decrypted_response = response::Message::parse(response_message)?;
+        let mut decrypted_response = response::Message::parse(response_message.into())?;
         decrypted_response.session_id = encrypted_response.session_id;
 
         Ok(decrypted_response)

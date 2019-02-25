@@ -1,8 +1,9 @@
 //! Session error types
 
-use crate::connector::ConnectionError;
-use crate::error::{Error, HsmErrorKind};
-use crate::serialization::SerializationError;
+use crate::{
+    connector::ConnectionError, device::DeviceErrorKind, error::Error,
+    serialization::SerializationError,
+};
 
 /// Session errors
 pub type SessionError = Error<SessionErrorKind>;
@@ -12,7 +13,7 @@ pub type SessionError = Error<SessionErrorKind>;
 pub enum SessionErrorKind {
     /// Couldn't authenticate session
     #[fail(display = "authentication failed")]
-    AuthFail,
+    AuthenticationError,
 
     /// Session is closed
     #[fail(display = "session closed")]
@@ -30,7 +31,7 @@ pub enum SessionErrorKind {
     #[fail(display = "HSM error: {}", kind)]
     DeviceError {
         /// HSM error kind
-        kind: HsmErrorKind,
+        kind: DeviceErrorKind,
     },
 
     /// Message was intended for a different session than the current one
@@ -56,8 +57,8 @@ impl From<ConnectionError> for SessionError {
     }
 }
 
-impl From<HsmErrorKind> for SessionError {
-    fn from(kind: HsmErrorKind) -> Self {
+impl From<DeviceErrorKind> for SessionError {
+    fn from(kind: DeviceErrorKind) -> Self {
         SessionError::new(SessionErrorKind::DeviceError { kind }, None)
     }
 }

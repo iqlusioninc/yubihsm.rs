@@ -2,7 +2,8 @@
 
 use crate::{
     connector::{ConnectionError, ConnectionErrorKind},
-    error::{Error, HsmErrorKind},
+    device::DeviceErrorKind,
+    error::Error,
     serialization::SerializationError,
     session::{SessionError, SessionErrorKind},
 };
@@ -16,7 +17,7 @@ pub type ClientError = Error<ClientErrorKind>;
 pub enum ClientErrorKind {
     /// Couldn't authenticate session
     #[fail(display = "authentication failed")]
-    AuthFail,
+    AuthenticationError,
 
     /// Session is closed
     #[fail(display = "session closed")]
@@ -37,7 +38,7 @@ pub enum ClientErrorKind {
     #[fail(display = "HSM error: {}", kind)]
     DeviceError {
         /// HSM error kind
-        kind: HsmErrorKind,
+        kind: DeviceErrorKind,
     },
 
     /// Protocol error occurred
@@ -47,6 +48,16 @@ pub enum ClientErrorKind {
     /// Error response from HSM we can't further specify
     #[fail(display = "HSM error")]
     ResponseError,
+}
+
+impl ClientErrorKind {
+    /// Get the device error, if this is a device error
+    pub fn device_error(self) -> Option<DeviceErrorKind> {
+        match self {
+            ClientErrorKind::DeviceError { kind } => Some(kind),
+            _ => None,
+        }
+    }
 }
 
 // TODO: capture causes?
@@ -61,7 +72,7 @@ impl From<ConnectionError> for ClientError {
 impl From<SessionError> for ClientError {
     fn from(err: SessionError) -> Self {
         let kind = match err.kind() {
-            SessionErrorKind::AuthFail => ClientErrorKind::AuthFail,
+            SessionErrorKind::AuthenticationError => ClientErrorKind::AuthenticationError,
             SessionErrorKind::ClosedSessionError => ClientErrorKind::ClosedSessionError,
             SessionErrorKind::CreateFailed => ClientErrorKind::CreateFailed,
             SessionErrorKind::DeviceError { kind } => ClientErrorKind::DeviceError { kind },

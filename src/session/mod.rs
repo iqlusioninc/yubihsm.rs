@@ -1,13 +1,16 @@
-//! Encrypted connection to the HSM through a particular connection
+//! Authenticated/encrypted sessions with the HSM.
+//!
+//! For more information, see:
+//! <https://developers.yubico.com/YubiHSM2/Concepts/Session.html>
 
+#[macro_use]
+mod macros;
+
+pub(crate) mod commands;
 mod error;
 mod id;
 pub(crate) mod securechannel;
 mod timeout;
-#[macro_use]
-mod macros;
-pub(crate) mod close;
-pub(crate) mod create;
 
 pub use self::{
     error::{SessionError, SessionErrorKind},
@@ -15,17 +18,12 @@ pub use self::{
     timeout::Timeout,
 };
 
-use self::{
-    close::CloseSessionCommand,
-    create::create_session,
-    securechannel::{Challenge, SecureChannel},
-    SessionErrorKind::*,
-};
+use self::{commands::CloseSessionCommand, securechannel::SecureChannel, SessionErrorKind::*};
 use crate::{
     authentication::Credentials,
     command::{self, Command},
-    connector::{Connection, Connector},
-    error::HsmErrorKind,
+    connector::Connector,
+    device::DeviceErrorKind,
     response,
     serialization::deserialize,
 };
@@ -33,7 +31,6 @@ use std::{
     panic::{self, AssertUnwindSafe},
     time::{Duration, Instant},
 };
-use subtle::ConstantTimeEq;
 
 /// Timeout fuzz factor: to avoid races/skew with the YubiHSM's clock,
 /// we consider sessions to be timed out slightly earlier than the actual
@@ -51,8 +48,8 @@ pub struct Session {
     /// ID for this session
     id: Id,
 
-    /// Connection which communicates with the HSM (HTTP or USB)
-    connection: Box<dyn Connection>,
+    /// Connector which communicates with the HSM (HTTP or USB)
+    connector: Connector,
 
     /// Encrypted channel (SCP03) to the HSM
     secure_channel: Option<SecureChannel>,
@@ -70,7 +67,7 @@ pub struct Session {
 impl Session {
     /// Connect to the HSM using the given configuration and credentials
     pub(super) fn open(
-        connector: &dyn Connector,
+        connector: Connector,
         credentials: &Credentials,
         timeout: Timeout,
     ) -> Result<Self, SessionError> {
@@ -81,45 +78,12 @@ impl Session {
             TIMEOUT_FUZZ_FACTOR
         );
 
-        // Ensure `Connector` is healthy before attempting to open `Session`
-        connector.healthcheck()?;
-
-        let connection = connector.connect()?;
-        let host_challenge = Challenge::random();
-
-        let (session_id, session_response) = create_session(
-            &*connection,
-            credentials.authentication_key_id,
-            host_challenge,
-        )?;
-
-        let channel = SecureChannel::new(
-            session_id,
-            &credentials.authentication_key,
-            host_challenge,
-            session_response.card_challenge,
-        );
-
-        if channel
-            .card_cryptogram()
-            .ct_eq(&session_response.card_cryptogram)
-            .unwrap_u8()
-            != 1
-        {
-            fail!(
-                AuthFail,
-                "(session: {}) invalid credentials for authentication key #{} (cryptogram mismatch)",
-                channel.id().to_u8(),
-                credentials.authentication_key_id,
-            );
-        }
-
-        let id = channel.id();
+        let channel = SecureChannel::open(&connector, credentials)?;
         let now = Instant::now();
 
         let mut session = Session {
-            id,
-            connection,
+            id: channel.id(),
+            connector,
             secure_channel: Some(channel),
             created_at: now,
             last_active: now,
@@ -127,6 +91,7 @@ impl Session {
         };
 
         session.authenticate(credentials)?;
+
         Ok(session)
     }
 
@@ -170,7 +135,7 @@ impl Session {
         &mut self,
         command: C,
     ) -> Result<C::ResponseType, SessionError> {
-        let plaintext_cmd: command::Message = command.into();
+        let plaintext_cmd = command::Message::from(command);
         let cmd_type = plaintext_cmd.command_type;
 
         let encrypted_cmd = self
@@ -203,7 +168,7 @@ impl Session {
             })?;
 
         if response.is_err() {
-            if let Some(kind) = HsmErrorKind::from_response_message(&response) {
+            if let Some(kind) = DeviceErrorKind::from_response_message(&response) {
                 session_debug!(self, "uuid={} failed={:?} error={:?}", uuid, cmd_type, kind);
                 return Err(kind.into());
             } else {
@@ -241,7 +206,7 @@ impl Session {
             );
         }
 
-        let response = match self.connection.send_message(uuid, cmd.into()) {
+        let response = match self.connector.send_message(uuid, cmd.into()) {
             Ok(response_bytes) => response::Message::parse(response_bytes)?,
             Err(e) => {
                 // Abort the session in the event of errors
@@ -302,35 +267,31 @@ impl Drop for Session {
     fn drop(&mut self) {
         // Only attempt to close the session if we have an active secure
         // channel and our session hasn't already timed out
-        if self.secure_channel.is_some() && !self.is_timed_out() {
-            session_debug!(self, "closing dropped session");
-            close_session(self);
+        if self.secure_channel.is_none() || self.is_timed_out() {
+            return;
+        }
+
+        session_debug!(self, "closing dropped session");
+
+        // TODO: ensure we're really unwind safe.
+        // This should still be better than panicking in a drop handler, hopefully
+        let result = panic::catch_unwind(AssertUnwindSafe(|| {
+            self.send_command(CloseSessionCommand {}).unwrap()
+        }));
+
+        if let Err(err) = result {
+            // Attempt to extract the error message from the `Any` returned from `catch_unwind`
+            let msg = err
+                .downcast_ref::<String>()
+                .map(|m| m.as_ref())
+                .or_else(|| err.downcast_ref::<&str>().cloned())
+                .unwrap_or_else(|| "unknown cause!");
+
+            error!(
+                "session={} panic closing dropped session: {}",
+                self.id.to_u8(),
+                msg
+            );
         }
     }
-}
-
-/// Attempt to close the session, catching any panics (because this is invoked
-/// from a drop handler) and turning them into `Error` types which can be logged
-fn close_session(session: &mut Session) {
-    // TODO: ensure we're really unwind safe.
-    // This should still be better than panicking in a drop handler, hopefully
-    let err = match panic::catch_unwind(AssertUnwindSafe(|| {
-        session.send_command(CloseSessionCommand {}).unwrap()
-    })) {
-        Ok(_) => return,
-        Err(e) => e,
-    };
-
-    // Attempt to extract the error message from the `Any` returned from `catch_unwind`
-    let msg = err
-        .downcast_ref::<String>()
-        .map(|m| m.as_ref())
-        .or_else(|| err.downcast_ref::<&str>().cloned())
-        .unwrap_or_else(|| "unknown cause!");
-
-    error!(
-        "session={} panic closing dropped session: {}",
-        session.id().to_u8(),
-        msg
-    );
 }

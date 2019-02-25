@@ -1,4 +1,4 @@
-//! Import an encrypted object from the `YubiHSM2` using the given key-wrapping key
+//! Import an encrypted object from the `YubiHSM 2` using the given key-wrapping key
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Import_Wrapped.html>
 

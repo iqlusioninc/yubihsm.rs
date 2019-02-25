@@ -1,4 +1,4 @@
-//! "Wrapping" support: YubiHSM2 key/object encryption for backups and
+//! "Wrapping" support: YubiHSM 2 key/object encryption for backups and
 //! importing existing keys to other derivces.
 
 pub(crate) mod commands;

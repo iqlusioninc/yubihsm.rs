@@ -1,8 +1,8 @@
-//! Messages sent to/from the `YubiHSM2`, i.e Application Protocol Data Units
+//! Messages sent to/from the `YubiHSM 2`, i.e Application Protocol Data Units
 //! (a.k.a. APDU)
 //!
 //! Documentation for the available command and their message structure
-//! is available on Yubico's `YubiHSM2` web site:
+//! is available on Yubico's `YubiHSM 2` web site:
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/>
 
@@ -10,7 +10,7 @@
 
 use super::MAX_MSG_SIZE;
 use crate::{
-    command,
+    command, connector,
     session::{
         self,
         securechannel::{Mac, MAC_SIZE},
@@ -23,7 +23,7 @@ use byteorder::ByteOrder;
 use byteorder::{BigEndian, WriteBytesExt};
 use uuid::Uuid;
 
-/// A command sent from the host to the `YubiHSM2`. May or may not be
+/// A command sent from the host to the `YubiHSM 2`. May or may not be
 /// authenticated using SCP03's chained/evolving MAC protocol.
 #[derive(Debug)]
 pub(crate) struct Message {
@@ -175,11 +175,9 @@ impl Message {
 
         result
     }
-}
 
-impl Into<Vec<u8>> for Message {
-    /// Serialize this Command, consuming it and creating a Vec<u8>
-    fn into(mut self) -> Vec<u8> {
+    /// Serialize this message as a byte vector
+    pub fn serialize(mut self) -> Vec<u8> {
         let mut result = Vec::with_capacity(3 + self.len());
         result.push(self.command_type as u8);
         result.write_u16::<BigEndian>(self.len() as u16).unwrap();
@@ -195,5 +193,12 @@ impl Into<Vec<u8>> for Message {
         }
 
         result
+    }
+}
+
+impl Into<connector::Message> for Message {
+    /// Serialize this Command, consuming it and creating a Vec<u8>
+    fn into(self) -> connector::Message {
+        connector::Message(self.serialize())
     }
 }

@@ -1,3 +1,5 @@
+//! Responses to command sent from the HSM.
+
 mod code;
 mod message;
 

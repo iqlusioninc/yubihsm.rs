@@ -1,9 +1,8 @@
-//! ECDSA provider for the YubiHSM2 crate (supporting NIST P-256 and secp256k1).
+//! ECDSA provider for the YubiHSM 2 crate (supporting NIST P-256 and secp256k1).
 //!
 //! To enable secp256k1 support, you need to build `signatory-yubihsm` with the
 //! `secp256k1` cargo feature enabled.
 
-use super::Session;
 use crate::{object, AsymmetricAlg, Client};
 #[cfg(feature = "secp256k1")]
 use signatory::ecdsa::curve::Secp256k1;
@@ -30,7 +29,7 @@ where
     C: WeierstrassCurve,
 {
     /// YubiHSM client
-    hsm: Arc<Mutex<Client>>,
+    client: Arc<Mutex<Client>>,
 
     /// ID of an ECDSA key to perform signatures with
     signing_key_id: object::Id,
@@ -44,9 +43,9 @@ where
     C: WeierstrassCurve,
 {
     /// Create a new YubiHSM-backed ECDSA signer
-    pub(crate) fn create(session: &Session, signing_key_id: object::Id) -> Result<Self, Error> {
+    pub fn create(client: Client, signing_key_id: object::Id) -> Result<Self, Error> {
         let signer = Self {
-            hsm: session.0.clone(),
+            client: Arc::new(Mutex::new(client)),
             signing_key_id,
             curve: PhantomData,
         };
@@ -73,7 +72,7 @@ where
 {
     /// Obtain the public key which identifies this signer
     fn public_key(&self) -> Result<PublicKey<C>, Error> {
-        let mut hsm = self.hsm.lock().unwrap();
+        let mut hsm = self.client.lock().unwrap();
 
         let pubkey = hsm
             .get_public_key(self.signing_key_id)
@@ -167,7 +166,7 @@ impl EcdsaSigner<NistP256> {
     where
         D: Digest<OutputSize = U32> + Default,
     {
-        let mut hsm = self.hsm.lock().unwrap();
+        let mut hsm = self.client.lock().unwrap();
 
         let signature = hsm
             .sign_ecdsa(self.signing_key_id, digest.result().as_slice())
@@ -183,7 +182,7 @@ impl EcdsaSigner<NistP384> {
     where
         D: Digest<OutputSize = U48> + Default,
     {
-        let mut hsm = self.hsm.lock().unwrap();
+        let mut hsm = self.client.lock().unwrap();
 
         let signature = hsm
             .sign_ecdsa(self.signing_key_id, digest.result().as_slice())
@@ -200,7 +199,7 @@ impl EcdsaSigner<Secp256k1> {
     where
         D: Digest<OutputSize = U32> + Default,
     {
-        let mut hsm = self.hsm.lock().unwrap();
+        let mut hsm = self.client.lock().unwrap();
 
         // Sign the data using the YubiHSM, producing an ASN.1 DER encoded signature
         let raw_sig = hsm

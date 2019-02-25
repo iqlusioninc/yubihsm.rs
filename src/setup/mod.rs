@@ -1,4 +1,4 @@
-//! Initial YubiHSM2 setup functionality using declarative device profiles.
+//! Initial YubiHSM 2 setup functionality using declarative device profiles.
 
 mod profile;
 pub mod report;
@@ -31,39 +31,31 @@ const SETUP_KEY_LABEL: &str = "yubihsm.rs temporary setup key";
 
 /// Erase and reset an HSM device, then reinitialize it with the given
 /// profile.
-pub fn erase_device_and_init_with_profile<C>(
-    into_connector: C,
+pub fn erase_device_and_init_with_profile(
+    connector: Connector,
     credentials: Credentials,
     profile: Profile,
-) -> Result<Report, Error>
-where
-    C: Into<Box<dyn Connector>>,
-{
+) -> Result<Report, Error> {
     let setup_auth_key_id = profile.setup_auth_key_id.ok_or_else(|| {
         format_err!(
             "profile setup_auth_key_id must be set when using erase_device_and_init_with_profile"
         )
     })?;
 
-    let connector = into_connector.into();
     let temp_auth_key = authentication::Key::random();
 
     // Reset the device and use the new session with default credentials
     // to install the temporary setup authentication key
-    perform_device_reset(
-        connector.box_clone(),
-        credentials,
-        profile.reset_device_timeout,
-    )?
-    .put_authentication_key(
-        setup_auth_key_id,
-        SETUP_KEY_LABEL.into(),
-        Domain::all(),
-        Capability::all(),
-        Capability::all(),
-        authentication::Algorithm::YUBICO_AES,
-        temp_auth_key.clone(),
-    )?;
+    perform_device_reset(connector.clone(), credentials, profile.reset_device_timeout)?
+        .put_authentication_key(
+            setup_auth_key_id,
+            SETUP_KEY_LABEL.into(),
+            Domain::all(),
+            Capability::all(),
+            Capability::all(),
+            authentication::Algorithm::YUBICO_AES,
+            temp_auth_key.clone(),
+        )?;
 
     info!(
         "installed temporary setup authentication key into slot {}",
@@ -118,7 +110,7 @@ where
 
 /// Perform the device reset
 fn perform_device_reset(
-    connector: Box<dyn Connector>,
+    connector: Connector,
     credentials: Credentials,
     timeout: Duration,
 ) -> Result<Client, Error> {
@@ -127,7 +119,7 @@ fn perform_device_reset(
     thread::sleep(Duration::from_millis(DEVICE_RESET_WAIT_MS));
 
     // Reset the device
-    Client::open(connector.box_clone(), credentials, false)?.reset_device()?;
+    Client::open(connector.clone(), credentials, false)?.reset_device()?;
 
     let deadline = SystemTime::now() + timeout;
 
@@ -137,7 +129,7 @@ fn perform_device_reset(
     // Attempt to reconnect to the device with the default credentials
     loop {
         match Client::open(
-            connector.box_clone(),
+            connector.clone(),
             Credentials::default(),
             ENABLE_RECONNECT_DURING_RESET,
         ) {

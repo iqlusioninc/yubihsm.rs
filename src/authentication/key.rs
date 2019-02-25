@@ -1,4 +1,4 @@
-//! `YubiHSM2` authentication keys (2 * AES-128 symmetric PSK) from which session keys are derived
+//! `YubiHSM 2` authentication keys (2 * AES-128 symmetric PSK) from which session keys are derived
 
 use super::{KeyError, KeyErrorKind};
 #[cfg(feature = "hmac")]
@@ -26,7 +26,7 @@ pub const DEFAULT_PBKDF2_SALT: &[u8] = b"Yubico";
 /// This number of iterations matches what is performed by yubihsm-shell.
 pub const DEFAULT_PBKDF2_ITERATIONS: usize = 10_000;
 
-/// `YubiHSM2` authentication keys (2 * AES-128 symmetric PSK) from which
+/// `YubiHSM 2` authentication keys (2 * AES-128 symmetric PSK) from which
 /// session keys are derived.c
 #[derive(Clone)]
 pub struct Key(pub(crate) [u8; AUTHENTICATION_KEY_SIZE]);
@@ -101,7 +101,7 @@ impl Debug for Key {
     }
 }
 
-/// Derive the default authentication key for all YubiHSM2s
+/// Derive the default authentication key for all YubiHSM 2s
 #[cfg(feature = "passwords")]
 impl Default for Key {
     fn default() -> Self {

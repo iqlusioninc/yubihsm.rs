@@ -1,4 +1,4 @@
-//! Integration tests for YubiHSM2 commands
+//! Integration tests for YubiHSM 2 commands
 
 pub mod blink_device;
 pub mod delete_object;

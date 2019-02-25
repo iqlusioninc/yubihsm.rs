@@ -1,9 +1,8 @@
-//! Digital signature (i.e. Ed25519) provider for `YubiHSM2` devices
+//! Digital signature (i.e. Ed25519) provider for `YubiHSM 2` devices
 //!
-//! To use this provider, first establish a session with the `YubiHSM2`, then
+//! To use this provider, first establish a session with the `YubiHSM 2`, then
 //! call the appropriate signer methods to obtain signers.
 
-use super::Session;
 use crate::{object, AsymmetricAlg, Client};
 use signatory::{
     ed25519,
@@ -15,7 +14,7 @@ use std::sync::{Arc, Mutex};
 /// Ed25519 signature provider for yubihsm-client
 pub struct Ed25519Signer {
     /// Session with the YubiHSM
-    hsm: Arc<Mutex<Client>>,
+    client: Arc<Mutex<Client>>,
 
     /// ID of an Ed25519 key to perform signatures with
     signing_key_id: object::Id,
@@ -23,9 +22,9 @@ pub struct Ed25519Signer {
 
 impl Ed25519Signer {
     /// Create a new YubiHSM-backed Ed25519 signer
-    pub(crate) fn create(session: &Session, signing_key_id: object::Id) -> Result<Self, Error> {
+    pub fn create(client: Client, signing_key_id: object::Id) -> Result<Self, Error> {
         let signer = Self {
-            hsm: session.0.clone(),
+            client: Arc::new(Mutex::new(client)),
             signing_key_id,
         };
 
@@ -38,7 +37,7 @@ impl Ed25519Signer {
 
 impl PublicKeyed<ed25519::PublicKey> for Ed25519Signer {
     fn public_key(&self) -> Result<ed25519::PublicKey, Error> {
-        let mut hsm = self.hsm.lock().unwrap();
+        let mut hsm = self.client.lock().unwrap();
 
         let pubkey = hsm
             .get_public_key(self.signing_key_id)
@@ -54,7 +53,7 @@ impl PublicKeyed<ed25519::PublicKey> for Ed25519Signer {
 
 impl Signer<ed25519::Signature> for Ed25519Signer {
     fn sign(&self, msg: &[u8]) -> Result<ed25519::Signature, Error> {
-        let mut hsm = self.hsm.lock().unwrap();
+        let mut hsm = self.client.lock().unwrap();
 
         let signature = hsm
             .sign_ed25519(self.signing_key_id, msg)

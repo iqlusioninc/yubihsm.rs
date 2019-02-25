@@ -1,6 +1,6 @@
-// Apparently bitflags isn't clippy-safe
+//! Logical partitions within the HSM, allowing several applications to share the device.
+
 #![allow(missing_docs)]
-#![cfg_attr(clippy, allow(clippy::redundant_field_names, clippy::suspicious_arithmetic_impl))]
 
 use failure::Error;
 use std::fmt;
@@ -29,7 +29,7 @@ pub const DOMAINS: [Domain; 16] = [
 ];
 
 bitflags! {
-    /// Logical partition within the `YubiHSM2`, allowing several clients
+    /// Logical partition within the `YubiHSM 2`, allowing several clients
     /// to access the same device but access controlled on a domain-by-domain
     /// basis. For more information, see the Yubico documentation:
     ///

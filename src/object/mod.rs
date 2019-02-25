@@ -1,4 +1,7 @@
-//! Objects within the `YubiHSM2` (keys, certificates, or other opaque data)
+//! Objects within the `YubiHSM 2` (keys, certificates, or other opaque data)
+//!
+//! For more information, see:
+//! <https://developers.yubico.com/YubiHSM2/Concepts/Object.html>
 
 mod handle;
 pub mod import;

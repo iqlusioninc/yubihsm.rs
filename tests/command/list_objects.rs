@@ -1,7 +1,7 @@
 use crate::{generate_asymmetric_key, TEST_KEY_ID};
 use yubihsm::{client::Filter, object, AsymmetricAlg, Capability};
 
-/// List the objects in the YubiHSM2
+/// List the objects in the YubiHSM 2
 #[test]
 fn list_objects_test() {
     let mut client = crate::get_hsm_client();

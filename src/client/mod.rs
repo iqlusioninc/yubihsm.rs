@@ -10,10 +10,7 @@
 #[macro_use]
 mod error;
 
-mod blink_device;
 mod delete_object;
-mod device_info;
-mod echo;
 mod generate_asymmetric_key;
 mod generate_hmac_key;
 mod generate_key;
@@ -23,13 +20,11 @@ mod get_opaque;
 mod get_option;
 mod get_pseudo_random;
 mod get_public_key;
-mod get_storage_info;
 mod list_objects;
 mod put_asymmetric_key;
 mod put_hmac_key;
 mod put_opaque;
 mod put_otp_aead_key;
-mod reset_device;
 mod set_log_index;
 mod set_option;
 mod sign_attestation_certificate;
@@ -44,18 +39,18 @@ mod verify_hmac;
 
 pub use self::error::{ClientError, ClientErrorKind};
 pub use self::{
-    device_info::*, get_log_entries::*, get_public_key::*, get_storage_info::*, list_objects::*,
-    reset_device::*, sign_attestation_certificate::*, sign_ecdsa::*, sign_eddsa::*, sign_hmac::*,
+    get_log_entries::*, get_public_key::*, list_objects::*, sign_attestation_certificate::*,
+    sign_ecdsa::*, sign_eddsa::*, sign_hmac::*,
 };
 #[cfg(feature = "rsa")]
 pub use self::{sign_rsa_pkcs1v15::*, sign_rsa_pss::*};
 
 use self::error::ClientErrorKind::*;
 pub(crate) use self::{
-    blink_device::*, delete_object::*, echo::*, generate_asymmetric_key::*, generate_hmac_key::*,
-    generate_key::*, get_object_info::*, get_opaque::*, get_option::*, get_pseudo_random::*,
-    put_asymmetric_key::*, put_hmac_key::*, put_opaque::*, put_otp_aead_key::*, set_log_index::*,
-    set_option::*, verify_hmac::*,
+    delete_object::*, generate_asymmetric_key::*, generate_hmac_key::*, generate_key::*,
+    get_object_info::*, get_opaque::*, get_option::*, get_pseudo_random::*, put_asymmetric_key::*,
+    put_hmac_key::*, put_opaque::*, put_otp_aead_key::*, set_log_index::*, set_option::*,
+    verify_hmac::*,
 };
 use crate::{
     algorithm::*,
@@ -64,6 +59,7 @@ use crate::{
     capability::Capability,
     command::{self, Command},
     connector::Connector,
+    device::commands::*,
     domain::Domain,
     object,
     serialization::{deserialize, serialize},
@@ -80,8 +76,8 @@ use uuid::Uuid;
 /// YubiHSM client: main API in this crate for accessing functions of the
 /// HSM hardware device.
 pub struct Client {
-    /// Method for connecting to the HSM
-    connector: Box<dyn Connector>,
+    /// Connector for communicating with the HSM
+    connector: Connector,
 
     /// Encrypted session with the HSM (if we have one open)
     session: Option<Session>,
@@ -104,7 +100,7 @@ impl Client {
         reconnect: bool,
     ) -> Result<Self, ClientError>
     where
-        C: Into<Box<dyn Connector>>,
+        C: Into<Connector>,
     {
         let mut client = Self::create(connector, credentials)?;
         client.connect()?;
@@ -120,7 +116,7 @@ impl Client {
     /// Create a `yubihsm::Client`, but defer connecting until `connect()` is called.
     pub fn create<C>(connector: C, credentials: Credentials) -> Result<Self, ClientError>
     where
-        C: Into<Box<dyn Connector>>,
+        C: Into<Connector>,
     {
         let client = Self {
             connector: connector.into(),
@@ -130,6 +126,8 @@ impl Client {
 
         Ok(client)
     }
+
+    /// Try to make a clone of this client
 
     /// Connect to the HSM (idempotently, i.e. returns success if we have
     /// an open connection already)
@@ -156,10 +154,10 @@ impl Client {
         }
 
         let session = Session::open(
-            &*self.connector,
+            self.connector.clone(),
             self.credentials
                 .as_ref()
-                .ok_or_else(|| err!(AuthFail, "session reconnection disabled"))?,
+                .ok_or_else(|| err!(AuthenticationError, "session reconnection disabled"))?,
             session::Timeout::default(),
         )?;
 
@@ -799,7 +797,7 @@ impl Client {
     ///
     /// # secp256k1 notes
     ///
-    /// The YubiHSM2 does not produce signatures in "low S" form, which is expected
+    /// The YubiHSM 2 does not produce signatures in "low S" form, which is expected
     /// for most cryptocurrency applications (the typical use case for secp256k1).
     ///
     /// If your application demands this (e.g. Bitcoin), you'll need to normalize

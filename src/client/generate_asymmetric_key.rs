@@ -1,4 +1,4 @@
-//! Generate a new asymmetric key within the `YubiHSM2`
+//! Generate a new asymmetric key within the `YubiHSM 2`
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Generate_Asymmetric_Key.html>
 

@@ -1,3 +1,5 @@
+//! Cryptographic algorithms supported by the YubiHSM 2
+
 mod error;
 pub use self::error::{AlgorithmError, AlgorithmErrorKind};
 
@@ -18,7 +20,7 @@ pub use self::{
 };
 use crate::authentication;
 
-/// Cryptographic algorithm types supported by the `YubiHSM2`
+/// Cryptographic algorithm types supported by the `YubiHSM 2`
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[repr(u8)]
 #[allow(non_camel_case_types)]
@@ -26,7 +28,7 @@ pub enum Algorithm {
     /// Asymmetric algorithms
     Asymmetric(AsymmetricAlg),
 
-    /// YubiHSM2 PSK authentication
+    /// YubiHSM 2 PSK authentication
     Authentication(authentication::Algorithm),
 
     /// ECDSA algorithms

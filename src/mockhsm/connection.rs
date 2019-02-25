@@ -3,8 +3,8 @@ use uuid::Uuid;
 
 use super::{command, state::State, MockHsm};
 use crate::{
-    command::{Code, Message},
-    connector::{Connection, ConnectionError, ConnectionErrorKind::ConnectionFailed},
+    command::Code,
+    connector::{Connection, ConnectionError, ConnectionErrorKind::ConnectionFailed, Message},
 };
 
 /// A mocked connection to the MockHsm
@@ -19,8 +19,9 @@ impl MockConnection {
 
 impl Connection for MockConnection {
     /// Send a message to the MockHsm
-    fn send_message(&self, _uuid: Uuid, body: Vec<u8>) -> Result<Vec<u8>, ConnectionError> {
-        let command = Message::parse(body)
+    fn send_message(&self, _uuid: Uuid, message: Message) -> Result<Message, ConnectionError> {
+        let command = message
+            .parse()
             .map_err(|e| err!(ConnectionFailed, "error parsing command: {}", e))?;
 
         let mut state = self
@@ -34,5 +35,6 @@ impl Connection for MockConnection {
             Code::SessionMessage => command::session_message(&mut state, command),
             unsupported => fail!(ConnectionFailed, "unsupported command: {:?}", unsupported),
         }
+        .map(Message::from)
     }
 }

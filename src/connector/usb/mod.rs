@@ -1,4 +1,4 @@
-//! Support for interacting directly with the YubiHSM 2 via USB
+//! Support for connecting to the YubiHSM 2 via USB
 
 #[macro_use]
 mod macros;
@@ -14,13 +14,12 @@ pub use self::{
     device::{Device, Devices},
     timeout::UsbTimeout,
 };
-use crate::connector::{Connection, ConnectionError, Connector};
-use crate::serial_number::SerialNumber;
+use crate::connector::{Connectable, Connection, ConnectionError};
 
 /// USB vendor ID for Yubico
 pub const YUBICO_VENDOR_ID: u16 = 0x1050;
 
-/// USB product ID for the YubiHSM2
+/// USB product ID for the YubiHSM 2
 pub const YUBIHSM2_PRODUCT_ID: u16 = 0x0030;
 
 /// YubiHSM 2 USB interface number
@@ -45,36 +44,25 @@ pub struct UsbConnector(UsbConfig);
 
 impl UsbConnector {
     /// Create a new `UsbConnector` with the given configuration
-    pub fn create(config: &UsbConfig) -> Result<Self, ConnectionError> {
-        Ok(UsbConnector(config.clone()))
+    pub fn create(config: &UsbConfig) -> Box<dyn Connectable> {
+        Box::new(UsbConnector(config.clone()))
     }
 }
 
-impl Connector for UsbConnector {
-    /// Create a clone of this connector as a boxed trait object
-    fn box_clone(&self) -> Box<dyn Connector> {
-        Box::new(self.clone())
+impl Connectable for UsbConnector {
+    /// Make a clone of this connectable as boxed trait object
+    fn box_clone(&self) -> Box<dyn Connectable> {
+        Box::new(UsbConnector(self.0.clone()))
     }
 
     /// Open a connection to `yubihsm-connector`
-    fn connect(&self) -> Result<Box<Connection>, ConnectionError> {
+    fn connect(&self) -> Result<Box<dyn Connection>, ConnectionError> {
         Ok(Box::new(UsbConnection::open(&self.0)?))
-    }
-
-    /// Check that the connection to the HSM is healthy
-    fn healthcheck(&self) -> Result<(), ConnectionError> {
-        // TODO: do something here?
-        Ok(())
-    }
-
-    /// Get the serial number for the current YubiHSM2 (if available)
-    fn serial_number(&self) -> Result<SerialNumber, ConnectionError> {
-        Ok(UsbConnection::open(&self.0)?.device().serial_number)
     }
 }
 
-impl Into<Box<Connector>> for UsbConnector {
-    fn into(self) -> Box<Connector> {
+impl Into<Box<Connectable>> for UsbConnector {
+    fn into(self) -> Box<Connectable> {
         Box::new(self)
     }
 }

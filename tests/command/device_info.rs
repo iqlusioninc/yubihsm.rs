@@ -8,6 +8,6 @@ fn device_info_test() {
         .unwrap_or_else(|err| panic!("error getting device info: {}", err));
 
     // This should always be 2. The minor and patch versions will vary
-    // depending on the specific YubiHSM2 model.
+    // depending on the specific YubiHSM 2 model.
     assert_eq!(device_info.major_version, 2);
 }

@@ -1,4 +1,6 @@
-use crate::serial_number::SerialNumber;
+//! USB device configuration
+
+use crate::device::SerialNumber;
 
 /// Default timeouts for reading and writing (1 second)
 pub const DEFAULT_TIMEOUT_MILLIS: u64 = 1000;

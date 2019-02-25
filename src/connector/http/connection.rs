@@ -1,35 +1,34 @@
 //! Persistent HTTP connection to `yubihsm-connector`
 
+use super::config::HttpConfig;
+use crate::connector::{Connection, ConnectionError, Message};
 use gaunt;
 use uuid::Uuid;
 
-use super::config::HttpConfig;
-use crate::connector::{Connection, ConnectionError};
+// TODO: send user agent string
+// User-Agent string to supply
+// pub const USER_AGENT: &str = concat!("yubihsm.rs ", env!("CARGO_PKG_VERSION"));
 
 /// Connection to YubiHSM via HTTP requests to `yubihsm-connector`.
 ///
 /// The `yubihsm-connector` service is a small HTTP(S) service which exposes a
-/// YubiHSM2 to a network, allowing several clients using it concurrently.
+/// YubiHSM 2 to a network, allowing several clients using it concurrently.
 ///
-/// This connection communicates with a YubiHSM2 via `yubihsm-connector`. For
+/// This connection communicates with a YubiHSM 2 via `yubihsm-connector`. For
 /// more information on `yubihsm-connector`, see:
 ///
 /// <https://developers.yubico.com/YubiHSM2/Component_Reference/yubihsm-connector/>
-pub struct HttpConnection(gaunt::Connection);
+pub struct HttpConnection {
+    /// HTTP connection
+    connection: gaunt::Connection,
+}
 
 impl HttpConnection {
     /// Open a connection to a `yubihsm-connector` service
     pub(crate) fn open(config: &HttpConfig) -> Result<Self, ConnectionError> {
-        Ok(HttpConnection(gaunt::Connection::new(
-            &config.addr,
-            config.port,
-            &Default::default(),
-        )?))
-    }
+        let connection = gaunt::Connection::new(&config.addr, config.port, &Default::default())?;
 
-    /// Make an HTTP GET request to a `yubihsm-connector` service
-    pub(super) fn get(&self, path: &str) -> Result<Vec<u8>, ConnectionError> {
-        Ok(self.0.get(path, &Default::default())?.into_vec())
+        Ok(HttpConnection { connection })
     }
 
     /// Make an HTTP POST request to a `yubihsm-connector` service
@@ -41,7 +40,7 @@ impl HttpConnection {
     ) -> Result<Vec<u8>, ConnectionError> {
         // TODO: send UUID as `X-Request-ID` header, zero copy body creation
         Ok(self
-            .0
+            .connection
             .post(path, &gaunt::request::Body::from(body))?
             .into_vec())
     }
@@ -49,7 +48,8 @@ impl HttpConnection {
 
 impl Connection for HttpConnection {
     /// `POST /connector/api` with a given command message
-    fn send_message(&self, uuid: Uuid, cmd: Vec<u8>) -> Result<Vec<u8>, ConnectionError> {
-        self.post("/connector/api", uuid, &cmd)
+    fn send_message(&self, uuid: Uuid, cmd: Message) -> Result<Message, ConnectionError> {
+        self.post("/connector/api", uuid, cmd.as_ref())
+            .map(|body| body.into())
     }
 }

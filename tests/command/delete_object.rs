@@ -1,7 +1,7 @@
 use crate::{generate_asymmetric_key, TEST_KEY_ID};
 use yubihsm::{object, AsymmetricAlg, Capability};
 
-/// Delete an object in the YubiHSM2
+/// Delete an object in the YubiHSM 2
 #[test]
 fn delete_object_test() {
     let mut client = crate::get_hsm_client();

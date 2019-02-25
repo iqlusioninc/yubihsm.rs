@@ -1,4 +1,4 @@
-//! Roles for interacting with the YubiHSM2
+//! Roles for interacting with the YubiHSM 2
 
 pub use crate::{object, Capability, Credentials, Domain};
 
@@ -20,7 +20,7 @@ pub struct Role {
     /// Set of permissions allowed to be set by objects created by this role
     pub(super) delegated_capabilities: Capability,
 
-    /// Domains (logical partitions in the YubiHSM2) this role has access to
+    /// Domains (logical partitions in the YubiHSM 2) this role has access to
     pub(super) domains: Domain,
 }
 
@@ -63,7 +63,7 @@ impl Role {
         self
     }
 
-    /// Create this role within the YubiHSM2 device
+    /// Create this role within the YubiHSM 2 device
     pub fn create(&self, client: &mut Client) -> Result<(), Error> {
         client
             .put_authentication_key(

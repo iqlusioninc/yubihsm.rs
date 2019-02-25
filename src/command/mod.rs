@@ -1,3 +1,6 @@
+//! YubiHSM commands: types and traits for modeling the commands supported
+//! by the HSM device, implemented in relevant modules.
+
 mod code;
 mod message;
 

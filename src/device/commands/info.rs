@@ -1,9 +1,10 @@
-//! Get information about the `YubiHSM2` device
+//! Get information about the `YubiHSM 2` device
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Device_Info.html>
 
 use crate::{
     command::{self, Command},
+    device::SerialNumber,
     response::Response,
     Algorithm,
 };
@@ -29,7 +30,7 @@ pub struct DeviceInfoResponse {
     pub build_version: u8,
 
     /// Device serial number
-    pub serial_number: u32,
+    pub serial_number: SerialNumber,
 
     /// Size of the log store (in lines/entries)
     pub log_store_capacity: u8,

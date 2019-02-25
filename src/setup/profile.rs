@@ -14,7 +14,7 @@ pub const DEFAULT_SETUP_KEY_ID: object::Id = 0xFFFE;
 /// Uses key ID #65534 as 65535 is reserved for internal use.
 pub const DEFAULT_REPORT_OBJECT_ID: object::Id = 0xFFFE;
 
-/// YubiHSM2 provisioning profile: a declarative profile specifying how a
+/// YubiHSM 2 provisioning profile: a declarative profile specifying how a
 /// device should be (re)provisioned.
 #[derive(Clone, Debug)]
 pub struct Profile {
@@ -96,7 +96,7 @@ impl Profile {
         self
     }
 
-    /// Use this profile to provision the YubiHSM2 with the given client
+    /// Use this profile to provision the YubiHSM 2 with the given client
     pub fn provision(&self, client: &mut Client) -> Result<Report, Error> {
         for role in &self.roles {
             info!("installing role: {}", role.authentication_key_label);
