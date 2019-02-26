@@ -10,68 +10,41 @@
 #[macro_use]
 mod error;
 
-mod delete_object;
-mod generate_asymmetric_key;
-mod generate_hmac_key;
-mod generate_key;
-mod get_log_entries;
-mod get_object_info;
-mod get_opaque;
-mod get_option;
-mod get_pseudo_random;
-mod get_public_key;
-mod list_objects;
-mod put_asymmetric_key;
-mod put_hmac_key;
-mod put_opaque;
-mod put_otp_aead_key;
-mod set_log_index;
-mod set_option;
-mod sign_attestation_certificate;
-mod sign_ecdsa;
-mod sign_eddsa;
-mod sign_hmac;
-#[cfg(feature = "rsa")]
-mod sign_rsa_pkcs1v15;
-#[cfg(feature = "rsa")]
-mod sign_rsa_pss;
-mod verify_hmac;
-
 pub use self::error::{ClientError, ClientErrorKind};
-pub use self::{
-    get_log_entries::*, get_public_key::*, list_objects::*, sign_attestation_certificate::*,
-    sign_ecdsa::*, sign_eddsa::*, sign_hmac::*,
-};
-#[cfg(feature = "rsa")]
-pub use self::{sign_rsa_pkcs1v15::*, sign_rsa_pss::*};
 
 use self::error::ClientErrorKind::*;
-pub(crate) use self::{
-    delete_object::*, generate_asymmetric_key::*, generate_hmac_key::*, generate_key::*,
-    get_object_info::*, get_opaque::*, get_option::*, get_pseudo_random::*, put_asymmetric_key::*,
-    put_hmac_key::*, put_opaque::*, put_otp_aead_key::*, set_log_index::*, set_option::*,
-    verify_hmac::*,
-};
 use crate::{
-    algorithm::*,
-    audit::*,
+    asymmetric::{
+        self,
+        attestation::{self, commands::*},
+        commands::*,
+        ecdsa::{self, commands::*},
+        ed25519::{self, commands::*},
+        PublicKey,
+    },
+    audit::{commands::*, *},
     authentication::{self, commands::*, Credentials},
     capability::Capability,
     command::{self, Command},
     connector::Connector,
     device::commands::*,
     domain::Domain,
-    object,
+    hmac::{self, commands::*},
+    object::{self, commands::*, generate},
+    opaque::{self, commands::*},
+    otp::{self, commands::*},
     serialization::{deserialize, serialize},
     session::{self, Session},
+    uuid,
     wrap::{self, commands::*},
 };
-#[cfg(feature = "rsa")]
-use byteorder::{BigEndian, ByteOrder};
-#[cfg(feature = "rsa")]
-use sha2::{Digest, Sha256};
 use std::time::{Duration, Instant};
-use uuid::Uuid;
+#[cfg(feature = "rsa")]
+use {
+    crate::asymmetric::rsa::{self, pkcs1::commands::*, pss::commands::*},
+    byteorder::{BigEndian, ByteOrder},
+    sha2::{Digest, Sha256},
+};
 
 /// YubiHSM client: main API in this crate for accessing functions of the
 /// HSM hardware device.
@@ -169,7 +142,7 @@ impl Client {
     /// end-to-end latency.
     pub fn ping(&mut self) -> Result<Duration, ClientError> {
         let t = Instant::now();
-        let uuid = Uuid::new_v4().to_hyphenated().to_string();
+        let uuid = uuid::new_v4().to_hyphenated().to_string();
         let response = self.echo(uuid.as_bytes())?;
 
         ensure!(
@@ -264,10 +237,10 @@ impl Client {
         label: object::Label,
         domains: Domain,
         capabilities: Capability,
-        algorithm: AsymmetricAlg,
+        algorithm: asymmetric::Algorithm,
     ) -> Result<object::Id, ClientError> {
         Ok(self
-            .send_command(GenAsymmetricKeyCommand(GenerateKeyParams {
+            .send_command(GenAsymmetricKeyCommand(generate::Params {
                 key_id,
                 label,
                 domains,
@@ -286,10 +259,10 @@ impl Client {
         label: object::Label,
         domains: Domain,
         capabilities: Capability,
-        algorithm: HmacAlg,
+        algorithm: hmac::Algorithm,
     ) -> Result<object::Id, ClientError> {
         Ok(self
-            .send_command(GenHMACKeyCommand(GenerateKeyParams {
+            .send_command(GenHmacKeyCommand(generate::Params {
                 key_id,
                 label,
                 domains,
@@ -312,11 +285,11 @@ impl Client {
         domains: Domain,
         capabilities: Capability,
         delegated_capabilities: Capability,
-        algorithm: WrapAlg,
+        algorithm: wrap::Algorithm,
     ) -> Result<object::Id, ClientError> {
         Ok(self
             .send_command(GenWrapKeyCommand {
-                params: GenerateKeyParams {
+                params: generate::Params {
                     key_id,
                     label,
                     domains,
@@ -427,7 +400,7 @@ impl Client {
     ///
     /// <https://developers.yubico.com/YubiHSM2/Commands/Get_Public_Key.html>
     pub fn get_public_key(&mut self, key_id: object::Id) -> Result<PublicKey, ClientError> {
-        Ok(self.send_command(GetPubKeyCommand { key_id })?)
+        Ok(self.send_command(GetPublicKeyCommand { key_id })?.into())
     }
 
     /// Get storage status (i.e. currently free storage) from the HSM device.
@@ -465,8 +438,8 @@ impl Client {
     /// <https://developers.yubico.com/YubiHSM2/Commands/List_Objects.html>
     pub fn list_objects(
         &mut self,
-        filters: &[Filter],
-    ) -> Result<Vec<ListObjectsEntry>, ClientError> {
+        filters: &[object::Filter],
+    ) -> Result<Vec<object::Entry>, ClientError> {
         let mut filter_bytes = vec![];
 
         for filter in filters {
@@ -485,7 +458,7 @@ impl Client {
         label: object::Label,
         domains: Domain,
         capabilities: Capability,
-        algorithm: AsymmetricAlg,
+        algorithm: asymmetric::Algorithm,
         key_bytes: K,
     ) -> Result<object::Id, ClientError>
     where
@@ -557,7 +530,7 @@ impl Client {
         label: object::Label,
         domains: Domain,
         capabilities: Capability,
-        algorithm: HmacAlg,
+        algorithm: hmac::Algorithm,
         key_bytes: K,
     ) -> Result<object::Id, ClientError>
     where
@@ -577,7 +550,7 @@ impl Client {
         }
 
         Ok(self
-            .send_command(PutHMACKeyCommand {
+            .send_command(PutHmacKeyCommand {
                 params: object::import::Params {
                     id: key_id,
                     label,
@@ -599,7 +572,7 @@ impl Client {
         label: object::Label,
         domains: Domain,
         capabilities: Capability,
-        algorithm: OpaqueAlg,
+        algorithm: opaque::Algorithm,
         opaque_data: B,
     ) -> Result<object::Id, ClientError>
     where
@@ -628,7 +601,7 @@ impl Client {
         label: object::Label,
         domains: Domain,
         capabilities: Capability,
-        algorithm: YubicoOtpAlg,
+        algorithm: otp::Algorithm,
         key_bytes: K,
     ) -> Result<object::Id, ClientError>
     where
@@ -670,7 +643,7 @@ impl Client {
         domains: Domain,
         capabilities: Capability,
         delegated_capabilities: Capability,
-        algorithm: WrapAlg,
+        algorithm: wrap::Algorithm,
         key_bytes: K,
     ) -> Result<object::Id, ClientError>
     where
@@ -784,7 +757,7 @@ impl Client {
         &mut self,
         key_id: object::Id,
         attestation_key_id: Option<object::Id>,
-    ) -> Result<AttestationCertificate, ClientError> {
+    ) -> Result<attestation::Certificate, ClientError> {
         Ok(self.send_command(SignAttestationCertificateCommand {
             key_id,
             attestation_key_id: attestation_key_id.unwrap_or(0),
@@ -810,14 +783,16 @@ impl Client {
         &mut self,
         key_id: object::Id,
         digest: T,
-    ) -> Result<EcdsaSignature, ClientError>
+    ) -> Result<ecdsa::Signature, ClientError>
     where
         T: Into<Vec<u8>>,
     {
-        Ok(self.send_command(SignEcdsaCommand {
-            key_id,
-            digest: digest.into(),
-        })?)
+        Ok(self
+            .send_command(SignEcdsaCommand {
+                key_id,
+                digest: digest.into(),
+            })?
+            .into())
     }
 
     /// Compute an Ed25519 signature with the given key ID.
@@ -827,27 +802,31 @@ impl Client {
         &mut self,
         key_id: object::Id,
         data: T,
-    ) -> Result<Ed25519Signature, ClientError>
+    ) -> Result<ed25519::Signature, ClientError>
     where
         T: Into<Vec<u8>>,
     {
-        Ok(self.send_command(SignDataEddsaCommand {
-            key_id,
-            data: data.into(),
-        })?)
+        Ok(self
+            .send_command(SignEddsaCommand {
+                key_id,
+                data: data.into(),
+            })?
+            .into())
     }
 
     /// Compute an HMAC tag of the given data with the given key ID.
     ///
     /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Hmac.html>
-    pub fn sign_hmac<M>(&mut self, key_id: object::Id, msg: M) -> Result<HmacTag, ClientError>
+    pub fn sign_hmac<M>(&mut self, key_id: object::Id, msg: M) -> Result<hmac::Tag, ClientError>
     where
         M: Into<Vec<u8>>,
     {
-        Ok(self.send_command(SignHmacCommand {
-            key_id,
-            data: msg.into(),
-        })?)
+        Ok(self
+            .send_command(SignHmacCommand {
+                key_id,
+                data: msg.into(),
+            })?
+            .into())
     }
 
     /// Compute an RSASSA-PKCS#1v1.5 signature of the SHA-256 hash of the given data.
@@ -861,11 +840,13 @@ impl Client {
         &mut self,
         key_id: object::Id,
         data: &[u8],
-    ) -> Result<RsaPkcs1Signature, ClientError> {
-        Ok(self.send_command(SignPkcs1Command {
-            key_id,
-            digest: Sha256::digest(data).as_slice().into(),
-        })?)
+    ) -> Result<rsa::pkcs1::Signature, ClientError> {
+        Ok(self
+            .send_command(SignPkcs1Command {
+                key_id,
+                digest: Sha256::digest(data).as_slice().into(),
+            })?
+            .into())
     }
 
     /// Compute an RSASSA-PSS signature of the SHA-256 hash of the given data with the given key ID.
@@ -879,12 +860,12 @@ impl Client {
         &mut self,
         key_id: object::Id,
         data: &[u8],
-    ) -> Result<RsaPssSignature, ClientError> {
+    ) -> Result<rsa::pss::Signature, ClientError> {
         ensure!(
-            data.len() > RSA_PSS_MAX_MESSAGE_SIZE,
+            data.len() > rsa::pss::MAX_MESSAGE_SIZE,
             ProtocolError,
             "message too large to be signed (max: {})",
-            RSA_PSS_MAX_MESSAGE_SIZE
+            rsa::pss::MAX_MESSAGE_SIZE
         );
 
         let mut hasher = Sha256::default();
@@ -895,12 +876,14 @@ impl Client {
         hasher.input(data);
         let digest = hasher.result();
 
-        Ok(self.send_command(SignPssCommand {
-            key_id,
-            mgf1_hash_alg: Algorithm::Mgf(MgfAlg::SHA256),
-            salt_len: digest.as_slice().len() as u16,
-            digest: digest.as_slice().into(),
-        })?)
+        Ok(self
+            .send_command(SignPssCommand {
+                key_id,
+                mgf1_hash_alg: rsa::mgf::Algorithm::SHA256,
+                salt_len: digest.as_slice().len() as u16,
+                digest: digest.as_slice().into(),
+            })?
+            .into())
     }
 
     /// Decrypt data which was encrypted (using AES-CCM) under a wrap key.
@@ -936,9 +919,9 @@ impl Client {
     ) -> Result<(), ClientError>
     where
         M: Into<Vec<u8>>,
-        T: Into<HmacTag>,
+        T: Into<hmac::Tag>,
     {
-        let result = self.send_command(VerifyHMACCommand {
+        let result = self.send_command(VerifyHmacCommand {
             key_id,
             tag: tag.into(),
             data: msg.into(),

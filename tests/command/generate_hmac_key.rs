@@ -1,12 +1,12 @@
 use crate::{clear_test_key_slot, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL};
-use yubihsm::{object, Capability, HmacAlg};
+use yubihsm::{hmac, object, Capability};
 
 /// Generate an HMAC key
 #[test]
 fn hmac_key_test() {
     let mut client = crate::get_hsm_client();
 
-    let algorithm = HmacAlg::SHA256;
+    let algorithm = hmac::Algorithm::SHA256;
     let capabilities = Capability::SIGN_HMAC | Capability::VERIFY_HMAC;
 
     clear_test_key_slot(&mut client, object::Type::HmacKey);

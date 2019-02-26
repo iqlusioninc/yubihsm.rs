@@ -2,14 +2,14 @@ use crate::{
     clear_test_key_slot, test_vectors::AESCCM_TEST_VECTORS, TEST_DOMAINS, TEST_EXPORTED_KEY_ID,
     TEST_EXPORTED_KEY_LABEL, TEST_KEY_ID, TEST_KEY_LABEL,
 };
-use yubihsm::{object, AsymmetricAlg, Capability, WrapAlg};
+use yubihsm::{asymmetric, object, wrap, Capability};
 
 /// Test wrap key workflow using randomly generated keys
 // TODO: test against RFC 3610 vectors
 #[test]
 fn wrap_key_test() {
     let mut client = crate::get_hsm_client();
-    let algorithm = WrapAlg::AES128_CCM;
+    let algorithm = wrap::Algorithm::AES128_CCM;
     let capabilities = Capability::EXPORT_WRAPPED | Capability::IMPORT_WRAPPED;
     let delegated_capabilities = Capability::all();
 
@@ -32,7 +32,7 @@ fn wrap_key_test() {
     // Create a key to export
     let exported_key_type = object::Type::AsymmetricKey;
     let exported_key_capabilities = Capability::SIGN_EDDSA | Capability::EXPORTABLE_UNDER_WRAP;
-    let exported_key_algorithm = AsymmetricAlg::Ed25519;
+    let exported_key_algorithm = asymmetric::Algorithm::Ed25519;
 
     let _ = client.delete_object(TEST_EXPORTED_KEY_ID, exported_key_type);
 

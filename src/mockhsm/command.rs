@@ -3,20 +3,30 @@
 use super::{object::Payload, state::State, MOCK_SERIAL_NUMBER};
 use crate::{
     algorithm::*,
-    audit::{AuditCommand, AuditOption, AuditTag},
+    asymmetric::{
+        self,
+        commands::*,
+        ecdsa,
+        ed25519::{self, commands::*},
+        kex, rsa, PublicKey,
+    },
+    audit::{commands::*, AuditCommand, AuditOption, AuditTag},
     authentication::{self, commands::*},
-    client::*,
     command::{Code, Message},
     connector::ConnectionError,
     device::{commands::*, DeviceErrorKind, SerialNumber},
-    object,
+    hmac::{self, commands::*},
+    object::{self, commands::*},
+    opaque::{self, commands::*},
+    otp,
     response::{self, Response},
     serialization::deserialize,
     session::{self, commands::*},
+    template,
     wrap::{self, commands::*},
     Capability,
 };
-use hmac::{Hmac, Mac};
+use hmac_crate::{Hmac, Mac};
 use rand_os::{rand_core::RngCore, OsRng};
 use ring::signature::Ed25519KeyPair;
 use sha2::Sha256;
@@ -153,53 +163,53 @@ fn device_info() -> response::Message {
         log_store_capacity: 62,
         log_store_used: 62,
         algorithms: vec![
-            Algorithm::Rsa(RsaAlg::PKCS1_SHA1),
-            Algorithm::Rsa(RsaAlg::PKCS1_SHA256),
-            Algorithm::Rsa(RsaAlg::PKCS1_SHA384),
-            Algorithm::Rsa(RsaAlg::PKCS1_SHA512),
-            Algorithm::Rsa(RsaAlg::PSS_SHA1),
-            Algorithm::Rsa(RsaAlg::PSS_SHA256),
-            Algorithm::Rsa(RsaAlg::PSS_SHA384),
-            Algorithm::Rsa(RsaAlg::PSS_SHA512),
-            Algorithm::Asymmetric(AsymmetricAlg::RSA_2048),
-            Algorithm::Asymmetric(AsymmetricAlg::RSA_3072),
-            Algorithm::Asymmetric(AsymmetricAlg::RSA_4096),
-            Algorithm::Asymmetric(AsymmetricAlg::EC_P256),
-            Algorithm::Asymmetric(AsymmetricAlg::EC_P384),
-            Algorithm::Asymmetric(AsymmetricAlg::EC_P521),
-            Algorithm::Asymmetric(AsymmetricAlg::EC_K256),
-            Algorithm::Asymmetric(AsymmetricAlg::EC_BP256),
-            Algorithm::Asymmetric(AsymmetricAlg::EC_BP384),
-            Algorithm::Asymmetric(AsymmetricAlg::EC_BP512),
-            Algorithm::Hmac(HmacAlg::SHA1),
-            Algorithm::Hmac(HmacAlg::SHA256),
-            Algorithm::Hmac(HmacAlg::SHA384),
-            Algorithm::Hmac(HmacAlg::SHA512),
-            Algorithm::Ecdsa(EcdsaAlg::SHA1),
-            Algorithm::Kex(KexAlg::ECDH),
-            Algorithm::Rsa(RsaAlg::OAEP_SHA1),
-            Algorithm::Rsa(RsaAlg::OAEP_SHA256),
-            Algorithm::Rsa(RsaAlg::OAEP_SHA384),
-            Algorithm::Rsa(RsaAlg::OAEP_SHA512),
-            Algorithm::Wrap(WrapAlg::AES128_CCM),
-            Algorithm::Opaque(OpaqueAlg::DATA),
-            Algorithm::Opaque(OpaqueAlg::X509_CERTIFICATE),
-            Algorithm::Mgf(MgfAlg::SHA1),
-            Algorithm::Mgf(MgfAlg::SHA256),
-            Algorithm::Mgf(MgfAlg::SHA384),
-            Algorithm::Mgf(MgfAlg::SHA512),
-            Algorithm::Template(TemplateAlg::SSH),
-            Algorithm::YubicoOtp(YubicoOtpAlg::AES128),
+            Algorithm::Rsa(rsa::Algorithm::PKCS1_SHA1),
+            Algorithm::Rsa(rsa::Algorithm::PKCS1_SHA256),
+            Algorithm::Rsa(rsa::Algorithm::PKCS1_SHA384),
+            Algorithm::Rsa(rsa::Algorithm::PKCS1_SHA512),
+            Algorithm::Rsa(rsa::Algorithm::PSS_SHA1),
+            Algorithm::Rsa(rsa::Algorithm::PSS_SHA256),
+            Algorithm::Rsa(rsa::Algorithm::PSS_SHA384),
+            Algorithm::Rsa(rsa::Algorithm::PSS_SHA512),
+            Algorithm::Asymmetric(asymmetric::Algorithm::RSA_2048),
+            Algorithm::Asymmetric(asymmetric::Algorithm::RSA_3072),
+            Algorithm::Asymmetric(asymmetric::Algorithm::RSA_4096),
+            Algorithm::Asymmetric(asymmetric::Algorithm::EC_P256),
+            Algorithm::Asymmetric(asymmetric::Algorithm::EC_P384),
+            Algorithm::Asymmetric(asymmetric::Algorithm::EC_P521),
+            Algorithm::Asymmetric(asymmetric::Algorithm::EC_K256),
+            Algorithm::Asymmetric(asymmetric::Algorithm::EC_BP256),
+            Algorithm::Asymmetric(asymmetric::Algorithm::EC_BP384),
+            Algorithm::Asymmetric(asymmetric::Algorithm::EC_BP512),
+            Algorithm::Hmac(hmac::Algorithm::SHA1),
+            Algorithm::Hmac(hmac::Algorithm::SHA256),
+            Algorithm::Hmac(hmac::Algorithm::SHA384),
+            Algorithm::Hmac(hmac::Algorithm::SHA512),
+            Algorithm::Ecdsa(ecdsa::Algorithm::SHA1),
+            Algorithm::Kex(kex::Algorithm::ECDH),
+            Algorithm::Rsa(rsa::Algorithm::OAEP_SHA1),
+            Algorithm::Rsa(rsa::Algorithm::OAEP_SHA256),
+            Algorithm::Rsa(rsa::Algorithm::OAEP_SHA384),
+            Algorithm::Rsa(rsa::Algorithm::OAEP_SHA512),
+            Algorithm::Wrap(wrap::Algorithm::AES128_CCM),
+            Algorithm::Opaque(opaque::Algorithm::DATA),
+            Algorithm::Opaque(opaque::Algorithm::X509_CERTIFICATE),
+            Algorithm::Mgf(rsa::mgf::Algorithm::SHA1),
+            Algorithm::Mgf(rsa::mgf::Algorithm::SHA256),
+            Algorithm::Mgf(rsa::mgf::Algorithm::SHA384),
+            Algorithm::Mgf(rsa::mgf::Algorithm::SHA512),
+            Algorithm::Template(template::Algorithm::SSH),
+            Algorithm::YubicoOtp(otp::Algorithm::AES128),
             Algorithm::Authentication(authentication::Algorithm::YUBICO_AES),
-            Algorithm::YubicoOtp(YubicoOtpAlg::AES192),
-            Algorithm::YubicoOtp(YubicoOtpAlg::AES256),
-            Algorithm::Wrap(WrapAlg::AES192_CCM),
-            Algorithm::Wrap(WrapAlg::AES256_CCM),
-            Algorithm::Ecdsa(EcdsaAlg::SHA256),
-            Algorithm::Ecdsa(EcdsaAlg::SHA384),
-            Algorithm::Ecdsa(EcdsaAlg::SHA512),
-            Algorithm::Asymmetric(AsymmetricAlg::Ed25519),
-            Algorithm::Asymmetric(AsymmetricAlg::EC_P224),
+            Algorithm::YubicoOtp(otp::Algorithm::AES192),
+            Algorithm::YubicoOtp(otp::Algorithm::AES256),
+            Algorithm::Wrap(wrap::Algorithm::AES192_CCM),
+            Algorithm::Wrap(wrap::Algorithm::AES256_CCM),
+            Algorithm::Ecdsa(ecdsa::Algorithm::SHA256),
+            Algorithm::Ecdsa(ecdsa::Algorithm::SHA384),
+            Algorithm::Ecdsa(ecdsa::Algorithm::SHA512),
+            Algorithm::Asymmetric(asymmetric::Algorithm::Ed25519),
+            Algorithm::Asymmetric(asymmetric::Algorithm::EC_P224),
         ],
     }
     .serialize()
@@ -256,7 +266,7 @@ fn gen_asymmetric_key(state: &mut State, cmd_data: &[u8]) -> response::Message {
 
 /// Generate a new random HMAC key
 fn gen_hmac_key(state: &mut State, cmd_data: &[u8]) -> response::Message {
-    let GenHMACKeyCommand(command) =
+    let GenHmacKeyCommand(command) =
         deserialize(cmd_data).unwrap_or_else(|e| panic!("error parsing Code::GenHMACKey: {:?}", e));
 
     state.objects.generate(
@@ -269,7 +279,7 @@ fn gen_hmac_key(state: &mut State, cmd_data: &[u8]) -> response::Message {
         command.domains,
     );
 
-    GenHMACKeyResponse {
+    GenHmacKeyResponse {
         key_id: command.key_id,
     }
     .serialize()
@@ -366,17 +376,17 @@ fn get_pseudo_random(_state: &State, cmd_data: &[u8]) -> response::Message {
 
 /// Get the public key associated with a key in the HSM
 fn get_public_key(state: &State, cmd_data: &[u8]) -> response::Message {
-    let command: GetPubKeyCommand =
+    let command: GetPublicKeyCommand =
         deserialize(cmd_data).unwrap_or_else(|e| panic!("error parsing Code::GetPubKey: {:?}", e));
 
     if let Some(obj) = state
         .objects
         .get(command.key_id, object::Type::AsymmetricKey)
     {
-        PublicKey {
+        GetPublicKeyResponse(PublicKey {
             algorithm: obj.algorithm().asymmetric().unwrap(),
             bytes: obj.payload.public_key_bytes().unwrap(),
-        }
+        })
         .serialize()
     } else {
         debug!("no such object ID: {:?}", command.key_id);
@@ -429,7 +439,7 @@ fn list_objects(state: &State, cmd_data: &[u8]) -> response::Message {
     let mut filters = vec![];
 
     while cursor.position() < len {
-        filters.push(Filter::deserialize(&mut cursor).unwrap());
+        filters.push(object::Filter::deserialize(&mut cursor).unwrap());
     }
 
     let list_entries = state
@@ -440,20 +450,18 @@ fn list_objects(state: &State, cmd_data: &[u8]) -> response::Message {
                 true
             } else {
                 filters.iter().all(|filter| match filter {
-                    Filter::Algorithm(alg) => object.info().algorithm == *alg,
-                    Filter::Capabilities(caps) => object.info().capabilities.contains(*caps),
-                    Filter::Domains(doms) => object.info().domains.contains(*doms),
-                    Filter::Label(label) => object.info().label == *label,
-                    Filter::Id(id) => object.info().object_id == *id,
-                    Filter::Type(ty) => object.info().object_type == *ty,
+                    object::Filter::Algorithm(alg) => object.info().algorithm == *alg,
+                    object::Filter::Capabilities(caps) => {
+                        object.info().capabilities.contains(*caps)
+                    }
+                    object::Filter::Domains(doms) => object.info().domains.contains(*doms),
+                    object::Filter::Label(label) => object.info().label == *label,
+                    object::Filter::Id(id) => object.info().object_id == *id,
+                    object::Filter::Type(ty) => object.info().object_type == *ty,
                 })
             }
         })
-        .map(|(_, object)| ListObjectsEntry {
-            object_id: object.object_info.object_id,
-            object_type: object.object_info.object_type,
-            sequence: object.object_info.sequence,
-        })
+        .map(|(_, object)| object::Entry::from(object))
         .collect();
 
     ListObjectsResponse(list_entries).serialize()
@@ -503,7 +511,7 @@ fn put_authentication_key(state: &mut State, cmd_data: &[u8]) -> response::Messa
 
 /// Put a new HMAC key into the HSM
 fn put_hmac_key(state: &mut State, cmd_data: &[u8]) -> response::Message {
-    let PutHMACKeyCommand { params, hmac_key } =
+    let PutHmacKeyCommand { params, hmac_key } =
         deserialize(cmd_data).unwrap_or_else(|e| panic!("error parsing Code::PutHMACKey: {:?}", e));
 
     state.objects.put(
@@ -517,7 +525,7 @@ fn put_hmac_key(state: &mut State, cmd_data: &[u8]) -> response::Message {
         &hmac_key,
     );
 
-    PutHMACKeyResponse { key_id: params.id }.serialize()
+    PutHmacKeyResponse { key_id: params.id }.serialize()
 }
 
 /// Put an opaque object (X.509 cert or other data) into the HSM
@@ -602,8 +610,8 @@ fn reset_device(state: &mut State, session_id: session::Id) -> Vec<u8> {
 
 /// Sign a message using the Ed25519 signature algorithm
 fn sign_eddsa(state: &State, cmd_data: &[u8]) -> response::Message {
-    let command: SignDataEddsaCommand = deserialize(cmd_data)
-        .unwrap_or_else(|e| panic!("error parsing Code::SignDataEdDSA: {:?}", e));
+    let command: SignEddsaCommand =
+        deserialize(cmd_data).unwrap_or_else(|e| panic!("error parsing Code::SignEdDSA: {:?}", e));
 
     if let Some(obj) = state
         .objects
@@ -613,10 +621,10 @@ fn sign_eddsa(state: &State, cmd_data: &[u8]) -> response::Message {
             let keypair =
                 Ed25519KeyPair::from_seed_unchecked(untrusted::Input::from(seed)).unwrap();
 
-            let mut signature_bytes = [0u8; ED25519_SIGNATURE_SIZE];
+            let mut signature_bytes = [0u8; ed25519::SIGNATURE_SIZE];
             signature_bytes.copy_from_slice(keypair.sign(command.data.as_ref()).as_ref());
 
-            Ed25519Signature(signature_bytes).serialize()
+            SignEddsaResponse(ed25519::Signature(signature_bytes)).serialize()
         } else {
             debug!("not an Ed25519 key: {:?}", obj.algorithm());
             DeviceErrorKind::InvalidCommand.into()
@@ -634,11 +642,11 @@ fn sign_hmac(state: &State, cmd_data: &[u8]) -> response::Message {
 
     if let Some(obj) = state.objects.get(command.key_id, object::Type::HmacKey) {
         if let Payload::HmacKey(alg, ref key) = obj.payload {
-            assert_eq!(alg, HmacAlg::SHA256);
+            assert_eq!(alg, hmac::Algorithm::SHA256);
             let mut mac = Hmac::<Sha256>::new_varkey(key).unwrap();
             mac.input(&command.data);
             let tag = mac.result();
-            HmacTag(tag.code().as_ref().into()).serialize()
+            SignHmacResponse(hmac::Tag(tag.code().as_ref().into())).serialize()
         } else {
             debug!("not an HMAC key: {:?}", obj.algorithm());
             DeviceErrorKind::InvalidCommand.into()
@@ -651,12 +659,12 @@ fn sign_hmac(state: &State, cmd_data: &[u8]) -> response::Message {
 
 /// Verify the HMAC tag for the given data
 fn verify_hmac(state: &State, cmd_data: &[u8]) -> response::Message {
-    let command: VerifyHMACCommand =
+    let command: VerifyHmacCommand =
         deserialize(cmd_data).unwrap_or_else(|e| panic!("error parsing Code::HMACData: {:?}", e));
 
     if let Some(obj) = state.objects.get(command.key_id, object::Type::HmacKey) {
         if let Payload::HmacKey(alg, ref key) = obj.payload {
-            assert_eq!(alg, HmacAlg::SHA256);
+            assert_eq!(alg, hmac::Algorithm::SHA256);
 
             // Because of a quirk of our serde parser everything winds up in the tag field
             let data = command.tag.into_vec();
@@ -666,7 +674,7 @@ fn verify_hmac(state: &State, cmd_data: &[u8]) -> response::Message {
             let tag = mac.result().code();
             let is_ok = tag.as_slice().ct_eq(&data[..32]).unwrap_u8();
 
-            VerifyHMACResponse(is_ok).serialize()
+            VerifyHmacResponse(is_ok).serialize()
         } else {
             debug!("not an HMAC key: {:?}", obj.algorithm());
             DeviceErrorKind::InvalidCommand.into()

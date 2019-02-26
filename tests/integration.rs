@@ -5,7 +5,7 @@ use std::sync::{Mutex, MutexGuard};
 #[macro_use]
 extern crate lazy_static;
 
-use yubihsm::{object, AsymmetricAlg, Capability, Client, Connector, DeviceErrorKind, Domain};
+use yubihsm::{asymmetric, object, Capability, Client, Connector, DeviceErrorKind, Domain};
 
 /// Integration tests for individual YubiHSM 2 commands
 pub mod command;
@@ -131,7 +131,7 @@ pub fn clear_test_key_slot(client: &mut Client, object_type: object::Type) {
 /// Create a public key for use in a test
 pub fn generate_asymmetric_key(
     client: &mut Client,
-    algorithm: AsymmetricAlg,
+    algorithm: asymmetric::Algorithm,
     capabilities: Capability,
 ) {
     clear_test_key_slot(client, object::Type::AsymmetricKey);
@@ -151,7 +151,7 @@ pub fn generate_asymmetric_key(
 /// Put an asymmetric private key into the HSM
 pub fn put_asymmetric_key<T: Into<Vec<u8>>>(
     client: &mut Client,
-    algorithm: AsymmetricAlg,
+    algorithm: asymmetric::Algorithm,
     capabilities: Capability,
     data: T,
 ) {

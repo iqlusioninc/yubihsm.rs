@@ -6,7 +6,7 @@ mod objects;
 mod payload;
 
 pub(crate) use self::{objects::Objects, payload::Payload};
-use crate::{object::Info, Algorithm};
+use crate::{object, Algorithm};
 
 /// Size of the wrap algorithm's MAC tag. The MockHsm uses AES-GCM instead of
 /// AES-CCM as there isn't a readily available Rust implementation
@@ -18,7 +18,7 @@ const DEFAULT_AUTHENTICATION_KEY_LABEL: &str = "DEFAULT AUTHKEY CHANGE THIS ASAP
 /// An individual object in the `MockHsm`, specialized for a given object type
 #[derive(Debug)]
 pub(crate) struct Object {
-    pub object_info: Info,
+    pub object_info: object::Info,
     pub payload: Payload,
 }
 
@@ -29,7 +29,7 @@ impl Object {
     }
 
     /// Get the `object::Info`
-    pub fn info(&self) -> &Info {
+    pub fn info(&self) -> &object::Info {
         &self.object_info
     }
 }
@@ -37,7 +37,7 @@ impl Object {
 /// A serialized object which can be exported/imported
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct WrappedObject {
-    pub object_info: Info,
+    pub object_info: object::Info,
     pub data: Vec<u8>,
 }
 
@@ -46,6 +46,16 @@ impl<'a> From<&'a Object> for WrappedObject {
         Self {
             object_info: obj.object_info.clone(),
             data: obj.payload.as_ref().into(),
+        }
+    }
+}
+
+impl<'a> From<&'a Object> for object::Entry {
+    fn from(obj: &'a Object) -> Self {
+        object::Entry {
+            object_id: obj.object_info.object_id,
+            object_type: obj.object_info.object_type,
+            sequence: obj.object_info.sequence,
         }
     }
 }

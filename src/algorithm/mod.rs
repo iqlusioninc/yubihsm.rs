@@ -1,24 +1,13 @@
 //! Cryptographic algorithms supported by the YubiHSM 2
 
 mod error;
+
 pub use self::error::{AlgorithmError, AlgorithmErrorKind};
 
-mod asymmetric;
-mod ecdsa;
-mod hmac;
-mod kex;
-mod mgf;
-mod opaque;
-mod rsa;
-mod template;
-mod wrap;
-mod yubico_otp;
-
-pub use self::{
-    asymmetric::AsymmetricAlg, ecdsa::EcdsaAlg, hmac::HmacAlg, kex::KexAlg, mgf::MgfAlg,
-    opaque::OpaqueAlg, rsa::RsaAlg, template::TemplateAlg, wrap::WrapAlg, yubico_otp::YubicoOtpAlg,
+use crate::{
+    asymmetric::{self, ecdsa, kex, rsa},
+    authentication, hmac, opaque, otp, template, wrap,
 };
-use crate::authentication;
 
 /// Cryptographic algorithm types supported by the `YubiHSM 2`
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -26,53 +15,55 @@ use crate::authentication;
 #[allow(non_camel_case_types)]
 pub enum Algorithm {
     /// Asymmetric algorithms
-    Asymmetric(AsymmetricAlg),
+    Asymmetric(asymmetric::Algorithm),
 
     /// YubiHSM 2 PSK authentication
     Authentication(authentication::Algorithm),
 
     /// ECDSA algorithms
-    Ecdsa(EcdsaAlg),
+    Ecdsa(ecdsa::Algorithm),
 
     /// HMAC algorithms
-    Hmac(HmacAlg),
+    Hmac(hmac::Algorithm),
 
     /// Key exchange algorithms (i.e. Diffie-Hellman)
-    Kex(KexAlg),
+    Kex(kex::Algorithm),
 
     /// RSA-PSS mask generating functions
-    Mgf(MgfAlg),
+    Mgf(rsa::mgf::Algorithm),
 
     /// Opaque data types
-    Opaque(OpaqueAlg),
+    Opaque(opaque::Algorithm),
 
     /// RSA algorithms (signing and encryption)
-    Rsa(RsaAlg),
+    Rsa(rsa::Algorithm),
 
     /// SSH template algorithms
-    Template(TemplateAlg),
+    Template(template::Algorithm),
 
     /// Object wrap (i.e. HSM-to-HSM encryption) algorithms
-    Wrap(WrapAlg),
+    Wrap(wrap::Algorithm),
 
     /// Yubico OTP algorithms
-    YubicoOtp(YubicoOtpAlg),
+    YubicoOtp(otp::Algorithm),
 }
 
 impl Algorithm {
     /// Convert an unsigned byte into an Algorithm (if valid)
     pub fn from_u8(byte: u8) -> Result<Self, AlgorithmError> {
         Ok(match byte {
-            0x01..=0x08 | 0x19..=0x1c => Algorithm::Rsa(RsaAlg::from_u8(byte)?),
-            0x09..=0x12 | 0x2e | 0x2f => Algorithm::Asymmetric(AsymmetricAlg::from_u8(byte)?),
-            0x13..=0x16 => Algorithm::Hmac(HmacAlg::from_u8(byte)?),
-            0x17 | 0x2b..=0x2d => Algorithm::Ecdsa(EcdsaAlg::from_u8(byte)?),
-            0x18 => Algorithm::Kex(KexAlg::from_u8(byte)?),
-            0x1d | 0x29 | 0x2a => Algorithm::Wrap(WrapAlg::from_u8(byte)?),
-            0x1e | 0x1f => Algorithm::Opaque(OpaqueAlg::from_u8(byte)?),
-            0x20..=0x23 => Algorithm::Mgf(MgfAlg::from_u8(byte)?),
-            0x24 => Algorithm::Template(TemplateAlg::from_u8(byte)?),
-            0x25 | 0x27 | 0x28 => Algorithm::YubicoOtp(YubicoOtpAlg::from_u8(byte)?),
+            0x01..=0x08 | 0x19..=0x1c => Algorithm::Rsa(rsa::Algorithm::from_u8(byte)?),
+            0x09..=0x12 | 0x2e | 0x2f => {
+                Algorithm::Asymmetric(asymmetric::Algorithm::from_u8(byte)?)
+            }
+            0x13..=0x16 => Algorithm::Hmac(hmac::Algorithm::from_u8(byte)?),
+            0x17 | 0x2b..=0x2d => Algorithm::Ecdsa(ecdsa::Algorithm::from_u8(byte)?),
+            0x18 => Algorithm::Kex(kex::Algorithm::from_u8(byte)?),
+            0x1d | 0x29 | 0x2a => Algorithm::Wrap(wrap::Algorithm::from_u8(byte)?),
+            0x1e | 0x1f => Algorithm::Opaque(opaque::Algorithm::from_u8(byte)?),
+            0x20..=0x23 => Algorithm::Mgf(rsa::mgf::Algorithm::from_u8(byte)?),
+            0x24 => Algorithm::Template(template::Algorithm::from_u8(byte)?),
+            0x25 | 0x27 | 0x28 => Algorithm::YubicoOtp(otp::Algorithm::from_u8(byte)?),
             0x26 => Algorithm::Authentication(authentication::Algorithm::from_u8(byte)?),
             _ => fail!(
                 AlgorithmErrorKind::TagInvalid,
@@ -99,8 +90,8 @@ impl Algorithm {
         }
     }
 
-    /// Get `AsymmetricAlg`
-    pub fn asymmetric(self) -> Option<AsymmetricAlg> {
+    /// Get `asymmetric::Algorithm`
+    pub fn asymmetric(self) -> Option<asymmetric::Algorithm> {
         match self {
             Algorithm::Asymmetric(alg) => Some(alg),
             _ => None,
@@ -115,40 +106,40 @@ impl Algorithm {
         }
     }
 
-    /// Get `EcdsaAlg`
-    pub fn ecdsa(self) -> Option<EcdsaAlg> {
+    /// Get `ecdsa::Algorithm`
+    pub fn ecdsa(self) -> Option<ecdsa::Algorithm> {
         match self {
             Algorithm::Ecdsa(alg) => Some(alg),
             _ => None,
         }
     }
 
-    /// Get `HmacAlg`
-    pub fn hmac(self) -> Option<HmacAlg> {
+    /// Get `hmac::Algorithm`
+    pub fn hmac(self) -> Option<hmac::Algorithm> {
         match self {
             Algorithm::Hmac(alg) => Some(alg),
             _ => None,
         }
     }
 
-    /// Get `KexAlg`
-    pub fn kex(self) -> Option<KexAlg> {
+    /// Get `kex::Algorithm`
+    pub fn kex(self) -> Option<kex::Algorithm> {
         match self {
             Algorithm::Kex(alg) => Some(alg),
             _ => None,
         }
     }
 
-    /// Get `MgfAlg`
-    pub fn mgf(self) -> Option<MgfAlg> {
+    /// Get `rsa::mgf::Algorithm`
+    pub fn mgf(self) -> Option<rsa::mgf::Algorithm> {
         match self {
             Algorithm::Mgf(alg) => Some(alg),
             _ => None,
         }
     }
 
-    /// Get `OpaqueAlg`
-    pub fn opaque(self) -> Option<OpaqueAlg> {
+    /// Get `opaque::Algorithm`
+    pub fn opaque(self) -> Option<opaque::Algorithm> {
         match self {
             Algorithm::Opaque(alg) => Some(alg),
             _ => None,
@@ -156,31 +147,31 @@ impl Algorithm {
     }
 
     /// Get `OtpAlg`
-    pub fn otp(self) -> Option<YubicoOtpAlg> {
+    pub fn otp(self) -> Option<otp::Algorithm> {
         match self {
             Algorithm::YubicoOtp(alg) => Some(alg),
             _ => None,
         }
     }
 
-    /// Get `RsaAlg`
-    pub fn rsa(self) -> Option<RsaAlg> {
+    /// Get `rsa::Algorithm`
+    pub fn rsa(self) -> Option<rsa::Algorithm> {
         match self {
             Algorithm::Rsa(alg) => Some(alg),
             _ => None,
         }
     }
 
-    /// Get `TemplateAlg`
-    pub fn template(self) -> Option<TemplateAlg> {
+    /// Get `template::Algorithm`
+    pub fn template(self) -> Option<template::Algorithm> {
         match self {
             Algorithm::Template(alg) => Some(alg),
             _ => None,
         }
     }
 
-    /// Get `WrapAlg`
-    pub fn wrap(self) -> Option<WrapAlg> {
+    /// Get `wrap::Algorithm`
+    pub fn wrap(self) -> Option<wrap::Algorithm> {
         match self {
             Algorithm::Wrap(alg) => Some(alg),
             _ => None,
@@ -190,61 +181,127 @@ impl Algorithm {
 
 impl_algorithm_serializers!(Algorithm);
 
+impl From<asymmetric::Algorithm> for Algorithm {
+    fn from(alg: asymmetric::Algorithm) -> Algorithm {
+        Algorithm::Asymmetric(alg)
+    }
+}
+
+impl From<authentication::Algorithm> for Algorithm {
+    fn from(alg: authentication::Algorithm) -> Algorithm {
+        crate::Algorithm::Authentication(alg)
+    }
+}
+
+impl From<ecdsa::Algorithm> for Algorithm {
+    fn from(alg: ecdsa::Algorithm) -> Algorithm {
+        Algorithm::Ecdsa(alg)
+    }
+}
+
+impl From<hmac::Algorithm> for Algorithm {
+    fn from(alg: hmac::Algorithm) -> Algorithm {
+        Algorithm::Hmac(alg)
+    }
+}
+
+impl From<kex::Algorithm> for Algorithm {
+    fn from(alg: kex::Algorithm) -> Algorithm {
+        Algorithm::Kex(alg)
+    }
+}
+
+impl From<opaque::Algorithm> for Algorithm {
+    fn from(alg: opaque::Algorithm) -> Algorithm {
+        Algorithm::Opaque(alg)
+    }
+}
+
+impl From<otp::Algorithm> for Algorithm {
+    fn from(alg: otp::Algorithm) -> Algorithm {
+        Algorithm::YubicoOtp(alg)
+    }
+}
+
+impl From<rsa::Algorithm> for Algorithm {
+    fn from(alg: rsa::Algorithm) -> Algorithm {
+        Algorithm::Rsa(alg)
+    }
+}
+
+impl From<rsa::mgf::Algorithm> for Algorithm {
+    fn from(alg: rsa::mgf::Algorithm) -> Algorithm {
+        Algorithm::Mgf(alg)
+    }
+}
+
+impl From<template::Algorithm> for Algorithm {
+    fn from(alg: template::Algorithm) -> Algorithm {
+        Algorithm::Template(alg)
+    }
+}
+
+impl From<wrap::Algorithm> for Algorithm {
+    fn from(alg: wrap::Algorithm) -> Algorithm {
+        Algorithm::Wrap(alg)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     const ALGORITHM_MAPPING: &[(u8, Algorithm)] = &[
-        (0x01, Algorithm::Rsa(RsaAlg::PKCS1_SHA1)),
-        (0x02, Algorithm::Rsa(RsaAlg::PKCS1_SHA256)),
-        (0x03, Algorithm::Rsa(RsaAlg::PKCS1_SHA384)),
-        (0x04, Algorithm::Rsa(RsaAlg::PKCS1_SHA512)),
-        (0x05, Algorithm::Rsa(RsaAlg::PSS_SHA1)),
-        (0x06, Algorithm::Rsa(RsaAlg::PSS_SHA256)),
-        (0x07, Algorithm::Rsa(RsaAlg::PSS_SHA384)),
-        (0x08, Algorithm::Rsa(RsaAlg::PSS_SHA512)),
-        (0x09, Algorithm::Asymmetric(AsymmetricAlg::RSA_2048)),
-        (0x0a, Algorithm::Asymmetric(AsymmetricAlg::RSA_3072)),
-        (0x0b, Algorithm::Asymmetric(AsymmetricAlg::RSA_4096)),
-        (0x0c, Algorithm::Asymmetric(AsymmetricAlg::EC_P256)),
-        (0x0d, Algorithm::Asymmetric(AsymmetricAlg::EC_P384)),
-        (0x0e, Algorithm::Asymmetric(AsymmetricAlg::EC_P521)),
-        (0x0f, Algorithm::Asymmetric(AsymmetricAlg::EC_K256)),
-        (0x10, Algorithm::Asymmetric(AsymmetricAlg::EC_BP256)),
-        (0x11, Algorithm::Asymmetric(AsymmetricAlg::EC_BP384)),
-        (0x12, Algorithm::Asymmetric(AsymmetricAlg::EC_BP512)),
-        (0x13, Algorithm::Hmac(HmacAlg::SHA1)),
-        (0x14, Algorithm::Hmac(HmacAlg::SHA256)),
-        (0x15, Algorithm::Hmac(HmacAlg::SHA384)),
-        (0x16, Algorithm::Hmac(HmacAlg::SHA512)),
-        (0x17, Algorithm::Ecdsa(EcdsaAlg::SHA1)),
-        (0x18, Algorithm::Kex(KexAlg::ECDH)),
-        (0x19, Algorithm::Rsa(RsaAlg::OAEP_SHA1)),
-        (0x1a, Algorithm::Rsa(RsaAlg::OAEP_SHA256)),
-        (0x1b, Algorithm::Rsa(RsaAlg::OAEP_SHA384)),
-        (0x1c, Algorithm::Rsa(RsaAlg::OAEP_SHA512)),
-        (0x1d, Algorithm::Wrap(WrapAlg::AES128_CCM)),
-        (0x1e, Algorithm::Opaque(OpaqueAlg::DATA)),
-        (0x1f, Algorithm::Opaque(OpaqueAlg::X509_CERTIFICATE)),
-        (0x20, Algorithm::Mgf(MgfAlg::SHA1)),
-        (0x21, Algorithm::Mgf(MgfAlg::SHA256)),
-        (0x22, Algorithm::Mgf(MgfAlg::SHA384)),
-        (0x23, Algorithm::Mgf(MgfAlg::SHA512)),
-        (0x24, Algorithm::Template(TemplateAlg::SSH)),
-        (0x25, Algorithm::YubicoOtp(YubicoOtpAlg::AES128)),
+        (0x01, Algorithm::Rsa(rsa::Algorithm::PKCS1_SHA1)),
+        (0x02, Algorithm::Rsa(rsa::Algorithm::PKCS1_SHA256)),
+        (0x03, Algorithm::Rsa(rsa::Algorithm::PKCS1_SHA384)),
+        (0x04, Algorithm::Rsa(rsa::Algorithm::PKCS1_SHA512)),
+        (0x05, Algorithm::Rsa(rsa::Algorithm::PSS_SHA1)),
+        (0x06, Algorithm::Rsa(rsa::Algorithm::PSS_SHA256)),
+        (0x07, Algorithm::Rsa(rsa::Algorithm::PSS_SHA384)),
+        (0x08, Algorithm::Rsa(rsa::Algorithm::PSS_SHA512)),
+        (0x09, Algorithm::Asymmetric(asymmetric::Algorithm::RSA_2048)),
+        (0x0a, Algorithm::Asymmetric(asymmetric::Algorithm::RSA_3072)),
+        (0x0b, Algorithm::Asymmetric(asymmetric::Algorithm::RSA_4096)),
+        (0x0c, Algorithm::Asymmetric(asymmetric::Algorithm::EC_P256)),
+        (0x0d, Algorithm::Asymmetric(asymmetric::Algorithm::EC_P384)),
+        (0x0e, Algorithm::Asymmetric(asymmetric::Algorithm::EC_P521)),
+        (0x0f, Algorithm::Asymmetric(asymmetric::Algorithm::EC_K256)),
+        (0x10, Algorithm::Asymmetric(asymmetric::Algorithm::EC_BP256)),
+        (0x11, Algorithm::Asymmetric(asymmetric::Algorithm::EC_BP384)),
+        (0x12, Algorithm::Asymmetric(asymmetric::Algorithm::EC_BP512)),
+        (0x13, Algorithm::Hmac(hmac::Algorithm::SHA1)),
+        (0x14, Algorithm::Hmac(hmac::Algorithm::SHA256)),
+        (0x15, Algorithm::Hmac(hmac::Algorithm::SHA384)),
+        (0x16, Algorithm::Hmac(hmac::Algorithm::SHA512)),
+        (0x17, Algorithm::Ecdsa(ecdsa::Algorithm::SHA1)),
+        (0x18, Algorithm::Kex(kex::Algorithm::ECDH)),
+        (0x19, Algorithm::Rsa(rsa::Algorithm::OAEP_SHA1)),
+        (0x1a, Algorithm::Rsa(rsa::Algorithm::OAEP_SHA256)),
+        (0x1b, Algorithm::Rsa(rsa::Algorithm::OAEP_SHA384)),
+        (0x1c, Algorithm::Rsa(rsa::Algorithm::OAEP_SHA512)),
+        (0x1d, Algorithm::Wrap(wrap::Algorithm::AES128_CCM)),
+        (0x1e, Algorithm::Opaque(opaque::Algorithm::DATA)),
+        (0x1f, Algorithm::Opaque(opaque::Algorithm::X509_CERTIFICATE)),
+        (0x20, Algorithm::Mgf(rsa::mgf::Algorithm::SHA1)),
+        (0x21, Algorithm::Mgf(rsa::mgf::Algorithm::SHA256)),
+        (0x22, Algorithm::Mgf(rsa::mgf::Algorithm::SHA384)),
+        (0x23, Algorithm::Mgf(rsa::mgf::Algorithm::SHA512)),
+        (0x24, Algorithm::Template(template::Algorithm::SSH)),
+        (0x25, Algorithm::YubicoOtp(otp::Algorithm::AES128)),
         (
             0x26,
             Algorithm::Authentication(authentication::Algorithm::YUBICO_AES),
         ),
-        (0x27, Algorithm::YubicoOtp(YubicoOtpAlg::AES192)),
-        (0x28, Algorithm::YubicoOtp(YubicoOtpAlg::AES256)),
-        (0x29, Algorithm::Wrap(WrapAlg::AES192_CCM)),
-        (0x2a, Algorithm::Wrap(WrapAlg::AES256_CCM)),
-        (0x2b, Algorithm::Ecdsa(EcdsaAlg::SHA256)),
-        (0x2c, Algorithm::Ecdsa(EcdsaAlg::SHA384)),
-        (0x2d, Algorithm::Ecdsa(EcdsaAlg::SHA512)),
-        (0x2e, Algorithm::Asymmetric(AsymmetricAlg::Ed25519)),
-        (0x2f, Algorithm::Asymmetric(AsymmetricAlg::EC_P224)),
+        (0x27, Algorithm::YubicoOtp(otp::Algorithm::AES192)),
+        (0x28, Algorithm::YubicoOtp(otp::Algorithm::AES256)),
+        (0x29, Algorithm::Wrap(wrap::Algorithm::AES192_CCM)),
+        (0x2a, Algorithm::Wrap(wrap::Algorithm::AES256_CCM)),
+        (0x2b, Algorithm::Ecdsa(ecdsa::Algorithm::SHA256)),
+        (0x2c, Algorithm::Ecdsa(ecdsa::Algorithm::SHA384)),
+        (0x2d, Algorithm::Ecdsa(ecdsa::Algorithm::SHA512)),
+        (0x2e, Algorithm::Asymmetric(asymmetric::Algorithm::Ed25519)),
+        (0x2f, Algorithm::Asymmetric(asymmetric::Algorithm::EC_P224)),
     ];
 
     #[test]

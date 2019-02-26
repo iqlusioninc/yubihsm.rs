@@ -37,10 +37,4 @@ impl Default for Algorithm {
     }
 }
 
-impl From<Algorithm> for crate::Algorithm {
-    fn from(alg: Algorithm) -> crate::Algorithm {
-        crate::Algorithm::Authentication(alg)
-    }
-}
-
 impl_algorithm_serializers!(Algorithm);

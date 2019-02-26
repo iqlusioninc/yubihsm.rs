@@ -1,12 +1,12 @@
 use crate::{clear_test_key_slot, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL};
-use yubihsm::{object, Capability, WrapAlg};
+use yubihsm::{object, wrap, Capability};
 
 /// Generate an AES-CCM key wrapping key
 #[test]
 fn wrap_key_test() {
     let mut client = crate::get_hsm_client();
 
-    let algorithm = WrapAlg::AES256_CCM;
+    let algorithm = wrap::Algorithm::AES256_CCM;
     let capabilities = Capability::EXPORT_WRAPPED
         | Capability::IMPORT_WRAPPED
         | Capability::UNWRAP_DATA

@@ -3,7 +3,7 @@
 //! To use this provider, first establish a session with the `YubiHSM 2`, then
 //! call the appropriate signer methods to obtain signers.
 
-use crate::{object, AsymmetricAlg, Client};
+use crate::{asymmetric, object, Client};
 use signatory::{
     ed25519,
     error::{Error, ErrorKind},
@@ -43,7 +43,7 @@ impl PublicKeyed<ed25519::PublicKey> for Ed25519Signer {
             .get_public_key(self.signing_key_id)
             .map_err(|e| err!(ProviderError, "{}", e))?;
 
-        if pubkey.algorithm != AsymmetricAlg::Ed25519 {
+        if pubkey.algorithm != asymmetric::Algorithm::Ed25519 {
             return Err(ErrorKind::KeyInvalid.into());
         }
 

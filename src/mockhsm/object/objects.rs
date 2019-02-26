@@ -9,7 +9,7 @@ use crate::{
     authentication::{self, AUTHENTICATION_KEY_SIZE, DEFAULT_AUTHENTICATION_KEY_ID},
     object::{Handle, Id, Info, Label, Origin, Type},
     serialization::{deserialize, serialize},
-    wrap, Algorithm, Capability, Domain, WrapAlg,
+    wrap, Algorithm, Capability, Domain,
 };
 
 /// Objects stored in the `MockHsm`
@@ -152,8 +152,12 @@ impl Objects {
 
         let sealing_key = match wrap_key.algorithm().wrap().unwrap() {
             // TODO: actually use AES-CCM
-            WrapAlg::AES128_CCM => aead::SealingKey::new(&AES_128_GCM, wrap_key.payload.as_ref()),
-            WrapAlg::AES256_CCM => aead::SealingKey::new(&AES_256_GCM, wrap_key.payload.as_ref()),
+            wrap::Algorithm::AES128_CCM => {
+                aead::SealingKey::new(&AES_128_GCM, wrap_key.payload.as_ref())
+            }
+            wrap::Algorithm::AES256_CCM => {
+                aead::SealingKey::new(&AES_256_GCM, wrap_key.payload.as_ref())
+            }
             unsupported => bail!("unsupported wrap key algorithm: {:?}", unsupported),
         }
         .unwrap();
@@ -216,8 +220,12 @@ impl Objects {
     ) -> Result<Handle, Error> {
         let opening_key = match self.get(wrap_key_id, Type::WrapKey) {
             Some(k) => match k.algorithm().wrap().unwrap() {
-                WrapAlg::AES128_CCM => aead::OpeningKey::new(&AES_128_GCM, k.payload.as_ref()),
-                WrapAlg::AES256_CCM => aead::OpeningKey::new(&AES_256_GCM, k.payload.as_ref()),
+                wrap::Algorithm::AES128_CCM => {
+                    aead::OpeningKey::new(&AES_128_GCM, k.payload.as_ref())
+                }
+                wrap::Algorithm::AES256_CCM => {
+                    aead::OpeningKey::new(&AES_256_GCM, k.payload.as_ref())
+                }
                 unsupported => bail!("unsupported wrap key algorithm: {:?}", unsupported),
             }
             .unwrap(),

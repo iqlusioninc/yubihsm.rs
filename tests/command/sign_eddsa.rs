@@ -4,7 +4,7 @@ use crate::{
 };
 use ring;
 use untrusted;
-use yubihsm::{AsymmetricAlg, Capability};
+use yubihsm::{asymmetric, Capability};
 
 /// Test Ed25519 against RFC 8032 test vectors
 #[test]
@@ -14,7 +14,7 @@ fn test_vectors() {
     for vector in ED25519_TEST_VECTORS {
         put_asymmetric_key(
             &mut client,
-            AsymmetricAlg::Ed25519,
+            asymmetric::Algorithm::Ed25519,
             Capability::SIGN_EDDSA,
             vector.sk,
         );
@@ -23,7 +23,7 @@ fn test_vectors() {
             .get_public_key(TEST_KEY_ID)
             .unwrap_or_else(|err| panic!("error getting public key: {}", err));
 
-        assert_eq!(pubkey_response.algorithm, AsymmetricAlg::Ed25519);
+        assert_eq!(pubkey_response.algorithm, asymmetric::Algorithm::Ed25519);
         assert_eq!(pubkey_response.bytes, vector.pk);
 
         let signature = client
@@ -39,13 +39,17 @@ fn test_vectors() {
 fn generated_key_test() {
     let mut client = crate::get_hsm_client();
 
-    generate_asymmetric_key(&mut client, AsymmetricAlg::Ed25519, Capability::SIGN_EDDSA);
+    generate_asymmetric_key(
+        &mut client,
+        asymmetric::Algorithm::Ed25519,
+        Capability::SIGN_EDDSA,
+    );
 
     let pubkey = client
         .get_public_key(TEST_KEY_ID)
         .unwrap_or_else(|err| panic!("error getting public key: {}", err));
 
-    assert_eq!(pubkey.algorithm, AsymmetricAlg::Ed25519);
+    assert_eq!(pubkey.algorithm, asymmetric::Algorithm::Ed25519);
 
     let signature = client
         .sign_ed25519(TEST_KEY_ID, TEST_MESSAGE)

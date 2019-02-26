@@ -67,6 +67,8 @@ extern crate bitflags;
 extern crate failure;
 #[macro_use]
 extern crate failure_derive;
+#[cfg(feature = "hmac")]
+extern crate hmac as hmac_crate;
 #[cfg(feature = "usb")]
 #[macro_use]
 extern crate lazy_static;
@@ -83,6 +85,7 @@ pub mod error;
 mod serialization;
 
 pub mod algorithm;
+pub mod asymmetric;
 pub mod audit;
 pub mod authentication;
 pub mod capability;
@@ -91,15 +94,20 @@ pub mod command;
 pub mod connector;
 pub mod device;
 pub mod domain;
+pub mod hmac;
 #[cfg(feature = "mockhsm")]
 pub mod mockhsm;
 pub mod object;
+pub mod opaque;
+pub mod otp;
 pub mod response;
 pub mod session;
 #[cfg(feature = "setup")]
 pub mod setup;
 #[cfg(feature = "signatory")]
 pub mod signatory;
+pub mod template;
+mod uuid;
 pub mod wrap;
 
 #[cfg(feature = "http")]
@@ -119,5 +127,5 @@ pub use crate::{
     device::{DeviceError, DeviceErrorKind},
     domain::Domain,
     error::*,
+    uuid::Uuid,
 };
-pub use uuid::Uuid;

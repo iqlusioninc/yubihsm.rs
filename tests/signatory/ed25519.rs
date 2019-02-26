@@ -19,7 +19,7 @@ const TEST_SIGNING_KEY_LABEL: &str = "Signatory test key";
 
 /// Example message to sign
 const TEST_MESSAGE: &[u8] =
-    b"The Edwards-curve Digital Signature yubihsm::AsymmetricAlg  (EdDSA) is a \
+    b"The Edwards-curve Digital Signature yubihsm::asymmetric::Algorithm  (EdDSA) is a \
         variant of Schnorr's signature system with (possibly twisted) Edwards curves.";
 
 /// Create the key on the YubiHSM to use for this test
@@ -35,7 +35,7 @@ fn create_yubihsm_key(client: &mut Client) {
             TEST_SIGNING_KEY_LABEL.into(),
             TEST_SIGNING_KEY_DOMAINS,
             TEST_SIGNING_KEY_CAPABILITIES,
-            yubihsm::AsymmetricAlg::Ed25519,
+            yubihsm::asymmetric::Algorithm::Ed25519,
         )
         .unwrap();
 }

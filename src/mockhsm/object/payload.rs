@@ -8,8 +8,10 @@ use ring::{
 use untrusted;
 
 use crate::{
-    algorithm::{Algorithm, AsymmetricAlg, HmacAlg, OpaqueAlg, WrapAlg},
+    algorithm::Algorithm,
+    asymmetric,
     authentication::{self, AUTHENTICATION_KEY_SIZE},
+    hmac, opaque, wrap,
 };
 
 /// Size of an Ed25519 seed
@@ -25,14 +27,14 @@ pub(crate) enum Payload {
     Ed25519KeyPair([u8; ED25519_SEED_SIZE]),
 
     /// HMAC key
-    HmacKey(HmacAlg, Vec<u8>),
+    HmacKey(hmac::Algorithm, Vec<u8>),
 
     /// Opaque data
-    Opaque(OpaqueAlg, Vec<u8>),
+    Opaque(opaque::Algorithm, Vec<u8>),
 
     /// Wrapping (i.e. symmetric encryption keys)
     // TODO: actually simulate AES-CCM. Instead we use GCM because *ring* has it
-    WrapKey(WrapAlg, Vec<u8>),
+    WrapKey(wrap::Algorithm, Vec<u8>),
 }
 
 impl Payload {
@@ -40,7 +42,7 @@ impl Payload {
     pub fn new(algorithm: Algorithm, data: &[u8]) -> Self {
         match algorithm {
             Algorithm::Wrap(alg) => Payload::WrapKey(alg, data.into()),
-            Algorithm::Asymmetric(AsymmetricAlg::Ed25519) => {
+            Algorithm::Asymmetric(asymmetric::Algorithm::Ed25519) => {
                 assert_eq!(data.len(), ED25519_SEED_SIZE);
                 let mut bytes = [0u8; ED25519_SEED_SIZE];
                 bytes.copy_from_slice(data);
@@ -66,7 +68,7 @@ impl Payload {
                 Payload::WrapKey(wrap_alg, bytes)
             }
             Algorithm::Asymmetric(asymmetric_alg) => match asymmetric_alg {
-                AsymmetricAlg::Ed25519 => {
+                asymmetric::Algorithm::Ed25519 => {
                     let mut bytes = [0u8; ED25519_SEED_SIZE];
                     csprng.fill(&mut bytes).unwrap();
                     Payload::Ed25519KeyPair(bytes)
@@ -94,7 +96,7 @@ impl Payload {
             Payload::AuthenticationKey(_) => {
                 Algorithm::Authentication(authentication::Algorithm::YUBICO_AES)
             }
-            Payload::Ed25519KeyPair(_) => Algorithm::Asymmetric(AsymmetricAlg::Ed25519),
+            Payload::Ed25519KeyPair(_) => Algorithm::Asymmetric(asymmetric::Algorithm::Ed25519),
             Payload::HmacKey(alg, _) => alg.into(),
             Payload::Opaque(alg, _) => alg.into(),
             Payload::WrapKey(alg, _) => alg.into(),

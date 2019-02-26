@@ -3,7 +3,7 @@
 //! To enable secp256k1 support, you need to build `signatory-yubihsm` with the
 //! `secp256k1` cargo feature enabled.
 
-use crate::{object, AsymmetricAlg, Client};
+use crate::{asymmetric, object, Client};
 #[cfg(feature = "secp256k1")]
 use signatory::ecdsa::curve::Secp256k1;
 use signatory::{
@@ -56,12 +56,12 @@ where
         Ok(signer)
     }
 
-    /// Get the expected `AsymmetricAlg` for this `Curve`
-    pub fn asymmetric_alg() -> AsymmetricAlg {
+    /// Get the expected `asymmetric::Algorithm` for this `Curve`
+    pub fn asymmetric_alg() -> asymmetric::Algorithm {
         match C::CURVE_KIND {
-            WeierstrassCurveKind::NistP256 => AsymmetricAlg::EC_P256,
-            WeierstrassCurveKind::NistP384 => AsymmetricAlg::EC_P384,
-            WeierstrassCurveKind::Secp256k1 => AsymmetricAlg::EC_K256,
+            WeierstrassCurveKind::NistP256 => asymmetric::Algorithm::EC_P256,
+            WeierstrassCurveKind::NistP384 => asymmetric::Algorithm::EC_P384,
+            WeierstrassCurveKind::Secp256k1 => asymmetric::Algorithm::EC_K256,
         }
     }
 }

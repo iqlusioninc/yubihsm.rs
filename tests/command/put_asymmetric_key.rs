@@ -1,4 +1,4 @@
-use yubihsm::{object, AsymmetricAlg, Capability};
+use yubihsm::{asymmetric, object, Capability};
 
 use crate::test_vectors::ED25519_TEST_VECTORS;
 use crate::{put_asymmetric_key, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL};
@@ -7,7 +7,7 @@ use crate::{put_asymmetric_key, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL};
 #[test]
 fn ed25519_key_test() {
     let mut client = crate::get_hsm_client();
-    let algorithm = AsymmetricAlg::Ed25519;
+    let algorithm = asymmetric::Algorithm::Ed25519;
     let capabilities = Capability::SIGN_EDDSA;
     let example_private_key = ED25519_TEST_VECTORS[0].sk;
 
