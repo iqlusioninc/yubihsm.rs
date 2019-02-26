@@ -5,6 +5,7 @@
 #![allow(clippy::new_without_default)]
 
 use crate::{
+    device::SerialNumber,
     object, opaque,
     uuid::{self, Uuid},
     Capability, Client, Domain,
@@ -35,6 +36,9 @@ pub struct Report {
     /// UUID which uniquely identifies this provisioning report
     pub uuid: Uuid,
 
+    /// Serial number of the HSM which was provisioned
+    pub device_serial_number: String,
+
     /// Hostname the device was provisioned on
     pub hostname: Option<String>,
 
@@ -50,11 +54,12 @@ pub struct Report {
 
 impl Report {
     /// Make a new `yubihsm::setup::Report` from the ambient environment state
-    pub fn new() -> Self {
+    pub fn new(serial_number: SerialNumber) -> Self {
         // TODO: handle these better on operating systems other than *IX
         Report {
-            version: Version::default(),
+            version: Version(1),
             uuid: uuid::new_v4(),
+            device_serial_number: serial_number.to_string(),
             username: env::var("LOGNAME").map(|u| u.to_owned()).ok(),
             hostname: env::var("HOSTNAME").map(|h| h.to_owned()).ok(),
             date: Utc::now(),

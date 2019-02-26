@@ -113,7 +113,7 @@ impl Profile {
             client.set_force_audit_option(self.audit_option)?;
         }
 
-        let report = Report::new();
+        let report = Report::new(client.device_info()?.serial_number);
 
         if let Some(report_object_id) = self.report_object_id {
             info!(
