@@ -1,3 +1,12 @@
+## [0.21.0] (2019-02-26)
+
+- Factor algorithms into their own Rust modules ([#180])
+- Unify connectors as `struct Connector` ([#179])
+- Integrate signatory-yubihsm ([#176])
+- Refactor and rename `wrap::Message` and `wrap::Nonce` ([#175])
+- Add `setup` module for initial YubiHSM2 provisioning ([#174])
+- Eliminate redundant prefixes in type names ([#173])
+
 ## [0.20.0] (2019-02-12)
 
 - Match Yubico's API changes from their latest SDK release ([#167])
@@ -204,6 +213,13 @@ to adding support for several commands.
 
 - Initial release
 
+[0.21.0]: https://github.com/tendermint/yubihsm-rs/pull/183
+[#180]: https://github.com/tendermint/yubihsm-rs/pull/180
+[#179]: https://github.com/tendermint/yubihsm-rs/pull/179
+[#176]: https://github.com/tendermint/yubihsm-rs/pull/176
+[#175]: https://github.com/tendermint/yubihsm-rs/pull/175
+[#174]: https://github.com/tendermint/yubihsm-rs/pull/174
+[#173]: https://github.com/tendermint/yubihsm-rs/pull/173
 [0.20.0]: https://github.com/tendermint/yubihsm-rs/pull/172
 [#167]: https://github.com/tendermint/yubihsm-rs/pull/167
 [#166]: https://github.com/tendermint/yubihsm-rs/pull/166
