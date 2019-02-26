@@ -3,6 +3,10 @@
 //! For more information, see:
 //! <https://developers.yubico.com/YubiHSM2/Concepts/Object.html>
 
+pub(crate) mod commands;
+mod entry;
+mod filter;
+pub(crate) mod generate;
 mod handle;
 pub mod import;
 mod info;
@@ -12,6 +16,8 @@ mod types;
 
 pub(crate) use self::handle::Handle;
 pub use self::{
+    entry::Entry,
+    filter::Filter,
     info::Info,
     label::{Label, LABEL_SIZE},
     origins::Origin,

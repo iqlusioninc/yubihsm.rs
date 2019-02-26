@@ -40,7 +40,11 @@ where
 }
 
 /// Create the key on the YubiHSM to use for this test
-fn create_yubihsm_key(client: &mut Client, key_id: object::Id, alg: yubihsm::AsymmetricAlg) {
+fn create_yubihsm_key(
+    client: &mut Client,
+    key_id: object::Id,
+    alg: yubihsm::asymmetric::Algorithm,
+) {
     // Delete the key in TEST_KEY_ID slot it exists
     // Ignore errors since the object may not exist yet
     let _ = client.delete_object(key_id, yubihsm::object::Type::AsymmetricKey);

@@ -7,10 +7,9 @@
 // TODO(tarcieri): use this for `yubihsm::client::put_wrap_key` in general?
 
 use crate::{
-    algorithm::WrapAlg,
     client::ClientError,
     device::{DeviceError, DeviceErrorKind::*},
-    object, Capability, Client, Domain,
+    object, wrap, Capability, Client, Domain,
 };
 use rand_os::{rand_core::RngCore, OsRng};
 use std::fmt::{self, Debug};
@@ -31,7 +30,7 @@ pub struct Key {
 
 impl Key {
     /// Generate a random wrap key with the given key size.
-    pub fn generate_random(key_id: object::Id, algorithm: WrapAlg) -> Self {
+    pub fn generate_random(key_id: object::Id, algorithm: wrap::Algorithm) -> Self {
         let mut rand = OsRng::new().unwrap();
         let mut bytes = vec![0u8; algorithm.key_len()];
         rand.fill_bytes(&mut bytes);
@@ -44,9 +43,9 @@ impl Key {
     /// Create a new `wrap::Key` instance. Must be 16, 24, or 32-bytes long.
     pub fn from_bytes(key_id: object::Id, bytes: &[u8]) -> Result<Self, DeviceError> {
         let alg = match bytes.len() {
-            16 => WrapAlg::AES128_CCM,
-            24 => WrapAlg::AES192_CCM,
-            32 => WrapAlg::AES256_CCM,
+            16 => wrap::Algorithm::AES128_CCM,
+            24 => wrap::Algorithm::AES192_CCM,
+            32 => wrap::Algorithm::AES256_CCM,
             other => fail!(
                 WrongLength,
                 "expected 16, 24, or 32-byte wrap key (got {})",

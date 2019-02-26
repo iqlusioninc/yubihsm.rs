@@ -2,7 +2,7 @@
 
 use super::{KeyError, KeyErrorKind};
 #[cfg(feature = "hmac")]
-use hmac::Hmac;
+use hmac_crate::Hmac;
 #[cfg(feature = "pbkdf2")]
 use pbkdf2::pbkdf2;
 use rand_os::{rand_core::RngCore, OsRng};

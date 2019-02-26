@@ -4,7 +4,11 @@
 
 #![allow(clippy::new_without_default)]
 
-use crate::{object, Capability, Client, Domain, OpaqueAlg, Uuid};
+use crate::{
+    object, opaque,
+    uuid::{self, Uuid},
+    Capability, Client, Domain,
+};
 use chrono::{DateTime, Utc};
 use failure::Error;
 use std::{env, str::FromStr};
@@ -50,7 +54,7 @@ impl Report {
         // TODO: handle these better on operating systems other than *IX
         Report {
             version: Version::default(),
-            uuid: Uuid::new_v4(),
+            uuid: uuid::new_v4(),
             username: env::var("LOGNAME").map(|u| u.to_owned()).ok(),
             hostname: env::var("HOSTNAME").map(|h| h.to_owned()).ok(),
             date: Utc::now(),
@@ -71,7 +75,7 @@ impl Report {
                 object::Label::from(REPORT_OBJECT_LABEL),
                 Domain::all(),
                 Capability::GET_OPAQUE,
-                OpaqueAlg::DATA,
+                opaque::Algorithm::DATA,
                 self.to_json(),
             )
             .map_err(|e| format_err!("{}", e))?;

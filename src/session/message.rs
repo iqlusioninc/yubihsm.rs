@@ -59,7 +59,7 @@ impl command::Message {
         );
 
         Ok(Self {
-            uuid: Uuid::new_v4(),
+            uuid: uuid::new_v4(),
             command_type,
             session_id: None,
             data: command_data_vec,
@@ -89,7 +89,7 @@ impl command::Message {
         );
 
         Ok(Self {
-            uuid: Uuid::new_v4(),
+            uuid: uuid::new_v4(),
             command_type,
             session_id: Some(session_id),
             data: command_data_vec,
@@ -152,7 +152,7 @@ impl command::Message {
         };
 
         Ok(Self {
-            uuid: Uuid::new_v4(),
+            uuid: uuid::new_v4(),
             command_type,
             session_id,
             data: bytes,
