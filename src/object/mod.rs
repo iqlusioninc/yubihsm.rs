@@ -14,10 +14,10 @@ mod label;
 mod origins;
 mod types;
 
-pub(crate) use self::handle::Handle;
 pub use self::{
     entry::Entry,
     filter::Filter,
+    handle::Handle,
     info::Info,
     label::{Label, LABEL_SIZE},
     origins::Origin,

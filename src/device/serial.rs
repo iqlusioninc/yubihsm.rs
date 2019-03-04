@@ -6,29 +6,29 @@ use std::{
     str::FromStr,
 };
 
-/// Length of a YubiHSM 2 serial number
-pub const SERIAL_DIGITS: usize = 10;
+/// Length of a YubiHSM 2 serial number in base 10 digits (i.e. characters)
+const DIGITS: usize = 10;
 
 /// YubiHSM serial numbers
 #[derive(Copy, Clone, Debug, Deserialize, Eq, Hash, PartialEq, PartialOrd, Ord, Serialize)]
-pub struct SerialNumber(u32);
+pub struct Number(u32);
 
-impl Display for SerialNumber {
+impl Display for Number {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:0width$}", self.0, width = SERIAL_DIGITS)
+        write!(f, "{:0width$}", self.0, width = DIGITS)
     }
 }
 
-impl FromStr for SerialNumber {
+impl FromStr for Number {
     type Err = Error;
 
-    fn from_str(s: &str) -> Result<SerialNumber, Error> {
-        if s.len() == SERIAL_DIGITS {
-            Ok(SerialNumber(s.parse()?))
+    fn from_str(s: &str) -> Result<Number, Error> {
+        if s.len() == DIGITS {
+            Ok(Number(s.parse()?))
         } else {
             bail!(
                 "invalid serial number length (expected {}, got {}): '{}'",
-                SERIAL_DIGITS,
+                DIGITS,
                 s.len(),
                 s
             );

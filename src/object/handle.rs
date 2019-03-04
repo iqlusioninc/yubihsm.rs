@@ -3,7 +3,7 @@ use crate::object;
 /// Objects in the HSM are keyed by a tuple of their type an object::Id
 /// (i.e. multiple objects of different types can have the same object::Id)
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, PartialOrd, Ord, Serialize)]
-pub(crate) struct Handle {
+pub struct Handle {
     /// ID of the object
     pub object_id: object::Id,
 

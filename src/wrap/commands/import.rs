@@ -28,7 +28,7 @@ impl Command for ImportWrappedCommand {
 
 /// Response from `command::import_wrapped`
 #[derive(Serialize, Deserialize, Debug)]
-pub struct ImportWrappedResponse {
+pub(crate) struct ImportWrappedResponse {
     /// Type of object
     pub object_type: object::Type,
 

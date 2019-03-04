@@ -4,6 +4,7 @@
 
 use crate::{
     command::{self, Command},
+    device::storage,
     response::Response,
 };
 
@@ -17,23 +18,14 @@ impl Command for GetStorageInfoCommand {
 
 /// Response from `command::get_storage_info`
 #[derive(Serialize, Deserialize, Debug)]
-pub struct GetStorageInfoResponse {
-    /// Total number of storage records
-    pub total_records: u16,
-
-    /// Storage records which are currently free
-    pub free_records: u16,
-
-    /// Total number of storage pages
-    pub total_pages: u16,
-
-    /// Storage pages which are currently free
-    pub free_pages: u16,
-
-    /// Page size in bytes
-    pub page_size: u16,
-}
+pub struct GetStorageInfoResponse(pub(crate) storage::Info);
 
 impl Response for GetStorageInfoResponse {
     const COMMAND_CODE: command::Code = command::Code::GetStorageInfo;
+}
+
+impl From<GetStorageInfoResponse> for storage::Info {
+    fn from(response: GetStorageInfoResponse) -> storage::Info {
+        response.0
+    }
 }
