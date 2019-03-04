@@ -16,10 +16,11 @@
 //!
 //! # Getting Started
 //!
-//! The following documentation describes the most important parts of this crate's API:
+//! Most crate functionality can be found in the `Client` type:
 //!
-//! * [yubihsm::connector]: methods of connecting to a YubiHSM (USB or HTTP via [yubihsm-connector])
-//! * [yubihsm::Client]: client providing wrappers for YubiHSM [commands].
+//! * [yubihsm::Client: main API for all YubiHSM functionality! Start here!][yubihsm::Client]
+//!
+//! In order to connect to the HSM, you'll need to make a [yubihsm::Connector].
 //!
 //! # Example
 //!
@@ -46,7 +47,7 @@
 //! println!("Ed25519 signature: {:?}", signature);
 //! ```
 //!
-//! [yubihsm::connector]: https://docs.rs/yubihsm/latest/yubihsm/connector/index.html
+//! [yubihsm::Connector]: https://docs.rs/yubihsm/latest/yubihsm/connector/struct.Connector.html
 //! [yubihsm::Client]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html
 //! [commands]: https://developers.yubico.com/YubiHSM2/Commands/
 //! [yubihsm-connector]: https://developers.yubico.com/YubiHSM2/Component_Reference/yubihsm-connector/

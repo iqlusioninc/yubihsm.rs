@@ -18,7 +18,7 @@ jobs:
         name: clippy
         command: |
           cargo clippy --version
-          cargo clippy --features=rsa,usb
+          cargo clippy --features=rsa-preview,secp256k1,usb
           cargo clippy --features=mockhsm
     - run:
         name: build --no-default-features
@@ -45,11 +45,11 @@ jobs:
           cargo --version
           cargo build --release
     - run:
-        name: build --features=rsa
+        name: build --features=rsa-preview
         command: |
           rustc --version
           cargo --version
-          cargo build --features=rsa
+          cargo build --features=rsa-preview
     - run:
         name: build --features=usb
         command: |
@@ -67,7 +67,7 @@ jobs:
         command: |
           rustc --version
           cargo --version
-          cargo test --features=mockhsm,rsa
+          cargo test --features=mockhsm,rsa-preview,secp256k1
     - run:
         name: audit
         command: |

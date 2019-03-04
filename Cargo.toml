@@ -58,15 +58,16 @@ untrusted = "0.6"
 [features]
 default = ["http", "passwords", "setup", "signatory"]
 http = ["gaunt"]
+force-audit-test = [] # TODO(tarcieri): clear audit log when tests start. See notes on PR#185
 mockhsm = ["passwords", "ring", "untrusted"]
 nightly = ["subtle/nightly", "zeroize/nightly"]
 passwords = ["hmac", "pbkdf2", "sha2"]
-rsa = ["sha2"]
+rsa-preview = ["sha2"]
 setup = ["chrono", "passwords", "serde_json", "uuid/serde"]
 usb = ["lazy_static", "libusb"]
 
 [package.metadata.docs.rs]
-features = ["mockhsm", "rsa", "usb"]
+features = ["mockhsm", "rsa-preview", "secp256k1", "setup", "usb"]
 
 [[bench]]
 name = "ed25519"
