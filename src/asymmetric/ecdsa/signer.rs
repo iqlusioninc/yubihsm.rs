@@ -11,7 +11,7 @@ use signatory::{
         curve::{NistP256, NistP384, WeierstrassCurve, WeierstrassCurveKind},
         Asn1Signature, FixedSignature, PublicKey,
     },
-    error::Error,
+    error::{Error, ErrorKind::*},
     generic_array::{
         typenum::{U32, U48},
         GenericArray,
@@ -24,7 +24,7 @@ use std::{
 };
 
 /// ECDSA signature provider for yubihsm-client
-pub struct EcdsaSigner<C>
+pub struct Signer<C>
 where
     C: WeierstrassCurve,
 {
@@ -38,7 +38,7 @@ where
     curve: PhantomData<C>,
 }
 
-impl<C> EcdsaSigner<C>
+impl<C> Signer<C>
 where
     C: WeierstrassCurve,
 {
@@ -66,34 +66,33 @@ where
     }
 }
 
-impl<C> PublicKeyed<PublicKey<C>> for EcdsaSigner<C>
+impl<C> PublicKeyed<PublicKey<C>> for Signer<C>
 where
     C: WeierstrassCurve,
 {
     /// Obtain the public key which identifies this signer
     fn public_key(&self) -> Result<PublicKey<C>, Error> {
         let mut hsm = self.client.lock().unwrap();
+        let pubkey = hsm.get_public_key(self.signing_key_id)?;
 
-        let pubkey = hsm
-            .get_public_key(self.signing_key_id)
-            .map_err(|e| err!(ProviderError, "{}", e))?;
-
-        if pubkey.algorithm != Self::asymmetric_alg() {
-            fail!(
+        if pubkey.algorithm == Self::asymmetric_alg() {
+            Ok(PublicKey::from_untagged_point(GenericArray::from_slice(
+                pubkey.as_ref(),
+            )))
+        } else {
+            Err(Error::new(
                 KeyInvalid,
-                "expected a {} key, got: {:?}",
-                C::CURVE_KIND.to_str(),
-                pubkey.algorithm
-            );
+                Some(&format!(
+                    "expected a {} key, got: {:?}",
+                    C::CURVE_KIND.to_str(),
+                    pubkey.algorithm
+                )),
+            ))
         }
-
-        Ok(PublicKey::from_untagged_point(GenericArray::from_slice(
-            pubkey.as_ref(),
-        )))
     }
 }
 
-impl<D> DigestSigner<D, Asn1Signature<NistP256>> for EcdsaSigner<NistP256>
+impl<D> DigestSigner<D, Asn1Signature<NistP256>> for Signer<NistP256>
 where
     D: Digest<OutputSize = U32> + Default,
 {
@@ -103,7 +102,7 @@ where
     }
 }
 
-impl<D> DigestSigner<D, FixedSignature<NistP256>> for EcdsaSigner<NistP256>
+impl<D> DigestSigner<D, FixedSignature<NistP256>> for Signer<NistP256>
 where
     D: Digest<OutputSize = U32> + Default,
 {
@@ -113,7 +112,7 @@ where
     }
 }
 
-impl<D> DigestSigner<D, Asn1Signature<NistP384>> for EcdsaSigner<NistP384>
+impl<D> DigestSigner<D, Asn1Signature<NistP384>> for Signer<NistP384>
 where
     D: Digest<OutputSize = U48> + Default,
 {
@@ -123,7 +122,7 @@ where
     }
 }
 
-impl<D> DigestSigner<D, FixedSignature<NistP384>> for EcdsaSigner<NistP384>
+impl<D> DigestSigner<D, FixedSignature<NistP384>> for Signer<NistP384>
 where
     D: Digest<OutputSize = U48> + Default,
 {
@@ -134,7 +133,7 @@ where
 }
 
 #[cfg(feature = "secp256k1")]
-impl<D> DigestSigner<D, Asn1Signature<Secp256k1>> for EcdsaSigner<Secp256k1>
+impl<D> DigestSigner<D, Asn1Signature<Secp256k1>> for Signer<Secp256k1>
 where
     D: Digest<OutputSize = U32> + Default,
 {
@@ -147,7 +146,7 @@ where
 }
 
 #[cfg(feature = "secp256k1")]
-impl<D> DigestSigner<D, FixedSignature<Secp256k1>> for EcdsaSigner<Secp256k1>
+impl<D> DigestSigner<D, FixedSignature<Secp256k1>> for Signer<Secp256k1>
 where
     D: Digest<OutputSize = U32> + Default,
 {
@@ -160,7 +159,7 @@ where
     }
 }
 
-impl EcdsaSigner<NistP256> {
+impl Signer<NistP256> {
     /// Compute an ASN.1 DER signature over P-256
     fn sign_nistp256_asn1<D>(&self, digest: D) -> Result<Asn1Signature<NistP256>, Error>
     where
@@ -168,15 +167,13 @@ impl EcdsaSigner<NistP256> {
     {
         let mut hsm = self.client.lock().unwrap();
 
-        let signature = hsm
-            .sign_ecdsa(self.signing_key_id, digest.result().as_slice())
-            .map_err(|e| err!(ProviderError, "{}", e))?;
+        let signature = hsm.sign_ecdsa(self.signing_key_id, digest.result().as_slice())?;
 
         Asn1Signature::from_bytes(signature)
     }
 }
 
-impl EcdsaSigner<NistP384> {
+impl Signer<NistP384> {
     /// Compute an ASN.1 DER signature over P-384
     fn sign_nistp384_asn1<D>(&self, digest: D) -> Result<Asn1Signature<NistP384>, Error>
     where
@@ -184,16 +181,14 @@ impl EcdsaSigner<NistP384> {
     {
         let mut hsm = self.client.lock().unwrap();
 
-        let signature = hsm
-            .sign_ecdsa(self.signing_key_id, digest.result().as_slice())
-            .map_err(|e| err!(ProviderError, "{}", e))?;
+        let signature = hsm.sign_ecdsa(self.signing_key_id, digest.result().as_slice())?;
 
         Asn1Signature::from_bytes(signature)
     }
 }
 
 #[cfg(feature = "secp256k1")]
-impl EcdsaSigner<Secp256k1> {
+impl Signer<Secp256k1> {
     /// Compute either an ASN.1 DER or fixed-sized signature using libsecp256k1
     fn sign_secp256k1<D>(&self, digest: D) -> Result<secp256k1::Signature, Error>
     where
@@ -202,9 +197,7 @@ impl EcdsaSigner<Secp256k1> {
         let mut hsm = self.client.lock().unwrap();
 
         // Sign the data using the YubiHSM, producing an ASN.1 DER encoded signature
-        let raw_sig = hsm
-            .sign_ecdsa(self.signing_key_id, digest.result().as_slice())
-            .map_err(|e| err!(ProviderError, "{}", e))?;
+        let raw_sig = hsm.sign_ecdsa(self.signing_key_id, digest.result().as_slice())?;
 
         // Parse the signature using libsecp256k1
         let mut sig = secp256k1::Signature::from_der_lax(raw_sig.as_ref()).unwrap();

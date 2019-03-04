@@ -8,14 +8,16 @@ extern crate lazy_static;
 use yubihsm::{asymmetric, object, Capability, Client, Connector, DeviceErrorKind, Domain};
 
 /// Integration tests for individual YubiHSM 2 commands
-pub mod command;
+mod command;
+
+/// ECDSA tests
+mod ecdsa;
+
+/// Ed25519 tests
+mod ed25519;
 
 /// Cryptographic test vectors taken from standards documents
 mod test_vectors;
-
-/// Signatory tests
-#[cfg(feature = "signatory")]
-mod signatory;
 
 /// Key ID to use for testing keygen/signing
 const TEST_KEY_ID: object::Id = 100;

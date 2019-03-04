@@ -10,3 +10,4 @@ mod public_key;
 pub mod rsa;
 
 pub use self::{algorithm::Algorithm, public_key::PublicKey};
+pub use signatory::Signer;
