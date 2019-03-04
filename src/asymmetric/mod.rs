@@ -1,4 +1,4 @@
-//! Asymmetric cryptography (encryption/signatures) functionality
+//! Asymmetric cryptography i.e. digital signatures and public-key encryption
 
 mod algorithm;
 pub mod attestation;

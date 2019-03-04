@@ -39,7 +39,7 @@ use crate::{
     wrap::{self, commands::*},
 };
 use std::time::{Duration, Instant};
-#[cfg(feature = "rsa")]
+#[cfg(feature = "rsa-preview")]
 use {
     crate::asymmetric::rsa::{self, pkcs1::commands::*, pss::commands::*},
     byteorder::{BigEndian, ByteOrder},
@@ -834,7 +834,7 @@ impl Client {
     /// own risk!
     ///
     /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Pkcs1.html>
-    #[cfg(feature = "rsa")]
+    #[cfg(feature = "rsa-preview")]
     pub fn sign_rsa_pkcs1v15_sha256(
         &mut self,
         key_id: object::Id,
@@ -854,7 +854,7 @@ impl Client {
     /// own risk!
     ///
     /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Pss.html>
-    #[cfg(feature = "rsa")]
+    #[cfg(feature = "rsa-preview")]
     pub fn sign_rsa_pss_sha256(
         &mut self,
         key_id: object::Id,
