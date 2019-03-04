@@ -1,12 +1,11 @@
-//! Get information about the `YubiHSM 2` device
+//! Get storage information about the `YubiHSM 2` device
 //!
-//! <https://developers.yubico.com/YubiHSM2/Commands/Device_Info.html>
+//! <https://developers.yubico.com/YubiHSM2/Commands/Get_Storage_Info.html>
 
 use crate::{
     command::{self, Command},
-    device::SerialNumber,
+    device,
     response::Response,
-    Algorithm,
 };
 
 /// Request parameters for `command::device_info`
@@ -19,29 +18,14 @@ impl Command for DeviceInfoCommand {
 
 /// Response from `command::device_info`
 #[derive(Serialize, Deserialize, Debug)]
-pub struct DeviceInfoResponse {
-    /// Device major version
-    pub major_version: u8,
-
-    /// Device minor version
-    pub minor_version: u8,
-
-    /// Device build version (i.e. patchlevel)
-    pub build_version: u8,
-
-    /// Device serial number
-    pub serial_number: SerialNumber,
-
-    /// Size of the log store (in lines/entries)
-    pub log_store_capacity: u8,
-
-    /// Number of log lines used
-    pub log_store_used: u8,
-
-    /// Supported algorithms
-    pub algorithms: Vec<Algorithm>,
-}
+pub struct DeviceInfoResponse(pub(crate) device::Info);
 
 impl Response for DeviceInfoResponse {
     const COMMAND_CODE: command::Code = command::Code::DeviceInfo;
+}
+
+impl From<DeviceInfoResponse> for device::Info {
+    fn from(response: DeviceInfoResponse) -> device::Info {
+        response.0
+    }
 }

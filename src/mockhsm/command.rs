@@ -14,7 +14,7 @@ use crate::{
     authentication::{self, commands::*},
     command::{Code, Message},
     connector::ConnectionError,
-    device::{commands::*, DeviceErrorKind, SerialNumber},
+    device::{self, commands::*, DeviceErrorKind, SerialNumber, StorageInfo},
     hmac::{self, commands::*},
     object::{self, commands::*},
     opaque::{self, commands::*},
@@ -155,7 +155,7 @@ fn delete_object(state: &mut State, cmd_data: &[u8]) -> response::Message {
 
 /// Generate a mock device information report
 fn device_info() -> response::Message {
-    DeviceInfoResponse {
+    let info = device::Info {
         major_version: 2,
         minor_version: 0,
         build_version: 0,
@@ -211,8 +211,9 @@ fn device_info() -> response::Message {
             Algorithm::Asymmetric(asymmetric::Algorithm::Ed25519),
             Algorithm::Asymmetric(asymmetric::Algorithm::EC_P224),
         ],
-    }
-    .serialize()
+    };
+
+    DeviceInfoResponse(info).serialize()
 }
 
 /// Echo a message back to the host
@@ -397,14 +398,15 @@ fn get_public_key(state: &State, cmd_data: &[u8]) -> response::Message {
 /// Generate a mock storage status report
 fn get_storage_info() -> response::Message {
     // TODO: model actual free storage
-    GetStorageInfoResponse {
+    let info = StorageInfo {
         total_records: 256,
         free_records: 256,
         total_pages: 1024,
         free_pages: 1024,
         page_size: 126,
-    }
-    .serialize()
+    };
+
+    GetStorageInfoResponse(info).serialize()
 }
 
 /// Import an object encrypted under a wrap key into the HSM

@@ -27,7 +27,7 @@ use crate::{
     capability::Capability,
     command::{self, Command},
     connector::Connector,
-    device::commands::*,
+    device::{self, commands::*, StorageInfo},
     domain::Domain,
     hmac::{self, commands::*},
     object::{self, commands::*, generate},
@@ -67,14 +67,11 @@ impl Client {
     /// [HttpConnector]: https://docs.rs/yubihsm/latest/yubihsm/connector/http/struct.HttpConnector.html
     /// [UsbConnector]: https://docs.rs/yubihsm/latest/yubihsm/connector/usb/struct.UsbConnector.html
     /// [MockHsm]: https://docs.rs/yubihsm/latest/yubihsm/mockhsm/struct.MockHsm.html
-    pub fn open<C>(
-        connector: C,
+    pub fn open(
+        connector: Connector,
         credentials: Credentials,
         reconnect: bool,
-    ) -> Result<Self, ClientError>
-    where
-        C: Into<Connector>,
-    {
+    ) -> Result<Self, ClientError> {
         let mut client = Self::create(connector, credentials)?;
         client.connect()?;
 
@@ -87,12 +84,9 @@ impl Client {
     }
 
     /// Create a `yubihsm::Client`, but defer connecting until `connect()` is called.
-    pub fn create<C>(connector: C, credentials: Credentials) -> Result<Self, ClientError>
-    where
-        C: Into<Connector>,
-    {
+    pub fn create(connector: Connector, credentials: Credentials) -> Result<Self, ClientError> {
         let client = Self {
-            connector: connector.into(),
+            connector,
             session: None,
             credentials: Some(credentials),
         };
@@ -192,8 +186,8 @@ impl Client {
     /// Get information about the HSM device.
     ///
     /// <https://developers.yubico.com/YubiHSM2/Commands/Device_Info.html>
-    pub fn device_info(&mut self) -> Result<DeviceInfoResponse, ClientError> {
-        Ok(self.send_command(DeviceInfoCommand {})?)
+    pub fn device_info(&mut self) -> Result<device::Info, ClientError> {
+        Ok(self.send_command(DeviceInfoCommand {})?.into())
     }
 
     /// Echo a message sent to the HSM.
@@ -406,8 +400,8 @@ impl Client {
     /// Get storage status (i.e. currently free storage) from the HSM device.
     ///
     /// <https://developers.yubico.com/YubiHSM2/Commands/Get_Storage_Info.html>
-    pub fn get_storage_info(&mut self) -> Result<GetStorageInfoResponse, ClientError> {
-        Ok(self.send_command(GetStorageInfoCommand {})?)
+    pub fn get_storage_info(&mut self) -> Result<StorageInfo, ClientError> {
+        Ok(self.send_command(GetStorageInfoCommand {})?.into())
     }
 
     /// Import an encrypted object from the HSM using the given key-wrapping key.
@@ -417,17 +411,22 @@ impl Client {
         &mut self,
         wrap_key_id: object::Id,
         wrap_message: M,
-    ) -> Result<ImportWrappedResponse, ClientError>
+    ) -> Result<object::Handle, ClientError>
     where
         M: Into<wrap::Message>,
     {
         let wrap::Message { nonce, ciphertext } = wrap_message.into();
 
-        Ok(self.send_command(ImportWrappedCommand {
+        let response = self.send_command(ImportWrappedCommand {
             wrap_key_id,
             nonce,
             ciphertext,
-        })?)
+        })?;
+
+        Ok(object::Handle::new(
+            response.object_id,
+            response.object_type,
+        ))
     }
 
     /// List objects visible from the current session.
