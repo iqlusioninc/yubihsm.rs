@@ -1,7 +1,7 @@
 use signatory::PublicKeyed;
 use signatory_ring::ed25519::Ed25519Verifier;
 use yubihsm::{
-    signatory::{Ed25519Signer, Signer},
+    asymmetric::{ed25519, Signer as SignerTrait},
     Client,
 };
 
@@ -45,7 +45,7 @@ fn ed25519_sign_test() {
     let mut client = Client::open(crate::HSM_CONNECTOR.clone(), Default::default(), true).unwrap();
     create_yubihsm_key(&mut client);
 
-    let signer = Ed25519Signer::create(client, TEST_SIGNING_KEY_ID).unwrap();
+    let signer = ed25519::Signer::create(client, TEST_SIGNING_KEY_ID).unwrap();
     let signature = signer.sign(TEST_MESSAGE).unwrap();
     let verifier = Ed25519Verifier::from(&signer.public_key().unwrap());
 

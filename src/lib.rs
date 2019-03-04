@@ -109,8 +109,6 @@ pub mod response;
 pub mod session;
 #[cfg(feature = "setup")]
 pub mod setup;
-#[cfg(feature = "signatory")]
-pub mod signatory;
 pub mod template;
 mod uuid;
 pub mod wrap;

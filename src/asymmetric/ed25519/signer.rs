@@ -6,13 +6,13 @@
 use crate::{asymmetric, object, Client};
 use signatory::{
     ed25519,
-    error::{Error, ErrorKind},
-    PublicKeyed, Signature, Signer,
+    error::{Error, ErrorKind::*},
+    PublicKeyed, Signature,
 };
 use std::sync::{Arc, Mutex};
 
 /// Ed25519 signature provider for yubihsm-client
-pub struct Ed25519Signer {
+pub struct Signer {
     /// Session with the YubiHSM
     client: Arc<Mutex<Client>>,
 
@@ -20,7 +20,7 @@ pub struct Ed25519Signer {
     signing_key_id: object::Id,
 }
 
-impl Ed25519Signer {
+impl Signer {
     /// Create a new YubiHSM-backed Ed25519 signer
     pub fn create(client: Client, signing_key_id: object::Id) -> Result<Self, Error> {
         let signer = Self {
@@ -35,29 +35,29 @@ impl Ed25519Signer {
     }
 }
 
-impl PublicKeyed<ed25519::PublicKey> for Ed25519Signer {
+impl PublicKeyed<ed25519::PublicKey> for Signer {
     fn public_key(&self) -> Result<ed25519::PublicKey, Error> {
         let mut hsm = self.client.lock().unwrap();
+        let pubkey = hsm.get_public_key(self.signing_key_id)?;
 
-        let pubkey = hsm
-            .get_public_key(self.signing_key_id)
-            .map_err(|e| err!(ProviderError, "{}", e))?;
-
-        if pubkey.algorithm != asymmetric::Algorithm::Ed25519 {
-            return Err(ErrorKind::KeyInvalid.into());
+        if pubkey.algorithm == asymmetric::Algorithm::Ed25519 {
+            Ok(ed25519::PublicKey::from_bytes(pubkey.as_ref()).unwrap())
+        } else {
+            Err(Error::new(
+                KeyInvalid,
+                Some(&format!(
+                    "expected an ed25519 key, got: {:?}",
+                    pubkey.algorithm
+                )),
+            ))
         }
-
-        Ok(ed25519::PublicKey::from_bytes(pubkey.as_ref()).unwrap())
     }
 }
 
-impl Signer<ed25519::Signature> for Ed25519Signer {
+impl signatory::Signer<ed25519::Signature> for Signer {
     fn sign(&self, msg: &[u8]) -> Result<ed25519::Signature, Error> {
         let mut hsm = self.client.lock().unwrap();
-
-        let signature = hsm
-            .sign_ed25519(self.signing_key_id, msg)
-            .map_err(|e| err!(ProviderError, "{}", e))?;
+        let signature = hsm.sign_ed25519(self.signing_key_id, msg)?;
 
         Ok(ed25519::Signature::from_bytes(signature.as_ref()).unwrap())
     }

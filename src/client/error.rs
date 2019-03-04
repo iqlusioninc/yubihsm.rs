@@ -99,3 +99,12 @@ impl From<SerializationError> for ClientError {
         err!(ClientErrorKind::ProtocolError, err.description())
     }
 }
+
+impl From<ClientError> for signatory::Error {
+    fn from(client_error: ClientError) -> signatory::Error {
+        signatory::Error::new(
+            signatory::ErrorKind::ProviderError,
+            Some(&client_error.to_string()),
+        )
+    }
+}

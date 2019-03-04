@@ -10,10 +10,12 @@ use signatory::{
     },
     PublicKeyed,
 };
-use signatory_ring::ecdsa;
 #[cfg(all(feature = "secp256k1", not(feature = "mockhsm")))]
 use signatory_secp256k1::EcdsaVerifier as Secp256k1Verifier;
-use yubihsm::{object, signatory::EcdsaSigner, Client};
+use yubihsm::{
+    asymmetric::{ecdsa, Signer as SignerTrait},
+    object, Client,
+};
 
 /// Domain IDs for test key
 const TEST_SIGNING_KEY_DOMAINS: yubihsm::Domain = yubihsm::Domain::DOM1;
@@ -30,13 +32,13 @@ const TEST_MESSAGE: &[u8] =
       Digital Signature Algorithm (DSA) which uses elliptic curve cryptography.";
 
 /// Create the signer for this test
-fn create_signer<C>(key_id: object::Id) -> EcdsaSigner<C>
+fn create_signer<C>(key_id: object::Id) -> ecdsa::Signer<C>
 where
     C: WeierstrassCurve,
 {
     let mut client = Client::open(crate::HSM_CONNECTOR.clone(), Default::default(), true).unwrap();
-    create_yubihsm_key(&mut client, key_id, EcdsaSigner::<C>::asymmetric_alg());
-    EcdsaSigner::create(client, key_id).unwrap()
+    create_yubihsm_key(&mut client, key_id, ecdsa::Signer::<C>::asymmetric_alg());
+    ecdsa::Signer::create(client, key_id).unwrap()
 }
 
 /// Create the key on the YubiHSM to use for this test
@@ -67,7 +69,7 @@ fn create_yubihsm_key(
 fn ecdsa_nistp256_sign_test() {
     let signer = create_signer::<NistP256>(201);
     let signature: Asn1Signature<_> = signatory::sign_sha256(&signer, TEST_MESSAGE).unwrap();
-    let verifier = ecdsa::P256Verifier::from(&signer.public_key().unwrap());
+    let verifier = signatory_ring::ecdsa::P256Verifier::from(&signer.public_key().unwrap());
     assert!(signatory::verify_sha256(&verifier, TEST_MESSAGE, &signature).is_ok());
 }
 
@@ -77,7 +79,7 @@ fn ecdsa_nistp256_sign_test() {
 fn ecdsa_nistp384_sign_test() {
     let signer = create_signer::<NistP384>(202);
     let signature: Asn1Signature<_> = signatory::sign_sha384(&signer, TEST_MESSAGE).unwrap();
-    let verifier = ecdsa::P384Verifier::from(&signer.public_key().unwrap());
+    let verifier = signatory_ring::ecdsa::P384Verifier::from(&signer.public_key().unwrap());
     assert!(signatory::verify_sha384(&verifier, TEST_MESSAGE, &signature).is_ok());
 }
 
