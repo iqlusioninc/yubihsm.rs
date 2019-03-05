@@ -1,4 +1,6 @@
-//! Support for connecting to the YubiHSM 2 via USB
+//! Support for connecting to the YubiHSM 2 via USB.
+//!
+//! The [yubihsm::connector::usb::Devices] can be used to
 
 #[macro_use]
 mod macros;

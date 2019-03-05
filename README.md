@@ -26,9 +26,9 @@ This is a pure-Rust client library for [YubiHSM 2] devices which implements
 most the functionality of the [libyubihsm] C library from Yubico's YubiHSM SDK.
 It provides two backends for communicating with YubiHSMs:
 
-- [yubihsm::HttpConnector]: communicate with YubiHSM via the
-  `yubihsm-connector` process from the Yubico SDK.
-- [yubihsm::UsbConnector]: communicate directly with the YubiHSM over USB using
+- [HTTP][http-connector]: communicate with YubiHSM via the `yubihsm-connector`
+  process from the Yubico SDK.
+- [USB][usb-connector]: communicate directly with the YubiHSM over USB using
   the [libusb] crate.
 
 The [yubihsm::Client] type provides access to [HSM commands][command].
@@ -143,8 +143,8 @@ WHICH CONTAINS KEYS YOU CARE ABOUT**
 
 ### `cargo test --features=usb`: test YubiHSM2 live via USB
 
-Adding the `usb` cargo feature builds `UsbConnector` in addition to
-`HttpConnector`, and also runs the test suite live via USB rather than using
+Adding the `usb` cargo feature builds in USB connector support in addition to
+HTTP connector, and also runs the test suite live via USB rather than using
 the `yubihsm-connector` process.
 
 **ALSO NOTE THAT THESE TESTS ARE DESTRUCTIVE: DO NOT RUN THEM AGAINST A
@@ -166,8 +166,8 @@ See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT) for details.
 [YubiHSM 2]: https://www.yubico.com/products/yubihsm/
 [Yubico]: https://www.yubico.com/
 [yubihsm-connector]: https://developers.yubico.com/YubiHSM2/Component_Reference/yubihsm-connector/
-[yubihsm::HttpConnector]: https://docs.rs/yubihsm/latest/yubihsm/connector/http/struct.HttpConnector.html
-[yubihsm::UsbConnector]: https://docs.rs/yubihsm/latest/yubihsm/connector/usb/struct.UsbConnector.html
+[http-connector]: https://docs.rs/yubihsm/latest/yubihsm/connector/struct.Connector.html#method.http
+[usb-connector]: https://docs.rs/yubihsm/latest/yubihsm/connector/struct.Connector.html#method.usb
 [yubihsm::Client]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html
 [command]: https://developers.yubico.com/YubiHSM2/Commands/
 [libusb]: https://github.com/dcuddeback/libusb-rs
