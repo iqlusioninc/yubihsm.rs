@@ -6,7 +6,7 @@
 [![Docs][docs-image]][docs-link]
 ![MIT/Apache2 licensed][license-image]
 [![Build Status][build-image]][build-link]
-<img src="https://rustsec.org/assets/img/badges/unsafe/deny.svg" width="88" height="20" alt="unsafe: deny">
+<img src="https://rustsec.org/assets/img/badges/unsafe/forbidden.svg" height="20" alt="unsafe: forbidden">
 
 [crate-image]: https://img.shields.io/crates/v/yubihsm.svg
 [crate-link]: https://crates.io/crates/yubihsm
