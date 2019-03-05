@@ -20,7 +20,7 @@ const TEST_MESSAGE: &[u8] =
         variant of Schnorr's signature system with (possibly twisted) Edwards curves.";
 
 /// Create the key on the YubiHSM to use for this test
-fn create_yubihsm_key(client: &mut Client) {
+fn create_yubihsm_key(client: &Client) {
     // Delete the key in TEST_KEY_ID slot it exists
     // Ignore errors since the object may not exist yet
     let _ = client.delete_object(TEST_SIGNING_KEY_ID, yubihsm::object::Type::AsymmetricKey);
@@ -39,10 +39,10 @@ fn create_yubihsm_key(client: &mut Client) {
 
 #[test]
 fn ed25519_sign_test() {
-    let mut client = Client::open(crate::HSM_CONNECTOR.clone(), Default::default(), true).unwrap();
-    create_yubihsm_key(&mut client);
+    let client = crate::get_hsm_client();
+    create_yubihsm_key(&client);
 
-    let signer = ed25519::Signer::create(client, TEST_SIGNING_KEY_ID).unwrap();
+    let signer = ed25519::Signer::create(client.clone(), TEST_SIGNING_KEY_ID).unwrap();
     let signature = signer.sign(TEST_MESSAGE).unwrap();
     let verifier = Ed25519Verifier::from(&signer.public_key().unwrap());
 

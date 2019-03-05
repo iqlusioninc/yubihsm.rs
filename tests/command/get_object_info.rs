@@ -7,7 +7,7 @@ use yubihsm::{
 /// Get object info on default auth key
 #[test]
 fn default_authkey_test() {
-    let mut client = crate::get_hsm_client();
+    let client = crate::get_hsm_client();
 
     let object_info = client
         .get_object_info(

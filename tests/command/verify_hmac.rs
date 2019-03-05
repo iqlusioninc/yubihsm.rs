@@ -7,12 +7,12 @@ use yubihsm::{hmac, Capability};
 /// Test HMAC against RFC 4231 test vectors
 #[test]
 fn hmac_test_vectors() {
-    let mut client = crate::get_hsm_client();
+    let client = crate::get_hsm_client();
     let algorithm = hmac::Algorithm::SHA256;
     let capabilities = Capability::SIGN_HMAC | Capability::VERIFY_HMAC;
 
     for vector in HMAC_SHA256_TEST_VECTORS {
-        clear_test_key_slot(&mut client, object::Type::HmacKey);
+        clear_test_key_slot(&client, object::Type::HmacKey);
 
         let key_id = client
             .put_hmac_key(

@@ -4,10 +4,10 @@ use yubihsm::{asymmetric, Capability};
 /// Generate an attestation about a key in the HSM
 #[test]
 fn attest_asymmetric_test() {
-    let mut client = crate::get_hsm_client();
+    let client = crate::get_hsm_client();
 
     generate_asymmetric_key(
-        &mut client,
+        &client,
         asymmetric::Algorithm::EC_P256,
         Capability::SIGN_ECDSA,
     );

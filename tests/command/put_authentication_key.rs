@@ -5,12 +5,12 @@ use crate::{clear_test_key_slot, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL, TEST
 /// Put a new authentication key into the `YubiHSM`
 #[test]
 fn put_authentication_key() {
-    let mut client = crate::get_hsm_client();
+    let client = crate::get_hsm_client();
     let algorithm = authentication::Algorithm::YUBICO_AES;
     let capabilities = Capability::all();
     let delegated_capabilities = Capability::all();
 
-    clear_test_key_slot(&mut client, object::Type::AuthenticationKey);
+    clear_test_key_slot(&client, object::Type::AuthenticationKey);
 
     let new_authentication_key = authentication::Key::derive_from_password(TEST_MESSAGE);
 

@@ -9,11 +9,11 @@ use yubihsm::{asymmetric, Capability};
 /// Test Ed25519 against RFC 8032 test vectors
 #[test]
 fn test_vectors() {
-    let mut client = crate::get_hsm_client();
+    let client = crate::get_hsm_client();
 
     for vector in ED25519_TEST_VECTORS {
         put_asymmetric_key(
-            &mut client,
+            &client,
             asymmetric::Algorithm::Ed25519,
             Capability::SIGN_EDDSA,
             vector.sk,
@@ -37,10 +37,10 @@ fn test_vectors() {
 /// Test Ed25519 signing using a randomly generated HSM key
 #[test]
 fn generated_key_test() {
-    let mut client = crate::get_hsm_client();
+    let client = crate::get_hsm_client();
 
     generate_asymmetric_key(
-        &mut client,
+        &client,
         asymmetric::Algorithm::Ed25519,
         Capability::SIGN_EDDSA,
     );

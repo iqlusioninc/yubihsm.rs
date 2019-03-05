@@ -18,10 +18,7 @@ use signatory::{
     },
     Digest, DigestSigner, PublicKeyed, Signature,
 };
-use std::{
-    marker::PhantomData,
-    sync::{Arc, Mutex},
-};
+use std::marker::PhantomData;
 
 /// ECDSA signature provider for yubihsm-client
 pub struct Signer<C>
@@ -29,7 +26,7 @@ where
     C: WeierstrassCurve,
 {
     /// YubiHSM client
-    client: Arc<Mutex<Client>>,
+    client: Client,
 
     /// ID of an ECDSA key to perform signatures with
     signing_key_id: object::Id,
@@ -45,7 +42,7 @@ where
     /// Create a new YubiHSM-backed ECDSA signer
     pub fn create(client: Client, signing_key_id: object::Id) -> Result<Self, Error> {
         let signer = Self {
-            client: Arc::new(Mutex::new(client)),
+            client,
             signing_key_id,
             curve: PhantomData,
         };
@@ -72,8 +69,7 @@ where
 {
     /// Obtain the public key which identifies this signer
     fn public_key(&self) -> Result<PublicKey<C>, Error> {
-        let mut hsm = self.client.lock().unwrap();
-        let pubkey = hsm.get_public_key(self.signing_key_id)?;
+        let pubkey = self.client.get_public_key(self.signing_key_id)?;
 
         if pubkey.algorithm == Self::asymmetric_alg() {
             Ok(PublicKey::from_untagged_point(GenericArray::from_slice(
@@ -165,10 +161,9 @@ impl Signer<NistP256> {
     where
         D: Digest<OutputSize = U32> + Default,
     {
-        let mut hsm = self.client.lock().unwrap();
-
-        let signature = hsm.sign_ecdsa(self.signing_key_id, digest.result().as_slice())?;
-
+        let signature = self
+            .client
+            .sign_ecdsa(self.signing_key_id, digest.result().as_slice())?;
         Asn1Signature::from_bytes(signature)
     }
 }
@@ -179,10 +174,9 @@ impl Signer<NistP384> {
     where
         D: Digest<OutputSize = U48> + Default,
     {
-        let mut hsm = self.client.lock().unwrap();
-
-        let signature = hsm.sign_ecdsa(self.signing_key_id, digest.result().as_slice())?;
-
+        let signature = self
+            .client
+            .sign_ecdsa(self.signing_key_id, digest.result().as_slice())?;
         Asn1Signature::from_bytes(signature)
     }
 }
@@ -194,10 +188,10 @@ impl Signer<Secp256k1> {
     where
         D: Digest<OutputSize = U32> + Default,
     {
-        let mut hsm = self.client.lock().unwrap();
-
         // Sign the data using the YubiHSM, producing an ASN.1 DER encoded signature
-        let raw_sig = hsm.sign_ecdsa(self.signing_key_id, digest.result().as_slice())?;
+        let raw_sig = self
+            .client
+            .sign_ecdsa(self.signing_key_id, digest.result().as_slice())?;
 
         // Parse the signature using libsecp256k1
         let mut sig = secp256k1::Signature::from_der_lax(raw_sig.as_ref()).unwrap();

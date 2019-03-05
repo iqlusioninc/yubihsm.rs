@@ -107,7 +107,7 @@ pub fn create_mockhsm_connector() -> Connector {
 }
 
 /// Delete the key in the test key slot (if it exists, otherwise do nothing)
-pub fn clear_test_key_slot(client: &mut Client, object_type: object::Type) {
+pub fn clear_test_key_slot(client: &Client, object_type: object::Type) {
     println!("clearing test key slot: {:?} {}", object_type, TEST_KEY_ID);
 
     // Delete the key in TEST_KEY_ID slot it exists (we use it for testing)
@@ -132,7 +132,7 @@ pub fn clear_test_key_slot(client: &mut Client, object_type: object::Type) {
 
 /// Create a public key for use in a test
 pub fn generate_asymmetric_key(
-    client: &mut Client,
+    client: &Client,
     algorithm: asymmetric::Algorithm,
     capabilities: Capability,
 ) {
@@ -152,7 +152,7 @@ pub fn generate_asymmetric_key(
 
 /// Put an asymmetric private key into the HSM
 pub fn put_asymmetric_key<T: Into<Vec<u8>>>(
-    client: &mut Client,
+    client: &Client,
     algorithm: asymmetric::Algorithm,
     capabilities: Capability,
     data: T,

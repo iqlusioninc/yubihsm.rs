@@ -1,7 +1,7 @@
 /// Get random bytes
 #[test]
 fn get_pseudo_random_test() {
-    let mut client = crate::get_hsm_client();
+    let client = crate::get_hsm_client();
 
     let bytes = client
         .get_pseudo_random(32)

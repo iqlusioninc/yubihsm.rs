@@ -4,10 +4,10 @@ use yubihsm::{asymmetric, object, Capability};
 /// List the objects in the YubiHSM 2
 #[test]
 fn list_objects_test() {
-    let mut client = crate::get_hsm_client();
+    let client = crate::get_hsm_client();
 
     generate_asymmetric_key(
-        &mut client,
+        &client,
         asymmetric::Algorithm::Ed25519,
         Capability::SIGN_EDDSA,
     );
@@ -26,7 +26,7 @@ fn list_objects_test() {
 /// Filter objects in the HSM by their type
 #[test]
 fn list_objects_with_filter() {
-    let mut client = crate::get_hsm_client();
+    let client = crate::get_hsm_client();
 
     let objects = client
         .list_objects(&[object::Filter::Type(object::Type::AuthenticationKey)])

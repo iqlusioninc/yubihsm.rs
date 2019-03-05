@@ -5,9 +5,9 @@ use crate::{clear_test_key_slot, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL, TEST
 /// Put an opaque object and read it back
 #[test]
 fn opaque_object_test() {
-    let mut client = crate::get_hsm_client();
+    let client = crate::get_hsm_client();
 
-    clear_test_key_slot(&mut client, object::Type::Opaque);
+    clear_test_key_slot(&client, object::Type::Opaque);
 
     let object_id = client
         .put_opaque(

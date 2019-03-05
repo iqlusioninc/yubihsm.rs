@@ -4,12 +4,12 @@ use yubihsm::{hmac, object, Capability};
 /// Generate an HMAC key
 #[test]
 fn hmac_key_test() {
-    let mut client = crate::get_hsm_client();
+    let client = crate::get_hsm_client();
 
     let algorithm = hmac::Algorithm::SHA256;
     let capabilities = Capability::SIGN_HMAC | Capability::VERIFY_HMAC;
 
-    clear_test_key_slot(&mut client, object::Type::HmacKey);
+    clear_test_key_slot(&client, object::Type::HmacKey);
 
     let key_id = client
         .generate_hmac_key(
