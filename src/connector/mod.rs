@@ -1,14 +1,17 @@
 //! Methods of connecting to a YubiHSM 2:
 //!
-//! - [HttpConnector]: communicates with HSM via the `yubihsm-connector` service's HTTP API
-//! - [UsbConnector]: communicates with the HSM directly via USB using `libusb`.
+//! - [HTTP][http-connector]: communicate with YubiHSM via the `yubihsm-connector`
+//!   process from the Yubico SDK.
+//! - [USB][usb-connector]: communicate directly with the YubiHSM over USB using
+//!   the [libusb] crate.
 //!
-//! Additionally, [MockHsm] implements the `Connector` API and can be used as a drop-in replacement
-//! in places where you would like a simulated HSM for testing (e.g. CI).
+//! Additionally, this crate includes an optional development-only [mockhsm]
+//! (gated under a `mockhsm` cargo feature) which can be used as a drop-in
+//! replacement in places where you would like a simulated HSM for testing (e.g. CI).
 //!
-//! [HttpConnector]: https://docs.rs/yubihsm/latest/yubihsm/connector/http/struct.HttpConnector.html
-//! [UsbConnector]: https://docs.rs/yubihsm/latest/yubihsm/connector/usb/struct.UsbConnector.html
-//! [MockHsm]: https://docs.rs/yubihsm/latest/yubihsm/mockhsm/struct.MockHsm.html
+//! [http-connector]: https://docs.rs/yubihsm/latest/yubihsm/connector/struct.Connector.html#method.http
+//! [usb-connector]: https://docs.rs/yubihsm/latest/yubihsm/connector/struct.Connector.html#method.usb
+//! [mockhsm]: https://docs.rs/yubihsm/latest/yubihsm/connector/struct.Connector.html#method.mockhsm
 
 #[macro_use]
 mod error;
@@ -56,7 +59,11 @@ impl Connector {
         Self::from(HttpConnector::create(config))
     }
 
-    /// Create a new USB connector
+    /// Create a new USB connector. For more advanced usage including
+    /// connecting to multiple YubiHSMs over USB which are plugged into
+    /// the same computer, please see the [yubihsm::connector::usb] module.
+    ///
+    /// [yubihsm::connector::usb]: https://docs.rs/yubihsm/latest/yubihsm/connector/usb/index.html
     #[cfg(feature = "usb")]
     pub fn usb(config: &UsbConfig) -> Self {
         Self::from(UsbConnector::create(config))
