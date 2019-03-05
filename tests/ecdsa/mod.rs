@@ -5,14 +5,17 @@
 use signatory::ecdsa::curve::Secp256k1;
 use signatory::{
     ecdsa::{
-        curve::{NistP256, NistP384, WeierstrassCurve},
+        curve::{NistP256, NistP384, WeierstrassCurve, WeierstrassCurveKind},
         Asn1Signature,
     },
     PublicKeyed,
 };
 #[cfg(all(feature = "secp256k1", not(feature = "mockhsm")))]
 use signatory_secp256k1::EcdsaVerifier as Secp256k1Verifier;
-use yubihsm::{asymmetric::Signer as SignerTrait, ecdsa, object, Client};
+use yubihsm::{
+    asymmetric::{self, Signer as SignerTrait},
+    ecdsa, object, Client,
+};
 
 /// Domain IDs for test key
 const TEST_SIGNING_KEY_DOMAINS: yubihsm::Domain = yubihsm::Domain::DOM1;
@@ -34,7 +37,13 @@ where
     C: WeierstrassCurve,
 {
     let client = crate::get_hsm_client();
-    create_yubihsm_key(&client, key_id, ecdsa::Signer::<C>::asymmetric_alg());
+    let alg = match C::CURVE_KIND {
+        WeierstrassCurveKind::NistP256 => asymmetric::Algorithm::EC_P256,
+        WeierstrassCurveKind::NistP384 => asymmetric::Algorithm::EC_P384,
+        WeierstrassCurveKind::Secp256k1 => asymmetric::Algorithm::EC_K256,
+    };
+
+    create_yubihsm_key(&client, key_id, alg);
     ecdsa::Signer::create(client.clone(), key_id).unwrap()
 }
 

@@ -4,10 +4,12 @@
 
 use super::Signature;
 use crate::{
+    client::{ClientError, ClientErrorKind::ResponseError},
     command::{self, Command},
     object,
     response::Response,
 };
+use signatory::Signature as SignatureTrait;
 
 /// Request parameters for `command::sign_ed25519`
 #[derive(Serialize, Deserialize, Debug)]
@@ -25,14 +27,14 @@ impl Command for SignEddsaCommand {
 
 /// Ed25519 signature (64-bytes) response
 #[derive(Serialize, Deserialize, Debug)]
-pub struct SignEddsaResponse(pub(crate) Signature);
+pub struct SignEddsaResponse(pub(crate) Vec<u8>);
 
 impl Response for SignEddsaResponse {
     const COMMAND_CODE: command::Code = command::Code::SignEddsa;
 }
 
-impl From<SignEddsaResponse> for Signature {
-    fn from(response: SignEddsaResponse) -> Signature {
-        response.0
+impl SignEddsaResponse {
+    pub(crate) fn signature(&self) -> Result<Signature, ClientError> {
+        Signature::from_bytes(&self.0).map_err(|e| err!(ResponseError, e))
     }
 }

@@ -800,12 +800,11 @@ impl Client {
     where
         T: Into<Vec<u8>>,
     {
-        Ok(self
-            .send_command(SignEddsaCommand {
-                key_id,
-                data: data.into(),
-            })?
-            .into())
+        self.send_command(SignEddsaCommand {
+            key_id,
+            data: data.into(),
+        })?
+        .signature()
     }
 
     /// Compute an HMAC tag of the given data with the given key ID.
