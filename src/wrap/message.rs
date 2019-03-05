@@ -18,10 +18,10 @@ impl Message {
             bail!("message must be at least {}-bytes", nonce::SIZE);
         }
 
-        let mut nonce = [0u8; nonce::SIZE];
-        nonce.copy_from_slice(vec.split_off(nonce::SIZE).as_ref());
+        let ciphertext = vec.split_off(nonce::SIZE);
+        let nonce = vec.as_ref();
 
-        Ok(Self::new(nonce, vec))
+        Ok(Self::new(nonce, ciphertext))
     }
 
     /// Create a new `Message`
