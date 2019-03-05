@@ -33,4 +33,19 @@ impl From<[u8; SIZE]> for Nonce {
     }
 }
 
+impl<'a> From<&'a [u8]> for Nonce {
+    fn from(bytes: &[u8]) -> Nonce {
+        assert_eq!(
+            bytes.len(),
+            SIZE,
+            "nonce must be exactly {} bytes (got {})",
+            SIZE,
+            bytes.len()
+        );
+        let mut nonce = [0u8; SIZE];
+        nonce.copy_from_slice(bytes);
+        Nonce(nonce)
+    }
+}
+
 impl_array_serializers!(Nonce, SIZE);
