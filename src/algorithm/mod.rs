@@ -4,10 +4,7 @@ mod error;
 
 pub use self::error::{AlgorithmError, AlgorithmErrorKind};
 
-use crate::{
-    asymmetric::{self, ecdsa, kex, rsa},
-    authentication, hmac, opaque, otp, template, wrap,
-};
+use crate::{asymmetric, authentication, ecdsa, hmac, kex, opaque, otp, rsa, template, wrap};
 
 /// Cryptographic algorithm types supported by the `YubiHSM 2`
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]

@@ -1,10 +1,10 @@
 //! RSASSA-PKCS#1v1.5 commands
 
 use crate::{
-    asymmetric::rsa,
     command::{self, Command},
     object,
     response::Response,
+    rsa,
 };
 
 /// Request parameters for `command::sign_rsa_pkcs1v15*`

@@ -91,6 +91,7 @@ mod serialization;
 
 pub mod algorithm;
 pub mod asymmetric;
+pub mod attestation;
 pub mod audit;
 pub mod authentication;
 pub mod capability;
@@ -99,13 +100,17 @@ pub mod command;
 pub mod connector;
 pub mod device;
 pub mod domain;
+pub mod ecdsa;
+pub mod ed25519;
 pub mod hmac;
+pub mod kex;
 #[cfg(feature = "mockhsm")]
-pub mod mockhsm;
+pub(crate) mod mockhsm;
 pub mod object;
 pub mod opaque;
 pub mod otp;
 pub mod response;
+pub mod rsa;
 pub mod session;
 #[cfg(feature = "setup")]
 pub mod setup;
@@ -117,13 +122,11 @@ pub mod wrap;
 pub use crate::connector::HttpConfig;
 #[cfg(feature = "usb")]
 pub use crate::connector::UsbConfig;
-#[cfg(feature = "mockhsm")]
-pub use crate::mockhsm::MockHsm;
 
 pub use crate::{
     algorithm::*,
     audit::AuditOption,
-    authentication::{Credentials, AUTHENTICATION_KEY_SIZE},
+    authentication::Credentials,
     capability::Capability,
     client::{Client, ClientError},
     connector::{ConnectionError, Connector},

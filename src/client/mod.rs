@@ -14,14 +14,8 @@ pub use self::error::{ClientError, ClientErrorKind};
 
 use self::error::ClientErrorKind::*;
 use crate::{
-    asymmetric::{
-        self,
-        attestation::{self, commands::*},
-        commands::*,
-        ecdsa::{self, commands::*},
-        ed25519::{self, commands::*},
-        PublicKey,
-    },
+    asymmetric::{self, commands::*, PublicKey},
+    attestation::{self, commands::*},
     audit::{commands::*, *},
     authentication::{self, commands::*, Credentials},
     capability::Capability,
@@ -29,6 +23,8 @@ use crate::{
     connector::Connector,
     device::{self, commands::*, StorageInfo},
     domain::Domain,
+    ecdsa::{self, commands::*},
+    ed25519::{self, commands::*},
     hmac::{self, commands::*},
     object::{self, commands::*, generate},
     opaque::{self, commands::*},
@@ -41,7 +37,7 @@ use crate::{
 use std::time::{Duration, Instant};
 #[cfg(feature = "rsa-preview")]
 use {
-    crate::asymmetric::rsa::{self, pkcs1::commands::*, pss::commands::*},
+    crate::rsa::{self, pkcs1::commands::*, pss::commands::*},
     byteorder::{BigEndian, ByteOrder},
     sha2::{Digest, Sha256},
 };

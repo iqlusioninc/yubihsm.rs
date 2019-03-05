@@ -1,10 +1,10 @@
 //! RSASSA-PSS commands
 
 use crate::{
-    asymmetric::rsa,
     command::{self, Command},
     object,
     response::Response,
+    rsa,
 };
 
 /// Request parameters for `command::sign_rsa_pss*`

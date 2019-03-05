@@ -1,9 +1,6 @@
 use signatory::PublicKeyed;
 use signatory_ring::ed25519::Ed25519Verifier;
-use yubihsm::{
-    asymmetric::{ed25519, Signer as SignerTrait},
-    Client,
-};
+use yubihsm::{asymmetric::Signer as SignerTrait, ed25519, Client};
 
 /// Key ID to use for test key
 const TEST_SIGNING_KEY_ID: yubihsm::object::Id = 200;

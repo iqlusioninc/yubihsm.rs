@@ -12,10 +12,7 @@ use signatory::{
 };
 #[cfg(all(feature = "secp256k1", not(feature = "mockhsm")))]
 use signatory_secp256k1::EcdsaVerifier as Secp256k1Verifier;
-use yubihsm::{
-    asymmetric::{ecdsa, Signer as SignerTrait},
-    object, Client,
-};
+use yubihsm::{asymmetric::Signer as SignerTrait, ecdsa, object, Client};
 
 /// Domain IDs for test key
 const TEST_SIGNING_KEY_DOMAINS: yubihsm::Domain = yubihsm::Domain::DOM1;

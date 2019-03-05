@@ -6,7 +6,7 @@ use super::{
     Object, Payload, WrappedObject, DEFAULT_AUTHENTICATION_KEY_LABEL, WRAPPED_DATA_MAC_SIZE,
 };
 use crate::{
-    authentication::{self, AUTHENTICATION_KEY_SIZE, DEFAULT_AUTHENTICATION_KEY_ID},
+    authentication::{self, DEFAULT_AUTHENTICATION_KEY_ID},
     object::{Handle, Id, Info, Label, Origin, Type},
     serialization::{deserialize, serialize},
     wrap, Algorithm, Capability, Domain,
@@ -31,7 +31,7 @@ impl Default for Objects {
             capabilities: Capability::all(),
             delegated_capabilities: Capability::all(),
             domains: Domain::all(),
-            length: AUTHENTICATION_KEY_SIZE as u16,
+            length: authentication::key::SIZE as u16,
             sequence: 1,
             origin: Origin::Imported,
             label: DEFAULT_AUTHENTICATION_KEY_LABEL.into(),
