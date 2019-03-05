@@ -7,12 +7,7 @@ use ring::{
 };
 use untrusted;
 
-use crate::{
-    algorithm::Algorithm,
-    asymmetric,
-    authentication::{self, AUTHENTICATION_KEY_SIZE},
-    hmac, opaque, wrap,
-};
+use crate::{algorithm::Algorithm, asymmetric, authentication, hmac, opaque, wrap};
 
 /// Size of an Ed25519 seed
 pub(crate) const ED25519_SEED_SIZE: usize = 32;
@@ -106,7 +101,7 @@ impl Payload {
     /// Get the length of the object
     pub fn len(&self) -> u16 {
         let l = match *self {
-            Payload::AuthenticationKey(_) => AUTHENTICATION_KEY_SIZE,
+            Payload::AuthenticationKey(_) => authentication::key::SIZE,
             Payload::Ed25519KeyPair(_) => ED25519_SEED_SIZE,
             Payload::HmacKey(_, ref data) => data.len(),
             Payload::Opaque(_, ref data) => data.len(),

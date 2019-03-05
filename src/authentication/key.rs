@@ -12,7 +12,7 @@ use std::fmt::{self, Debug};
 use zeroize::Zeroize;
 
 /// Auth keys are 2 * AES-128 keys
-pub const AUTHENTICATION_KEY_SIZE: usize = 32;
+pub const SIZE: usize = 32;
 
 /// Password from which the default auth key is derived
 pub const DEFAULT_PASSWORD: &[u8] = b"password";
@@ -20,22 +20,22 @@ pub const DEFAULT_PASSWORD: &[u8] = b"password";
 /// Salt value to use with PBKDF2 when deriving auth keys from a password.
 /// This salt is designed to be compatible with the password functionality in
 /// yubihsm-shell (otherwise using a static salt is not best practice).
-pub const DEFAULT_PBKDF2_SALT: &[u8] = b"Yubico";
+pub const PBKDF2_SALT: &[u8] = b"Yubico";
 
 /// Number of PBKDF2 iterations to perform when deriving auth keys.
 /// This number of iterations matches what is performed by yubihsm-shell.
-pub const DEFAULT_PBKDF2_ITERATIONS: usize = 10_000;
+pub const PBKDF2_ITERATIONS: usize = 10_000;
 
 /// `YubiHSM 2` authentication keys (2 * AES-128 symmetric PSK) from which
 /// session keys are derived.c
 #[derive(Clone)]
-pub struct Key(pub(crate) [u8; AUTHENTICATION_KEY_SIZE]);
+pub struct Key(pub(crate) [u8; SIZE]);
 
 impl Key {
     /// Generate a random `Key` using `OsRng`.
     pub fn random() -> Self {
         let mut rng = OsRng::new().expect("RNG failure!");
-        let mut challenge = [0u8; AUTHENTICATION_KEY_SIZE];
+        let mut challenge = [0u8; SIZE];
         rng.fill_bytes(&mut challenge);
         Key(challenge)
     }
@@ -46,13 +46,8 @@ impl Key {
     /// derivation algorithm used does little to prevent brute force attacks.
     #[cfg(feature = "passwords")]
     pub fn derive_from_password(password: &[u8]) -> Self {
-        let mut kdf_output = [0u8; AUTHENTICATION_KEY_SIZE];
-        pbkdf2::<Hmac<Sha256>>(
-            password,
-            DEFAULT_PBKDF2_SALT,
-            DEFAULT_PBKDF2_ITERATIONS,
-            &mut kdf_output,
-        );
+        let mut kdf_output = [0u8; SIZE];
+        pbkdf2::<Hmac<Sha256>>(password, PBKDF2_SALT, PBKDF2_ITERATIONS, &mut kdf_output);
         Self::new(kdf_output)
     }
 
@@ -60,21 +55,21 @@ impl Key {
     /// error if the key is the wrong length
     pub fn from_slice(key_slice: &[u8]) -> Result<Self, KeyError> {
         ensure!(
-            key_slice.len() == AUTHENTICATION_KEY_SIZE,
+            key_slice.len() == SIZE,
             KeyErrorKind::SizeInvalid,
             "expected {}-byte key, got {}",
-            AUTHENTICATION_KEY_SIZE,
+            SIZE,
             key_slice.len()
         );
 
-        let mut key_bytes = [0u8; AUTHENTICATION_KEY_SIZE];
+        let mut key_bytes = [0u8; SIZE];
         key_bytes.copy_from_slice(key_slice);
 
         Ok(Key(key_bytes))
     }
 
     /// Create a new Key from the given byte array
-    pub fn new(key_bytes: [u8; AUTHENTICATION_KEY_SIZE]) -> Self {
+    pub fn new(key_bytes: [u8; SIZE]) -> Self {
         Key(key_bytes)
     }
 
@@ -115,10 +110,10 @@ impl Drop for Key {
     }
 }
 
-impl From<[u8; AUTHENTICATION_KEY_SIZE]> for Key {
-    fn from(key_bytes: [u8; AUTHENTICATION_KEY_SIZE]) -> Key {
+impl From<[u8; SIZE]> for Key {
+    fn from(key_bytes: [u8; SIZE]) -> Key {
         Key::new(key_bytes)
     }
 }
 
-impl_array_serializers!(Key, AUTHENTICATION_KEY_SIZE);
+impl_array_serializers!(Key, SIZE);

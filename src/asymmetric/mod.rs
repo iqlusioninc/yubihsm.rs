@@ -1,13 +1,14 @@
-//! Asymmetric cryptography i.e. digital signatures and public-key encryption
+//! Asymmetric cryptography i.e. digital signatures and public-key encryption.
+//!
+//! This module contains types and functionality common to all asymmetric
+//! algorithms.
+//!
+//! Functionality specific to a particular algorithm is available in toplevel
+//! modules (e.g. `attestation`, `ecdsa`, `ed25519`)
 
 mod algorithm;
-pub mod attestation;
 pub(crate) mod commands;
-pub mod ecdsa;
-pub mod ed25519;
-pub mod kex;
 mod public_key;
-pub mod rsa;
 
 pub use self::{algorithm::Algorithm, public_key::PublicKey};
 pub use signatory::Signer;
