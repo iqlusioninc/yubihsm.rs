@@ -8,12 +8,14 @@ mod macros;
 
 pub(crate) mod commands;
 mod error;
+mod guard;
 mod id;
 pub(crate) mod securechannel;
 mod timeout;
 
 pub use self::{
     error::{SessionError, SessionErrorKind},
+    guard::Guard,
     id::Id,
     timeout::Timeout,
 };

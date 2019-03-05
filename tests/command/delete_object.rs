@@ -4,10 +4,10 @@ use yubihsm::{asymmetric, object, Capability};
 /// Delete an object in the YubiHSM 2
 #[test]
 fn delete_object_test() {
-    let mut client = crate::get_hsm_client();
+    let client = crate::get_hsm_client();
 
     generate_asymmetric_key(
-        &mut client,
+        &client,
         asymmetric::Algorithm::Ed25519,
         Capability::SIGN_EDDSA,
     );

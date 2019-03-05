@@ -33,17 +33,13 @@ fn create_signer<C>(key_id: object::Id) -> ecdsa::Signer<C>
 where
     C: WeierstrassCurve,
 {
-    let mut client = Client::open(crate::HSM_CONNECTOR.clone(), Default::default(), true).unwrap();
-    create_yubihsm_key(&mut client, key_id, ecdsa::Signer::<C>::asymmetric_alg());
-    ecdsa::Signer::create(client, key_id).unwrap()
+    let client = crate::get_hsm_client();
+    create_yubihsm_key(&client, key_id, ecdsa::Signer::<C>::asymmetric_alg());
+    ecdsa::Signer::create(client.clone(), key_id).unwrap()
 }
 
 /// Create the key on the YubiHSM to use for this test
-fn create_yubihsm_key(
-    client: &mut Client,
-    key_id: object::Id,
-    alg: yubihsm::asymmetric::Algorithm,
-) {
+fn create_yubihsm_key(client: &Client, key_id: object::Id, alg: yubihsm::asymmetric::Algorithm) {
     // Delete the key in TEST_KEY_ID slot it exists
     // Ignore errors since the object may not exist yet
     let _ = client.delete_object(key_id, yubihsm::object::Type::AsymmetricKey);

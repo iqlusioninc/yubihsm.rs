@@ -7,10 +7,10 @@ use yubihsm::{asymmetric, Capability};
 /// Test ECDSA signatures (using NIST P-256)
 #[test]
 fn generated_nistp256_key_test() {
-    let mut client = crate::get_hsm_client();
+    let client = crate::get_hsm_client();
 
     generate_asymmetric_key(
-        &mut client,
+        &client,
         asymmetric::Algorithm::EC_P256,
         Capability::SIGN_ECDSA,
     );

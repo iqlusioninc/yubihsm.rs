@@ -9,12 +9,11 @@ use signatory::{
     error::{Error, ErrorKind::*},
     PublicKeyed, Signature,
 };
-use std::sync::{Arc, Mutex};
 
 /// Ed25519 signature provider for yubihsm-client
 pub struct Signer {
     /// Session with the YubiHSM
-    client: Arc<Mutex<Client>>,
+    client: Client,
 
     /// ID of an Ed25519 key to perform signatures with
     signing_key_id: object::Id,
@@ -24,7 +23,7 @@ impl Signer {
     /// Create a new YubiHSM-backed Ed25519 signer
     pub fn create(client: Client, signing_key_id: object::Id) -> Result<Self, Error> {
         let signer = Self {
-            client: Arc::new(Mutex::new(client)),
+            client,
             signing_key_id,
         };
 
@@ -37,8 +36,7 @@ impl Signer {
 
 impl PublicKeyed<ed25519::PublicKey> for Signer {
     fn public_key(&self) -> Result<ed25519::PublicKey, Error> {
-        let mut hsm = self.client.lock().unwrap();
-        let pubkey = hsm.get_public_key(self.signing_key_id)?;
+        let pubkey = self.client.get_public_key(self.signing_key_id)?;
 
         if pubkey.algorithm == asymmetric::Algorithm::Ed25519 {
             Ok(ed25519::PublicKey::from_bytes(pubkey.as_ref()).unwrap())
@@ -56,9 +54,7 @@ impl PublicKeyed<ed25519::PublicKey> for Signer {
 
 impl signatory::Signer<ed25519::Signature> for Signer {
     fn sign(&self, msg: &[u8]) -> Result<ed25519::Signature, Error> {
-        let mut hsm = self.client.lock().unwrap();
-        let signature = hsm.sign_ed25519(self.signing_key_id, msg)?;
-
+        let signature = self.client.sign_ed25519(self.signing_key_id, msg)?;
         Ok(ed25519::Signature::from_bytes(signature.as_ref()).unwrap())
     }
 }

@@ -8,12 +8,12 @@ use yubihsm::{asymmetric, object, wrap, Capability};
 // TODO: test against RFC 3610 vectors
 #[test]
 fn wrap_key_test() {
-    let mut client = crate::get_hsm_client();
+    let client = crate::get_hsm_client();
     let algorithm = wrap::Algorithm::AES128_CCM;
     let capabilities = Capability::EXPORT_WRAPPED | Capability::IMPORT_WRAPPED;
     let delegated_capabilities = Capability::all();
 
-    clear_test_key_slot(&mut client, object::Type::WrapKey);
+    clear_test_key_slot(&client, object::Type::WrapKey);
 
     let key_id = client
         .put_wrap_key(
