@@ -1,3 +1,13 @@
+## [0.22.0] (2019-03-24)
+
+- Integrate Signatory types ([#192])
+- Make `yubihsm::client::Client` thread-safe ([#191])
+- Move asymmetric algorithm modules into the toplevel ([#190])
+- Fix parsing of wrap nonces ([#188])
+- Make signatory a mandatory dependency ([#186])
+- `rsa-preview` cargo feature ([#185])
+- Factor device info/storage/wrap commands into public types ([#184])
+
 ## [0.21.0] (2019-02-26)
 
 - Factor algorithms into their own Rust modules ([#180])
@@ -213,6 +223,14 @@ to adding support for several commands.
 
 - Initial release
 
+[0.22.0]: https://github.com/tendermint/yubihsm-rs/pull/194
+[#192]: https://github.com/tendermint/yubihsm-rs/pull/192
+[#191]: https://github.com/tendermint/yubihsm-rs/pull/191
+[#190]: https://github.com/tendermint/yubihsm-rs/pull/190
+[#188]: https://github.com/tendermint/yubihsm-rs/pull/188
+[#186]: https://github.com/tendermint/yubihsm-rs/pull/186
+[#185]: https://github.com/tendermint/yubihsm-rs/pull/185
+[#184]: https://github.com/tendermint/yubihsm-rs/pull/184
 [0.21.0]: https://github.com/tendermint/yubihsm-rs/pull/183
 [#180]: https://github.com/tendermint/yubihsm-rs/pull/180
 [#179]: https://github.com/tendermint/yubihsm-rs/pull/179
