@@ -1,21 +1,17 @@
 //! ECDSA provider for the YubiHSM 2 crate (supporting NIST P-256 and secp256k1).
 //!
-//! To enable secp256k1 support, you need to build `signatory-yubihsm` with the
-//! `secp256k1` cargo feature enabled.
+//! To enable secp256k1 support, build with the `secp256k1` cargo feature enabled.
 
-use crate::{asymmetric, object, Client};
+use crate::{object, Client};
 #[cfg(feature = "secp256k1")]
-use signatory::ecdsa::curve::Secp256k1;
+use signatory::{ecdsa::curve::Secp256k1, generic_array::GenericArray};
 use signatory::{
     ecdsa::{
-        curve::{NistP256, NistP384, WeierstrassCurve, WeierstrassCurveKind},
+        curve::{NistP256, NistP384, WeierstrassCurve},
         Asn1Signature, FixedSignature, PublicKey,
     },
     error::{Error, ErrorKind::*},
-    generic_array::{
-        typenum::{U32, U48},
-        GenericArray,
-    },
+    generic_array::typenum::{U32, U48},
     Digest, DigestSigner, PublicKeyed, Signature,
 };
 use std::marker::PhantomData;
@@ -52,15 +48,6 @@ where
 
         Ok(signer)
     }
-
-    /// Get the expected `asymmetric::Algorithm` for this `Curve`
-    pub fn asymmetric_alg() -> asymmetric::Algorithm {
-        match C::CURVE_KIND {
-            WeierstrassCurveKind::NistP256 => asymmetric::Algorithm::EC_P256,
-            WeierstrassCurveKind::NistP384 => asymmetric::Algorithm::EC_P384,
-            WeierstrassCurveKind::Secp256k1 => asymmetric::Algorithm::EC_K256,
-        }
-    }
 }
 
 impl<C> PublicKeyed<PublicKey<C>> for Signer<C>
@@ -69,22 +56,18 @@ where
 {
     /// Obtain the public key which identifies this signer
     fn public_key(&self) -> Result<PublicKey<C>, Error> {
-        let pubkey = self.client.get_public_key(self.signing_key_id)?;
+        let public_key = self.client.get_public_key(self.signing_key_id)?;
 
-        if pubkey.algorithm == Self::asymmetric_alg() {
-            Ok(PublicKey::from_untagged_point(GenericArray::from_slice(
-                pubkey.as_ref(),
-            )))
-        } else {
-            Err(Error::new(
+        public_key.ecdsa().ok_or_else(|| {
+            Error::new(
                 KeyInvalid,
                 Some(&format!(
                     "expected a {} key, got: {:?}",
                     C::CURVE_KIND.to_str(),
-                    pubkey.algorithm
+                    public_key.algorithm
                 )),
-            ))
-        }
+            )
+        })
     }
 }
 

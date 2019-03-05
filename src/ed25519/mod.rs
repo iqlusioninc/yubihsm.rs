@@ -1,10 +1,7 @@
 //! Ed25519 digital signature algorithm support
 
 pub(crate) mod commands;
-mod signature;
 mod signer;
 
-pub use self::{
-    signature::{Signature, SIGNATURE_SIZE},
-    signer::Signer,
-};
+pub use self::signer::Signer;
+pub use signatory::ed25519::{PublicKey, Signature, SIGNATURE_SIZE};

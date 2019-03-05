@@ -10,7 +10,7 @@ use crate::{
     connector::ConnectionError,
     device::{self, commands::*, DeviceErrorKind, SerialNumber, StorageInfo},
     ecdsa,
-    ed25519::{self, commands::*},
+    ed25519::commands::*,
     hmac::{self, commands::*},
     kex,
     object::{self, commands::*},
@@ -621,10 +621,8 @@ fn sign_eddsa(state: &State, cmd_data: &[u8]) -> response::Message {
             let keypair =
                 Ed25519KeyPair::from_seed_unchecked(untrusted::Input::from(seed)).unwrap();
 
-            let mut signature_bytes = [0u8; ed25519::SIGNATURE_SIZE];
-            signature_bytes.copy_from_slice(keypair.sign(command.data.as_ref()).as_ref());
-
-            SignEddsaResponse(ed25519::Signature(signature_bytes)).serialize()
+            let signature_bytes = keypair.sign(command.data.as_ref());
+            SignEddsaResponse(signature_bytes.as_ref().into()).serialize()
         } else {
             debug!("not an Ed25519 key: {:?}", obj.algorithm());
             DeviceErrorKind::InvalidCommand.into()

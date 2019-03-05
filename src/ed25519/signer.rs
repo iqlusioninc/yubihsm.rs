@@ -3,11 +3,11 @@
 //! To use this provider, first establish a session with the `YubiHSM 2`, then
 //! call the appropriate signer methods to obtain signers.
 
-use crate::{asymmetric, object, Client};
+use crate::{object, Client};
 use signatory::{
     ed25519,
     error::{Error, ErrorKind::*},
-    PublicKeyed, Signature,
+    PublicKeyed,
 };
 
 /// Ed25519 signature provider for yubihsm-client
@@ -36,25 +36,21 @@ impl Signer {
 
 impl PublicKeyed<ed25519::PublicKey> for Signer {
     fn public_key(&self) -> Result<ed25519::PublicKey, Error> {
-        let pubkey = self.client.get_public_key(self.signing_key_id)?;
-
-        if pubkey.algorithm == asymmetric::Algorithm::Ed25519 {
-            Ok(ed25519::PublicKey::from_bytes(pubkey.as_ref()).unwrap())
-        } else {
-            Err(Error::new(
+        let public_key = self.client.get_public_key(self.signing_key_id)?;
+        public_key.ed25519().ok_or_else(|| {
+            Error::new(
                 KeyInvalid,
                 Some(&format!(
                     "expected an ed25519 key, got: {:?}",
-                    pubkey.algorithm
+                    public_key.algorithm
                 )),
-            ))
-        }
+            )
+        })
     }
 }
 
 impl signatory::Signer<ed25519::Signature> for Signer {
     fn sign(&self, msg: &[u8]) -> Result<ed25519::Signature, Error> {
-        let signature = self.client.sign_ed25519(self.signing_key_id, msg)?;
-        Ok(ed25519::Signature::from_bytes(signature.as_ref()).unwrap())
+        Ok(self.client.sign_ed25519(self.signing_key_id, msg)?)
     }
 }

@@ -1,6 +1,7 @@
 //! Public keys for use with asymmetric cryptography / signatures
 
-use crate::asymmetric;
+use crate::{asymmetric, ecdsa, ed25519};
+use signatory::{ecdsa::curve::WeierstrassCurveKind, generic_array::GenericArray};
 
 /// Response from `command::get_public_key`
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -38,6 +39,52 @@ impl PublicKey {
     /// Get slice of the inner byte vector
     pub fn as_slice(&self) -> &[u8] {
         self.as_ref()
+    }
+
+    /// Return the ECDSA public key of the given curve type if applicable
+    pub fn ecdsa<C>(&self) -> Option<ecdsa::PublicKey<C>>
+    where
+        C: ecdsa::curve::WeierstrassCurve,
+    {
+        match self.algorithm {
+            asymmetric::Algorithm::EC_P256 => {
+                if C::CURVE_KIND == WeierstrassCurveKind::NistP256 {
+                    Some(ecdsa::PublicKey::from_untagged_point(
+                        GenericArray::from_slice(&self.bytes),
+                    ))
+                } else {
+                    None
+                }
+            }
+            asymmetric::Algorithm::EC_P384 => {
+                if C::CURVE_KIND == WeierstrassCurveKind::NistP384 {
+                    Some(ecdsa::PublicKey::from_untagged_point(
+                        GenericArray::from_slice(&self.bytes),
+                    ))
+                } else {
+                    None
+                }
+            }
+            asymmetric::Algorithm::EC_K256 => {
+                if C::CURVE_KIND == WeierstrassCurveKind::Secp256k1 {
+                    Some(ecdsa::PublicKey::from_untagged_point(
+                        GenericArray::from_slice(&self.bytes),
+                    ))
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        }
+    }
+
+    /// Return the Ed25519 public key if applicable
+    pub fn ed25519(&self) -> Option<ed25519::PublicKey> {
+        if self.algorithm == asymmetric::Algorithm::Ed25519 {
+            ed25519::PublicKey::from_bytes(&self.bytes).ok()
+        } else {
+            None
+        }
     }
 }
 
