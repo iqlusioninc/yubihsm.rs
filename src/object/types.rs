@@ -3,7 +3,10 @@ use serde::{
     de::{self, Deserialize, Deserializer, Visitor},
     ser::{Serialize, Serializer},
 };
-use std::fmt;
+use std::{
+    fmt::{self, Display},
+    str::FromStr,
+};
 
 /// Types of objects
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
@@ -48,6 +51,39 @@ impl Type {
     /// Serialize this object type as a byte
     pub fn to_u8(self) -> u8 {
         self as u8
+    }
+}
+
+impl Display for Type {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match *self {
+            Type::Opaque => "opaque",
+            Type::AuthenticationKey => "authentication-key",
+            Type::AsymmetricKey => "asymmetric-key",
+            Type::WrapKey => "wrap-key",
+            Type::HmacKey => "hmac-key",
+            Type::Template => "template",
+            Type::OtpAeadKey => "otp-aead-key",
+        };
+
+        write!(f, "{}", s)
+    }
+}
+
+impl FromStr for Type {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Type, ()> {
+        Ok(match s {
+            "opaque" => Type::Opaque,
+            "authentication-key" => Type::AuthenticationKey,
+            "asymmetric-key" => Type::AsymmetricKey,
+            "wrap-key" => Type::WrapKey,
+            "hmac-key" => Type::HmacKey,
+            "template" => Type::Template,
+            "otp-aead-key" => Type::OtpAeadKey,
+            _ => return Err(()),
+        })
     }
 }
 

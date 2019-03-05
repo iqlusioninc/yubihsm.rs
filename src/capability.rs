@@ -265,7 +265,7 @@ impl Display for Capability {
             Capability::UNWRAP_DATA => "unwrap-data",
             Capability::WRAP_DATA => "wrap-data",
             Capability::CHANGE_AUTHENTICATION_KEY => "change-authentication-key",
-            _ => "unknown",
+            _ => return Err(fmt::Error), // we don't support displaying this capability yet
         };
 
         write!(f, "{}", s)
