@@ -11,7 +11,7 @@ use crate::{
     device::{DeviceError, DeviceErrorKind::*},
     object, wrap, Capability, Client, Domain,
 };
-use rand_os::{rand_core::RngCore, OsRng};
+use getrandom::getrandom;
 use std::fmt::{self, Debug};
 use zeroize::Zeroize;
 
@@ -31,9 +31,8 @@ pub struct Key {
 impl Key {
     /// Generate a random wrap key with the given key size.
     pub fn generate_random(key_id: object::Id, algorithm: wrap::Algorithm) -> Self {
-        let mut rand = OsRng::new().unwrap();
         let mut bytes = vec![0u8; algorithm.key_len()];
-        rand.fill_bytes(&mut bytes);
+        getrandom(&mut bytes).expect("RNG failure!");
 
         let result = Self::from_bytes(key_id, &bytes).unwrap();
         bytes.zeroize();

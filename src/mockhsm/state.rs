@@ -49,7 +49,7 @@ impl State {
         host_challenge: Challenge,
     ) -> &HsmSession {
         // Generate a random card challenge to send back to the client
-        let card_challenge = Challenge::random();
+        let card_challenge = Challenge::new();
 
         let session_id = self
             .sessions

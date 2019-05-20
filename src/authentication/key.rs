@@ -1,11 +1,11 @@
 //! `YubiHSM 2` authentication keys (2 * AES-128 symmetric PSK) from which session keys are derived
 
 use super::{KeyError, KeyErrorKind};
+use getrandom::getrandom;
 #[cfg(feature = "hmac")]
 use hmac_crate::Hmac;
 #[cfg(feature = "pbkdf2")]
 use pbkdf2::pbkdf2;
-use rand_os::{rand_core::RngCore, OsRng};
 #[cfg(feature = "sha2")]
 use sha2::Sha256;
 use std::fmt::{self, Debug};
@@ -34,9 +34,8 @@ pub struct Key(pub(crate) [u8; SIZE]);
 impl Key {
     /// Generate a random `Key` using `OsRng`.
     pub fn random() -> Self {
-        let mut rng = OsRng::new().expect("RNG failure!");
         let mut challenge = [0u8; SIZE];
-        rng.fill_bytes(&mut challenge);
+        getrandom(&mut challenge).expect("RNG failure!");
         Key(challenge)
     }
 
