@@ -73,7 +73,7 @@ impl Report {
     }
 
     /// Store this report in the YubiHSM at the given object ID
-    pub fn store(&self, client: &mut Client, report_object_id: object::Id) -> Result<(), Error> {
+    pub fn store(&self, client: &Client, report_object_id: object::Id) -> Result<(), Error> {
         client
             .put_opaque(
                 report_object_id,
