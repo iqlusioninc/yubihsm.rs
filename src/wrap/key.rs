@@ -87,7 +87,7 @@ impl Key {
     }
 
     /// Create this key within the HSM
-    pub fn create(&self, client: &mut Client) -> Result<(), ClientError> {
+    pub fn create(&self, client: &Client) -> Result<(), ClientError> {
         let algorithm = self.import_params.algorithm.wrap().unwrap();
 
         client.put_wrap_key(

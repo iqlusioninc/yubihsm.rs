@@ -64,7 +64,7 @@ impl Role {
     }
 
     /// Create this role within the YubiHSM 2 device
-    pub fn create(&self, client: &mut Client) -> Result<(), Error> {
+    pub fn create(&self, client: &Client) -> Result<(), Error> {
         client
             .put_authentication_key(
                 self.credentials.authentication_key_id,

@@ -97,7 +97,7 @@ impl Profile {
     }
 
     /// Use this profile to provision the YubiHSM 2 with the given client
-    pub fn provision(&self, client: &mut Client) -> Result<Report, Error> {
+    pub fn provision(&self, client: &Client) -> Result<Report, Error> {
         for role in &self.roles {
             info!("installing role: {}", role.authentication_key_label);
             role.create(client)?;

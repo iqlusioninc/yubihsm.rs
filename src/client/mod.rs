@@ -10,9 +10,8 @@
 #[macro_use]
 mod error;
 
-pub use self::error::{ClientError, ClientErrorKind};
-
 use self::error::ClientErrorKind::*;
+pub use self::error::{ClientError, ClientErrorKind};
 use crate::{
     asymmetric::{self, commands::*, PublicKey},
     attestation::{self, commands::*},
@@ -38,6 +37,8 @@ use std::{
     sync::{Arc, Mutex},
     time::{Duration, Instant},
 };
+#[cfg(feature = "passwords")]
+use std::{thread, time::SystemTime};
 #[cfg(feature = "rsa-preview")]
 use {
     crate::rsa::{self, pkcs1::commands::*, pss::commands::*},
@@ -94,7 +95,10 @@ impl Client {
         Ok(client)
     }
 
-    /// Try to make a clone of this client
+    /// Borrow this client's YubiHSM connector (which is `Clone`able)
+    pub fn connector(&self) -> &Connector {
+        &self.connector
+    }
 
     /// Connect to the HSM (idempotently, i.e. returns success if we have
     /// an open connection already)
@@ -689,6 +693,64 @@ impl Client {
         // Resetting the HSM invalidates our session
         session.abort();
         Ok(())
+    }
+
+    /// Reset the HSM to a factory default state and reboot, clearing all
+    /// stored objects and restoring the default auth key. This method further
+    /// attempts to wait for the HSM to finish resetting and then attempts to
+    /// reauthenticate with the default credentials.
+    ///
+    /// Upon successfully resetting the device and autenticating using the
+    /// default administrator credentials in key slot 0x01, a new
+    /// `yubihsm::Client` is returned.
+    ///
+    /// **WARNING:** This wipes all keys and other data from the HSM! Make
+    /// absolutely sure you want to use this!
+    ///
+    /// <https://developers.yubico.com/YubiHSM2/Commands/Reset_Device.html>
+    #[cfg(feature = "passwords")]
+    pub fn reset_device_and_reconnect(&self, timeout: Duration) -> Result<Client, ClientError> {
+        /// How long to initially wait for a device reset to complete (1s)
+        const DEVICE_RESET_WAIT_MS: u64 = 1000;
+
+        /// How frequently to poll the device after it's been reset (200ms)
+        const DEVICE_POLL_INTERVAL_MS: u64 = 200;
+
+        // Warn people and give them a brief grace period to avoid oblitering their HSM
+        warn!("factory resetting HSM device! all data will be lost!");
+        thread::sleep(Duration::from_millis(DEVICE_RESET_WAIT_MS));
+
+        // Reset the device
+        self.reset_device()?;
+
+        let deadline = SystemTime::now() + timeout;
+
+        info!("waiting for device reset to complete");
+        thread::sleep(Duration::from_millis(DEVICE_RESET_WAIT_MS));
+
+        // Attempt to reconnect to the device with the default credentials
+        loop {
+            match Client::open(self.connector.clone(), Credentials::default(), true) {
+                Ok(client) => {
+                    debug!("successfully reconnected to HSM after reset!");
+                    return Ok(client);
+                }
+                Err(e) => {
+                    // If we're past the deadline, return an error
+                    if SystemTime::now() >= deadline {
+                        fail!(
+                            CreateFailed,
+                            "timed out after {} seconds connecting to HSM after reset: {}",
+                            timeout.as_secs(),
+                            e
+                        )
+                    } else {
+                        debug!("error reconnecting to HSM: {}", e);
+                        thread::sleep(Duration::from_millis(DEVICE_POLL_INTERVAL_MS))
+                    }
+                }
+            }
+        }
     }
 
     /// Configure the audit policy settings for a particular command, e.g. auditing
