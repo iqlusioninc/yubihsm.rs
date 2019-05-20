@@ -1,7 +1,6 @@
-use rand_os::{
-    rand_core::{CryptoRng, RngCore},
-    OsRng,
-};
+//! Challenge messages used as part of SCP03's challenge/response protocol.
+
+use getrandom::getrandom;
 
 /// Size of a challenge message
 pub const CHALLENGE_SIZE: usize = 8;
@@ -11,15 +10,10 @@ pub const CHALLENGE_SIZE: usize = 8;
 pub struct Challenge([u8; CHALLENGE_SIZE]);
 
 impl Challenge {
-    /// Generate a random Challenge using OsRng
-    pub fn random() -> Self {
-        Self::new(&mut OsRng::new().expect("RNG failure!"))
-    }
-
-    /// Create a new Challenge using the given RNG
-    pub fn new<R: CryptoRng + RngCore>(rng: &mut R) -> Self {
+    /// Create a new random `Challenge`
+    pub fn new() -> Self {
         let mut challenge = [0u8; CHALLENGE_SIZE];
-        rng.fill_bytes(&mut challenge);
+        getrandom(&mut challenge).expect("RNG failure!");
         Challenge(challenge)
     }
 

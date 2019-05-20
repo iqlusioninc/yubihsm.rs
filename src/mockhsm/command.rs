@@ -24,8 +24,8 @@ use crate::{
     wrap::{self, commands::*},
     Capability,
 };
+use getrandom::getrandom;
 use hmac_crate::{Hmac, Mac};
-use rand_os::{rand_core::RngCore, OsRng};
 use ring::signature::Ed25519KeyPair;
 use sha2::Sha256;
 use std::{io::Cursor, str::FromStr};
@@ -366,9 +366,8 @@ fn get_pseudo_random(_state: &State, cmd_data: &[u8]) -> response::Message {
     let command: GetPseudoRandomCommand = deserialize(cmd_data)
         .unwrap_or_else(|e| panic!("error parsing Code::GetPseudoRandom: {:?}", e));
 
-    let mut rng = OsRng::new().unwrap();
     let mut bytes = vec![0u8; command.bytes as usize];
-    rng.fill_bytes(&mut bytes[..]);
+    getrandom(&mut bytes).expect("RNG failure!");
 
     GetPseudoRandomResponse { bytes }.serialize()
 }

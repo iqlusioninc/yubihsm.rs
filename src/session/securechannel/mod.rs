@@ -103,7 +103,7 @@ impl SecureChannel {
         connector: &Connector,
         credentials: &Credentials,
     ) -> Result<Self, SessionError> {
-        let host_challenge = Challenge::random();
+        let host_challenge = Challenge::new();
 
         let command_message: command::Message = CreateSessionCommand {
             authentication_key_id: credentials.authentication_key_id,

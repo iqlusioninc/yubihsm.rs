@@ -29,12 +29,12 @@ cmac = "0.2"
 failure = "0.1"
 failure_derive = "0.1"
 gaunt = { version = "0.1", optional = true }
+getrandom = "0.1"
 hmac = { version = "0.7", optional = true }
 lazy_static = { version = "1", optional = true }
 libusb = { version = "0.3", optional = true }
 log = "0.4"
 pbkdf2 = { version = "0.3", optional = true, default-features = false }
-rand_os = "0.1"
 serde = "1"
 serde_derive = "1"
 serde_json = { version = "1", optional = true }
@@ -60,7 +60,6 @@ default = ["http", "passwords", "setup"]
 http = ["gaunt"]
 force-audit-test = [] # TODO(tarcieri): clear audit log when tests start. See notes on PR#185
 mockhsm = ["passwords", "ring", "untrusted"]
-nightly = ["subtle/nightly", "zeroize/nightly"]
 passwords = ["hmac", "pbkdf2", "sha2"]
 rsa-preview = ["sha2"]
 setup = ["chrono", "passwords", "serde_json", "uuid/serde"]
