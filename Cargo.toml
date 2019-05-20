@@ -22,7 +22,7 @@ circle-ci = { repository = "tendermint/yubihsm-rs", branch = "develop" }
 [dependencies]
 aes = "0.3"
 bitflags = "1"
-block-modes = "0.2"
+block-modes = "0.3"
 byteorder = "1.2"
 chrono = { version = "0.4", features=["serde"], optional = true }
 cmac = "0.2"

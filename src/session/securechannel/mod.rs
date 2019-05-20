@@ -56,7 +56,7 @@ use aes::{
     },
     Aes128,
 };
-use block_modes::{block_padding::Iso7816, BlockMode, BlockModeIv, Cbc};
+use block_modes::{block_padding::Iso7816, BlockMode, Cbc};
 use byteorder::{BigEndian, ByteOrder};
 use cmac::{crypto_mac::Mac as CryptoMac, Cmac};
 use subtle::ConstantTimeEq;
@@ -302,7 +302,7 @@ impl SecureChannel {
         let cipher = Aes128::new_varkey(&self.enc_key).unwrap();
         let icv = compute_icv(&cipher, self.counter);
         let cbc_encryptor = Aes128Cbc::new(cipher, &icv);
-        let ciphertext = cbc_encryptor.encrypt_pad(&mut message, pos).unwrap();
+        let ciphertext = cbc_encryptor.encrypt(&mut message, pos).unwrap();
 
         self.command_with_mac(command::Code::SessionMessage, ciphertext)
     }
@@ -324,7 +324,7 @@ impl SecureChannel {
 
         let mut response_message = encrypted_response.data;
         let response_len = cbc_decryptor
-            .decrypt_pad(&mut response_message)
+            .decrypt(&mut response_message)
             .map_err(|e| {
                 self.terminate();
                 err!(ProtocolError, "error decrypting response: {:?}", e)
@@ -448,7 +448,7 @@ impl SecureChannel {
 
         let mut command_data = encrypted_command.data;
         let command_len = cbc_decryptor
-            .decrypt_pad(&mut command_data)
+            .decrypt(&mut command_data)
             .map_err(|e| {
                 self.terminate();
                 err!(ProtocolError, "error decrypting command: {:?}", e)
@@ -517,7 +517,7 @@ impl SecureChannel {
         let icv = compute_icv(&cipher, self.counter);
         let cbc_encryptor = Aes128Cbc::new(cipher, &icv);
 
-        let ct_len = cbc_encryptor.encrypt_pad(&mut message, pos).unwrap().len();
+        let ct_len = cbc_encryptor.encrypt(&mut message, pos).unwrap().len();
         message.truncate(ct_len);
 
         self.response_with_mac(
