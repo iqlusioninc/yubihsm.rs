@@ -1,20 +1,12 @@
-<img src="https://raw.githubusercontent.com/tendermint/yubihsm-rs/master/img/logo.png" width="150" height="110">
+<img src="https://raw.githubusercontent.com/tendermint/yubihsm-rs/develop/img/logo.png" width="150" height="110">
 
 # yubihsm.rs
 
 [![crate][crate-image]][crate-link]
 [![Docs][docs-image]][docs-link]
-![MIT/Apache2 licensed][license-image]
+![Apache2/MIT licensed][license-image]
+![Rust 1.31+][rustc-image]
 [![Build Status][build-image]][build-link]
-<img src="https://rustsec.org/assets/img/badges/unsafe/forbidden.svg" height="20" alt="unsafe: forbidden">
-
-[crate-image]: https://img.shields.io/crates/v/yubihsm.svg
-[crate-link]: https://crates.io/crates/yubihsm
-[docs-image]: https://docs.rs/yubihsm/badge.svg
-[docs-link]: https://docs.rs/yubihsm/
-[license-image]: https://img.shields.io/badge/license-Apache2.0/MIT-blue.svg
-[build-image]: https://circleci.com/gh/tendermint/yubihsm-rs.svg?style=shield
-[build-link]: https://circleci.com/gh/tendermint/yubihsm-rs
 
 Pure Rust client for [YubiHSM 2] devices from [Yubico].
 
@@ -45,7 +37,7 @@ On x86(-64) targets, add the following `RUSTFLAGS` to enable AES-NI to better
 secure communication with the YubiHSM:
 
 ```
-RUSTFLAGS=-Ctarget-feature=+aes,+ssse3`
+RUSTFLAGS=-Ctarget-feature=+aes,+ssse3
 ```
 
 You can configure your `~/.cargo/config` to always pass these flags:
@@ -162,6 +154,19 @@ the Apache License (Version 2.0).
 
 See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT) for details.
 
+[//]: # (badges)
+
+[crate-image]: https://img.shields.io/crates/v/yubihsm.svg
+[crate-link]: https://crates.io/crates/yubihsm
+[docs-image]: https://docs.rs/yubihsm/badge.svg
+[docs-link]: https://docs.rs/yubihsm/
+[license-image]: https://img.shields.io/badge/license-Apache2.0/MIT-blue.svg
+[rustc-image]: https://img.shields.io/badge/rustc-1.34+-blue.svg
+[build-image]: https://circleci.com/gh/tendermint/yubihsm-rs.svg?style=shield
+[build-link]: https://circleci.com/gh/tendermint/yubihsm-rs
+
+[//]: # (general links)
+
 [libyubihsm]: https://github.com/Yubico/yubihsm-shell/blob/master/lib/README.adoc
 [YubiHSM 2]: https://www.yubico.com/products/yubihsm/
 [Yubico]: https://www.yubico.com/
@@ -173,12 +178,14 @@ See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT) for details.
 [libusb]: https://github.com/dcuddeback/libusb-rs
 [thinks it's awesome]: https://twitter.com/Yubico/status/971186516796915712
 [YubiHSM2 commands]: https://developers.yubico.com/YubiHSM2/Commands/
-[Serde-based message parser]: https://github.com/tendermint/yubihsm-rs/tree/master/src/serialization
-[commands]: https://github.com/tendermint/yubihsm-rs/tree/master/src/command
-[integration test]:  https://github.com/tendermint/yubihsm-rs/blob/master/tests/integration.rs
+[Serde-based message parser]: https://github.com/tendermint/yubihsm-rs/tree/develop/src/serialization
+[commands]: https://github.com/tendermint/yubihsm-rs/tree/develop/src/command
+[integration test]:  https://github.com/tendermint/yubihsm-rs/blob/develop/tests/integration.rs
 [MockHSM]: https://docs.rs/yubihsm/latest/yubihsm/mockhsm/struct.MockHsm.html
 [YubiHSM2 SDK]: https://developers.yubico.com/YubiHSM2/Releases/
 [yubihsm-shell reset]: https://developers.yubico.com/YubiHSM2/Commands/Reset_Device.html
+
+[//]: # (YubiHSM2 commands)
 
 [Authenticate Session]: https://developers.yubico.com/YubiHSM2/Commands/Authenticate_Session.html
 [Blink Device]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.blink_device

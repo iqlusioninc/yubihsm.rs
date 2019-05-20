@@ -10,14 +10,14 @@ license       = "Apache-2.0 OR MIT"
 authors       = ["Tony Arcieri <tony@iqlusion.io>"]
 documentation = "https://docs.rs/yubihsm"
 homepage      = "https://github.com/tendermint/yubihsm-rs"
-repository    = "https://github.com/tendermint/yubihsm-rs/tree/master/"
+repository    = "https://github.com/tendermint/yubihsm-rs/tree/develop/"
 readme        = "README.md"
 categories    = ["cryptography", "hardware-support"]
 keywords      = ["ecdsa", "ed25519", "hmac", "hsm", "yubikey"]
 edition       = "2018"
 
 [badges]
-circle-ci = { repository = "tendermint/yubihsm-rs" }
+circle-ci = { repository = "tendermint/yubihsm-rs", branch = "develop" }
 
 [dependencies]
 aes = "0.3"
