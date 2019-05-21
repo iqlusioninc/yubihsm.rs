@@ -42,7 +42,6 @@ use std::{thread, time::SystemTime};
 #[cfg(feature = "rsa-preview")]
 use {
     crate::rsa::{self, pkcs1::commands::*, pss::commands::*},
-    byteorder::{BigEndian, ByteOrder},
     sha2::{Digest, Sha256},
 };
 
@@ -925,9 +924,8 @@ impl Client {
 
         let mut hasher = Sha256::default();
 
-        let mut length = [0u8; 2];
-        BigEndian::write_u16(&mut length, data.len() as u16);
-        hasher.input(&length);
+        let length = data.len() as u16;
+        hasher.input(&length.to_be_bytes());
         hasher.input(data);
         let digest = hasher.result();
 

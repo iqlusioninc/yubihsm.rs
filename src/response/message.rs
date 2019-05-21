@@ -5,10 +5,6 @@
 // TODO: this code predates the serde serializers. It could be rewritten with serde.
 
 #[cfg(feature = "mockhsm")]
-use byteorder::WriteBytesExt;
-use byteorder::{BigEndian, ByteOrder};
-
-#[cfg(feature = "mockhsm")]
 use crate::device::DeviceErrorKind;
 use crate::{
     command, connector, response,
@@ -50,7 +46,10 @@ impl Message {
         }
 
         let code = response::Code::from_u8(bytes[0]).map_err(|e| err!(ProtocolError, "{}", e))?;
-        let length = BigEndian::read_u16(&bytes[1..3]) as usize;
+
+        let mut length_bytes = [0u8; 2];
+        length_bytes.copy_from_slice(&bytes[1..3]);
+        let length = u16::from_be_bytes(length_bytes) as usize;
 
         if length.checked_add(3).unwrap() != bytes.len() {
             fail!(
@@ -180,7 +179,9 @@ impl Into<Vec<u8>> for Message {
     fn into(mut self) -> Vec<u8> {
         let mut result = Vec::with_capacity(3 + self.len());
         result.push(self.code.to_u8());
-        result.write_u16::<BigEndian>(self.len() as u16).unwrap();
+
+        let length = self.len() as u16;
+        result.extend_from_slice(&length.to_be_bytes());
 
         if let Some(session_id) = self.session_id {
             result.push(session_id.to_u8());

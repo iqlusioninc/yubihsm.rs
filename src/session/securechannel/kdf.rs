@@ -2,12 +2,9 @@
 //! counter mode KDF as described in NIST SP 800-108 (NIST 800-108)
 //! with "fixed input data" specific to the SCP03 protocol
 
-use aes::Aes128;
-use byteorder::{BigEndian, ByteOrder};
-use cmac::crypto_mac::Mac;
-use cmac::Cmac;
-
 use super::{Context, KEY_SIZE};
+use aes::Aes128;
+use cmac::{crypto_mac::Mac, Cmac};
 
 /// Derive a slice of output data using SCP03's KDF
 pub fn derive(mac_key: &[u8], derivation_constant: u8, context: &Context, output: &mut [u8]) {
@@ -30,7 +27,8 @@ pub fn derive(mac_key: &[u8], derivation_constant: u8, context: &Context, output
     derivation_data[12] = 0x00;
 
     // "L": length of derived data in bits
-    BigEndian::write_u16(&mut derivation_data[13..15], (output_len * 8) as u16);
+    let length = (output_len * 8) as u16;
+    derivation_data[13..15].copy_from_slice(&length.to_be_bytes());
 
     // "i": KDF counter for deriving more than one block-length of data
     // Hardcoded to 1 as we don't support deriving more than 128-bits

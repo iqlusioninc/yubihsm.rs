@@ -19,9 +19,6 @@ use crate::{
     },
     uuid::{self, Uuid},
 };
-#[cfg(feature = "mockhsm")]
-use byteorder::ByteOrder;
-use byteorder::{BigEndian, WriteBytesExt};
 
 /// A command sent from the host to the `YubiHSM 2`. May or may not be
 /// authenticated using SCP03's chained/evolving MAC protocol.
@@ -112,7 +109,9 @@ impl Message {
         let command_type =
             command::Code::from_u8(bytes[0]).map_err(|e| err!(ProtocolError, "{}", e))?;
 
-        let length = BigEndian::read_u16(&bytes[1..3]) as usize;
+        let mut length_bytes = [0u8; 2];
+        length_bytes.copy_from_slice(&bytes[1..3]);
+        let length = u16::from_be_bytes(length_bytes) as usize;
 
         if length + 3 != bytes.len() {
             fail!(
@@ -180,7 +179,9 @@ impl Message {
     pub fn serialize(mut self) -> Vec<u8> {
         let mut result = Vec::with_capacity(3 + self.len());
         result.push(self.command_type as u8);
-        result.write_u16::<BigEndian>(self.len() as u16).unwrap();
+
+        let length = self.len() as u16;
+        result.extend_from_slice(&length.to_be_bytes());
 
         if let Some(session_id) = self.session_id {
             result.push(session_id.to_u8());

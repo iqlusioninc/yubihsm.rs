@@ -1,12 +1,9 @@
 //! Serde-powered deserializer for `YubiHSM` messages
 
-use std::io::Read;
-
-use byteorder::{BigEndian, ReadBytesExt};
+use super::error::SerializationError;
 use serde;
 use serde::de::{DeserializeSeed, SeqAccess, Visitor};
-
-use super::error::SerializationError;
+use std::io::Read;
 
 /// Deserializer for `YubiHSM` messages, which reads from a reader object
 pub struct Deserializer<R: Read> {
@@ -42,7 +39,9 @@ impl<'de, 'a, R: Read> serde::Deserializer<'de> for &'a mut Deserializer<R> {
     where
         V: Visitor<'de>,
     {
-        visitor.visit_u8(self.reader.read_u8()?)
+        let mut byte = [0u8];
+        self.reader.read_exact(&mut byte)?;
+        visitor.visit_u8(byte[0])
     }
 
     #[inline]
@@ -50,8 +49,9 @@ impl<'de, 'a, R: Read> serde::Deserializer<'de> for &'a mut Deserializer<R> {
     where
         V: Visitor<'de>,
     {
-        let value = self.reader.read_u16::<BigEndian>()?;
-        visitor.visit_u16(value)
+        let mut bytes = [0u8; 2];
+        self.reader.read_exact(&mut bytes)?;
+        visitor.visit_u16(u16::from_be_bytes(bytes))
     }
 
     #[inline]
@@ -59,8 +59,9 @@ impl<'de, 'a, R: Read> serde::Deserializer<'de> for &'a mut Deserializer<R> {
     where
         V: Visitor<'de>,
     {
-        let value = self.reader.read_u32::<BigEndian>()?;
-        visitor.visit_u32(value)
+        let mut bytes = [0u8; 4];
+        self.reader.read_exact(&mut bytes)?;
+        visitor.visit_u32(u32::from_be_bytes(bytes))
     }
 
     #[inline]
@@ -68,8 +69,9 @@ impl<'de, 'a, R: Read> serde::Deserializer<'de> for &'a mut Deserializer<R> {
     where
         V: Visitor<'de>,
     {
-        let value = self.reader.read_u64::<BigEndian>()?;
-        visitor.visit_u64(value)
+        let mut bytes = [0u8; 8];
+        self.reader.read_exact(&mut bytes)?;
+        visitor.visit_u64(u64::from_be_bytes(bytes))
     }
 
     #[inline]

@@ -6,18 +6,14 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/>
 
-use byteorder::{BigEndian, ByteOrder, WriteBytesExt};
 use uuid::Uuid;
-
 use super::{
     error::{SessionError, SessionErrorKind::ProtocolError},
     securechannel::{Mac, MAC_SIZE},
-    session::Id,
 };
-use command::command::Code;
+use crate::{command, response, session};
 #[cfg(feature = "mockhsm")]
-use error::DeviceErrorKind;
-use response::response::Code;
+use crate::error::DeviceErrorKind;
 
 /// Maximum size of a message sent to/from the YubiHSM
 pub const MAX_MSG_SIZE: usize = 2048;

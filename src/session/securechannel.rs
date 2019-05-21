@@ -24,18 +24,12 @@ mod cryptogram;
 mod kdf;
 mod mac;
 
-/// AES key size in bytes. SCP03 theoretically supports other key sizes, but
-/// the YubiHSM 2 does not. Since this crate is somewhat specialized to the `YubiHSM 2` (at least for now)
-/// we hardcode to 128-bit for simplicity.
-pub(crate) const KEY_SIZE: usize = 16;
-
 pub(crate) use self::{
     challenge::{Challenge, CHALLENGE_SIZE},
     context::Context,
     cryptogram::{Cryptogram, CRYPTOGRAM_SIZE},
     mac::{Mac, MAC_SIZE},
 };
-
 use super::{
     commands::{CreateSessionCommand, CreateSessionResponse},
     SessionError,
@@ -57,10 +51,14 @@ use aes::{
     Aes128,
 };
 use block_modes::{block_padding::Iso7816, BlockMode, Cbc};
-use byteorder::{BigEndian, ByteOrder};
 use cmac::{crypto_mac::Mac as CryptoMac, Cmac};
 use subtle::ConstantTimeEq;
 use zeroize::{Zeroize, Zeroizing};
+
+/// AES key size in bytes. SCP03 theoretically supports other key sizes, but
+/// the YubiHSM 2 does not. Since this crate is somewhat specialized to the `YubiHSM 2` (at least for now)
+/// we hardcode to 128-bit for simplicity.
+pub(crate) const KEY_SIZE: usize = 16;
 
 /// Size of an AES block
 const AES_BLOCK_SIZE: usize = 16;
@@ -224,9 +222,8 @@ impl SecureChannel {
         mac.input(&self.mac_chaining_value);
         mac.input(&[command_type.to_u8()]);
 
-        let mut length = [0u8; 2];
-        BigEndian::write_u16(&mut length, (1 + command_data.len() + MAC_SIZE) as u16);
-        mac.input(&length);
+        let length = (1 + command_data.len() + MAC_SIZE) as u16;
+        mac.input(&length.to_be_bytes());
         mac.input(&[self.id.to_u8()]);
         mac.input(command_data);
 
@@ -356,9 +353,8 @@ impl SecureChannel {
         mac.input(&self.mac_chaining_value);
         mac.input(&[response.code.to_u8()]);
 
-        let mut length = [0u8; 2];
-        BigEndian::write_u16(&mut length, response.len() as u16);
-        mac.input(&length);
+        let length = response.len() as u16;
+        mac.input(&length.to_be_bytes());
         mac.input(&[session_id.to_u8()]);
         mac.input(&response.data);
 
@@ -468,9 +464,8 @@ impl SecureChannel {
         mac.input(&self.mac_chaining_value);
         mac.input(&[command.command_type.to_u8()]);
 
-        let mut length = [0u8; 2];
-        BigEndian::write_u16(&mut length, command.len() as u16);
-        mac.input(&length);
+        let length = command.len() as u16;
+        mac.input(&length.to_be_bytes());
         mac.input(&[command.session_id.unwrap().to_u8()]);
         mac.input(&command.data);
 
@@ -535,9 +530,8 @@ impl SecureChannel {
         mac.input(&self.mac_chaining_value);
         mac.input(&[code.to_u8()]);
 
-        let mut length = [0u8; 2];
-        BigEndian::write_u16(&mut length, (1 + body.len() + MAC_SIZE) as u16);
-        mac.input(&length);
+        let length = (1 + body.len() + MAC_SIZE) as u16;
+        mac.input(&length.to_be_bytes());
         mac.input(&[self.id.to_u8()]);
         mac.input(&body);
 
@@ -612,7 +606,7 @@ fn derive_key(parent_key: &[u8], derivation_constant: u8, context: &Context) -> 
 fn compute_icv(cipher: &Aes128, counter: u32) -> GenericArray<u8, U16> {
     // "Initial Chaining Vector" - CBC IVs generated from encrypting a counter
     let mut icv = GenericArray::clone_from_slice(&[0u8; AES_BLOCK_SIZE]);
-    BigEndian::write_u32(&mut icv.as_mut_slice()[12..], counter);
+    icv.as_mut_slice()[12..].copy_from_slice(&counter.to_be_bytes());
     cipher.encrypt_block(&mut icv);
     icv
 }

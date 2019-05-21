@@ -5,7 +5,7 @@
 [![crate][crate-image]][crate-link]
 [![Docs][docs-image]][docs-link]
 ![Apache2/MIT licensed][license-image]
-![Rust 1.31+][rustc-image]
+![Rust 1.32+][rustc-image]
 [![Build Status][build-image]][build-link]
 
 Pure Rust client for [YubiHSM 2] devices from [Yubico].
@@ -31,7 +31,7 @@ or endorsed by Yubico (although whoever runs their Twitter account
 
 ## Prerequisites
 
-This crate builds on Rust 1.31+.
+This crate builds on Rust 1.32+.
 
 On x86(-64) targets, add the following `RUSTFLAGS` to enable AES-NI to better
 secure communication with the YubiHSM:
@@ -161,7 +161,7 @@ See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT) for details.
 [docs-image]: https://docs.rs/yubihsm/badge.svg
 [docs-link]: https://docs.rs/yubihsm/
 [license-image]: https://img.shields.io/badge/license-Apache2.0/MIT-blue.svg
-[rustc-image]: https://img.shields.io/badge/rustc-1.34+-blue.svg
+[rustc-image]: https://img.shields.io/badge/rustc-1.32+-blue.svg
 [build-image]: https://circleci.com/gh/tendermint/yubihsm-rs.svg?style=shield
 [build-link]: https://circleci.com/gh/tendermint/yubihsm-rs
 
