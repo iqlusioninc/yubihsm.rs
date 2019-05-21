@@ -1,3 +1,12 @@
+## [0.23.0] (2019-05-20)
+
+- Remove `byteorder` crate ([#201])
+- 2018 edition idiom cleanups ([#200])
+- setup: Support for (optionally) skipping initial device reset ([#199])
+- Upgrade to `block-modes` v0.3 ([#198])
+- Upgrade to `zeroize` 0.8 ([#197]) 
+- Switch from `rand_os` to `getrandom` ([#195])
+
 ## [0.22.0] (2019-03-24)
 
 - Integrate Signatory types ([#192])
@@ -223,6 +232,13 @@ to adding support for several commands.
 
 - Initial release
 
+[0.23.0]: https://github.com/tendermint/yubihsm-rs/pull/202
+[#201]: https://github.com/tendermint/yubihsm-rs/pull/201
+[#200]: https://github.com/tendermint/yubihsm-rs/pull/200
+[#199]: https://github.com/tendermint/yubihsm-rs/pull/199
+[#198]: https://github.com/tendermint/yubihsm-rs/pull/198
+[#197]: https://github.com/tendermint/yubihsm-rs/pull/197
+[#195]: https://github.com/tendermint/yubihsm-rs/pull/195
 [0.22.0]: https://github.com/tendermint/yubihsm-rs/pull/194
 [#192]: https://github.com/tendermint/yubihsm-rs/pull/192
 [#191]: https://github.com/tendermint/yubihsm-rs/pull/191
