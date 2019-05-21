@@ -1,16 +1,12 @@
 //! Serde-powered serializer for `YubiHSM` messages
 
-use std::io::Write;
-use std::u32;
-
-use byteorder::{BigEndian, WriteBytesExt};
+use super::error::SerializationError;
 use serde;
 use serde::ser::{
     SerializeMap, SerializeSeq, SerializeStruct, SerializeStructVariant, SerializeTuple,
     SerializeTupleStruct, SerializeTupleVariant,
 };
-
-use super::error::SerializationError;
+use std::{io::Write, u32};
 
 /// Serializer for `YubiHSM` messages
 pub(crate) struct Serializer<W> {
@@ -47,19 +43,19 @@ impl<'a, W: Write> serde::Serializer for &'a mut Serializer<W> {
     }
 
     fn serialize_u8(self, v: u8) -> Result<(), SerializationError> {
-        self.writer.write_u8(v).map_err(Into::into)
+        self.writer.write_all(&[v]).map_err(Into::into)
     }
 
     fn serialize_u16(self, v: u16) -> Result<(), SerializationError> {
-        self.writer.write_u16::<BigEndian>(v).map_err(Into::into)
+        self.writer.write_all(&v.to_be_bytes()).map_err(Into::into)
     }
 
     fn serialize_u32(self, v: u32) -> Result<(), SerializationError> {
-        self.writer.write_u32::<BigEndian>(v).map_err(Into::into)
+        self.writer.write_all(&v.to_be_bytes()).map_err(Into::into)
     }
 
     fn serialize_u64(self, v: u64) -> Result<(), SerializationError> {
-        self.writer.write_u64::<BigEndian>(v).map_err(Into::into)
+        self.writer.write_all(&v.to_be_bytes()).map_err(Into::into)
     }
 
     fn serialize_i8(self, _: i8) -> Result<(), SerializationError> {

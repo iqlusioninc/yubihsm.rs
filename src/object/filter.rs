@@ -8,9 +8,6 @@ use crate::{
     algorithm::Algorithm, capability::Capability, client::ClientError, domain::Domain, object,
 };
 #[cfg(feature = "mockhsm")]
-use byteorder::ReadBytesExt;
-use byteorder::{WriteBytesExt, BE};
-#[cfg(feature = "mockhsm")]
 use std::io::Read;
 use std::io::Write;
 
@@ -35,6 +32,24 @@ pub enum Filter {
     Type(object::Type),
 }
 
+#[cfg(feature = "mockhsm")]
+macro_rules! read_byte {
+    ($reader:expr) => {{
+        let mut byte = [0u8];
+        $reader.read_exact(&mut byte)?;
+        byte[0]
+    }};
+}
+
+#[cfg(feature = "mockhsm")]
+macro_rules! read_be_bytes {
+    ($reader:expr, $type:path) => {{
+        let mut bytes = [0u8; std::mem::size_of::<$type>()];
+        $reader.read_exact(&mut bytes)?;
+        <$type>::from_be_bytes(bytes)
+    }};
+}
+
 impl Filter {
     /// Tag value for TLV serialization for this filter
     pub fn tag(&self) -> u8 {
@@ -50,17 +65,17 @@ impl Filter {
 
     // TODO: replace this with serde
     pub(crate) fn serialize<W: Write>(&self, mut writer: W) -> Result<W, ClientError> {
-        writer.write_u8(self.tag())?;
+        writer.write_all(&[self.tag()])?;
 
         match *self {
-            Filter::Algorithm(alg) => writer.write_u8(alg.to_u8())?,
-            Filter::Capabilities(caps) => writer.write_u64::<BE>(caps.bits())?,
-            Filter::Domains(doms) => writer.write_u16::<BE>(doms.bits())?,
+            Filter::Algorithm(alg) => writer.write_all(&[alg.to_u8()])?,
+            Filter::Capabilities(caps) => writer.write_all(&caps.bits().to_be_bytes())?,
+            Filter::Domains(doms) => writer.write_all(&doms.bits().to_be_bytes())?,
             Filter::Label(ref label) => {
                 writer.write_all(label.as_ref())?;
             }
-            Filter::Id(id) => writer.write_u16::<BE>(id)?,
-            Filter::Type(ty) => writer.write_u8(ty.to_u8())?,
+            Filter::Id(id) => writer.write_all(&id.to_be_bytes())?,
+            Filter::Type(ty) => writer.write_all(&[ty.to_u8()])?,
         }
 
         Ok(writer)
@@ -69,23 +84,23 @@ impl Filter {
     // TODO: replace this with serde
     #[cfg(feature = "mockhsm")]
     pub(crate) fn deserialize<R: Read>(mut reader: R) -> Result<Self, ClientError> {
-        let tag = reader.read_u8()?;
+        let tag = read_byte!(reader);
 
         Ok(match tag {
-            0x01 => Filter::Id(reader.read_u16::<BE>()?),
+            0x01 => Filter::Id(read_be_bytes!(reader, u16)),
             0x02 => Filter::Type(
-                object::Type::from_u8(reader.read_u8()?).map_err(|e| err!(ProtocolError, e))?,
+                object::Type::from_u8(read_byte!(reader)).map_err(|e| err!(ProtocolError, e))?,
             ),
             0x03 => Filter::Domains(
-                Domain::from_bits(reader.read_u16::<BE>()?)
+                Domain::from_bits(read_be_bytes!(reader, u16))
                     .ok_or_else(|| err!(ProtocolError, "invalid domain bitflags"))?,
             ),
             0x04 => Filter::Capabilities(
-                Capability::from_bits(reader.read_u64::<BE>()?)
+                Capability::from_bits(read_be_bytes!(reader, u64))
                     .ok_or_else(|| err!(ProtocolError, "invalid capability bitflags"))?,
             ),
             0x05 => Filter::Algorithm(
-                Algorithm::from_u8(reader.read_u8()?).map_err(|e| err!(ProtocolError, e))?,
+                Algorithm::from_u8(read_byte!(reader)).map_err(|e| err!(ProtocolError, e))?,
             ),
             0x06 => {
                 let mut label_bytes = [0u8; LABEL_SIZE];
