@@ -28,7 +28,6 @@
 //! connecting via USB, and then performing an Ed25519 signature:
 //!
 //! ```no_build
-//! extern crate yubihsm;
 //! use yubihsm::{Client, Credentials, UsbConnector};
 //!
 //! // Connect to the first YubiHSM 2 we detect
@@ -67,20 +66,7 @@
 )]
 
 #[macro_use]
-extern crate bitflags;
-#[macro_use]
-extern crate failure;
-#[macro_use]
-extern crate failure_derive;
-#[cfg(feature = "hmac")]
-extern crate hmac as hmac_crate;
-#[cfg(feature = "usb")]
-#[macro_use]
-extern crate lazy_static;
-#[macro_use]
 extern crate log;
-#[macro_use]
-extern crate serde_derive;
 
 #[macro_use]
 mod macros;

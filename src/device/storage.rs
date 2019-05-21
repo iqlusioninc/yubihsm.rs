@@ -1,5 +1,7 @@
 //! Information about device storage
 
+use serde::{Deserialize, Serialize};
+
 /// Response from the [Get Storage Info] command.
 ///
 /// [Get Storage Info]: https://developers.yubico.com/YubiHSM2/Commands/Get_Storage_Info.html

@@ -50,6 +50,6 @@ impl Connection for HttpConnection {
     /// `POST /connector/api` with a given command message
     fn send_message(&self, uuid: Uuid, cmd: Message) -> Result<Message, ConnectionError> {
         self.post("/connector/api", uuid, cmd.as_ref())
-            .map(|body| body.into())
+            .map(Into::into)
     }
 }

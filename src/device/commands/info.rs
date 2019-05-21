@@ -7,6 +7,7 @@ use crate::{
     device,
     response::Response,
 };
+use serde::{Deserialize, Serialize};
 
 /// Request parameters for `command::device_info`
 #[derive(Serialize, Deserialize, Debug)]

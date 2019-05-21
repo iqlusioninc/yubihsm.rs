@@ -1,6 +1,7 @@
 //! `Algorithm`-related errors
 
 use crate::error::Error;
+use failure::Fail;
 
 /// `Algorithm`-related errors
 pub type AlgorithmError = Error<AlgorithmErrorKind>;

@@ -1,4 +1,6 @@
-use failure::Error;
+//! YubiHSM2 command codes
+
+use failure::{bail, Error};
 use serde::{
     de::{Deserialize, Deserializer, Error as DeError},
     ser::{Serialize, Serializer},

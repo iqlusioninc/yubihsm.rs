@@ -1,4 +1,6 @@
-use failure::Error;
+//! Information about where a key originates (i.e. where it was generated)
+
+use failure::{bail, Error};
 use serde::de::{self, Deserialize, Deserializer, Visitor};
 use serde::ser::{Serialize, Serializer};
 use std::fmt;

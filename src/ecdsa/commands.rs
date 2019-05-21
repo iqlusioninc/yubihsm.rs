@@ -8,6 +8,7 @@ use crate::{
     object,
     response::Response,
 };
+use serde::{Deserialize, Serialize};
 
 /// Sign ECDSA command parameters
 #[derive(Serialize, Deserialize, Debug)]

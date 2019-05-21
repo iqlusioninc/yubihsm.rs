@@ -11,7 +11,8 @@ use crate::{
     Capability, Client, Domain,
 };
 use chrono::{DateTime, Utc};
-use failure::Error;
+use failure::{format_err, Error};
+use serde::{Deserialize, Serialize};
 use std::{env, str::FromStr};
 
 /// Label string for the provisioning report object

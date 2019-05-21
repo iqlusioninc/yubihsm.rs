@@ -1,3 +1,7 @@
+//! HMAC tags
+
+use serde::{Deserialize, Serialize};
+
 /// HMAC tags
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Tag(pub Vec<u8>);

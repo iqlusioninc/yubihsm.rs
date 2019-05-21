@@ -336,7 +336,7 @@ impl Client {
         Ok(command_audit_options
             .iter()
             .find(|opt| opt.command_type() == command)
-            .map(|opt| opt.audit_option())
+            .map(AuditCommand::audit_option)
             .unwrap_or(AuditOption::Off))
     }
 

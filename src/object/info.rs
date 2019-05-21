@@ -2,6 +2,7 @@
 
 use super::SequenceId;
 use crate::{object, Algorithm, Capability, Domain};
+use serde::{Deserialize, Serialize};
 
 /// Information about an object
 #[derive(Serialize, Deserialize, Clone, Debug)]

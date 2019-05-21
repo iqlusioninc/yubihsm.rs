@@ -1,9 +1,8 @@
 //! Roles for interacting with the YubiHSM 2
 
-pub use crate::{object, Capability, Credentials, Domain};
-
 use crate::Client;
-use failure::Error;
+pub use crate::{object, Capability, Credentials, Domain};
+use failure::{format_err, Error};
 
 /// Roles represent accounts on the device with specific permissions
 #[derive(Clone, Debug)]

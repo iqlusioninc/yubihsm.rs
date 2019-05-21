@@ -7,6 +7,7 @@ use crate::{
     command::{self, Command},
     response::Response,
 };
+use serde::{Deserialize, Serialize};
 
 /// Request parameters for `command::reset_device`
 #[derive(Serialize, Deserialize, Debug)]

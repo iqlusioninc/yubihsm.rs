@@ -1,6 +1,7 @@
 //! Public keys for use with asymmetric cryptography / signatures
 
 use crate::{asymmetric, ecdsa, ed25519};
+use serde::{Deserialize, Serialize};
 use signatory::{ecdsa::curve::WeierstrassCurveKind, generic_array::GenericArray};
 
 /// Response from `command::get_public_key`

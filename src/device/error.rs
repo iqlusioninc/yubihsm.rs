@@ -1,6 +1,7 @@
 //! Error types which map directly to the YubiHSM2's error codes
 
 use crate::{error::Error, response};
+use failure::Fail;
 
 /// Errors which originate in the HSM
 pub type DeviceError = Error<DeviceErrorKind>;

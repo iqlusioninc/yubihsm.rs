@@ -1,5 +1,7 @@
 //! RSA-PSS signatures
 
+use serde::{Deserialize, Serialize};
+
 /// RSASSA-PSS signatures (ASN.1 DER encoded)
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Signature(pub Vec<u8>);

@@ -1,14 +1,12 @@
 //! Error types for `yubihsm-connector`
 
+use crate::error::Error;
+use failure::Fail;
 #[cfg(feature = "http")]
 use gaunt;
 #[cfg(feature = "usb")]
 use libusb;
-use std::num::ParseIntError;
-use std::str::Utf8Error;
-use std::{fmt, io};
-
-use crate::error::Error;
+use std::{fmt, io, num::ParseIntError, str::Utf8Error};
 
 /// `yubihsm-connector` related errors
 pub type ConnectionError = Error<ConnectionErrorKind>;

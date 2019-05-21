@@ -9,7 +9,7 @@ use crate::{
     authentication::{self, Credentials, DEFAULT_AUTHENTICATION_KEY_ID},
     object, Capability, Client, Connector, Domain,
 };
-use failure::Error;
+use failure::{format_err, Error};
 
 /// Label to place on the temporary setup auth key ID
 const SETUP_KEY_LABEL: &str = "yubihsm.rs temporary setup key";

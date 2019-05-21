@@ -1,5 +1,6 @@
 //! Authentication cryptograms (8-byte MACs) used for session verification
 
+use serde::{Deserialize, Serialize};
 use std::fmt;
 use subtle::{Choice, ConstantTimeEq};
 use zeroize::Zeroize;
@@ -8,7 +9,7 @@ use zeroize::Zeroize;
 pub const CRYPTOGRAM_SIZE: usize = 8;
 
 /// Authentication cryptograms used to verify sessions
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Deserialize, Serialize, Zeroize)]
 pub struct Cryptogram([u8; CRYPTOGRAM_SIZE]);
 
 impl Cryptogram {
@@ -39,11 +40,5 @@ impl fmt::Debug for Cryptogram {
 impl ConstantTimeEq for Cryptogram {
     fn ct_eq(&self, other: &Self) -> Choice {
         self.0.as_ref().ct_eq(other.0.as_ref())
-    }
-}
-
-impl Drop for Cryptogram {
-    fn drop(&mut self) {
-        self.0.zeroize();
     }
 }

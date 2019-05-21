@@ -24,8 +24,8 @@ use crate::{
     wrap::{self, commands::*},
     Capability,
 };
+use ::hmac::{Hmac, Mac};
 use getrandom::getrandom;
-use hmac_crate::{Hmac, Mac};
 use ring::signature::Ed25519KeyPair;
 use sha2::Sha256;
 use std::{io::Cursor, str::FromStr};

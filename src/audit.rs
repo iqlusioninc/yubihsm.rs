@@ -3,9 +3,8 @@
 pub(crate) mod commands;
 
 use crate::command;
-use failure::Error;
-use serde::de::{self, Deserialize, Deserializer, Visitor};
-use serde::ser::{Serialize, Serializer};
+use failure::{bail, Error};
+use serde::{de, ser, Deserialize, Serialize};
 use std::fmt;
 
 /// Audit settings for a particular command
@@ -56,16 +55,16 @@ impl AuditOption {
 }
 
 impl Serialize for AuditOption {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+    fn serialize<S: ser::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         serializer.serialize_u8(self.to_u8())
     }
 }
 
 impl<'de> Deserialize<'de> for AuditOption {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<AuditOption, D::Error> {
+    fn deserialize<D: de::Deserializer<'de>>(deserializer: D) -> Result<AuditOption, D::Error> {
         struct AuditOptionVisitor;
 
-        impl<'de> Visitor<'de> for AuditOptionVisitor {
+        impl<'de> de::Visitor<'de> for AuditOptionVisitor {
             type Value = AuditOption;
 
             fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -111,16 +110,16 @@ impl AuditTag {
 }
 
 impl Serialize for AuditTag {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+    fn serialize<S: ser::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         serializer.serialize_u8(self.to_u8())
     }
 }
 
 impl<'de> Deserialize<'de> for AuditTag {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<AuditTag, D::Error> {
+    fn deserialize<D: de::Deserializer<'de>>(deserializer: D) -> Result<AuditTag, D::Error> {
         struct AuditTagVisitor;
 
-        impl<'de> Visitor<'de> for AuditTagVisitor {
+        impl<'de> de::Visitor<'de> for AuditTagVisitor {
             type Value = AuditTag;
 
             fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {

@@ -7,6 +7,7 @@ use crate::{
     hmac, object,
     response::Response,
 };
+use serde::{Deserialize, Serialize};
 
 /// Request parameters for `command::hmac`
 #[derive(Serialize, Deserialize, Debug)]

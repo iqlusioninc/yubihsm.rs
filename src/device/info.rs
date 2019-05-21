@@ -1,5 +1,8 @@
+//! Device info
+
 use super::serial;
 use crate::Algorithm;
+use serde::{Deserialize, Serialize};
 
 /// Information about an HSM device
 #[derive(Clone, Debug, Deserialize, Serialize)]

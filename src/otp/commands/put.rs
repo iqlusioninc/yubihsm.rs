@@ -7,6 +7,7 @@ use crate::{
     object,
     response::Response,
 };
+use serde::{Deserialize, Serialize};
 
 /// Request parameters for `command::put_otp_aead_key`
 #[derive(Serialize, Deserialize, Debug)]

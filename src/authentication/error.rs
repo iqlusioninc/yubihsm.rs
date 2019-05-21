@@ -1,6 +1,7 @@
 //! Authentication errors
 
 use crate::Error;
+use failure::Fail;
 
 /// `authentication::Key`-related errors
 pub type KeyError = Error<KeyErrorKind>;

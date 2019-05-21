@@ -1,3 +1,7 @@
+//! ECDSA signatures
+
+use serde::{Deserialize, Serialize};
+
 /// ECDSA signatures (ASN.1 DER encoded)
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Signature(pub Vec<u8>);

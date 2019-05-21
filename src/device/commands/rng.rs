@@ -6,6 +6,7 @@ use crate::{
     command::{self, Command, MAX_MSG_SIZE},
     response::Response,
 };
+use serde::{Deserialize, Serialize};
 
 /// Max message size - tag byte - 16-bit response length field
 pub(crate) const MAX_RAND_BYTES: usize = MAX_MSG_SIZE - 1 - 2;

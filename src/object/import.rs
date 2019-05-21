@@ -2,6 +2,7 @@
 //! commands share a common structure, i.e. `object::import::Params`
 
 use crate::{object, Algorithm, Capability, Domain};
+use serde::{Deserialize, Serialize};
 
 /// Parameters used when importing objects into the HSM
 #[derive(Clone, Debug, Deserialize, Serialize)]

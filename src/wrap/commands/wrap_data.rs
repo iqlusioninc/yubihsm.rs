@@ -8,6 +8,7 @@ use crate::{
     response::Response,
     wrap,
 };
+use serde::{Deserialize, Serialize};
 
 /// Request parameters for `command::wrap_data`
 #[derive(Serialize, Deserialize, Debug)]

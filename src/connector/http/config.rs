@@ -1,3 +1,6 @@
+//! yubihsm-connector HTTP configuration
+
+use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display};
 
 /// Default timeouts for reading and writing (5 seconds)

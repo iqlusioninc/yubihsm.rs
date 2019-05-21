@@ -7,6 +7,7 @@ use crate::{
     object,
     response::Response,
 };
+use serde::{Deserialize, Serialize};
 
 /// Minimum allowed size of an HMAC key (64-bits)
 pub const HMAC_MIN_KEY_SIZE: usize = 8;

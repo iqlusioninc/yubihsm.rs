@@ -1,5 +1,6 @@
 //! Object attributes specifying which operations are allowed to be performed
 
+use bitflags::bitflags;
 use serde::{
     de::{self, Deserialize, Deserializer, Visitor},
     ser::{Serialize, Serializer},

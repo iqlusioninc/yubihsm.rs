@@ -8,6 +8,7 @@ use crate::{
     object,
     response::Response,
 };
+use serde::{Deserialize, Serialize};
 
 /// Request parameters for `command::get_public_key`
 #[derive(Serialize, Deserialize, Debug)]

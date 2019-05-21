@@ -1,3 +1,6 @@
+//! Session activity timeouts
+
+use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
 /// Sessions with the YubiHSM are stateful and expire after 30 seconds. See:

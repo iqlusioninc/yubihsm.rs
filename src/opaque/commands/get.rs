@@ -7,6 +7,7 @@ use crate::{
     object,
     response::Response,
 };
+use serde::{Deserialize, Serialize};
 
 /// Request parameters for `command::get_opaque`
 #[derive(Serialize, Deserialize, Debug)]

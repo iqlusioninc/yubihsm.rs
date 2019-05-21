@@ -1,4 +1,6 @@
-use failure::Error;
+//! Objects stored in the `MockHsm`
+
+use failure::{bail, Error};
 use ring::aead::{self, AES_128_GCM, AES_256_GCM};
 use std::collections::{btree_map::Iter as BTreeMapIter, BTreeMap};
 

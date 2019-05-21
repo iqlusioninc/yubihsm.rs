@@ -4,6 +4,7 @@ use crate::{
     connector::ConnectionError, device::DeviceErrorKind, error::Error,
     serialization::SerializationError,
 };
+use failure::Fail;
 
 /// Session errors
 pub type SessionError = Error<SessionErrorKind>;
