@@ -7,6 +7,7 @@ mod payload;
 
 pub(crate) use self::{objects::Objects, payload::Payload};
 use crate::{object, Algorithm};
+use serde::{Deserialize, Serialize};
 
 /// Size of the wrap algorithm's MAC tag. The MockHsm uses AES-GCM instead of
 /// AES-CCM as there isn't a readily available Rust implementation

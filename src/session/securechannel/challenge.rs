@@ -1,6 +1,7 @@
 //! Challenge messages used as part of SCP03's challenge/response protocol.
 
 use getrandom::getrandom;
+use serde::{Deserialize, Serialize};
 
 /// Size of a challenge message
 pub const CHALLENGE_SIZE: usize = 8;

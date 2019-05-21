@@ -60,7 +60,7 @@ use block_modes::{block_padding::Iso7816, BlockMode, Cbc};
 use byteorder::{BigEndian, ByteOrder};
 use cmac::{crypto_mac::Mac as CryptoMac, Cmac};
 use subtle::ConstantTimeEq;
-use zeroize::Zeroize;
+use zeroize::{Zeroize, Zeroizing};
 
 /// Size of an AES block
 const AES_BLOCK_SIZE: usize = 16;
@@ -193,24 +193,16 @@ impl SecureChannel {
 
     /// Calculate the card's cryptogram for this session
     pub fn card_cryptogram(&self) -> Cryptogram {
-        let mut result_bytes = [0u8; CRYPTOGRAM_SIZE];
-        kdf::derive(&self.mac_key, 0, &self.context, &mut result_bytes);
-
-        let result = Cryptogram::from_slice(&result_bytes);
-        result_bytes.zeroize();
-
-        result
+        let mut result_bytes = Zeroizing::new([0u8; CRYPTOGRAM_SIZE]);
+        kdf::derive(&self.mac_key, 0, &self.context, result_bytes.as_mut());
+        Cryptogram::from_slice(result_bytes.as_ref())
     }
 
     /// Calculate the host's cryptogram for this session
     pub fn host_cryptogram(&self) -> Cryptogram {
-        let mut result_bytes = [0u8; CRYPTOGRAM_SIZE];
-        kdf::derive(&self.mac_key, 1, &self.context, &mut result_bytes);
-
-        let result = Cryptogram::from_slice(&result_bytes);
-        result_bytes.zeroize();
-
-        result
+        let mut result_bytes = Zeroizing::new([0u8; CRYPTOGRAM_SIZE]);
+        kdf::derive(&self.mac_key, 1, &self.context, result_bytes.as_mut());
+        Cryptogram::from_slice(result_bytes.as_ref())
     }
 
     /// Compute a command message with a MAC value for this session

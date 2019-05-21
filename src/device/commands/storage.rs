@@ -7,6 +7,7 @@ use crate::{
     device::storage,
     response::Response,
 };
+use serde::{Deserialize, Serialize};
 
 /// Request parameters for `command::get_storage_info`
 #[derive(Serialize, Deserialize, Debug)]

@@ -1,10 +1,7 @@
 //! Integration tests (using live YubiHSM 2 or MockHsm)
 
+use lazy_static::lazy_static;
 use std::sync::{Mutex, MutexGuard};
-
-#[macro_use]
-extern crate lazy_static;
-
 use yubihsm::{asymmetric, object, Capability, Client, Connector, DeviceErrorKind, Domain};
 
 /// Integration tests for individual YubiHSM 2 commands

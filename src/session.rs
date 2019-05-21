@@ -188,7 +188,7 @@ impl Session {
             );
         }
 
-        deserialize(response.data.as_ref()).map_err(|e| e.into())
+        deserialize(response.data.as_ref()).map_err(Into::into)
     }
 
     /// Send a command message to the HSM and parse the response
@@ -285,7 +285,7 @@ impl Drop for Session {
             // Attempt to extract the error message from the `Any` returned from `catch_unwind`
             let msg = err
                 .downcast_ref::<String>()
-                .map(|m| m.as_ref())
+                .map(AsRef::as_ref)
                 .or_else(|| err.downcast_ref::<&str>().cloned())
                 .unwrap_or_else(|| "unknown cause!");
 

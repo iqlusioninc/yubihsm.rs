@@ -2,11 +2,8 @@
 
 #![deny(warnings)]
 
-#[macro_use]
-extern crate criterion;
+use criterion::{criterion_group, criterion_main, Criterion};
 use yubihsm;
-
-use criterion::Criterion;
 
 const EXAMPLE_MESSAGE: &[u8] =
     b"The Edwards-curve Digital Signature yubihsm::AsymmetricAlgorithm  (EdDSA) is a \

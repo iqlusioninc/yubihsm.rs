@@ -1,5 +1,6 @@
 //! USB timeouts
 
+use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
 /// Number of seconds to wait when communicating with the YubiHSM 2

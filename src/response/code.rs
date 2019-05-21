@@ -1,5 +1,7 @@
+//! Response codes
+
 use crate::command;
-use failure::Error;
+use failure::{bail, Error};
 use serde::{
     de::{Deserialize, Deserializer, Error as DeError},
     ser::{Serialize, Serializer},

@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 /// Attestation certificates (DER encoded X.509)
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Certificate(pub Vec<u8>);

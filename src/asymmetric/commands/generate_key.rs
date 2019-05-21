@@ -7,6 +7,7 @@ use crate::{
     object::{self, generate},
     response::Response,
 };
+use serde::{Deserialize, Serialize};
 
 /// Request parameters for `command::generate_asymmetric_key`
 #[derive(Serialize, Deserialize, Debug)]

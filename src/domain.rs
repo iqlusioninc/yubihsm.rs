@@ -2,11 +2,13 @@
 
 #![allow(missing_docs)]
 
-use failure::Error;
+use bitflags::bitflags;
+use failure::{bail, Error};
+use serde::{
+    de::{self, Deserialize, Deserializer, Visitor},
+    ser::{Serialize, Serializer},
+};
 use std::fmt;
-
-use serde::de::{self, Deserialize, Deserializer, Visitor};
-use serde::ser::{Serialize, Serializer};
 
 /// All domains as an array of bitflag types
 pub const DOMAINS: [Domain; 16] = [

@@ -1,4 +1,7 @@
+//! Object entries in list objects output
+
 use crate::object;
+use serde::{Deserialize, Serialize};
 
 /// Brief information about an object as included in `ListObjectsCommand`
 #[derive(Clone, Debug, Deserialize, Serialize)]

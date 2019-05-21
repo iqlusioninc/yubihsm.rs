@@ -3,7 +3,7 @@
 use super::{KeyError, KeyErrorKind};
 use getrandom::getrandom;
 #[cfg(feature = "hmac")]
-use hmac_crate::Hmac;
+use hmac::Hmac;
 #[cfg(feature = "pbkdf2")]
 use pbkdf2::pbkdf2;
 #[cfg(feature = "sha2")]

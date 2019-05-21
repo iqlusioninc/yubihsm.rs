@@ -18,6 +18,7 @@ use crate::session::{SessionError, SessionErrorKind::VerifyFailed};
 pub const MAC_SIZE: usize = 8;
 
 /// Message Authentication Codes used to verify messages
+#[derive(Zeroize)]
 pub struct Mac([u8; MAC_SIZE]);
 
 impl Mac {
@@ -60,12 +61,6 @@ impl fmt::Debug for Mac {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // Avoid leaking secrets in debug messages
         write!(f, "yubihsm::Mac")
-    }
-}
-
-impl Drop for Mac {
-    fn drop(&mut self) {
-        self.0.zeroize();
     }
 }
 

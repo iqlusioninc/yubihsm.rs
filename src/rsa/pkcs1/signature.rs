@@ -1,5 +1,7 @@
 //! RSASSA-PKCS#1v1.5 signatures
 
+use serde::{Deserialize, Serialize};
+
 /// RSASSA-PKCS#1v1.5 signatures (ASN.1 DER encoded)
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Signature(pub Vec<u8>);

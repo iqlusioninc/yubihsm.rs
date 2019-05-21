@@ -7,6 +7,7 @@ use crate::{
     serialization::SerializationError,
     session::{SessionError, SessionErrorKind},
 };
+use failure::Fail;
 use std::{error::Error as StdError, io};
 
 /// Session errors

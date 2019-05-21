@@ -1,4 +1,7 @@
+//! Object handles
+
 use crate::object;
+use serde::{Deserialize, Serialize};
 
 /// Objects in the HSM are keyed by a tuple of their type an object::Id
 /// (i.e. multiple objects of different types can have the same object::Id)

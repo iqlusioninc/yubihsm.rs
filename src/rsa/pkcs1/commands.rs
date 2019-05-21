@@ -6,6 +6,7 @@ use crate::{
     response::Response,
     rsa,
 };
+use serde::{Deserialize, Serialize};
 
 /// Request parameters for `command::sign_rsa_pkcs1v15*`
 #[derive(Serialize, Deserialize, Debug)]

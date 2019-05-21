@@ -7,6 +7,7 @@ use crate::{
     object,
     response::Response,
 };
+use serde::{Deserialize, Serialize};
 
 /// Request parameters for `command::get_object_info`
 #[derive(Serialize, Deserialize, Debug)]

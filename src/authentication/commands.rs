@@ -9,6 +9,7 @@ use crate::{
     object,
     response::Response,
 };
+use serde::{Deserialize, Serialize};
 
 /// Request parameters for `command::put_authentication_key`
 #[derive(Serialize, Deserialize, Debug)]

@@ -12,6 +12,7 @@ use crate::{
     },
     device::SerialNumber,
 };
+use lazy_static::lazy_static;
 use libusb;
 use std::{
     fmt::{self, Debug},

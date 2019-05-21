@@ -7,6 +7,7 @@ use crate::{
     object,
     response::{self, Response},
 };
+use serde::{Deserialize, Serialize};
 use std::fmt::{self, Debug};
 
 /// Request parameters for `command::get_log_entries`

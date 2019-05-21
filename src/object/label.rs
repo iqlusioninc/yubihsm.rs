@@ -1,4 +1,6 @@
-use failure::Error;
+//! Object labels: descriptions of objects
+
+use failure::{bail, format_err, Error};
 use std::{
     fmt::{self, Debug, Display},
     ops::{Deref, DerefMut},

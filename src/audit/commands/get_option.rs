@@ -19,6 +19,7 @@ use crate::{
     command::{self, Command},
     response::Response,
 };
+use serde::{Deserialize, Serialize};
 
 /// Request parameters for `command::get_option`
 #[derive(Serialize, Deserialize, Debug)]

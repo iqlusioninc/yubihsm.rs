@@ -13,7 +13,7 @@ use crate::{
 };
 use getrandom::getrandom;
 use std::fmt::{self, Debug};
-use zeroize::Zeroize;
+use zeroize::{Zeroize, Zeroizing};
 
 /// Wrap key to import into the device
 #[derive(Clone)]
@@ -31,12 +31,9 @@ pub struct Key {
 impl Key {
     /// Generate a random wrap key with the given key size.
     pub fn generate_random(key_id: object::Id, algorithm: wrap::Algorithm) -> Self {
-        let mut bytes = vec![0u8; algorithm.key_len()];
+        let mut bytes = Zeroizing::new(vec![0u8; algorithm.key_len()]);
         getrandom(&mut bytes).expect("RNG failure!");
-
-        let result = Self::from_bytes(key_id, &bytes).unwrap();
-        bytes.zeroize();
-        result
+        Self::from_bytes(key_id, &bytes).unwrap()
     }
 
     /// Create a new `wrap::Key` instance. Must be 16, 24, or 32-bytes long.

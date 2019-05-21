@@ -1,4 +1,6 @@
-use failure::Error;
+//! Types of objects
+
+use failure::{bail, Error};
 use serde::{
     de::{self, Deserialize, Deserializer, Visitor},
     ser::{Serialize, Serializer},
