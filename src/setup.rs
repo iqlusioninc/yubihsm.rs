@@ -22,9 +22,8 @@ pub fn erase_device_and_init_with_profile(
     profile: Profile,
 ) -> Result<Report, Error> {
     // Reset the device
-    let client = Client::open(connector.clone(), credentials, false)?
-        .reset_device_and_reconnect(profile.reset_device_timeout)?;
-
+    let mut client = Client::open(connector, credentials, false)?;
+    client.reset_device_and_reconnect(profile.reset_device_timeout)?;
     init_with_profile(client, profile)
 }
 
