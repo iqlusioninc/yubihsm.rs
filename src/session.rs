@@ -135,7 +135,7 @@ impl Session {
     /// Encrypt a command, send it to the HSM, then read and decrypt the response
     pub(crate) fn send_command<C: Command>(
         &mut self,
-        command: C,
+        command: &C,
     ) -> Result<C::ResponseType, SessionError> {
         let plaintext_cmd = command::Message::from(command);
         let cmd_type = plaintext_cmd.command_type;
@@ -278,7 +278,7 @@ impl Drop for Session {
         // TODO: ensure we're really unwind safe.
         // This should still be better than panicking in a drop handler, hopefully
         let result = panic::catch_unwind(AssertUnwindSafe(|| {
-            self.send_command(CloseSessionCommand {}).unwrap()
+            self.send_command(&CloseSessionCommand {}).unwrap()
         }));
 
         if let Err(err) = result {

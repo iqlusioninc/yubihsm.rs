@@ -151,7 +151,22 @@ impl Client {
 
     /// Encrypt a command, send it to the HSM, then read and decrypt the response.
     fn send_command<T: Command>(&self, command: T) -> Result<T::ResponseType, ClientError> {
-        Ok(self.session()?.send_command(command)?)
+        match self.session()?.send_command(&command) {
+            Ok(response) => Ok(response),
+            Err(e) => {
+                // If we encounter this, we've exceeded the maximum number of
+                // messages allowed under the data volume limits and need to
+                // rekey the connection by creating a new session.
+                //
+                // Attempt to inititiate a new session and retry the command.
+                // (the original command was never sent in this case)
+                if e.kind() == session::SessionErrorKind::CommandLimitExceeded {
+                    Ok(self.session()?.send_command(&command)?)
+                } else {
+                    Err(e)?
+                }
+            }
+        }
     }
 
     //
@@ -685,7 +700,7 @@ impl Client {
         let mut session = self.session()?;
 
         // TODO: handle potential errors that occur when resetting
-        if let Err(e) = session.send_command(ResetDeviceCommand {}) {
+        if let Err(e) = session.send_command(&ResetDeviceCommand {}) {
             debug!("error sending reset command: {}", e);
         }
 

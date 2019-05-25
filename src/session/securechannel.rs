@@ -60,7 +60,15 @@ use zeroize::{Zeroize, Zeroizing};
 /// we hardcode to 128-bit for simplicity.
 pub(crate) const KEY_SIZE: usize = 16;
 
-/// Size of an AES block
+/// Maximum number of messages allowed in a single session: 2^20.
+///
+/// This is a conservative number chosen due to the small MAC size used by
+/// the SCP03 protocol: 8-bytes. This small tag has an even smaller birthday
+/// bound on collisions, so to avoid these we force generation of fresh
+/// session keys after the following number of messages have been sent.
+pub const MAX_COMMANDS_PER_SESSION: u32 = 0x10_0000;
+
+/// Size of an AES block (128-bits)
 const AES_BLOCK_SIZE: usize = 16;
 
 /// SCP03 uses AES-128 encryption in CBC mode with ISO 7816 padding
@@ -103,11 +111,10 @@ impl SecureChannel {
     ) -> Result<Self, SessionError> {
         let host_challenge = Challenge::new();
 
-        let command_message: command::Message = CreateSessionCommand {
+        let command_message = command::Message::from(&CreateSessionCommand {
             authentication_key_id: credentials.authentication_key_id,
             host_challenge,
-        }
-        .into();
+        });
 
         let uuid = command_message.uuid;
         let response_body = connector.send_message(uuid, command_message.into())?;
@@ -573,14 +580,6 @@ impl Drop for SecureChannel {
         self.terminate();
     }
 }
-
-/// Maximum number of messages allowed in a single session: 2^20.
-///
-/// This is a conservative number chosen due to the small MAC size used by
-/// the SCP03 protocol: 8-bytes. This small tag has an even smaller birthday
-/// bound on collisions, so to avoid these we force generation of fresh
-/// session keys after the following number of messages have been sent.
-pub const MAX_COMMANDS_PER_SESSION: u32 = 0x10_0000;
 
 /// Current Security Level: protocol state
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
