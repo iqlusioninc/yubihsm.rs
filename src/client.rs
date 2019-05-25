@@ -723,7 +723,7 @@ impl Client {
     ///
     /// <https://developers.yubico.com/YubiHSM2/Commands/Reset_Device.html>
     #[cfg(feature = "passwords")]
-    pub fn reset_device_and_reconnect(&self, timeout: Duration) -> Result<Client, ClientError> {
+    pub fn reset_device_and_reconnect(&mut self, timeout: Duration) -> Result<(), ClientError> {
         /// How long to initially wait for a device reset to complete (1s)
         const DEVICE_RESET_WAIT_MS: u64 = 1000;
 
@@ -734,8 +734,11 @@ impl Client {
         warn!("factory resetting HSM device! all data will be lost!");
         thread::sleep(Duration::from_millis(DEVICE_RESET_WAIT_MS));
 
-        // Reset the device
+        // Reset the device. This will invalidate the previous session.
         self.reset_device()?;
+
+        // Configure default credentials
+        self.credentials = Some(Credentials::default());
 
         let deadline = SystemTime::now() + timeout;
 
@@ -744,10 +747,10 @@ impl Client {
 
         // Attempt to reconnect to the device with the default credentials
         loop {
-            match Client::open(self.connector.clone(), Credentials::default(), true) {
-                Ok(client) => {
+            match self.connect() {
+                Ok(_) => {
                     debug!("successfully reconnected to HSM after reset!");
-                    return Ok(client);
+                    return Ok(());
                 }
                 Err(e) => {
                     // If we're past the deadline, return an error
