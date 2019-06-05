@@ -5,7 +5,7 @@ use super::{
 };
 use crate::{
     command::MAX_MSG_SIZE,
-    connector::{Connection, ConnectionError, ConnectionErrorKind::UsbError, Message},
+    connector::{self, Connection, ErrorKind::UsbError, Message},
 };
 use libusb;
 use std::sync::Mutex;
@@ -28,12 +28,12 @@ pub struct UsbConnection {
 
 impl UsbConnection {
     /// Connect to a YubiHSM 2 using the given configuration
-    pub fn open(config: &UsbConfig) -> Result<Self, ConnectionError> {
+    pub fn open(config: &UsbConfig) -> Result<Self, connector::Error> {
         Devices::open(config.serial, UsbTimeout::from_millis(config.timeout_ms))
     }
 
     /// Create a new YubiHSM device from a libusb device
-    pub(super) fn create(device: Device, timeout: UsbTimeout) -> Result<Self, ConnectionError> {
+    pub(super) fn create(device: Device, timeout: UsbTimeout) -> Result<Self, connector::Error> {
         let mut handle = device.open_handle()?;
 
         // Clear any lingering messages
@@ -58,7 +58,7 @@ impl UsbConnection {
 
 impl Connection for UsbConnection {
     /// Send a command to the YubiHSM and read its response
-    fn send_message(&self, _uuid: Uuid, cmd: Message) -> Result<Message, ConnectionError> {
+    fn send_message(&self, _uuid: Uuid, cmd: Message) -> Result<Message, connector::Error> {
         let mut handle = self.handle.lock().unwrap();
         send_message(&mut handle, cmd.as_ref(), self.timeout)?;
         recv_message(&mut handle, self.timeout)
@@ -76,7 +76,7 @@ fn send_message(
     handle: &mut libusb::DeviceHandle,
     data: &[u8],
     timeout: UsbTimeout,
-) -> Result<usize, ConnectionError> {
+) -> Result<usize, connector::Error> {
     let nbytes = handle.write_bulk(YUBIHSM2_BULK_OUT_ENDPOINT, data, timeout.duration())?;
 
     if data.len() == nbytes {
@@ -95,7 +95,7 @@ fn send_message(
 fn recv_message(
     handle: &mut libusb::DeviceHandle,
     timeout: UsbTimeout,
-) -> Result<Message, ConnectionError> {
+) -> Result<Message, connector::Error> {
     // Allocate a buffer which is the maximum size we expect to receive
     let mut response = vec![0u8; MAX_MSG_SIZE];
 

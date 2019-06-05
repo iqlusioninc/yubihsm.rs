@@ -8,7 +8,7 @@ mod connection;
 pub use self::config::HttpConfig;
 
 use self::connection::HttpConnection;
-use super::{Connectable, Connection, ConnectionError};
+use crate::connector::{self, Connectable, Connection};
 
 /// Connect to the HSM via HTTP(S) using `yubihsm-connector`.
 ///
@@ -41,7 +41,7 @@ impl Connectable for HttpConnector {
     }
 
     /// Open a connection to `yubihsm-connector`
-    fn connect(&self) -> Result<Box<dyn Connection>, ConnectionError> {
+    fn connect(&self) -> Result<Box<dyn Connection>, connector::Error> {
         Ok(Box::new(HttpConnection::open(&self.0)?))
     }
 }

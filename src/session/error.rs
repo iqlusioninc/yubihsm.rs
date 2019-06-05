@@ -1,24 +1,21 @@
 //! Session error types
 
-use crate::{
-    connector::ConnectionError, device::DeviceErrorKind, error::Error,
-    serialization::SerializationError,
-};
+use crate::{connector, device, serialization};
 use failure::Fail;
 
 /// Session errors
-pub type SessionError = Error<SessionErrorKind>;
+pub type Error = crate::Error<ErrorKind>;
 
 /// Session error kinds
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
-pub enum SessionErrorKind {
+pub enum ErrorKind {
     /// Couldn't authenticate session
     #[fail(display = "authentication failed")]
     AuthenticationError,
 
     /// Session is closed
     #[fail(display = "session closed")]
-    ClosedSessionError,
+    ClosedError,
 
     /// Max command per session exceeded and a new session should be created
     #[fail(display = "max commands per session exceeded")]
@@ -32,7 +29,7 @@ pub enum SessionErrorKind {
     #[fail(display = "HSM error: {}", kind)]
     DeviceError {
         /// HSM error kind
-        kind: DeviceErrorKind,
+        kind: device::ErrorKind,
     },
 
     /// Message was intended for a different session than the current one
@@ -52,20 +49,20 @@ pub enum SessionErrorKind {
     VerifyFailed,
 }
 
-impl From<ConnectionError> for SessionError {
-    fn from(err: ConnectionError) -> Self {
-        err!(SessionErrorKind::ProtocolError, err.to_string())
+impl From<connector::Error> for Error {
+    fn from(err: connector::Error) -> Self {
+        err!(ErrorKind::ProtocolError, err.to_string())
     }
 }
 
-impl From<DeviceErrorKind> for SessionError {
-    fn from(kind: DeviceErrorKind) -> Self {
-        SessionError::new(SessionErrorKind::DeviceError { kind }, None)
+impl From<device::ErrorKind> for Error {
+    fn from(kind: device::ErrorKind) -> Self {
+        Error::new(ErrorKind::DeviceError { kind }, None)
     }
 }
 
-impl From<SerializationError> for SessionError {
-    fn from(err: SerializationError) -> Self {
-        err!(SessionErrorKind::ProtocolError, err.to_string())
+impl From<serialization::Error> for Error {
+    fn from(err: serialization::Error) -> Self {
+        err!(ErrorKind::ProtocolError, err.to_string())
     }
 }

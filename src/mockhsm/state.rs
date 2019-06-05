@@ -3,8 +3,7 @@
 
 use crate::{
     audit::AuditOption,
-    connector::{ConnectionError, ConnectionErrorKind},
-    object,
+    connector, object,
     session::{
         self,
         securechannel::{Challenge, SecureChannel},
@@ -87,10 +86,10 @@ impl State {
     }
 
     /// Obtain the channel for a session by its ID
-    pub fn get_session(&mut self, id: session::Id) -> Result<&mut HsmSession, ConnectionError> {
+    pub fn get_session(&mut self, id: session::Id) -> Result<&mut HsmSession, connector::Error> {
         self.sessions.get_mut(&id).ok_or_else(|| {
-            ConnectionError::new(
-                ConnectionErrorKind::RequestError,
+            connector::Error::new(
+                connector::ErrorKind::RequestError,
                 Some(format!("invalid session ID: {:?}", id)),
             )
         })

@@ -4,7 +4,7 @@ use uuid::Uuid;
 use super::{command, state::State, MockHsm};
 use crate::{
     command::Code,
-    connector::{Connection, ConnectionError, ConnectionErrorKind::ConnectionFailed, Message},
+    connector::{self, Connection, ErrorKind::ConnectionFailed, Message},
 };
 
 /// A mocked connection to the MockHsm
@@ -19,7 +19,7 @@ impl MockConnection {
 
 impl Connection for MockConnection {
     /// Send a message to the MockHsm
-    fn send_message(&self, _uuid: Uuid, message: Message) -> Result<Message, ConnectionError> {
+    fn send_message(&self, _uuid: Uuid, message: Message) -> Result<Message, connector::Error> {
         let command = message
             .parse()
             .map_err(|e| err!(ConnectionFailed, "error parsing command: {}", e))?;

@@ -30,18 +30,14 @@ pub(crate) use self::{
     cryptogram::{Cryptogram, CRYPTOGRAM_SIZE},
     mac::{Mac, MAC_SIZE},
 };
-use super::{
-    commands::{CreateSessionCommand, CreateSessionResponse},
-    SessionError,
-    SessionErrorKind::*,
-};
+use super::commands::{CreateSessionCommand, CreateSessionResponse};
 use crate::{
     authentication::{self, Credentials},
     command,
     connector::Connector,
     response,
     serialization::deserialize,
-    session,
+    session::{self, ErrorKind},
 };
 use aes::{
     block_cipher_trait::{
@@ -108,7 +104,7 @@ impl SecureChannel {
     pub(crate) fn open(
         connector: &Connector,
         credentials: &Credentials,
-    ) -> Result<Self, SessionError> {
+    ) -> Result<Self, session::Error> {
         let host_challenge = Challenge::new();
 
         let command_message = command::Message::from(&CreateSessionCommand {
@@ -121,12 +117,16 @@ impl SecureChannel {
         let response_message = response::Message::parse(response_body)?;
 
         if response_message.is_err() {
-            fail!(ResponseError, "HSM error: {:?}", response_message.code);
+            fail!(
+                ErrorKind::ResponseError,
+                "HSM error: {:?}",
+                response_message.code
+            );
         }
 
         if response_message.command().unwrap() != command::Code::CreateSession {
             fail!(
-                ProtocolError,
+                ErrorKind::ProtocolError,
                 "command type mismatch: expected {:?}, got {:?}",
                 command::Code::CreateSession,
                 response_message.command().unwrap()
@@ -135,7 +135,7 @@ impl SecureChannel {
 
         let id = response_message
             .session_id
-            .ok_or_else(|| err!(CreateFailed, "no session ID in response"))?;
+            .ok_or_else(|| err!(ErrorKind::CreateFailed, "no session ID in response"))?;
 
         let session_response: CreateSessionResponse = deserialize(response_message.data.as_ref())?;
 
@@ -156,7 +156,7 @@ impl SecureChannel {
             != 1
         {
             fail!(
-                AuthenticationError,
+                ErrorKind::AuthenticationError,
                 "(session: {}) invalid credentials for authentication key #{} (cryptogram mismatch)",
                 channel.id().to_u8(),
                 credentials.authentication_key_id,
@@ -215,11 +215,11 @@ impl SecureChannel {
         &mut self,
         command_type: command::Code,
         command_data: &[u8],
-    ) -> Result<command::Message, SessionError> {
+    ) -> Result<command::Message, session::Error> {
         if self.counter >= MAX_COMMANDS_PER_SESSION {
             self.terminate();
             fail!(
-                CommandLimitExceeded,
+                ErrorKind::CommandLimitExceeded,
                 "session limit of {} messages exceeded",
                 MAX_COMMANDS_PER_SESSION
             );
@@ -246,7 +246,7 @@ impl SecureChannel {
     }
 
     /// Compute a message for authenticating the host to the card
-    pub fn authenticate_session(&mut self) -> Result<command::Message, SessionError> {
+    pub fn authenticate_session(&mut self) -> Result<command::Message, session::Error> {
         assert_eq!(self.security_level, SecurityLevel::None);
         assert_eq!(self.mac_chaining_value, [0u8; MAC_SIZE * 2]);
 
@@ -261,12 +261,12 @@ impl SecureChannel {
     pub fn finish_authenticate_session(
         &mut self,
         response: &response::Message,
-    ) -> Result<(), SessionError> {
+    ) -> Result<(), session::Error> {
         // The EXTERNAL_AUTHENTICATE command does not send an R-MAC value
         if !response.data.is_empty() {
             self.terminate();
             fail!(
-                ProtocolError,
+                ErrorKind::ProtocolError,
                 "expected empty response data (got {}-bytes)",
                 response.data.len(),
             );
@@ -286,7 +286,7 @@ impl SecureChannel {
     pub fn encrypt_command(
         &mut self,
         command: command::Message,
-    ) -> Result<command::Message, SessionError> {
+    ) -> Result<command::Message, session::Error> {
         assert_eq!(self.security_level, SecurityLevel::Authenticated);
 
         let mut message = command.serialize();
@@ -307,7 +307,7 @@ impl SecureChannel {
     pub fn decrypt_response(
         &mut self,
         encrypted_response: response::Message,
-    ) -> Result<response::Message, SessionError> {
+    ) -> Result<response::Message, session::Error> {
         assert_eq!(self.security_level, SecurityLevel::Authenticated);
 
         let cipher = Aes128::new_varkey(&self.enc_key).unwrap();
@@ -323,7 +323,11 @@ impl SecureChannel {
             .decrypt(&mut response_message)
             .map_err(|e| {
                 self.terminate();
-                err!(ProtocolError, "error decrypting response: {:?}", e)
+                err!(
+                    ErrorKind::ProtocolError,
+                    "error decrypting response: {:?}",
+                    e
+                )
             })?
             .len();
 
@@ -338,18 +342,18 @@ impl SecureChannel {
     pub fn verify_response_mac(
         &mut self,
         response: &response::Message,
-    ) -> Result<(), SessionError> {
+    ) -> Result<(), session::Error> {
         assert_eq!(self.security_level, SecurityLevel::Authenticated);
 
         let session_id = response.session_id.ok_or_else(|| {
             self.terminate();
-            err!(ProtocolError, "no session ID in response")
+            err!(ErrorKind::ProtocolError, "no session ID in response")
         })?;
 
         if self.id != session_id {
             self.terminate();
             fail!(
-                MismatchError,
+                ErrorKind::MismatchError,
                 "message has session ID {} (expected {})",
                 session_id.to_u8(),
                 self.id.to_u8(),
@@ -373,7 +377,7 @@ impl SecureChannel {
             .is_err()
         {
             self.terminate();
-            fail!(VerifyFailed, "R-MAC mismatch!");
+            fail!(ErrorKind::VerifyFailed, "R-MAC mismatch!");
         }
 
         self.increment_counter();
@@ -385,14 +389,14 @@ impl SecureChannel {
     pub fn verify_authenticate_session(
         &mut self,
         command: &command::Message,
-    ) -> Result<response::Message, SessionError> {
+    ) -> Result<response::Message, session::Error> {
         assert_eq!(self.security_level, SecurityLevel::None);
         assert_eq!(self.mac_chaining_value, [0u8; MAC_SIZE * 2]);
 
         if command.data.len() != CRYPTOGRAM_SIZE {
             self.terminate();
             fail!(
-                ProtocolError,
+                ErrorKind::ProtocolError,
                 "expected {}-byte command data (got {})",
                 CRYPTOGRAM_SIZE,
                 command.data.len()
@@ -408,7 +412,7 @@ impl SecureChannel {
             != 1
         {
             self.terminate();
-            fail!(VerifyFailed, "host cryptogram mismatch!");
+            fail!(ErrorKind::VerifyFailed, "host cryptogram mismatch!");
         }
 
         self.verify_command_mac(command)?;
@@ -430,7 +434,7 @@ impl SecureChannel {
     pub fn decrypt_command(
         &mut self,
         encrypted_command: command::Message,
-    ) -> Result<command::Message, SessionError> {
+    ) -> Result<command::Message, session::Error> {
         assert_eq!(self.security_level, SecurityLevel::Authenticated);
 
         let cipher = Aes128::new_varkey(&self.enc_key).unwrap();
@@ -446,7 +450,11 @@ impl SecureChannel {
             .decrypt(&mut command_data)
             .map_err(|e| {
                 self.terminate();
-                err!(ProtocolError, "error decrypting command: {:?}", e)
+                err!(
+                    ErrorKind::ProtocolError,
+                    "error decrypting command: {:?}",
+                    e
+                )
             })?
             .len();
 
@@ -459,7 +467,7 @@ impl SecureChannel {
 
     /// Verify a Command MAC (C-MAC) value, updating the internal session state
     #[cfg(feature = "mockhsm")]
-    pub fn verify_command_mac(&mut self, command: &command::Message) -> Result<(), SessionError> {
+    pub fn verify_command_mac(&mut self, command: &command::Message) -> Result<(), session::Error> {
         assert_eq!(
             command.session_id.unwrap(),
             self.id,
@@ -486,7 +494,7 @@ impl SecureChannel {
             .is_err()
         {
             self.terminate();
-            fail!(VerifyFailed, "C-MAC mismatch!");
+            fail!(ErrorKind::VerifyFailed, "C-MAC mismatch!");
         }
 
         self.mac_chaining_value.copy_from_slice(tag.as_slice());
@@ -498,7 +506,7 @@ impl SecureChannel {
     pub fn encrypt_response(
         &mut self,
         response: response::Message,
-    ) -> Result<response::Message, SessionError> {
+    ) -> Result<response::Message, session::Error> {
         assert_eq!(self.security_level, SecurityLevel::Authenticated);
 
         let mut message: Vec<u8> = response.into();
@@ -526,7 +534,7 @@ impl SecureChannel {
         &mut self,
         code: response::Code,
         response_data: T,
-    ) -> Result<response::Message, SessionError>
+    ) -> Result<response::Message, session::Error>
     where
         T: Into<Vec<u8>>,
     {

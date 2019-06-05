@@ -1,4 +1,6 @@
-use crate::algorithm::{AlgorithmError, AlgorithmErrorKind::TagInvalid};
+//! Wrap algorithms
+
+use crate::algorithm;
 
 /// Valid algorithms for "wrap" (symmetric encryption/key wrapping) keys
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -17,12 +19,16 @@ pub enum Algorithm {
 
 impl Algorithm {
     /// Convert an unsigned byte tag into a `wrap::Algorithm` (if valid)
-    pub fn from_u8(tag: u8) -> Result<Self, AlgorithmError> {
+    pub fn from_u8(tag: u8) -> Result<Self, algorithm::Error> {
         Ok(match tag {
             0x1d => Algorithm::AES128_CCM,
             0x29 => Algorithm::AES192_CCM,
             0x2a => Algorithm::AES256_CCM,
-            _ => fail!(TagInvalid, "unknown wrap algorithm ID: 0x{:02x}", tag),
+            _ => fail!(
+                algorithm::ErrorKind::TagInvalid,
+                "unknown wrap algorithm ID: 0x{:02x}",
+                tag
+            ),
         })
     }
 

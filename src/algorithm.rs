@@ -2,7 +2,7 @@
 
 mod error;
 
-pub use self::error::{AlgorithmError, AlgorithmErrorKind};
+pub use self::error::{Error, ErrorKind};
 
 use crate::{asymmetric, authentication, ecdsa, hmac, kex, opaque, otp, rsa, template, wrap};
 
@@ -47,7 +47,7 @@ pub enum Algorithm {
 
 impl Algorithm {
     /// Convert an unsigned byte into an Algorithm (if valid)
-    pub fn from_u8(byte: u8) -> Result<Self, AlgorithmError> {
+    pub fn from_u8(byte: u8) -> Result<Self, Error> {
         Ok(match byte {
             0x01..=0x08 | 0x19..=0x1c => Algorithm::Rsa(rsa::Algorithm::from_u8(byte)?),
             0x09..=0x12 | 0x2e | 0x2f => {
@@ -63,7 +63,7 @@ impl Algorithm {
             0x25 | 0x27 | 0x28 => Algorithm::YubicoOtp(otp::Algorithm::from_u8(byte)?),
             0x26 => Algorithm::Authentication(authentication::Algorithm::from_u8(byte)?),
             _ => fail!(
-                AlgorithmErrorKind::TagInvalid,
+                ErrorKind::TagInvalid,
                 "unknown algorithm ID: 0x{:02x}",
                 byte
             ),

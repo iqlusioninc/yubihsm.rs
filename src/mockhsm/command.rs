@@ -7,8 +7,8 @@ use crate::{
     audit::{commands::*, AuditCommand, AuditOption, AuditTag},
     authentication::{self, commands::*},
     command::{Code, Message},
-    connector::ConnectionError,
-    device::{self, commands::*, DeviceErrorKind, SerialNumber, StorageInfo},
+    connector,
+    device::{self, commands::*, SerialNumber, StorageInfo},
     ecdsa,
     ed25519::commands::*,
     hmac::{self, commands::*},
@@ -36,7 +36,7 @@ use untrusted;
 pub(crate) fn create_session(
     state: &mut State,
     cmd_message: &Message,
-) -> Result<Vec<u8>, ConnectionError> {
+) -> Result<Vec<u8>, connector::Error> {
     let cmd: CreateSessionCommand = deserialize(cmd_message.data.as_ref())
         .unwrap_or_else(|e| panic!("error parsing CreateSession command data: {:?}", e));
 
@@ -56,7 +56,7 @@ pub(crate) fn create_session(
 pub(crate) fn authenticate_session(
     state: &mut State,
     command: &Message,
-) -> Result<Vec<u8>, ConnectionError> {
+) -> Result<Vec<u8>, connector::Error> {
     let session_id = command
         .session_id
         .unwrap_or_else(|| panic!("no session ID in command: {:?}", command.command_type));
@@ -73,7 +73,7 @@ pub(crate) fn authenticate_session(
 pub(crate) fn session_message(
     state: &mut State,
     encrypted_command: Message,
-) -> Result<Vec<u8>, ConnectionError> {
+) -> Result<Vec<u8>, connector::Error> {
     let session_id = encrypted_command.session_id.unwrap_or_else(|| {
         panic!(
             "no session ID in command: {:?}",
@@ -125,7 +125,7 @@ pub(crate) fn session_message(
 }
 
 /// Close an active session
-fn close_session(state: &mut State, session_id: session::Id) -> Result<Vec<u8>, ConnectionError> {
+fn close_session(state: &mut State, session_id: session::Id) -> Result<Vec<u8>, connector::Error> {
     let response = state
         .get_session(session_id)?
         .encrypt_response(CloseSessionResponse {}.serialize());
@@ -147,7 +147,7 @@ fn delete_object(state: &mut State, cmd_data: &[u8]) -> response::Message {
         DeleteObjectResponse {}.serialize()
     } else {
         debug!("no such object ID: {:?}", command.object_id);
-        DeviceErrorKind::ObjectNotFound.into()
+        device::ErrorKind::ObjectNotFound.into()
     }
 }
 
@@ -237,7 +237,7 @@ fn export_wrapped(state: &mut State, cmd_data: &[u8]) -> response::Message {
         Ok(ciphertext) => ExportWrappedResponse(wrap::Message { nonce, ciphertext }).serialize(),
         Err(e) => {
             debug!("error wrapping object: {}", e);
-            DeviceErrorKind::InvalidCommand.into()
+            device::ErrorKind::InvalidCommand.into()
         }
     }
 }
@@ -331,7 +331,7 @@ fn get_object_info(state: &State, cmd_data: &[u8]) -> response::Message {
         GetObjectInfoResponse(obj.object_info.clone()).serialize()
     } else {
         debug!("no such object ID: {:?}", command.0.object_id);
-        DeviceErrorKind::ObjectNotFound.into()
+        device::ErrorKind::ObjectNotFound.into()
     }
 }
 
@@ -344,7 +344,7 @@ fn get_opaque(state: &State, cmd_data: &[u8]) -> response::Message {
         GetOpaqueResponse(obj.payload.as_ref().into()).serialize()
     } else {
         debug!("no such opaque object ID: {:?}", command.object_id);
-        DeviceErrorKind::ObjectNotFound.into()
+        device::ErrorKind::ObjectNotFound.into()
     }
 }
 
@@ -388,7 +388,7 @@ fn get_public_key(state: &State, cmd_data: &[u8]) -> response::Message {
         .serialize()
     } else {
         debug!("no such object ID: {:?}", command.key_id);
-        DeviceErrorKind::ObjectNotFound.into()
+        device::ErrorKind::ObjectNotFound.into()
     }
 }
 
@@ -423,7 +423,7 @@ fn import_wrapped(state: &mut State, cmd_data: &[u8]) -> response::Message {
         .serialize(),
         Err(e) => {
             debug!("error unwrapping object: {}", e);
-            DeviceErrorKind::InvalidCommand.into()
+            device::ErrorKind::InvalidCommand.into()
         }
     }
 }
@@ -624,11 +624,11 @@ fn sign_eddsa(state: &State, cmd_data: &[u8]) -> response::Message {
             SignEddsaResponse(signature_bytes.as_ref().into()).serialize()
         } else {
             debug!("not an Ed25519 key: {:?}", obj.algorithm());
-            DeviceErrorKind::InvalidCommand.into()
+            device::ErrorKind::InvalidCommand.into()
         }
     } else {
         debug!("no such object ID: {:?}", command.key_id);
-        DeviceErrorKind::ObjectNotFound.into()
+        device::ErrorKind::ObjectNotFound.into()
     }
 }
 
@@ -646,11 +646,11 @@ fn sign_hmac(state: &State, cmd_data: &[u8]) -> response::Message {
             SignHmacResponse(hmac::Tag(tag.code().as_ref().into())).serialize()
         } else {
             debug!("not an HMAC key: {:?}", obj.algorithm());
-            DeviceErrorKind::InvalidCommand.into()
+            device::ErrorKind::InvalidCommand.into()
         }
     } else {
         debug!("no such object ID: {:?}", command.key_id);
-        DeviceErrorKind::ObjectNotFound.into()
+        device::ErrorKind::ObjectNotFound.into()
     }
 }
 
@@ -674,10 +674,10 @@ fn verify_hmac(state: &State, cmd_data: &[u8]) -> response::Message {
             VerifyHmacResponse(is_ok).serialize()
         } else {
             debug!("not an HMAC key: {:?}", obj.algorithm());
-            DeviceErrorKind::InvalidCommand.into()
+            device::ErrorKind::InvalidCommand.into()
         }
     } else {
         debug!("no such object ID: {:?}", command.key_id);
-        DeviceErrorKind::ObjectNotFound.into()
+        device::ErrorKind::ObjectNotFound.into()
     }
 }

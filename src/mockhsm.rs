@@ -15,7 +15,7 @@ mod state;
 
 pub use self::connection::MockConnection;
 use self::state::State;
-use crate::connector::{Connectable, Connection, ConnectionError};
+use crate::connector::{self, Connectable, Connection};
 
 /// Mock serial number for the MockHsm
 pub const MOCK_SERIAL_NUMBER: &str = "0123456789";
@@ -46,7 +46,7 @@ impl Connectable for MockHsm {
     }
 
     /// Create a new connection with a clone of the MockHsm state
-    fn connect(&self) -> Result<Box<Connection>, ConnectionError> {
+    fn connect(&self) -> Result<Box<Connection>, connector::Error> {
         Ok(Box::new(MockConnection::new(self)))
     }
 }

@@ -14,8 +14,7 @@ use crate::{
     session::{
         self,
         securechannel::{Mac, MAC_SIZE},
-        SessionError,
-        SessionErrorKind::ProtocolError,
+        ErrorKind::ProtocolError,
     },
     uuid::{self, Uuid},
 };
@@ -42,7 +41,7 @@ pub(crate) struct Message {
 
 impl Message {
     /// Create a new command message without a MAC
-    pub fn create<T>(command_type: command::Code, command_data: T) -> Result<Self, SessionError>
+    pub fn create<T>(command_type: command::Code, command_data: T) -> Result<Self, session::Error>
     where
         T: Into<Vec<u8>>,
     {
@@ -71,7 +70,7 @@ impl Message {
         session_id: session::Id,
         command_data: D,
         mac: M,
-    ) -> Result<Self, SessionError>
+    ) -> Result<Self, session::Error>
     where
         D: Into<Vec<u8>>,
         M: Into<Mac>,
@@ -97,7 +96,7 @@ impl Message {
 
     /// Parse a command structure from a vector, taking ownership of the vector
     #[cfg(feature = "mockhsm")]
-    pub fn parse(mut bytes: Vec<u8>) -> Result<Self, SessionError> {
+    pub fn parse(mut bytes: Vec<u8>) -> Result<Self, session::Error> {
         if bytes.len() < 3 {
             fail!(
                 ProtocolError,

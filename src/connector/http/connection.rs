@@ -1,7 +1,7 @@
 //! Persistent HTTP connection to `yubihsm-connector`
 
 use super::config::HttpConfig;
-use crate::connector::{Connection, ConnectionError, Message};
+use crate::connector::{self, Connection};
 use gaunt;
 use uuid::Uuid;
 
@@ -25,7 +25,7 @@ pub struct HttpConnection {
 
 impl HttpConnection {
     /// Open a connection to a `yubihsm-connector` service
-    pub(crate) fn open(config: &HttpConfig) -> Result<Self, ConnectionError> {
+    pub(crate) fn open(config: &HttpConfig) -> Result<Self, connector::Error> {
         let connection = gaunt::Connection::new(&config.addr, config.port, &Default::default())?;
 
         Ok(HttpConnection { connection })
@@ -37,7 +37,7 @@ impl HttpConnection {
         path: &str,
         _uuid: Uuid,
         body: &[u8],
-    ) -> Result<Vec<u8>, ConnectionError> {
+    ) -> Result<Vec<u8>, connector::Error> {
         // TODO: send UUID as `X-Request-ID` header, zero copy body creation
         Ok(self
             .connection
@@ -48,7 +48,11 @@ impl HttpConnection {
 
 impl Connection for HttpConnection {
     /// `POST /connector/api` with a given command message
-    fn send_message(&self, uuid: Uuid, cmd: Message) -> Result<Message, ConnectionError> {
+    fn send_message(
+        &self,
+        uuid: Uuid,
+        cmd: connector::Message,
+    ) -> Result<connector::Message, connector::Error> {
         self.post("/connector/api", uuid, cmd.as_ref())
             .map(Into::into)
     }

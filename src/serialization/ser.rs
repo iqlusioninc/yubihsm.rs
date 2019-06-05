@@ -1,6 +1,6 @@
 //! Serde-powered serializer for `YubiHSM` messages
 
-use super::error::SerializationError;
+use super::error::Error;
 use serde;
 use serde::ser::{
     SerializeMap, SerializeSeq, SerializeStruct, SerializeStructVariant, SerializeTuple,
@@ -21,7 +21,7 @@ impl<W: Write> Serializer<W> {
 
 impl<'a, W: Write> serde::Serializer for &'a mut Serializer<W> {
     type Ok = ();
-    type Error = SerializationError;
+    type Error = Error;
     type SerializeSeq = SerializeHelper<'a, W>;
     type SerializeTuple = SerializeHelper<'a, W>;
     type SerializeTupleStruct = SerializeHelper<'a, W>;
@@ -30,86 +30,86 @@ impl<'a, W: Write> serde::Serializer for &'a mut Serializer<W> {
     type SerializeStruct = SerializeHelper<'a, W>;
     type SerializeStructVariant = SerializeHelper<'a, W>;
 
-    fn serialize_unit(self) -> Result<(), SerializationError> {
+    fn serialize_unit(self) -> Result<(), Error> {
         Ok(())
     }
 
-    fn serialize_unit_struct(self, _: &'static str) -> Result<(), SerializationError> {
+    fn serialize_unit_struct(self, _: &'static str) -> Result<(), Error> {
         Ok(())
     }
 
-    fn serialize_bool(self, _: bool) -> Result<(), SerializationError> {
+    fn serialize_bool(self, _: bool) -> Result<(), Error> {
         unimplemented!();
     }
 
-    fn serialize_u8(self, v: u8) -> Result<(), SerializationError> {
+    fn serialize_u8(self, v: u8) -> Result<(), Error> {
         self.writer.write_all(&[v]).map_err(Into::into)
     }
 
-    fn serialize_u16(self, v: u16) -> Result<(), SerializationError> {
+    fn serialize_u16(self, v: u16) -> Result<(), Error> {
         self.writer.write_all(&v.to_be_bytes()).map_err(Into::into)
     }
 
-    fn serialize_u32(self, v: u32) -> Result<(), SerializationError> {
+    fn serialize_u32(self, v: u32) -> Result<(), Error> {
         self.writer.write_all(&v.to_be_bytes()).map_err(Into::into)
     }
 
-    fn serialize_u64(self, v: u64) -> Result<(), SerializationError> {
+    fn serialize_u64(self, v: u64) -> Result<(), Error> {
         self.writer.write_all(&v.to_be_bytes()).map_err(Into::into)
     }
 
-    fn serialize_i8(self, _: i8) -> Result<(), SerializationError> {
+    fn serialize_i8(self, _: i8) -> Result<(), Error> {
         unimplemented!();
     }
 
-    fn serialize_i16(self, _: i16) -> Result<(), SerializationError> {
+    fn serialize_i16(self, _: i16) -> Result<(), Error> {
         unimplemented!();
     }
 
-    fn serialize_i32(self, _: i32) -> Result<(), SerializationError> {
+    fn serialize_i32(self, _: i32) -> Result<(), Error> {
         unimplemented!();
     }
 
-    fn serialize_i64(self, _: i64) -> Result<(), SerializationError> {
+    fn serialize_i64(self, _: i64) -> Result<(), Error> {
         unimplemented!();
     }
 
-    fn serialize_f32(self, _: f32) -> Result<(), SerializationError> {
+    fn serialize_f32(self, _: f32) -> Result<(), Error> {
         unimplemented!();
     }
 
-    fn serialize_f64(self, _: f64) -> Result<(), SerializationError> {
+    fn serialize_f64(self, _: f64) -> Result<(), Error> {
         unimplemented!();
     }
 
-    fn serialize_str(self, _: &str) -> Result<(), SerializationError> {
+    fn serialize_str(self, _: &str) -> Result<(), Error> {
         unimplemented!();
     }
 
-    fn serialize_char(self, _: char) -> Result<(), SerializationError> {
+    fn serialize_char(self, _: char) -> Result<(), Error> {
         unimplemented!();
     }
 
-    fn serialize_bytes(self, v: &[u8]) -> Result<(), SerializationError> {
+    fn serialize_bytes(self, v: &[u8]) -> Result<(), Error> {
         self.writer.write_all(v).map_err(Into::into)
     }
 
-    fn serialize_none(self) -> Result<(), SerializationError> {
+    fn serialize_none(self) -> Result<(), Error> {
         unimplemented!();
     }
 
-    fn serialize_some<T: ?Sized>(self, _v: &T) -> Result<(), SerializationError>
+    fn serialize_some<T: ?Sized>(self, _v: &T) -> Result<(), Error>
     where
         T: serde::Serialize,
     {
         unimplemented!();
     }
 
-    fn serialize_seq(self, _len: Option<usize>) -> Result<Self::SerializeSeq, SerializationError> {
+    fn serialize_seq(self, _len: Option<usize>) -> Result<Self::SerializeSeq, Error> {
         Ok(SerializeHelper { ser: self })
     }
 
-    fn serialize_tuple(self, _len: usize) -> Result<Self::SerializeTuple, SerializationError> {
+    fn serialize_tuple(self, _len: usize) -> Result<Self::SerializeTuple, Error> {
         Ok(SerializeHelper { ser: self })
     }
 
@@ -117,7 +117,7 @@ impl<'a, W: Write> serde::Serializer for &'a mut Serializer<W> {
         self,
         _name: &'static str,
         _len: usize,
-    ) -> Result<Self::SerializeTupleStruct, SerializationError> {
+    ) -> Result<Self::SerializeTupleStruct, Error> {
         Ok(SerializeHelper { ser: self })
     }
 
@@ -127,11 +127,11 @@ impl<'a, W: Write> serde::Serializer for &'a mut Serializer<W> {
         _variant_index: u32,
         _variant: &'static str,
         _len: usize,
-    ) -> Result<Self::SerializeTupleVariant, SerializationError> {
+    ) -> Result<Self::SerializeTupleVariant, Error> {
         unimplemented!();
     }
 
-    fn serialize_map(self, _len: Option<usize>) -> Result<Self::SerializeMap, SerializationError> {
+    fn serialize_map(self, _len: Option<usize>) -> Result<Self::SerializeMap, Error> {
         unimplemented!();
     }
 
@@ -139,7 +139,7 @@ impl<'a, W: Write> serde::Serializer for &'a mut Serializer<W> {
         self,
         _name: &'static str,
         _len: usize,
-    ) -> Result<Self::SerializeStruct, SerializationError> {
+    ) -> Result<Self::SerializeStruct, Error> {
         Ok(SerializeHelper { ser: self })
     }
 
@@ -149,15 +149,11 @@ impl<'a, W: Write> serde::Serializer for &'a mut Serializer<W> {
         _variant_index: u32,
         _variant: &'static str,
         _len: usize,
-    ) -> Result<Self::SerializeStructVariant, SerializationError> {
+    ) -> Result<Self::SerializeStructVariant, Error> {
         unimplemented!();
     }
 
-    fn serialize_newtype_struct<T>(
-        self,
-        _name: &'static str,
-        value: &T,
-    ) -> Result<(), SerializationError>
+    fn serialize_newtype_struct<T>(self, _name: &'static str, value: &T) -> Result<(), Error>
     where
         T: serde::Serialize + ?Sized,
     {
@@ -170,7 +166,7 @@ impl<'a, W: Write> serde::Serializer for &'a mut Serializer<W> {
         _variant_index: u32,
         _variant: &'static str,
         _value: &T,
-    ) -> Result<(), SerializationError>
+    ) -> Result<(), Error>
     where
         T: serde::Serialize + ?Sized,
     {
@@ -182,7 +178,7 @@ impl<'a, W: Write> serde::Serializer for &'a mut Serializer<W> {
         _name: &'static str,
         _variant_index: u32,
         _variant: &'static str,
-    ) -> Result<(), SerializationError> {
+    ) -> Result<(), Error> {
         unimplemented!();
     }
 
@@ -197,10 +193,10 @@ pub(crate) struct SerializeHelper<'a, W> {
 
 impl<'a, W: Write> SerializeSeq for SerializeHelper<'a, W> {
     type Ok = ();
-    type Error = SerializationError;
+    type Error = Error;
 
     #[inline]
-    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), SerializationError>
+    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), Error>
     where
         T: serde::Serialize,
     {
@@ -208,17 +204,17 @@ impl<'a, W: Write> SerializeSeq for SerializeHelper<'a, W> {
     }
 
     #[inline]
-    fn end(self) -> Result<(), SerializationError> {
+    fn end(self) -> Result<(), Error> {
         Ok(())
     }
 }
 
 impl<'a, W: Write> SerializeTuple for SerializeHelper<'a, W> {
     type Ok = ();
-    type Error = SerializationError;
+    type Error = Error;
 
     #[inline]
-    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), SerializationError>
+    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), Error>
     where
         T: serde::Serialize,
     {
@@ -226,17 +222,17 @@ impl<'a, W: Write> SerializeTuple for SerializeHelper<'a, W> {
     }
 
     #[inline]
-    fn end(self) -> Result<(), SerializationError> {
+    fn end(self) -> Result<(), Error> {
         Ok(())
     }
 }
 
 impl<'a, W: Write> SerializeTupleStruct for SerializeHelper<'a, W> {
     type Ok = ();
-    type Error = SerializationError;
+    type Error = Error;
 
     #[inline]
-    fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<(), SerializationError>
+    fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<(), Error>
     where
         T: serde::Serialize,
     {
@@ -244,17 +240,17 @@ impl<'a, W: Write> SerializeTupleStruct for SerializeHelper<'a, W> {
     }
 
     #[inline]
-    fn end(self) -> Result<(), SerializationError> {
+    fn end(self) -> Result<(), Error> {
         Ok(())
     }
 }
 
 impl<'a, W: Write> SerializeTupleVariant for SerializeHelper<'a, W> {
     type Ok = ();
-    type Error = SerializationError;
+    type Error = Error;
 
     #[inline]
-    fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<(), SerializationError>
+    fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<(), Error>
     where
         T: serde::Serialize,
     {
@@ -262,17 +258,17 @@ impl<'a, W: Write> SerializeTupleVariant for SerializeHelper<'a, W> {
     }
 
     #[inline]
-    fn end(self) -> Result<(), SerializationError> {
+    fn end(self) -> Result<(), Error> {
         Ok(())
     }
 }
 
 impl<'a, W: Write> SerializeMap for SerializeHelper<'a, W> {
     type Ok = ();
-    type Error = SerializationError;
+    type Error = Error;
 
     #[inline]
-    fn serialize_key<K: ?Sized>(&mut self, value: &K) -> Result<(), SerializationError>
+    fn serialize_key<K: ?Sized>(&mut self, value: &K) -> Result<(), Error>
     where
         K: serde::Serialize,
     {
@@ -280,7 +276,7 @@ impl<'a, W: Write> SerializeMap for SerializeHelper<'a, W> {
     }
 
     #[inline]
-    fn serialize_value<V: ?Sized>(&mut self, value: &V) -> Result<(), SerializationError>
+    fn serialize_value<V: ?Sized>(&mut self, value: &V) -> Result<(), Error>
     where
         V: serde::Serialize,
     {
@@ -288,21 +284,17 @@ impl<'a, W: Write> SerializeMap for SerializeHelper<'a, W> {
     }
 
     #[inline]
-    fn end(self) -> Result<(), SerializationError> {
+    fn end(self) -> Result<(), Error> {
         Ok(())
     }
 }
 
 impl<'a, W: Write> SerializeStruct for SerializeHelper<'a, W> {
     type Ok = ();
-    type Error = SerializationError;
+    type Error = Error;
 
     #[inline]
-    fn serialize_field<T: ?Sized>(
-        &mut self,
-        _key: &'static str,
-        value: &T,
-    ) -> Result<(), SerializationError>
+    fn serialize_field<T: ?Sized>(&mut self, _key: &'static str, value: &T) -> Result<(), Error>
     where
         T: serde::Serialize,
     {
@@ -310,21 +302,17 @@ impl<'a, W: Write> SerializeStruct for SerializeHelper<'a, W> {
     }
 
     #[inline]
-    fn end(self) -> Result<(), SerializationError> {
+    fn end(self) -> Result<(), Error> {
         Ok(())
     }
 }
 
 impl<'a, W: Write> SerializeStructVariant for SerializeHelper<'a, W> {
     type Ok = ();
-    type Error = SerializationError;
+    type Error = Error;
 
     #[inline]
-    fn serialize_field<T: ?Sized>(
-        &mut self,
-        _key: &'static str,
-        value: &T,
-    ) -> Result<(), SerializationError>
+    fn serialize_field<T: ?Sized>(&mut self, _key: &'static str, value: &T) -> Result<(), Error>
     where
         T: serde::Serialize,
     {
@@ -332,7 +320,7 @@ impl<'a, W: Write> SerializeStructVariant for SerializeHelper<'a, W> {
     }
 
     #[inline]
-    fn end(self) -> Result<(), SerializationError> {
+    fn end(self) -> Result<(), Error> {
         Ok(())
     }
 }

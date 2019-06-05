@@ -16,7 +16,7 @@ pub use self::{
     device::{Device, Devices},
     timeout::UsbTimeout,
 };
-use crate::connector::{Connectable, Connection, ConnectionError};
+use crate::connector::{self, Connectable, Connection};
 
 /// USB vendor ID for Yubico
 pub const YUBICO_VENDOR_ID: u16 = 0x1050;
@@ -58,7 +58,7 @@ impl Connectable for UsbConnector {
     }
 
     /// Open a connection to `yubihsm-connector`
-    fn connect(&self) -> Result<Box<dyn Connection>, ConnectionError> {
+    fn connect(&self) -> Result<Box<dyn Connection>, connector::Error> {
         Ok(Box::new(UsbConnection::open(&self.0)?))
     }
 }

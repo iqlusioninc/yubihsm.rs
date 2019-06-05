@@ -1,6 +1,6 @@
 //! Pseudo-algorithms for opaque data
 
-use crate::algorithm::{AlgorithmError, AlgorithmErrorKind::TagInvalid};
+use crate::algorithm;
 
 /// Valid algorithms for opaque data
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -16,11 +16,15 @@ pub enum Algorithm {
 
 impl Algorithm {
     /// Convert an unsigned byte tag into an `Algorithmorithm` (if valid)
-    pub fn from_u8(tag: u8) -> Result<Self, AlgorithmError> {
+    pub fn from_u8(tag: u8) -> Result<Self, algorithm::Error> {
         Ok(match tag {
             0x1e => Algorithm::DATA,
             0x1f => Algorithm::X509_CERTIFICATE,
-            _ => fail!(TagInvalid, "unknown opaque data ID: 0x{:02x}", tag),
+            _ => fail!(
+                algorithm::ErrorKind::TagInvalid,
+                "unknown opaque data ID: 0x{:02x}",
+                tag
+            ),
         })
     }
 

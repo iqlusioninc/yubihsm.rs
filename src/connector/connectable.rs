@@ -1,6 +1,6 @@
 //! Trait for YubiHSM2 interfaces which can be connected to
 
-use super::{connection::Connection, ConnectionError};
+use crate::connector::{self, Connection};
 
 /// Connectors which create `Connection` objects to the HSM
 pub trait Connectable: Send + Sync {
@@ -8,5 +8,5 @@ pub trait Connectable: Send + Sync {
     fn box_clone(&self) -> Box<dyn Connectable>;
 
     /// Open a connection to the HSM using this `Connector`
-    fn connect(&self) -> Result<Box<dyn Connection>, ConnectionError>;
+    fn connect(&self) -> Result<Box<dyn Connection>, connector::Error>;
 }

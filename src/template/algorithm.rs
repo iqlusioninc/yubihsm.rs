@@ -1,6 +1,6 @@
 //! SSH certificate templates
 
-use crate::algorithm::{AlgorithmError, AlgorithmErrorKind::TagInvalid};
+use crate::algorithm;
 
 /// Template algorithms (for SSH)
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -13,11 +13,11 @@ pub enum Algorithm {
 
 impl Algorithm {
     /// Convert an unsigned byte tag into a `template::Algorithmorithm` (if valid)
-    pub fn from_u8(tag: u8) -> Result<Self, AlgorithmError> {
+    pub fn from_u8(tag: u8) -> Result<Self, algorithm::Error> {
         Ok(match tag {
             0x24 => Algorithm::SSH,
             _ => fail!(
-                TagInvalid,
+                algorithm::ErrorKind::TagInvalid,
                 "unknown SSH template algorithm ID: 0x{:02x}",
                 tag
             ),

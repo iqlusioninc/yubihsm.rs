@@ -1,6 +1,6 @@
 //! Yubico OTP algorithms
 
-use crate::algorithm::{AlgorithmError, AlgorithmErrorKind::TagInvalid};
+use crate::algorithm;
 
 /// Valid algorithms for Yubico OTP (AES-based one time password) keys
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -19,12 +19,16 @@ pub enum Algorithm {
 
 impl Algorithm {
     /// Convert an unsigned byte tag into an `OtpAlgorithm` (if valid)
-    pub fn from_u8(tag: u8) -> Result<Self, AlgorithmError> {
+    pub fn from_u8(tag: u8) -> Result<Self, algorithm::Error> {
         Ok(match tag {
             0x25 => Algorithm::AES128,
             0x27 => Algorithm::AES192,
             0x28 => Algorithm::AES256,
-            _ => fail!(TagInvalid, "unknown OTP algorithm ID: 0x{:02x}", tag),
+            _ => fail!(
+                algorithm::ErrorKind::TagInvalid,
+                "unknown OTP algorithm ID: 0x{:02x}",
+                tag
+            ),
         })
     }
 

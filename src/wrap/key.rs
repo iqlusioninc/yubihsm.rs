@@ -6,11 +6,7 @@
 
 // TODO(tarcieri): use this for `yubihsm::client::put_wrap_key` in general?
 
-use crate::{
-    client::ClientError,
-    device::{DeviceError, DeviceErrorKind::*},
-    object, wrap, Capability, Client, Domain,
-};
+use crate::{client, device, object, wrap, Capability, Client, Domain};
 use getrandom::getrandom;
 use std::fmt::{self, Debug};
 use zeroize::{Zeroize, Zeroizing};
@@ -37,13 +33,13 @@ impl Key {
     }
 
     /// Create a new `wrap::Key` instance. Must be 16, 24, or 32-bytes long.
-    pub fn from_bytes(key_id: object::Id, bytes: &[u8]) -> Result<Self, DeviceError> {
+    pub fn from_bytes(key_id: object::Id, bytes: &[u8]) -> Result<Self, device::Error> {
         let alg = match bytes.len() {
             16 => wrap::Algorithm::AES128_CCM,
             24 => wrap::Algorithm::AES192_CCM,
             32 => wrap::Algorithm::AES256_CCM,
             other => fail!(
-                WrongLength,
+                device::ErrorKind::WrongLength,
                 "expected 16, 24, or 32-byte wrap key (got {})",
                 other
             ),
@@ -84,7 +80,7 @@ impl Key {
     }
 
     /// Create this key within the HSM
-    pub fn create(&self, client: &Client) -> Result<(), ClientError> {
+    pub fn create(&self, client: &Client) -> Result<(), client::Error> {
         let algorithm = self.import_params.algorithm.wrap().unwrap();
 
         client.put_wrap_key(

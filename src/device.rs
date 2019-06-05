@@ -7,7 +7,7 @@ pub(super) mod serial;
 pub(super) mod storage;
 
 pub use self::{
-    error::{DeviceError, DeviceErrorKind},
+    error::{Error, ErrorKind},
     info::Info,
     serial::Number as SerialNumber,
     storage::Info as StorageInfo,

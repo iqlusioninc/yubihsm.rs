@@ -7,8 +7,8 @@ use super::{
 use crate::{
     command::MAX_MSG_SIZE,
     connector::{
-        ConnectionError,
-        ConnectionErrorKind::{AddrInvalid, DeviceBusyError, UsbError},
+        self,
+        ErrorKind::{AddrInvalid, DeviceBusyError, UsbError},
     },
     device::SerialNumber,
 };
@@ -36,7 +36,7 @@ pub struct Devices(Vec<Device>);
 
 impl Devices {
     /// Return the serial numbers of all connected YubiHSM 2s
-    pub fn serial_numbers() -> Result<Vec<SerialNumber>, ConnectionError> {
+    pub fn serial_numbers() -> Result<Vec<SerialNumber>, connector::Error> {
         let devices = Self::detect(UsbTimeout::default())?;
         let serials: Vec<_> = devices.iter().map(|a| a.serial_number).collect();
         Ok(serials)
@@ -47,7 +47,7 @@ impl Devices {
     pub fn open(
         serial_number: Option<SerialNumber>,
         timeout: UsbTimeout,
-    ) -> Result<UsbConnection, ConnectionError> {
+    ) -> Result<UsbConnection, connector::Error> {
         let mut devices = Self::detect(timeout)?;
 
         if let Some(sn) = serial_number {
@@ -82,7 +82,7 @@ impl Devices {
     }
 
     /// Detect connected YubiHSM 2s, returning a collection of them
-    pub fn detect(timeout: UsbTimeout) -> Result<Self, ConnectionError> {
+    pub fn detect(timeout: UsbTimeout) -> Result<Self, connector::Error> {
         let device_list = GLOBAL_USB_CONTEXT.devices()?;
         let mut devices = vec![];
 
@@ -204,7 +204,7 @@ impl Device {
     }
 
     /// Open this device, consuming it and creating a `UsbConnection`
-    pub fn open(self, timeout: UsbTimeout) -> Result<UsbConnection, ConnectionError> {
+    pub fn open(self, timeout: UsbTimeout) -> Result<UsbConnection, connector::Error> {
         let connection = UsbConnection::create(self, timeout)?;
 
         debug!(
@@ -229,7 +229,7 @@ impl Device {
     }
 
     /// Open a handle to the underlying device (for use by `UsbConnection`)
-    pub(super) fn open_handle(&self) -> Result<libusb::DeviceHandle<'static>, ConnectionError> {
+    pub(super) fn open_handle(&self) -> Result<libusb::DeviceHandle<'static>, connector::Error> {
         let mut handle = self.device.open()?;
         handle.reset()?;
         handle.claim_interface(YUBIHSM2_INTERFACE_NUM)?;
@@ -255,7 +255,7 @@ impl Debug for Device {
 
 /// Flush any unconsumed messages still in the buffer to get the connection
 /// back into a clean state
-fn flush(handle: &mut libusb::DeviceHandle) -> Result<(), ConnectionError> {
+fn flush(handle: &mut libusb::DeviceHandle) -> Result<(), connector::Error> {
     let mut buffer = [0u8; MAX_MSG_SIZE];
 
     // Use a near instantaneous (but non-zero) timeout to drain the buffer.

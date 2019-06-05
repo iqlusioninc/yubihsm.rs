@@ -1,4 +1,6 @@
-use crate::{AlgorithmError, AlgorithmErrorKind::TagInvalid};
+//! ECDSA algorithms (i.e. hash functions)
+
+use crate::algorithm;
 
 /// Valid algorithms for asymmetric keys
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -20,13 +22,17 @@ pub enum Algorithm {
 
 impl Algorithm {
     /// Convert an unsigned byte tag into an `ecdsa::Algorithm` (if valid)
-    pub fn from_u8(tag: u8) -> Result<Self, AlgorithmError> {
+    pub fn from_u8(tag: u8) -> Result<Self, algorithm::Error> {
         Ok(match tag {
             0x17 => Algorithm::SHA1,
             0x2b => Algorithm::SHA256,
             0x2c => Algorithm::SHA384,
             0x2d => Algorithm::SHA512,
-            _ => fail!(TagInvalid, "unknown ECDSA algorithm ID: 0x{:02x}", tag),
+            _ => fail!(
+                algorithm::ErrorKind::TagInvalid,
+                "unknown ECDSA algorithm ID: 0x{:02x}",
+                tag
+            ),
         })
     }
 
