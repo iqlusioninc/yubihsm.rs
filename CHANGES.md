@@ -1,3 +1,10 @@
+## [0.24.0] (2019-06-04)
+
+- Eliminate module name prefixes from error types ([#209])
+- Upgrade to zeroize 0.9 ([#208])
+- Improve `yubihsm::Client`'s `reset_device_and_reconnect` API ([#204])
+- Retry commands after session messages limits are exceeded ([#203])
+
 ## [0.23.0] (2019-05-20)
 
 - Remove `byteorder` crate ([#201])
@@ -232,6 +239,11 @@ to adding support for several commands.
 
 - Initial release
 
+[0.24.0]: https://github.com/tendermint/yubihsm-rs/pull/210
+[#209]: https://github.com/tendermint/yubihsm-rs/pull/209
+[#208]: https://github.com/tendermint/yubihsm-rs/pull/208
+[#204]: https://github.com/tendermint/yubihsm-rs/pull/204
+[#203]: https://github.com/tendermint/yubihsm-rs/pull/203
 [0.23.0]: https://github.com/tendermint/yubihsm-rs/pull/202
 [#201]: https://github.com/tendermint/yubihsm-rs/pull/201
 [#200]: https://github.com/tendermint/yubihsm-rs/pull/200
