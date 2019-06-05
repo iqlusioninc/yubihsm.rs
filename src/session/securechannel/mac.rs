@@ -19,6 +19,7 @@ pub const MAC_SIZE: usize = 8;
 
 /// Message Authentication Codes used to verify messages
 #[derive(Zeroize)]
+#[zeroize(drop)]
 pub struct Mac([u8; MAC_SIZE]);
 
 impl Mac {

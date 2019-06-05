@@ -10,6 +10,7 @@ pub const CRYPTOGRAM_SIZE: usize = 8;
 
 /// Authentication cryptograms used to verify sessions
 #[derive(Clone, Deserialize, Serialize, Zeroize)]
+#[zeroize(drop)]
 pub struct Cryptogram([u8; CRYPTOGRAM_SIZE]);
 
 impl Cryptogram {
