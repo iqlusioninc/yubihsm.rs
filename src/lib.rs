@@ -110,14 +110,6 @@ pub use crate::connector::HttpConfig;
 pub use crate::connector::UsbConfig;
 
 pub use crate::{
-    algorithm::*,
-    audit::AuditOption,
-    authentication::Credentials,
-    capability::Capability,
-    client::{Client, ClientError},
-    connector::{ConnectionError, Connector},
-    device::{DeviceError, DeviceErrorKind},
-    domain::Domain,
-    error::*,
-    uuid::Uuid,
+    algorithm::Algorithm, audit::AuditOption, authentication::Credentials, capability::Capability,
+    client::Client, connector::Connector, domain::Domain, error::*, uuid::Uuid,
 };

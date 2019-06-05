@@ -8,12 +8,12 @@
 
 use uuid::Uuid;
 use super::{
-    error::{SessionError, SessionErrorKind::ProtocolError},
+    error::{session::Error, session::ErrorKind::ProtocolError},
     securechannel::{Mac, MAC_SIZE},
 };
 use crate::{command, response, session};
 #[cfg(feature = "mockhsm")]
-use crate::error::DeviceErrorKind;
+use crate::error::device::ErrorKind;
 
 /// Maximum size of a message sent to/from the YubiHSM
 pub const MAX_MSG_SIZE: usize = 2048;
@@ -40,7 +40,7 @@ pub(crate) struct command::Message {
 
 impl command::Message {
     /// Create a new command message without a MAC
-    pub fn new<T>(command_type: command::Code, command_data: T) -> Result<Self, SessionError>
+    pub fn new<T>(command_type: command::Code, command_data: T) -> Result<Self, session::Error>
     where
         T: Into<Vec<u8>>,
     {
@@ -69,7 +69,7 @@ impl command::Message {
         session_id: session::Id,
         command_data: D,
         mac: M,
-    ) -> Result<Self, SessionError>
+    ) -> Result<Self, session::Error>
     where
         D: Into<Vec<u8>>,
         M: Into<Mac>,
@@ -95,7 +95,7 @@ impl command::Message {
 
     /// Parse a command structure from a vector, taking ownership of the vector
     #[cfg(feature = "mockhsm")]
-    pub fn parse(mut bytes: Vec<u8>) -> Result<Self, SessionError> {
+    pub fn parse(mut bytes: Vec<u8>) -> Result<Self, session::Error> {
         if bytes.len() < 3 {
             fail!(
                 ProtocolError,
@@ -211,7 +211,7 @@ pub(crate) struct response::Message {
 
 impl response::Message {
     /// Parse a response into a Response struct
-    pub fn parse(mut bytes: Vec<u8>) -> Result<Self, SessionError> {
+    pub fn parse(mut bytes: Vec<u8>) -> Result<Self, session::Error> {
         if bytes.len() < 3 {
             fail!(
                 ProtocolError,
@@ -339,8 +339,8 @@ impl response::Message {
 }
 
 #[cfg(feature = "mockhsm")]
-impl From<DeviceErrorKind> for response::Message {
-    fn from(kind: DeviceErrorKind) -> Self {
+impl From<device::ErrorKind> for response::Message {
+    fn from(kind: device::ErrorKind) -> Self {
         Self::new(response::Code::MemoryError, vec![kind.to_u8()])
     }
 }

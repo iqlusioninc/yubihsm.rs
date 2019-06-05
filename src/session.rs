@@ -14,19 +14,18 @@ pub(crate) mod securechannel;
 mod timeout;
 
 pub use self::{
-    error::{SessionError, SessionErrorKind},
+    error::{Error, ErrorKind},
     guard::Guard,
     id::Id,
     timeout::Timeout,
 };
 
-use self::{commands::CloseSessionCommand, securechannel::SecureChannel, SessionErrorKind::*};
+use self::{commands::CloseSessionCommand, securechannel::SecureChannel};
 use crate::{
     authentication::Credentials,
     command::{self, Command},
     connector::Connector,
-    device::DeviceErrorKind,
-    response,
+    device, response,
     serialization::deserialize,
 };
 use std::{
@@ -72,10 +71,10 @@ impl Session {
         connector: Connector,
         credentials: &Credentials,
         timeout: Timeout,
-    ) -> Result<Self, SessionError> {
+    ) -> Result<Self, Error> {
         ensure!(
             timeout.duration() > TIMEOUT_FUZZ_FACTOR,
-            CreateFailed,
+            ErrorKind::CreateFailed,
             "timeout too low: must be longer than {:?}",
             TIMEOUT_FUZZ_FACTOR
         );
@@ -113,10 +112,10 @@ impl Session {
     }
 
     /// Number of messages sent during this session
-    pub fn messages_sent(&self) -> Result<usize, SessionError> {
+    pub fn messages_sent(&self) -> Result<usize, Error> {
         self.secure_channel
             .as_ref()
-            .ok_or_else(|| err!(ClosedSessionError, "session is already closed"))
+            .ok_or_else(|| err!(ErrorKind::ClosedError, "session is already closed"))
             .map(SecureChannel::counter)
     }
 
@@ -136,7 +135,7 @@ impl Session {
     pub(crate) fn send_command<C: Command>(
         &mut self,
         command: &C,
-    ) -> Result<C::ResponseType, SessionError> {
+    ) -> Result<C::ResponseType, Error> {
         let plaintext_cmd = command::Message::from(command);
         let cmd_type = plaintext_cmd.command_type;
 
@@ -170,18 +169,18 @@ impl Session {
             })?;
 
         if response.is_err() {
-            if let Some(kind) = DeviceErrorKind::from_response_message(&response) {
+            if let Some(kind) = device::ErrorKind::from_response_message(&response) {
                 session_debug!(self, "uuid={} failed={:?} error={:?}", uuid, cmd_type, kind);
                 return Err(kind.into());
             } else {
                 session_debug!(self, "uuid={} failed={:?} error=unknown", uuid, cmd_type);
-                fail!(ResponseError, "{:?} failed: HSM error", cmd_type);
+                fail!(ErrorKind::ResponseError, "{:?} failed: HSM error", cmd_type);
             }
         }
 
         if response.command() != Some(C::COMMAND_CODE) {
             fail!(
-                ResponseError,
+                ErrorKind::ResponseError,
                 "bad command type in response: {:?} (expected {:?})",
                 response.command(),
                 C::COMMAND_CODE,
@@ -192,7 +191,7 @@ impl Session {
     }
 
     /// Send a command message to the HSM and parse the response
-    fn send_message(&mut self, cmd: command::Message) -> Result<response::Message, SessionError> {
+    fn send_message(&mut self, cmd: command::Message) -> Result<response::Message, Error> {
         let cmd_type = cmd.command_type;
         let uuid = cmd.uuid;
         self.last_active = Instant::now();
@@ -219,14 +218,18 @@ impl Session {
 
         if response.is_err() {
             session_error!(self, "uuid={} error={:?}", &uuid, response.code);
-            fail!(ResponseError, "HSM error (session: {})", self.id().to_u8(),);
+            fail!(
+                ErrorKind::ResponseError,
+                "HSM error (session: {})",
+                self.id().to_u8(),
+            );
         }
 
         Ok(response)
     }
 
     /// Authenticate the current session with the HSM
-    fn authenticate(&mut self, credentials: &Credentials) -> Result<(), SessionError> {
+    fn authenticate(&mut self, credentials: &Credentials) -> Result<(), Error> {
         session_debug!(
             self,
             "command={:?} key={}",
@@ -257,10 +260,10 @@ impl Session {
     }
 
     /// Get the underlying channel or return an error
-    fn secure_channel(&mut self) -> Result<&mut SecureChannel, SessionError> {
+    fn secure_channel(&mut self) -> Result<&mut SecureChannel, Error> {
         self.secure_channel
             .as_mut()
-            .ok_or_else(|| err!(ClosedSessionError, "session is already closed"))
+            .ok_or_else(|| err!(ErrorKind::ClosedError, "session is already closed"))
     }
 }
 

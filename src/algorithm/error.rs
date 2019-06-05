@@ -1,14 +1,13 @@
 //! `Algorithm`-related errors
 
-use crate::error::Error;
 use failure::Fail;
 
 /// `Algorithm`-related errors
-pub type AlgorithmError = Error<AlgorithmErrorKind>;
+pub type Error = crate::Error<ErrorKind>;
 
 /// Kinds of `Algorithm`-related errors
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
-pub enum AlgorithmErrorKind {
+pub enum ErrorKind {
     /// Invalid algorithm tag
     #[fail(display = "invalid tag")]
     TagInvalid,

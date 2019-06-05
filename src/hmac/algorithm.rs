@@ -1,6 +1,6 @@
 //! HMAC algorithms
 
-use crate::algorithm::{AlgorithmError, AlgorithmErrorKind::TagInvalid};
+use crate::algorithm;
 
 /// Valid algorithms for HMAC keys
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -22,13 +22,17 @@ pub enum Algorithm {
 
 impl Algorithm {
     /// Convert an unsigned byte tag into an `Algorithmorithm` (if valid)
-    pub fn from_u8(tag: u8) -> Result<Self, AlgorithmError> {
+    pub fn from_u8(tag: u8) -> Result<Self, algorithm::Error> {
         Ok(match tag {
             0x13 => Algorithm::SHA1,
             0x14 => Algorithm::SHA256,
             0x15 => Algorithm::SHA384,
             0x16 => Algorithm::SHA512,
-            _ => fail!(TagInvalid, "unknown HMAC algorithm ID: 0x{:02x}", tag),
+            _ => fail!(
+                algorithm::ErrorKind::TagInvalid,
+                "unknown HMAC algorithm ID: 0x{:02x}",
+                tag
+            ),
         })
     }
 

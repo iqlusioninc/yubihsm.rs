@@ -6,13 +6,11 @@
 //! increases the chance of collisions since the birthday bound is much
 //! lower (~2^32 messages).
 
-use cmac::crypto_mac::generic_array::typenum::U16;
-use cmac::crypto_mac::generic_array::GenericArray;
+use crate::session;
+use cmac::crypto_mac::generic_array::{typenum::U16, GenericArray};
 use std::fmt;
 use subtle::{Choice, ConstantTimeEq};
 use zeroize::Zeroize;
-
-use crate::session::{SessionError, SessionErrorKind::VerifyFailed};
 
 /// Size of the MAC in bytes: SCP03 truncates it to 8-bytes
 pub const MAC_SIZE: usize = 8;
@@ -40,14 +38,14 @@ impl Mac {
     }
 
     /// Verify a 16-byte GenericArray against this MAC tag
-    pub fn verify<M>(&self, other: M) -> Result<(), SessionError>
+    pub fn verify<M>(&self, other: M) -> Result<(), session::Error>
     where
         M: Into<Mac>,
     {
         if self.ct_eq(&other.into()).unwrap_u8() == 1 {
             Ok(())
         } else {
-            fail!(VerifyFailed, "MAC mismatch!");
+            fail!(session::ErrorKind::VerifyFailed, "MAC mismatch!");
         }
     }
 }

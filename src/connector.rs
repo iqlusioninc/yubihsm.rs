@@ -70,7 +70,7 @@ impl Connector {
     }
 
     /// Send a command message to the HSM, then read and return the response
-    pub fn send_message(&self, uuid: Uuid, msg: Message) -> Result<Message, ConnectionError> {
+    pub fn send_message(&self, uuid: Uuid, msg: Message) -> Result<Message, Error> {
         let mut connection = self.connection.lock().unwrap();
 
         if connection.is_none() {

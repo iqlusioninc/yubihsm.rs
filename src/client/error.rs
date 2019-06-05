@@ -1,21 +1,15 @@
-//! Errors that occur during sessions
+//! YubiHSM client errors
 
-use crate::{
-    connector::{ConnectionError, ConnectionErrorKind},
-    device::DeviceErrorKind,
-    error::Error,
-    serialization::SerializationError,
-    session::{SessionError, SessionErrorKind},
-};
+use crate::{connector, device, serialization, session};
 use failure::Fail;
 use std::{error::Error as StdError, io};
 
-/// Session errors
-pub type ClientError = Error<ClientErrorKind>;
+/// Client errors
+pub type Error = crate::Error<ErrorKind>;
 
-/// Session error kinds
+/// Client error kinds
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
-pub enum ClientErrorKind {
+pub enum ErrorKind {
     /// Couldn't authenticate session
     #[fail(display = "authentication failed")]
     AuthenticationError,
@@ -26,9 +20,9 @@ pub enum ClientErrorKind {
 
     /// Errors with the connection to the HSM
     #[fail(display = "connection error")]
-    ConnectionError {
+    ConnectorError {
         /// Connection error kind
-        kind: ConnectionErrorKind,
+        kind: connector::ErrorKind,
     },
 
     /// Couldn't create session
@@ -39,7 +33,7 @@ pub enum ClientErrorKind {
     #[fail(display = "HSM error: {}", kind)]
     DeviceError {
         /// HSM error kind
-        kind: DeviceErrorKind,
+        kind: device::ErrorKind,
     },
 
     /// Protocol error occurred
@@ -51,58 +45,58 @@ pub enum ClientErrorKind {
     ResponseError,
 }
 
-impl ClientErrorKind {
+impl ErrorKind {
     /// Get the device error, if this is a device error
-    pub fn device_error(self) -> Option<DeviceErrorKind> {
+    pub fn device_error(self) -> Option<device::ErrorKind> {
         match self {
-            ClientErrorKind::DeviceError { kind } => Some(kind),
+            ErrorKind::DeviceError { kind } => Some(kind),
             _ => None,
         }
     }
 }
 
 // TODO: capture causes?
-impl From<ConnectionError> for ClientError {
-    fn from(err: ConnectionError) -> Self {
-        let kind = ClientErrorKind::ConnectionError { kind: err.kind() };
+impl From<connector::Error> for Error {
+    fn from(err: connector::Error) -> Self {
+        let kind = ErrorKind::ConnectorError { kind: err.kind() };
         err!(kind, err.description())
     }
 }
 
 // TODO: capture causes?
-impl From<SessionError> for ClientError {
-    fn from(err: SessionError) -> Self {
+impl From<session::Error> for Error {
+    fn from(err: session::Error) -> Self {
         let kind = match err.kind() {
-            SessionErrorKind::AuthenticationError => ClientErrorKind::AuthenticationError,
-            SessionErrorKind::ClosedSessionError => ClientErrorKind::ClosedSessionError,
-            SessionErrorKind::CreateFailed => ClientErrorKind::CreateFailed,
-            SessionErrorKind::DeviceError { kind } => ClientErrorKind::DeviceError { kind },
-            SessionErrorKind::ProtocolError
-            | SessionErrorKind::CommandLimitExceeded
-            | SessionErrorKind::MismatchError
-            | SessionErrorKind::VerifyFailed => ClientErrorKind::ProtocolError,
-            SessionErrorKind::ResponseError => ClientErrorKind::ResponseError,
+            session::ErrorKind::AuthenticationError => ErrorKind::AuthenticationError,
+            session::ErrorKind::ClosedError => ErrorKind::ClosedSessionError,
+            session::ErrorKind::CreateFailed => ErrorKind::CreateFailed,
+            session::ErrorKind::DeviceError { kind } => ErrorKind::DeviceError { kind },
+            session::ErrorKind::ProtocolError
+            | session::ErrorKind::CommandLimitExceeded
+            | session::ErrorKind::MismatchError
+            | session::ErrorKind::VerifyFailed => ErrorKind::ProtocolError,
+            session::ErrorKind::ResponseError => ErrorKind::ResponseError,
         };
 
         err!(kind, err.description())
     }
 }
 
-impl From<io::Error> for ClientError {
+impl From<io::Error> for Error {
     fn from(err: io::Error) -> Self {
-        err!(ClientErrorKind::ProtocolError, err.description())
+        err!(ErrorKind::ProtocolError, err.description())
     }
 }
 
 // TODO: capture causes?
-impl From<SerializationError> for ClientError {
-    fn from(err: SerializationError) -> Self {
-        err!(ClientErrorKind::ProtocolError, err.description())
+impl From<serialization::Error> for Error {
+    fn from(err: serialization::Error) -> Self {
+        err!(ErrorKind::ProtocolError, err.description())
     }
 }
 
-impl From<ClientError> for signatory::Error {
-    fn from(client_error: ClientError) -> signatory::Error {
+impl From<Error> for signatory::Error {
+    fn from(client_error: Error) -> signatory::Error {
         signatory::Error::new(
             signatory::ErrorKind::ProviderError,
             Some(&client_error.to_string()),

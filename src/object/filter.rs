@@ -1,12 +1,10 @@
 //! Filters for selecting objects in the list object command
 
 #[cfg(feature = "mockhsm")]
-use crate::client::ClientErrorKind::ProtocolError;
+use crate::client::ErrorKind::ProtocolError;
 #[cfg(feature = "mockhsm")]
 use crate::object::LABEL_SIZE;
-use crate::{
-    algorithm::Algorithm, capability::Capability, client::ClientError, domain::Domain, object,
-};
+use crate::{algorithm::Algorithm, capability::Capability, client, domain::Domain, object};
 #[cfg(feature = "mockhsm")]
 use std::io::Read;
 use std::io::Write;
@@ -64,7 +62,7 @@ impl Filter {
     }
 
     // TODO: replace this with serde
-    pub(crate) fn serialize<W: Write>(&self, mut writer: W) -> Result<W, ClientError> {
+    pub(crate) fn serialize<W: Write>(&self, mut writer: W) -> Result<W, client::Error> {
         writer.write_all(&[self.tag()])?;
 
         match *self {
@@ -83,7 +81,7 @@ impl Filter {
 
     // TODO: replace this with serde
     #[cfg(feature = "mockhsm")]
-    pub(crate) fn deserialize<R: Read>(mut reader: R) -> Result<Self, ClientError> {
+    pub(crate) fn deserialize<R: Read>(mut reader: R) -> Result<Self, client::Error> {
         let tag = read_byte!(reader);
 
         Ok(match tag {

@@ -1,6 +1,5 @@
 //! Error types for `yubihsm-connector`
 
-use crate::error::Error;
 use failure::Fail;
 #[cfg(feature = "http")]
 use gaunt;
@@ -9,11 +8,11 @@ use libusb;
 use std::{fmt, io, num::ParseIntError, str::Utf8Error};
 
 /// `yubihsm-connector` related errors
-pub type ConnectionError = Error<ConnectionErrorKind>;
+pub type Error = crate::Error<ErrorKind>;
 
 /// `yubihsm-connector` related error kinds
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
-pub enum ConnectionErrorKind {
+pub enum ErrorKind {
     /// Address provided was not valid
     #[fail(display = "invalid address")]
     AddrInvalid,
@@ -48,28 +47,28 @@ pub enum ConnectionErrorKind {
     UsbError,
 }
 
-impl From<fmt::Error> for ConnectionError {
+impl From<fmt::Error> for Error {
     fn from(err: fmt::Error) -> Self {
-        err!(ConnectionErrorKind::IoError, err.to_string())
+        err!(ErrorKind::IoError, err.to_string())
     }
 }
 
-impl From<io::Error> for ConnectionError {
+impl From<io::Error> for Error {
     fn from(err: io::Error) -> Self {
-        err!(ConnectionErrorKind::IoError, err.to_string())
+        err!(ErrorKind::IoError, err.to_string())
     }
 }
 
 #[cfg(feature = "http")]
-impl From<gaunt::Error> for ConnectionError {
-    fn from(err: gaunt::Error) -> ConnectionError {
+impl From<gaunt::Error> for Error {
+    fn from(err: gaunt::Error) -> Error {
         let kind = match err.kind() {
-            gaunt::ErrorKind::AddrInvalid => ConnectionErrorKind::AddrInvalid,
-            gaunt::ErrorKind::IoError => ConnectionErrorKind::IoError,
+            gaunt::ErrorKind::AddrInvalid => ErrorKind::AddrInvalid,
+            gaunt::ErrorKind::IoError => ErrorKind::IoError,
             gaunt::ErrorKind::ParseError | gaunt::ErrorKind::ResponseError => {
-                ConnectionErrorKind::ResponseError
+                ErrorKind::ResponseError
             }
-            gaunt::ErrorKind::RequestError => ConnectionErrorKind::RequestError,
+            gaunt::ErrorKind::RequestError => ErrorKind::RequestError,
         };
 
         err!(kind, err)
@@ -77,28 +76,25 @@ impl From<gaunt::Error> for ConnectionError {
 }
 
 #[cfg(feature = "usb")]
-impl From<libusb::Error> for ConnectionError {
-    fn from(err: libusb::Error) -> ConnectionError {
+impl From<libusb::Error> for Error {
+    fn from(err: libusb::Error) -> Error {
         match err {
-            libusb::Error::Access => err!(ConnectionErrorKind::AccessDenied, "{}", err),
-            libusb::Error::Io => err!(ConnectionErrorKind::IoError, "{}", err),
-            libusb::Error::Pipe => err!(
-                ConnectionErrorKind::UsbError,
-                "lost connection to USB device"
-            ),
-            _ => err!(ConnectionErrorKind::UsbError, "{}", err),
+            libusb::Error::Access => err!(ErrorKind::AccessDenied, "{}", err),
+            libusb::Error::Io => err!(ErrorKind::IoError, "{}", err),
+            libusb::Error::Pipe => err!(ErrorKind::UsbError, "lost connection to USB device"),
+            _ => err!(ErrorKind::UsbError, "{}", err),
         }
     }
 }
 
-impl From<ParseIntError> for ConnectionError {
+impl From<ParseIntError> for Error {
     fn from(err: ParseIntError) -> Self {
-        err!(ConnectionErrorKind::ResponseError, err.to_string())
+        err!(ErrorKind::ResponseError, err.to_string())
     }
 }
 
-impl From<Utf8Error> for ConnectionError {
+impl From<Utf8Error> for Error {
     fn from(err: Utf8Error) -> Self {
-        err!(ConnectionErrorKind::ResponseError, err.to_string())
+        err!(ErrorKind::ResponseError, err.to_string())
     }
 }

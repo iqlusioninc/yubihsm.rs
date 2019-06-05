@@ -1,7 +1,7 @@
 //! Wrapper type around messages sent to/from the HSM
 
 #[cfg(feature = "mockhsm")]
-use crate::{command, session::SessionError};
+use crate::{command, session};
 
 /// Messages sent to/from the HSM
 pub struct Message(pub(crate) Vec<u8>);
@@ -27,7 +27,7 @@ impl From<Message> for Vec<u8> {
 impl Message {
     /// Parse a `command::Message` from this `connector::Message`
     #[cfg(feature = "mockhsm")]
-    pub(crate) fn parse(self) -> Result<command::Message, SessionError> {
+    pub(crate) fn parse(self) -> Result<command::Message, session::Error> {
         command::Message::parse(self.0)
     }
 }

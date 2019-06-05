@@ -5,14 +5,13 @@
 // TODO: this code predates the serde serializers. It could be rewritten with serde.
 
 #[cfg(feature = "mockhsm")]
-use crate::device::DeviceErrorKind;
+use crate::device;
 use crate::{
     command, connector, response,
     session::{
         self,
         securechannel::{Mac, MAC_SIZE},
-        SessionError,
-        SessionErrorKind::ProtocolError,
+        ErrorKind::ProtocolError,
     },
 };
 
@@ -34,7 +33,7 @@ pub(crate) struct Message {
 
 impl Message {
     /// Parse a response into a Response struct
-    pub fn parse(message: connector::Message) -> Result<Self, SessionError> {
+    pub fn parse(message: connector::Message) -> Result<Self, session::Error> {
         let connector::Message(mut bytes) = message;
 
         if bytes.len() < 3 {
@@ -167,8 +166,8 @@ impl Message {
 }
 
 #[cfg(feature = "mockhsm")]
-impl From<DeviceErrorKind> for Message {
-    fn from(kind: DeviceErrorKind) -> Self {
+impl From<device::ErrorKind> for Message {
+    fn from(kind: device::ErrorKind) -> Self {
         Self::new(response::Code::MemoryError, vec![kind.to_u8()])
     }
 }

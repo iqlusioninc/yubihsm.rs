@@ -1,14 +1,15 @@
-use crate::error::Error;
+//! Serialization erros
+
 use failure::Fail;
 use serde;
 use std::{fmt, io};
 
 /// Serialization errors
-pub type SerializationError = Error<SerializationErrorKind>;
+pub type Error = crate::Error<ErrorKind>;
 
 /// Serialization errors
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
-pub enum SerializationErrorKind {
+pub enum ErrorKind {
     /// Input/output errors
     #[fail(display = "I/O error")]
     Io,
@@ -22,20 +23,20 @@ pub enum SerializationErrorKind {
     UnexpectedEof,
 }
 
-impl serde::ser::Error for SerializationError {
+impl serde::ser::Error for Error {
     fn custom<T: fmt::Display>(msg: T) -> Self {
-        err!(SerializationErrorKind::Parse, msg.to_string())
+        err!(ErrorKind::Parse, msg.to_string())
     }
 }
 
-impl serde::de::Error for SerializationError {
+impl serde::de::Error for Error {
     fn custom<T: fmt::Display>(msg: T) -> Self {
-        err!(SerializationErrorKind::Parse, msg.to_string())
+        err!(ErrorKind::Parse, msg.to_string())
     }
 }
 
-impl From<io::Error> for SerializationError {
+impl From<io::Error> for Error {
     fn from(err: io::Error) -> Self {
-        err!(SerializationErrorKind::Io, err.to_string())
+        err!(ErrorKind::Io, err.to_string())
     }
 }

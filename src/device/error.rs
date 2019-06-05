@@ -1,14 +1,14 @@
 //! Error types which map directly to the YubiHSM2's error codes
 
-use crate::{error::Error, response};
+use crate::response;
 use failure::Fail;
 
 /// Errors which originate in the HSM
-pub type DeviceError = Error<DeviceErrorKind>;
+pub type Error = crate::Error<ErrorKind>;
 
 /// Kinds of errors which originate in the HSM
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
-pub enum DeviceErrorKind {
+pub enum ErrorKind {
     /// Unknown HSM error codes
     #[fail(display = "unknown HSM error code: 0x{:02x}", code)]
     Unknown {
@@ -89,93 +89,89 @@ pub enum DeviceErrorKind {
     SshCaConstraintViolation,
 }
 
-impl DeviceErrorKind {
-    /// Create an `DeviceErrorKind` from the given byte tag
-    pub fn from_u8(tag: u8) -> DeviceErrorKind {
+impl ErrorKind {
+    /// Create a `device::ErrorKind` from the given byte tag
+    pub fn from_u8(tag: u8) -> ErrorKind {
         match tag {
-            0x01 => DeviceErrorKind::InvalidCommand,
-            0x02 => DeviceErrorKind::InvalidData,
-            0x03 => DeviceErrorKind::InvalidSession,
-            0x04 => DeviceErrorKind::AuthenticationFailed,
-            0x05 => DeviceErrorKind::SessionsFull,
-            0x06 => DeviceErrorKind::SessionFailed,
-            0x07 => DeviceErrorKind::StorageFailed,
-            0x08 => DeviceErrorKind::WrongLength,
-            0x09 => DeviceErrorKind::InsufficientPermissions,
-            0x0a => DeviceErrorKind::LogFull,
-            0x0b => DeviceErrorKind::ObjectNotFound,
-            0x0c => DeviceErrorKind::InvalidId,
-            0x0d => DeviceErrorKind::InvalidOtp,
-            0x0e => DeviceErrorKind::DemoMode,
-            0x0f => DeviceErrorKind::CommandUnexecuted,
-            0x10 => DeviceErrorKind::GenericError,
-            0x11 => DeviceErrorKind::ObjectExists,
+            0x01 => ErrorKind::InvalidCommand,
+            0x02 => ErrorKind::InvalidData,
+            0x03 => ErrorKind::InvalidSession,
+            0x04 => ErrorKind::AuthenticationFailed,
+            0x05 => ErrorKind::SessionsFull,
+            0x06 => ErrorKind::SessionFailed,
+            0x07 => ErrorKind::StorageFailed,
+            0x08 => ErrorKind::WrongLength,
+            0x09 => ErrorKind::InsufficientPermissions,
+            0x0a => ErrorKind::LogFull,
+            0x0b => ErrorKind::ObjectNotFound,
+            0x0c => ErrorKind::InvalidId,
+            0x0d => ErrorKind::InvalidOtp,
+            0x0e => ErrorKind::DemoMode,
+            0x0f => ErrorKind::CommandUnexecuted,
+            0x10 => ErrorKind::GenericError,
+            0x11 => ErrorKind::ObjectExists,
             // TODO: determine correct value for YHR_DEVICE_SSH_CA_CONSTRAINT_VIOLATION
-            code => DeviceErrorKind::Unknown { code },
+            code => ErrorKind::Unknown { code },
         }
     }
 
-    /// Serialize this `DeviceErrorKind` as a byte tag
+    /// Serialize this `device::ErrorKind` as a byte tag
     pub fn to_u8(self) -> u8 {
         match self {
-            DeviceErrorKind::Unknown { code } => code,
-            DeviceErrorKind::InvalidCommand => 0x01,
-            DeviceErrorKind::InvalidData => 0x02,
-            DeviceErrorKind::InvalidSession => 0x03,
-            DeviceErrorKind::AuthenticationFailed => 0x04,
-            DeviceErrorKind::SessionsFull => 0x05,
-            DeviceErrorKind::SessionFailed => 0x06,
-            DeviceErrorKind::StorageFailed => 0x07,
-            DeviceErrorKind::WrongLength => 0x08,
-            DeviceErrorKind::InsufficientPermissions => 0x09,
-            DeviceErrorKind::LogFull => 0x0a,
-            DeviceErrorKind::ObjectNotFound => 0x0b,
-            DeviceErrorKind::InvalidId => 0x0c,
-            DeviceErrorKind::InvalidOtp => 0x0d,
-            DeviceErrorKind::DemoMode => 0x0e,
-            DeviceErrorKind::CommandUnexecuted => 0x0f,
-            DeviceErrorKind::GenericError => 0x10,
-            DeviceErrorKind::ObjectExists => 0x11,
+            ErrorKind::Unknown { code } => code,
+            ErrorKind::InvalidCommand => 0x01,
+            ErrorKind::InvalidData => 0x02,
+            ErrorKind::InvalidSession => 0x03,
+            ErrorKind::AuthenticationFailed => 0x04,
+            ErrorKind::SessionsFull => 0x05,
+            ErrorKind::SessionFailed => 0x06,
+            ErrorKind::StorageFailed => 0x07,
+            ErrorKind::WrongLength => 0x08,
+            ErrorKind::InsufficientPermissions => 0x09,
+            ErrorKind::LogFull => 0x0a,
+            ErrorKind::ObjectNotFound => 0x0b,
+            ErrorKind::InvalidId => 0x0c,
+            ErrorKind::InvalidOtp => 0x0d,
+            ErrorKind::DemoMode => 0x0e,
+            ErrorKind::CommandUnexecuted => 0x0f,
+            ErrorKind::GenericError => 0x10,
+            ErrorKind::ObjectExists => 0x11,
             // TODO: determine correct value
-            DeviceErrorKind::SshCaConstraintViolation => {
+            ErrorKind::SshCaConstraintViolation => {
                 panic!("don't know device code for YHR_DEVICE_SSH_CA_CONSTRAINT_VIOLATION")
             }
         }
     }
 
-    /// Create an `DeviceError` from the given `response::Code` (if applicable)
-    pub fn from_response_code(code: response::Code) -> Option<DeviceErrorKind> {
+    /// Create an `Error` from the given `response::Code` (if applicable)
+    pub fn from_response_code(code: response::Code) -> Option<ErrorKind> {
         Some(match code {
-            response::Code::DeviceInvalidCommand => DeviceErrorKind::InvalidCommand,
-            response::Code::DeviceInvalidData => DeviceErrorKind::InvalidData,
-            response::Code::DeviceInvalidSession => DeviceErrorKind::InvalidSession,
-            response::Code::DeviceAuthenticationFailed => DeviceErrorKind::AuthenticationFailed,
-            response::Code::DeviceSessionsFull => DeviceErrorKind::SessionsFull,
-            response::Code::DeviceSessionFailed => DeviceErrorKind::SessionFailed,
-            response::Code::DeviceStorageFailed => DeviceErrorKind::StorageFailed,
-            response::Code::DeviceWrongLength => DeviceErrorKind::WrongLength,
-            response::Code::DeviceInsufficientPermissions => {
-                DeviceErrorKind::InsufficientPermissions
-            }
-            response::Code::DeviceLogFull => DeviceErrorKind::LogFull,
-            response::Code::DeviceObjectNotFound => DeviceErrorKind::ObjectNotFound,
-            response::Code::DeviceInvalidId => DeviceErrorKind::InvalidId,
-            response::Code::DeviceInvalidOtp => DeviceErrorKind::InvalidOtp,
-            response::Code::DeviceDemoMode => DeviceErrorKind::DemoMode,
-            response::Code::DeviceCommandUnexecuted => DeviceErrorKind::CommandUnexecuted,
-            response::Code::GenericError => DeviceErrorKind::GenericError,
-            response::Code::DeviceObjectExists => DeviceErrorKind::ObjectExists,
-            response::Code::DeviceSshCaConstraintViolation => {
-                DeviceErrorKind::SshCaConstraintViolation
-            }
+            response::Code::DeviceInvalidCommand => ErrorKind::InvalidCommand,
+            response::Code::DeviceInvalidData => ErrorKind::InvalidData,
+            response::Code::DeviceInvalidSession => ErrorKind::InvalidSession,
+            response::Code::DeviceAuthenticationFailed => ErrorKind::AuthenticationFailed,
+            response::Code::DeviceSessionsFull => ErrorKind::SessionsFull,
+            response::Code::DeviceSessionFailed => ErrorKind::SessionFailed,
+            response::Code::DeviceStorageFailed => ErrorKind::StorageFailed,
+            response::Code::DeviceWrongLength => ErrorKind::WrongLength,
+            response::Code::DeviceInsufficientPermissions => ErrorKind::InsufficientPermissions,
+            response::Code::DeviceLogFull => ErrorKind::LogFull,
+            response::Code::DeviceObjectNotFound => ErrorKind::ObjectNotFound,
+            response::Code::DeviceInvalidId => ErrorKind::InvalidId,
+            response::Code::DeviceInvalidOtp => ErrorKind::InvalidOtp,
+            response::Code::DeviceDemoMode => ErrorKind::DemoMode,
+            response::Code::DeviceCommandUnexecuted => ErrorKind::CommandUnexecuted,
+            response::Code::GenericError => ErrorKind::GenericError,
+            response::Code::DeviceObjectExists => ErrorKind::ObjectExists,
+            response::Code::DeviceSshCaConstraintViolation => ErrorKind::SshCaConstraintViolation,
             _ => return None,
         })
     }
 
-    /// Create an `DeviceError` from the given `response::Message` (if applicable)
-    pub(crate) fn from_response_message(response: &response::Message) -> Option<DeviceErrorKind> {
+    /// Create an `Error` from the given `response::Message` (if applicable)
+    pub(crate) fn from_response_message(response: &response::Message) -> Option<ErrorKind> {
         if response.is_err() && response.data.len() == 1 {
-            Some(DeviceErrorKind::from_u8(response.data[0]))
+            Some(ErrorKind::from_u8(response.data[0]))
         } else {
             None
         }

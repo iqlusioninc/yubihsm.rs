@@ -3,7 +3,7 @@
 //! <https://developers.yubico.com/YubiHSM2/Commands/Sign_Eddsa.html>
 
 use crate::{
-    client::{ClientError, ClientErrorKind::ResponseError},
+    client::{self, ErrorKind::ResponseError},
     command::{self, Command},
     object,
     response::Response,
@@ -35,7 +35,7 @@ impl Response for SignEddsaResponse {
 }
 
 impl SignEddsaResponse {
-    pub(crate) fn signature(&self) -> Result<super::Signature, ClientError> {
+    pub(crate) fn signature(&self) -> Result<super::Signature, client::Error> {
         super::Signature::from_bytes(&self.0).map_err(|e| err!(ResponseError, e))
     }
 }

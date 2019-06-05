@@ -1,4 +1,4 @@
-use crate::algorithm::{AlgorithmError, AlgorithmErrorKind::TagInvalid};
+use crate::algorithm;
 
 /// Valid algorithms for auth keys
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -11,10 +11,14 @@ pub enum Algorithm {
 
 impl Algorithm {
     /// Convert an unsigned byte tag into an `authentication::Algorithm` (if valid)
-    pub fn from_u8(tag: u8) -> Result<Self, AlgorithmError> {
+    pub fn from_u8(tag: u8) -> Result<Self, algorithm::Error> {
         Ok(match tag {
             0x26 => Algorithm::YUBICO_AES,
-            _ => fail!(TagInvalid, "unknown auth algorithm ID: 0x{:02x}", tag),
+            _ => fail!(
+                algorithm::ErrorKind::TagInvalid,
+                "unknown auth algorithm ID: 0x{:02x}",
+                tag
+            ),
         })
     }
 

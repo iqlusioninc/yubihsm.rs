@@ -1,6 +1,6 @@
 //! Mask generating functions for use with RSASSA-PSS signatures
 
-use crate::algorithm::{AlgorithmError, AlgorithmErrorKind::TagInvalid};
+use crate::algorithm;
 
 /// Mask generating functions for RSASSA-PSS
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -22,13 +22,17 @@ pub enum Algorithm {
 
 impl Algorithm {
     /// Convert an unsigned byte tag into an `Algorithmorithm` (if valid)
-    pub fn from_u8(tag: u8) -> Result<Self, AlgorithmError> {
+    pub fn from_u8(tag: u8) -> Result<Self, algorithm::Error> {
         Ok(match tag {
             0x20 => Algorithm::SHA1,
             0x21 => Algorithm::SHA256,
             0x22 => Algorithm::SHA384,
             0x23 => Algorithm::SHA512,
-            _ => fail!(TagInvalid, "unknown MGF algorithm ID: 0x{:02x}", tag),
+            _ => fail!(
+                algorithm::ErrorKind::TagInvalid,
+                "unknown MGF algorithm ID: 0x{:02x}",
+                tag
+            ),
         })
     }
 

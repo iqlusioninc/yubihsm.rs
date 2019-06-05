@@ -1,6 +1,6 @@
 //! RSA-related algorithms
 
-use crate::algorithm::{AlgorithmError, AlgorithmErrorKind::TagInvalid};
+use crate::algorithm;
 
 /// RSA algorithms (signing and encryption)
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -46,7 +46,7 @@ pub enum Algorithm {
 
 impl Algorithm {
     /// Convert an unsigned byte tag into an `Algorithmorithm` (if valid)
-    pub fn from_u8(tag: u8) -> Result<Self, AlgorithmError> {
+    pub fn from_u8(tag: u8) -> Result<Self, algorithm::Error> {
         Ok(match tag {
             0x01 => Algorithm::PKCS1_SHA1,
             0x02 => Algorithm::PKCS1_SHA256,
@@ -60,7 +60,11 @@ impl Algorithm {
             0x1a => Algorithm::OAEP_SHA256,
             0x1b => Algorithm::OAEP_SHA384,
             0x1c => Algorithm::OAEP_SHA512,
-            _ => fail!(TagInvalid, "unknown RSA algorithm ID: 0x{:02x}", tag),
+            _ => fail!(
+                algorithm::ErrorKind::TagInvalid,
+                "unknown RSA algorithm ID: 0x{:02x}",
+                tag
+            ),
         })
     }
 

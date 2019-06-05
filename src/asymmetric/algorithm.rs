@@ -1,6 +1,6 @@
 //! Asymmetric algorithm support
 
-use crate::algorithm::{AlgorithmError, AlgorithmErrorKind::TagInvalid};
+use crate::algorithm;
 
 /// Asymmetric algorithms (RSA or ECC)
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -46,7 +46,7 @@ pub enum Algorithm {
 
 impl Algorithm {
     /// Convert an unsigned byte tag into an `Algorithmorithm` (if valid)
-    pub fn from_u8(tag: u8) -> Result<Self, AlgorithmError> {
+    pub fn from_u8(tag: u8) -> Result<Self, algorithm::Error> {
         Ok(match tag {
             0x09 => Algorithm::RSA_2048,
             0x0a => Algorithm::RSA_3072,
@@ -60,7 +60,11 @@ impl Algorithm {
             0x12 => Algorithm::EC_BP512,
             0x2e => Algorithm::Ed25519,
             0x2f => Algorithm::EC_P224,
-            _ => fail!(TagInvalid, "unknown asymmetric algorithm ID: 0x{:02x}", tag),
+            _ => fail!(
+                algorithm::ErrorKind::TagInvalid,
+                "unknown asymmetric algorithm ID: 0x{:02x}",
+                tag
+            ),
         })
     }
 
