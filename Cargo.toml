@@ -43,7 +43,7 @@ signatory = { version = "0.11", features = ["digest", "ecdsa", "ed25519"] }
 subtle = "2"
 untrusted = { version = "0.6", optional = true }
 uuid = { version = "0.7", default-features = false }
-zeroize = "0.8"
+zeroize = "0.9"
 
 [dev-dependencies]
 criterion = "0.2"
