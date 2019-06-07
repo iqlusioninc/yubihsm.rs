@@ -1,5 +1,5 @@
-use signatory::PublicKeyed;
-use signatory_ring::ed25519::Ed25519Verifier;
+use signatory::{PublicKeyed, Verifier};
+use signatory_ring::ed25519::Verifier as Ed25519Verifier;
 use yubihsm::{asymmetric::Signer as SignerTrait, ed25519, Client};
 
 /// Key ID to use for test key
@@ -43,8 +43,8 @@ fn ed25519_sign_test() {
     create_yubihsm_key(&client);
 
     let signer = ed25519::Signer::create(client.clone(), TEST_SIGNING_KEY_ID).unwrap();
-    let signature = signer.sign(TEST_MESSAGE).unwrap();
-    let verifier = Ed25519Verifier::from(&signer.public_key().unwrap());
+    let signature = signer.sign(TEST_MESSAGE);
 
-    assert!(signatory::verify(&verifier, TEST_MESSAGE, &signature).is_ok());
+    let verifier = Ed25519Verifier::from(&signer.public_key().unwrap());
+    assert!(verifier.verify(TEST_MESSAGE, &signature).is_ok());
 }
