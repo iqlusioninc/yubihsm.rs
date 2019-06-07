@@ -4,11 +4,7 @@
 //! call the appropriate signer methods to obtain signers.
 
 use crate::{object, Client};
-use signatory::{
-    ed25519,
-    error::{Error, ErrorKind::*},
-    PublicKeyed,
-};
+use signatory::{ed25519, Error, PublicKeyed};
 
 /// Ed25519 signature provider for yubihsm-client
 pub struct Signer {
@@ -37,20 +33,12 @@ impl Signer {
 impl PublicKeyed<ed25519::PublicKey> for Signer {
     fn public_key(&self) -> Result<ed25519::PublicKey, Error> {
         let public_key = self.client.get_public_key(self.signing_key_id)?;
-        public_key.ed25519().ok_or_else(|| {
-            Error::new(
-                KeyInvalid,
-                Some(&format!(
-                    "expected an ed25519 key, got: {:?}",
-                    public_key.algorithm
-                )),
-            )
-        })
+        public_key.ed25519().ok_or_else(Error::new)
     }
 }
 
 impl signatory::Signer<ed25519::Signature> for Signer {
-    fn sign(&self, msg: &[u8]) -> Result<ed25519::Signature, Error> {
+    fn try_sign(&self, msg: &[u8]) -> Result<ed25519::Signature, Error> {
         Ok(self.client.sign_ed25519(self.signing_key_id, msg)?)
     }
 }

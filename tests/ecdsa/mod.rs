@@ -8,7 +8,7 @@ use signatory::{
         curve::{NistP256, NistP384, WeierstrassCurve, WeierstrassCurveKind},
         Asn1Signature,
     },
-    PublicKeyed,
+    PublicKeyed, Verifier,
 };
 #[cfg(all(feature = "secp256k1", not(feature = "mockhsm")))]
 use signatory_secp256k1::EcdsaVerifier as Secp256k1Verifier;
@@ -70,9 +70,9 @@ fn create_yubihsm_key(client: &Client, key_id: object::Id, alg: yubihsm::asymmet
 #[cfg(not(feature = "mockhsm"))]
 fn ecdsa_nistp256_sign_test() {
     let signer = create_signer::<NistP256>(201);
-    let signature: Asn1Signature<_> = signatory::sign_sha256(&signer, TEST_MESSAGE).unwrap();
-    let verifier = signatory_ring::ecdsa::P256Verifier::from(&signer.public_key().unwrap());
-    assert!(signatory::verify_sha256(&verifier, TEST_MESSAGE, &signature).is_ok());
+    let signature: Asn1Signature<_> = signer.sign(TEST_MESSAGE);
+    let verifier = signatory_ring::ecdsa::p256::Verifier::from(&signer.public_key().unwrap());
+    assert!(verifier.verify(TEST_MESSAGE, &signature).is_ok());
 }
 
 // Use *ring* to verify NIST P-384 ECDSA signatures
@@ -80,9 +80,9 @@ fn ecdsa_nistp256_sign_test() {
 #[test]
 fn ecdsa_nistp384_sign_test() {
     let signer = create_signer::<NistP384>(202);
-    let signature: Asn1Signature<_> = signatory::sign_sha384(&signer, TEST_MESSAGE).unwrap();
-    let verifier = signatory_ring::ecdsa::P384Verifier::from(&signer.public_key().unwrap());
-    assert!(signatory::verify_sha384(&verifier, TEST_MESSAGE, &signature).is_ok());
+    let signature: Asn1Signature<_> = signer.sign(TEST_MESSAGE);
+    let verifier = signatory_ring::ecdsa::p384::Verifier::from(&signer.public_key().unwrap());
+    assert!(verifier.verify(TEST_MESSAGE, &signature).is_ok());
 }
 
 // Use `secp256k1` crate to verify secp256k1 ECDSA signatures.
@@ -91,7 +91,7 @@ fn ecdsa_nistp384_sign_test() {
 #[test]
 fn ecdsa_secp256k1_sign_test() {
     let signer = create_signer::<Secp256k1>(203);
-    let signature: Asn1Signature<_> = signatory::sign_sha256(&signer, TEST_MESSAGE).unwrap();
+    let signature: Asn1Signature<_> = signer.sign(TEST_MESSAGE);
     let verifier = Secp256k1Verifier::from(&signer.public_key().unwrap());
-    assert!(signatory::verify_sha256(&verifier, TEST_MESSAGE, &signature).is_ok());
+    assert!(verifier.verify(TEST_MESSAGE, &signature).is_ok());
 }

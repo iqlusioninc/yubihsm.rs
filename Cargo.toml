@@ -37,9 +37,11 @@ pbkdf2 = { version = "0.3", optional = true, default-features = false }
 serde = { version = "1", features = ["serde_derive"] }
 serde_json = { version = "1", optional = true }
 ring = { version = "0.14", optional = true }
-secp256k1 = { version = "0.12", optional = true }
+secp256k1 = { version = "0.13", optional = true }
 sha2 = { version = "0.8", optional = true }
-signatory = { version = "0.11", features = ["digest", "ecdsa", "ed25519"] }
+signatory = { version = "0.12", features = ["digest", "ecdsa", "ed25519"] }
+signature = "0.2"
+signature_derive = "0.2"
 subtle = "2"
 untrusted = { version = "0.6", optional = true }
 uuid = { version = "0.7", default-features = false }
@@ -49,8 +51,8 @@ zeroize = "0.9"
 criterion = "0.2"
 lazy_static = "1"
 ring = "0.14"
-signatory-ring = "0.11"
-signatory-secp256k1 = "0.11"
+signatory-ring = "0.12"
+signatory-secp256k1 = "0.12"
 untrusted = "0.6"
 
 [features]

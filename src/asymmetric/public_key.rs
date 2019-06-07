@@ -82,7 +82,7 @@ impl PublicKey {
     /// Return the Ed25519 public key if applicable
     pub fn ed25519(&self) -> Option<ed25519::PublicKey> {
         if self.algorithm == asymmetric::Algorithm::Ed25519 {
-            ed25519::PublicKey::from_bytes(&self.bytes).ok()
+            ed25519::PublicKey::from_bytes(&self.bytes)
         } else {
             None
         }

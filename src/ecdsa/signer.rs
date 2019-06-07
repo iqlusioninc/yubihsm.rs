@@ -3,20 +3,22 @@
 //! To enable secp256k1 support, build with the `secp256k1` cargo feature enabled.
 
 use crate::{object, Client};
-#[cfg(feature = "secp256k1")]
-use signatory::{ecdsa::curve::Secp256k1, generic_array::GenericArray};
 use signatory::{
+    digest::Digest,
     ecdsa::{
         curve::{NistP256, NistP384, WeierstrassCurve},
         Asn1Signature, FixedSignature, PublicKey,
     },
-    error::{Error, ErrorKind::*},
     generic_array::typenum::{U32, U48},
-    Digest, DigestSigner, PublicKeyed, Signature,
+    DigestSigner, Error, PublicKeyed, Signature,
 };
+#[cfg(feature = "secp256k1")]
+use signatory::{ecdsa::curve::Secp256k1, generic_array::GenericArray};
+use signature_derive::Signer;
 use std::marker::PhantomData;
 
 /// ECDSA signature provider for yubihsm-client
+#[derive(Signer)]
 pub struct Signer<C>
 where
     C: WeierstrassCurve,
@@ -57,17 +59,7 @@ where
     /// Obtain the public key which identifies this signer
     fn public_key(&self) -> Result<PublicKey<C>, Error> {
         let public_key = self.client.get_public_key(self.signing_key_id)?;
-
-        public_key.ecdsa().ok_or_else(|| {
-            Error::new(
-                KeyInvalid,
-                Some(&format!(
-                    "expected a {} key, got: {:?}",
-                    C::CURVE_KIND.to_str(),
-                    public_key.algorithm
-                )),
-            )
-        })
+        public_key.ecdsa().ok_or_else(Error::new)
     }
 }
 
@@ -76,7 +68,7 @@ where
     D: Digest<OutputSize = U32> + Default,
 {
     /// Compute an ASN.1 DER-encoded P-256 ECDSA signature of the given digest
-    fn sign(&self, digest: D) -> Result<Asn1Signature<NistP256>, Error> {
+    fn try_sign_digest(&self, digest: D) -> Result<Asn1Signature<NistP256>, Error> {
         self.sign_nistp256_asn1(digest)
     }
 }
@@ -86,7 +78,7 @@ where
     D: Digest<OutputSize = U32> + Default,
 {
     /// Compute a fixed-sized P-256 ECDSA signature of the given digest
-    fn sign(&self, digest: D) -> Result<FixedSignature<NistP256>, Error> {
+    fn try_sign_digest(&self, digest: D) -> Result<FixedSignature<NistP256>, Error> {
         Ok(FixedSignature::from(&self.sign_nistp256_asn1(digest)?))
     }
 }
@@ -96,7 +88,7 @@ where
     D: Digest<OutputSize = U48> + Default,
 {
     /// Compute an ASN.1 DER-encoded P-384 ECDSA signature of the given digest
-    fn sign(&self, digest: D) -> Result<Asn1Signature<NistP384>, Error> {
+    fn try_sign_digest(&self, digest: D) -> Result<Asn1Signature<NistP384>, Error> {
         self.sign_nistp384_asn1(digest)
     }
 }
@@ -106,7 +98,7 @@ where
     D: Digest<OutputSize = U48> + Default,
 {
     /// Compute a fixed-sized P-384 ECDSA signature of the given digest
-    fn sign(&self, digest: D) -> Result<FixedSignature<NistP384>, Error> {
+    fn try_sign_digest(&self, digest: D) -> Result<FixedSignature<NistP384>, Error> {
         Ok(FixedSignature::from(&self.sign_nistp384_asn1(digest)?))
     }
 }
@@ -117,9 +109,8 @@ where
     D: Digest<OutputSize = U32> + Default,
 {
     /// Compute an ASN.1 DER-encoded secp256k1 ECDSA signature of the given digest
-    fn sign(&self, digest: D) -> Result<Asn1Signature<Secp256k1>, Error> {
+    fn try_sign_digest(&self, digest: D) -> Result<Asn1Signature<Secp256k1>, Error> {
         let asn1_sig = self.sign_secp256k1(digest)?.serialize_der();
-
         Ok(Asn1Signature::from_bytes(&asn1_sig).unwrap())
     }
 }
@@ -130,7 +121,7 @@ where
     D: Digest<OutputSize = U32> + Default,
 {
     /// Compute a fixed-size secp256k1 ECDSA signature of the given digest
-    fn sign(&self, digest: D) -> Result<FixedSignature<Secp256k1>, Error> {
+    fn try_sign_digest(&self, digest: D) -> Result<FixedSignature<Secp256k1>, Error> {
         let fixed_sig =
             GenericArray::clone_from_slice(&self.sign_secp256k1(digest)?.serialize_compact());
 
@@ -144,10 +135,10 @@ impl Signer<NistP256> {
     where
         D: Digest<OutputSize = U32> + Default,
     {
-        let signature = self
-            .client
-            .sign_ecdsa(self.signing_key_id, digest.result().as_slice())?;
-        Asn1Signature::from_bytes(signature)
+        Asn1Signature::from_bytes(
+            self.client
+                .sign_ecdsa(self.signing_key_id, digest.result().as_slice())?,
+        )
     }
 }
 
@@ -157,10 +148,10 @@ impl Signer<NistP384> {
     where
         D: Digest<OutputSize = U48> + Default,
     {
-        let signature = self
-            .client
-            .sign_ecdsa(self.signing_key_id, digest.result().as_slice())?;
-        Asn1Signature::from_bytes(signature)
+        Asn1Signature::from_bytes(
+            self.client
+                .sign_ecdsa(self.signing_key_id, digest.result().as_slice())?,
+        )
     }
 }
 
