@@ -1,3 +1,7 @@
+## [0.25.0] (2019-06-07)
+
+- Upgrade to `signatory` v0.12 ([#211])
+
 ## [0.24.0] (2019-06-04)
 
 - Eliminate module name prefixes from error types ([#209])
@@ -239,6 +243,8 @@ to adding support for several commands.
 
 - Initial release
 
+[0.25.0]: https://github.com/tendermint/yubihsm-rs/pull/212
+[#211]: https://github.com/tendermint/yubihsm-rs/pull/211
 [0.24.0]: https://github.com/tendermint/yubihsm-rs/pull/210
 [#209]: https://github.com/tendermint/yubihsm-rs/pull/209
 [#208]: https://github.com/tendermint/yubihsm-rs/pull/208
