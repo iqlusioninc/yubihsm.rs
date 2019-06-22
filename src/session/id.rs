@@ -1,4 +1,7 @@
+//! Session IDs: the YubiHSM2 supports up to 16 concurrent sessions.
+
 use super::{Error, ErrorKind::ProtocolError};
+use std::fmt::{self, Display};
 
 /// Maximum session identifier
 pub const MAX_SESSION_ID: Id = Id(16);
@@ -30,5 +33,11 @@ impl Id {
     /// Obtain session ID as a u8
     pub fn to_u8(self) -> u8 {
         self.0
+    }
+}
+
+impl Display for Id {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.0.fmt(f)
     }
 }

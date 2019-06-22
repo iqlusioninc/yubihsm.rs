@@ -19,7 +19,7 @@ mod error;
 mod connectable;
 mod connection;
 #[cfg(feature = "http")]
-mod http;
+pub mod http;
 mod message;
 #[cfg(feature = "usb")]
 pub mod usb;

@@ -43,6 +43,7 @@ signatory = { version = "0.12", features = ["digest", "ecdsa", "ed25519"] }
 signature = "0.2"
 signature_derive = "0.2.1"
 subtle = "2"
+tiny_http = { version = "0.6", optional = true }
 untrusted = { version = "0.6", optional = true }
 uuid = { version = "0.7", default-features = false }
 zeroize = "0.9"
@@ -57,6 +58,7 @@ untrusted = "0.6"
 
 [features]
 default = ["http", "passwords", "setup"]
+http-server = ["tiny_http"]
 http = ["gaunt"]
 force-audit-test = [] # TODO(tarcieri): clear audit log when tests start. See notes on PR#185
 mockhsm = ["passwords", "ring", "untrusted"]
@@ -66,8 +68,12 @@ setup = ["chrono", "passwords", "serde_json", "uuid/serde"]
 usb = ["lazy_static", "libusb"]
 
 [package.metadata.docs.rs]
-features = ["mockhsm", "rsa-preview", "secp256k1", "setup", "usb"]
+all-features = true
 
 [[bench]]
 name = "ed25519"
 harness = false
+
+[[example]]
+name = "connector_http_server"
+required-features = ["http-server"]
