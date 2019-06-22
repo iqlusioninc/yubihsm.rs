@@ -4,6 +4,7 @@
 use crate::{command, session};
 
 /// Messages sent to/from the HSM
+#[derive(Clone, Debug)]
 pub struct Message(pub(crate) Vec<u8>);
 
 impl AsRef<[u8]> for Message {
@@ -26,7 +27,7 @@ impl From<Message> for Vec<u8> {
 
 impl Message {
     /// Parse a `command::Message` from this `connector::Message`
-    #[cfg(feature = "mockhsm")]
+    #[cfg(any(feature = "http-server", feature = "mockhsm"))]
     pub(crate) fn parse(self) -> Result<command::Message, session::Error> {
         command::Message::parse(self.0)
     }

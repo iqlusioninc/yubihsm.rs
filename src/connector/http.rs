@@ -4,8 +4,12 @@
 
 mod config;
 mod connection;
+#[cfg(feature = "http-server")]
+mod server;
 
 pub use self::config::HttpConfig;
+#[cfg(feature = "http-server")]
+pub use self::server::Server;
 
 use self::connection::HttpConnection;
 use crate::connector::{self, Connectable, Connection};

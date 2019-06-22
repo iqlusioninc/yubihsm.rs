@@ -95,7 +95,7 @@ impl Message {
     }
 
     /// Parse a command structure from a vector, taking ownership of the vector
-    #[cfg(feature = "mockhsm")]
+    #[cfg(any(feature = "http-server", feature = "mockhsm"))]
     pub fn parse(mut bytes: Vec<u8>) -> Result<Self, session::Error> {
         if bytes.len() < 3 {
             fail!(
