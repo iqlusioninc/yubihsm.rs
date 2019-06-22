@@ -1,6 +1,6 @@
 //! Wrapper type around messages sent to/from the HSM
 
-#[cfg(feature = "mockhsm")]
+#[cfg(any(feature = "http-server", feature = "mockhsm"))]
 use crate::{command, session};
 
 /// Messages sent to/from the HSM
