@@ -62,7 +62,7 @@
 #![forbid(unsafe_code)]
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/tendermint/yubihsm-rs/develop/img/logo.png",
-    html_root_url = "https://docs.rs/yubihsm/0.26.0"
+    html_root_url = "https://docs.rs/yubihsm/0.26.1"
 )]
 
 #[macro_use]
