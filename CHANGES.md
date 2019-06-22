@@ -1,3 +1,7 @@
+## [0.26.0] (2019-06-07)
+
+- `http-server` feature: mimic yubihsm-connector functionality ([#213])
+
 ## [0.25.0] (2019-06-07)
 
 - Upgrade to `signatory` v0.12 ([#211])
@@ -243,6 +247,8 @@ to adding support for several commands.
 
 - Initial release
 
+[0.26.0]: https://github.com/tendermint/yubihsm-rs/pull/214
+[#213]: https://github.com/tendermint/yubihsm-rs/pull/213
 [0.25.0]: https://github.com/tendermint/yubihsm-rs/pull/212
 [#211]: https://github.com/tendermint/yubihsm-rs/pull/211
 [0.24.0]: https://github.com/tendermint/yubihsm-rs/pull/210
