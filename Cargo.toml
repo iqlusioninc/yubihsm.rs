@@ -76,4 +76,4 @@ harness = false
 
 [[example]]
 name = "connector_http_server"
-required-features = ["http-server"]
+required-features = ["http-server", "usb"]
