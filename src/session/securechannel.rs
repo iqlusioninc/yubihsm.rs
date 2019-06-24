@@ -35,7 +35,7 @@ use crate::{
     authentication::{self, Credentials},
     command,
     connector::Connector,
-    response,
+    device, response,
     serialization::deserialize,
     session::{self, ErrorKind},
 };
@@ -117,11 +117,19 @@ impl SecureChannel {
         let response_message = response::Message::parse(response_body)?;
 
         if response_message.is_err() {
-            fail!(
-                ErrorKind::ResponseError,
-                "HSM error: {:?}",
-                response_message.code
-            );
+            match device::ErrorKind::from_response_message(&response_message) {
+                Some(device::ErrorKind::ObjectNotFound) => fail!(
+                    ErrorKind::AuthenticationError,
+                    "auth key not found: 0x{:04x}",
+                    credentials.authentication_key_id
+                ),
+                Some(kind) => Err(kind)?,
+                None => fail!(
+                    ErrorKind::ResponseError,
+                    "HSM error: {:?}",
+                    response_message.code
+                ),
+            }
         }
 
         if response_message.command().unwrap() != command::Code::CreateSession {
