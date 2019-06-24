@@ -1,3 +1,7 @@
+## [0.26.4] (2019-06-24)
+
+- Improve missing auth key errors ([#221])
+
 ## [0.26.3] (2019-06-24)
 
 - `http-server`: Fix startup message ([#219])
@@ -259,6 +263,8 @@ to adding support for several commands.
 
 - Initial release
 
+[0.26.4]: https://github.com/tendermint/yubihsm-rs/pull/222
+[#221]: https://github.com/tendermint/yubihsm-rs/pull/221
 [0.26.3]: https://github.com/tendermint/yubihsm-rs/pull/220
 [#219]: https://github.com/tendermint/yubihsm-rs/pull/219
 [0.26.2]: https://github.com/tendermint/yubihsm-rs/pull/218
