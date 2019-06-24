@@ -42,6 +42,11 @@ impl Server {
         let server = http::Server::http(format!("{}:{}", &config.addr, config.port))
             .map_err(|e| err!(AddrInvalid, "couldn't create HTTP server: {}", e))?;
 
+        info!(
+            "yubihsm::http-server[{}:{}]: GET /connector/status",
+            &config.addr, config.port
+        );
+
         Ok(Self {
             addr: config.addr.clone(),
             port: config.port,
