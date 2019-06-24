@@ -43,7 +43,7 @@ impl Server {
             .map_err(|e| err!(AddrInvalid, "couldn't create HTTP server: {}", e))?;
 
         info!(
-            "yubihsm::http-server[{}:{}]: GET /connector/status",
+            "yubihsm::http-server[{}:{}]: listening for connections",
             &config.addr, config.port
         );
 
