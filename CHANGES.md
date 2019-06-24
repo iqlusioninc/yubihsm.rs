@@ -1,3 +1,7 @@
+## [0.26.3] (2019-06-24)
+
+- `http-server`: Fix startup message ([#219])
+
 ## [0.26.2] (2019-06-24)
 
 - `http-server`: Print listener info on startup ([#217])
@@ -255,6 +259,8 @@ to adding support for several commands.
 
 - Initial release
 
+[0.26.3]: https://github.com/tendermint/yubihsm-rs/pull/220
+[#219]: https://github.com/tendermint/yubihsm-rs/pull/219
 [0.26.2]: https://github.com/tendermint/yubihsm-rs/pull/218
 [#217]: https://github.com/tendermint/yubihsm-rs/pull/217
 [0.26.1]: https://github.com/tendermint/yubihsm-rs/pull/216
