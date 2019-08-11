@@ -41,7 +41,11 @@ use std::{
 use std::{thread, time::SystemTime};
 #[cfg(feature = "yolocrypto")]
 use {
-    crate::rsa::{self, pkcs1::commands::*, pss::commands::*},
+    crate::{
+        algorithm::Algorithm,
+        rsa::{self, pkcs1::commands::*, pss::commands::*},
+        ssh::{self, commands::*},
+    },
     sha2::{Digest, Sha256},
 };
 
@@ -411,7 +415,7 @@ impl Client {
         Ok(self.send_command(GetPublicKeyCommand { key_id })?.into())
     }
 
-    /// Get storage status (i.e. currently free storage) from the HSM device.
+    /// Get storage info (i.e. currently free storage) from the HSM device.
     ///
     /// <https://developers.yubico.com/YubiHSM2/Commands/Get_Storage_Info.html>
     pub fn get_storage_info(&self) -> Result<StorageInfo, Error> {
@@ -931,8 +935,10 @@ impl Client {
 
     /// Compute an RSASSA-PKCS#1v1.5 signature of the SHA-256 hash of the given data.
     ///
-    /// **WARNING**: This method has not been tested and is not confirmed to actually work!
-    /// Use at your own risk! You will need to enable the `yolocrypto` cargo feature to use it.
+    /// **WARNING**: This functionality has not been tested and has not yet been
+    /// confirmed to actually work! USE AT YOUR OWN RISK!
+    ///
+    /// You will need to enable the `yolocrypto` cargo feature to use it.
     ///
     /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Pkcs1.html>
     #[cfg(feature = "yolocrypto")]
@@ -951,8 +957,10 @@ impl Client {
 
     /// Compute an RSASSA-PSS signature of the SHA-256 hash of the given data with the given key ID.
     ///
-    /// **WARNING**: This method has not been tested and is not confirmed to actually work!
-    /// Use at your own risk! You will need to enable the `yolocrypto` cargo feature to use it.
+    /// **WARNING**: This functionality has not been tested and has not yet been
+    /// confirmed to actually work! USE AT YOUR OWN RISK!
+    ///
+    /// You will need to enable the `yolocrypto` cargo feature to use it.
     ///
     /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Pss.html>
     #[cfg(feature = "yolocrypto")]
@@ -981,6 +989,39 @@ impl Client {
                 mgf1_hash_alg: rsa::mgf::Algorithm::SHA256,
                 salt_len: digest.as_slice().len() as u16,
                 digest: digest.as_slice().into(),
+            })?
+            .into())
+    }
+
+    /// Sign an SSH certificate using the given template.
+    ///
+    /// **WARNING**: This functionality has not been tested and has not yet been
+    /// confirmed to actually work! USE AT YOUR OWN RISK!
+    ///
+    /// You will need to enable the `yolocrypto` cargo feature to use it.
+    ///
+    /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Ssh_Certificate.html>
+    #[cfg(feature = "yolocrypto")]
+    pub fn sign_ssh_certificate<A>(
+        &self,
+        key_id: object::Id,
+        template_id: object::Id,
+        algorithm: A,
+        timestamp: u32,
+        signature: [u8; 32],
+        request: Vec<u8>,
+    ) -> Result<ssh::Certificate, Error>
+    where
+        A: Into<Algorithm>,
+    {
+        Ok(self
+            .send_command(SignSshCertificateCommand {
+                key_id,
+                template_id,
+                algorithm: algorithm.into(),
+                timestamp,
+                signature,
+                request,
             })?
             .into())
     }

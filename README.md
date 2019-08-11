@@ -101,7 +101,7 @@ supported, please open an issue requesting support.
 | [Sign HMAC]                    | ✅     | ✅        | Perform an HMAC operation using an HSM-backed key |
 | [Sign PKCS1]                   | ⚠️      | ⛔        | Compute an RSASSA-PKCS#1v1.5 signature using HSM-backed key |
 | [Sign PSS]                     | ⚠️      | ⛔        | Compute an RSASSA-PSS signature using HSM-backed key |
-| [Sign SSH Certificate]         | ⛔     | ⛔        | Sign an SSH certificate request |
+| [Sign SSH Certificate]         | ⚠️      | ⛔        | Sign an SSH certificate request |
 | [Unwrap Data]                  | ✅     | ⛔        | Decrypt data encrypted using a wrap key |
 | [Verify HMAC]                  | ✅     | ✅        | Verify that an HMAC tag for given data is valid |
 | [Wrap Data]                    | ✅     | ⛔        | Encrypt data using a wrap key |
@@ -220,8 +220,8 @@ See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT) for details.
 [Get Option]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.get_command_audit_option
 [Get Pseudo Random]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.get_pseudo_random
 [Get Public Key]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.get_pubkey
-[Get Storage Info]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.storage_status
-[Get SSH Template]: https://developers.yubico.com/YubiHSM2/Commands/Get_Template.html
+[Get Storage Info]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.storage_info
+[Get SSH Template]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.get_template
 [Import Wrapped]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.import_wrapped
 [List Objects]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.list_objects
 [Put Asymmetric Key]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.put_asymmetric_key
@@ -229,7 +229,7 @@ See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT) for details.
 [Put HMAC Key]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.put_hmac_key
 [Put Opaque]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.put_opaque
 [Put OTP AEAD Key]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.put_otp_aead_key
-[Put SSH Template]: https://developers.yubico.com/YubiHSM2/Commands/Put_Template.html
+[Put SSH Template]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.put_template
 [Put Wrap Key]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.put_wrap_key
 [Randomize OTP AEAD]: https://developers.yubico.com/YubiHSM2/Commands/Randomize_Otp_Aead.html
 [Reset Device]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.reset_device
@@ -237,13 +237,13 @@ See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT) for details.
 [Session Message]: https://developers.yubico.com/YubiHSM2/Commands/Session_Message.html
 [Set Log Index]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.set_log_index
 [Set Option]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.set_audit_option
-[Sign Attestation Certificate]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.attest_asymmetric
-[Sign ECDSA]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.set_log_index
+[Sign Attestation Certificate]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.sign_attestation_certificate
+[Sign ECDSA]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.sign_ecdsa
 [Sign EdDSA]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.sign_ed25519
 [Sign HMAC]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.sign_hmac
 [Sign PKCS1]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.sign_rsa_pkcs1v15_sha256
 [Sign PSS]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.sign_rsa_pss_sha256
-[Sign SSH Certificate]: https://developers.yubico.com/YubiHSM2/Commands/Sign_Ssh_Certificate.html
+[Sign SSH Certificate]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.sign_ssh_certificate
 [Unwrap Data]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.unwrap_data
 [Verify HMAC]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.verify_hmac
 [Wrap Data]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.wrap_data

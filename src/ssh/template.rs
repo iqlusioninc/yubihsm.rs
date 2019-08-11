@@ -4,7 +4,7 @@
 pub struct Template(Vec<u8>);
 
 impl Template {
-    /// Create an SSH template from serialized bytes
+    /// Create an SSH certificate template from serialized bytes
     pub fn from_bytes<B>(bytes: B) -> Self
     where
         B: Into<Vec<u8>>,
@@ -12,7 +12,7 @@ impl Template {
         Template(bytes.into())
     }
 
-    /// Borrow this SSH template as a byte slice
+    /// Borrow this SSH certificate template as a byte slice
     pub fn as_slice(&self) -> &[u8] {
         &self.0
     }
