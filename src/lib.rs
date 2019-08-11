@@ -86,10 +86,10 @@ pub mod command;
 pub mod connector;
 pub mod device;
 pub mod domain;
+pub mod ecdh;
 pub mod ecdsa;
 pub mod ed25519;
 pub mod hmac;
-pub mod kex;
 #[cfg(feature = "mockhsm")]
 pub(crate) mod mockhsm;
 pub mod object;

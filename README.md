@@ -64,7 +64,7 @@ supported, please open an issue requesting support.
 | [Decrypt OTP]                  | ⛔     | ⛔        | Decrypt a Yubico OTP, obtaining counters and timer info |
 | [Decrypt PKCS1]                | ⛔     | ⛔        | Decrypt data encrypted with RSA-PKCS#1v1.5 |
 | [Delete Object]                | ✅     | ✅        | Delete an object of the given ID and type |
-| [Derive ECDH]                  | ⛔     | ⛔        | Compute Elliptic Curve Diffie-Hellman using HSM-backed key |
+| [Derive ECDH]                  | ⚠️      | ⛔        | Compute Elliptic Curve Diffie-Hellman using HSM-backed key |
 | [Device Info]                  | ✅     | ✅        | Get information about the HSM |
 | [Echo]                         | ✅     | ✅        | Echo a message sent to the HSM |
 | [Export Wrapped]               | ✅     | ✅        | Export an object from the HSM in encrypted form|
@@ -202,7 +202,7 @@ See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT) for details.
 [Close Session]: https://developers.yubico.com/YubiHSM2/Commands/Close_Session.html
 [Create OTP AEAD]: https://developers.yubico.com/YubiHSM2/Commands/Create_Otp_Aead.html
 [Create Session]: https://developers.yubico.com/YubiHSM2/Commands/Create_Session.html
-[Derive ECDH]: https://developers.yubico.com/YubiHSM2/Commands/Derive_Ecdh.html
+[Derive ECDH]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html#method.derive_ecdh
 [Decrypt OAEP]: https://developers.yubico.com/YubiHSM2/Commands/Decrypt_Oaep.html
 [Decrypt OTP]: https://developers.yubico.com/YubiHSM2/Commands/Decrypt_Otp.html
 [Decrypt PKCS1]: https://developers.yubico.com/YubiHSM2/Commands/Decrypt_Pkcs1.html
