@@ -38,7 +38,7 @@ use std::{
 };
 #[cfg(feature = "passwords")]
 use std::{thread, time::SystemTime};
-#[cfg(feature = "rsa-preview")]
+#[cfg(feature = "yolocrypto")]
 use {
     crate::rsa::{self, pkcs1::commands::*, pss::commands::*},
     sha2::{Digest, Sha256},
@@ -891,11 +891,11 @@ impl Client {
 
     /// Compute an RSASSA-PKCS#1v1.5 signature of the SHA-256 hash of the given data.
     ///
-    /// **WARNING**: This method has not been tested and is not confirmed to actually work! Use at your
-    /// own risk!
+    /// **WARNING**: This method has not been tested and is not confirmed to actually work!
+    /// Use at your own risk! You will need to enable the `yolocrypto` cargo feature to use it.
     ///
     /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Pkcs1.html>
-    #[cfg(feature = "rsa-preview")]
+    #[cfg(feature = "yolocrypto")]
     pub fn sign_rsa_pkcs1v15_sha256(
         &self,
         key_id: object::Id,
@@ -911,11 +911,11 @@ impl Client {
 
     /// Compute an RSASSA-PSS signature of the SHA-256 hash of the given data with the given key ID.
     ///
-    /// **WARNING**: This method has not been tested and is not confirmed to actually work! Use at your
-    /// own risk!
+    /// **WARNING**: This method has not been tested and is not confirmed to actually work!
+    /// Use at your own risk! You will need to enable the `yolocrypto` cargo feature to use it.
     ///
     /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Pss.html>
-    #[cfg(feature = "rsa-preview")]
+    #[cfg(feature = "yolocrypto")]
     pub fn sign_rsa_pss_sha256(
         &self,
         key_id: object::Id,
