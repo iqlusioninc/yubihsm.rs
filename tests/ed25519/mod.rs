@@ -1,6 +1,8 @@
-use signatory::{PublicKeyed, Verifier};
+//! Ed25519 tests
+
+use signatory::{public_key::PublicKeyed, signature::Verifier};
 use signatory_ring::ed25519::Verifier as Ed25519Verifier;
-use yubihsm::{asymmetric::Signer as SignerTrait, ed25519, Client};
+use yubihsm::{asymmetric::signature::Signer as _, ed25519, Client};
 
 /// Key ID to use for test key
 const TEST_SIGNING_KEY_ID: yubihsm::object::Id = 200;

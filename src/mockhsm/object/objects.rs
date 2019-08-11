@@ -1,12 +1,10 @@
 //! Objects stored in the `MockHsm`
 
-use failure::{bail, Error};
+use failure::{bail, format_err, Error};
 use ring::aead::{self, AES_128_GCM, AES_256_GCM};
 use std::collections::{btree_map::Iter as BTreeMapIter, BTreeMap};
 
-use super::{
-    Object, Payload, WrappedObject, DEFAULT_AUTHENTICATION_KEY_LABEL, WRAPPED_DATA_MAC_SIZE,
-};
+use super::{Object, Payload, WrappedObject, DEFAULT_AUTHENTICATION_KEY_LABEL};
 use crate::{
     authentication::{self, DEFAULT_AUTHENTICATION_KEY_ID},
     object::{Handle, Id, Info, Label, Origin, Type},
@@ -155,10 +153,10 @@ impl Objects {
         let sealing_key = match wrap_key.algorithm().wrap().unwrap() {
             // TODO: actually use AES-CCM
             wrap::Algorithm::AES128_CCM => {
-                aead::SealingKey::new(&AES_128_GCM, wrap_key.payload.as_ref())
+                aead::UnboundKey::new(&AES_128_GCM, wrap_key.payload.as_ref())
             }
             wrap::Algorithm::AES256_CCM => {
-                aead::SealingKey::new(&AES_256_GCM, wrap_key.payload.as_ref())
+                aead::UnboundKey::new(&AES_256_GCM, wrap_key.payload.as_ref())
             }
             unsupported => bail!("unsupported wrap key algorithm: {:?}", unsupported),
         }
@@ -195,20 +193,16 @@ impl Objects {
         })
         .unwrap();
 
-        // Make room for the MAC
-        wrapped_object.extend_from_slice(&[0u8; WRAPPED_DATA_MAC_SIZE]);
-
         let mut nonce = [0u8; 12];
         nonce.copy_from_slice(&wrap_nonce.as_ref()[..12]);
 
-        aead::seal_in_place(
-            &sealing_key,
-            aead::Nonce::assume_unique_for_key(nonce),
-            aead::Aad::from(b""),
-            &mut wrapped_object,
-            WRAPPED_DATA_MAC_SIZE,
-        )
-        .unwrap();
+        aead::LessSafeKey::new(sealing_key)
+            .seal_in_place_append_tag(
+                aead::Nonce::assume_unique_for_key(nonce),
+                aead::Aad::from(b""),
+                &mut wrapped_object,
+            )
+            .unwrap();
 
         Ok(wrapped_object)
     }
@@ -223,10 +217,10 @@ impl Objects {
         let opening_key = match self.get(wrap_key_id, Type::WrapKey) {
             Some(k) => match k.algorithm().wrap().unwrap() {
                 wrap::Algorithm::AES128_CCM => {
-                    aead::OpeningKey::new(&AES_128_GCM, k.payload.as_ref())
+                    aead::UnboundKey::new(&AES_128_GCM, k.payload.as_ref())
                 }
                 wrap::Algorithm::AES256_CCM => {
-                    aead::OpeningKey::new(&AES_256_GCM, k.payload.as_ref())
+                    aead::UnboundKey::new(&AES_256_GCM, k.payload.as_ref())
                 }
                 unsupported => bail!("unsupported wrap key algorithm: {:?}", unsupported),
             }
@@ -239,24 +233,15 @@ impl Objects {
         let mut nonce = [0u8; 12];
         nonce.copy_from_slice(&wrap_nonce.as_ref()[..12]);
 
-        if aead::open_in_place(
-            &opening_key,
-            aead::Nonce::assume_unique_for_key(nonce),
-            aead::Aad::from(b""),
-            0,
-            &mut wrapped_data,
-        )
-        .is_err()
-        {
-            bail!("error decrypting wrapped object!");
-        }
+        let plaintext = aead::LessSafeKey::new(opening_key)
+            .open_in_place(
+                aead::Nonce::assume_unique_for_key(nonce),
+                aead::Aad::from(b""),
+                &mut wrapped_data,
+            )
+            .map_err(|_| format_err!("error decrypting wrapped object!"))?;
 
-        let plaintext_len: usize = wrapped_data
-            .len()
-            .checked_sub(WRAPPED_DATA_MAC_SIZE)
-            .unwrap();
-
-        let unwrapped_object: WrappedObject = deserialize(&wrapped_data[..plaintext_len]).unwrap();
+        let unwrapped_object: WrappedObject = deserialize(plaintext).unwrap();
 
         let payload = Payload::new(
             unwrapped_object.object_info.algorithm,

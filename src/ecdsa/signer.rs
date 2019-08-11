@@ -3,17 +3,18 @@
 //! To enable secp256k1 support, build with the `secp256k1` cargo feature enabled.
 
 use crate::{object, Client};
+#[cfg(feature = "secp256k1")]
+use signatory::{ecdsa::curve::Secp256k1, generic_array::GenericArray};
 use signatory::{
-    digest::Digest,
     ecdsa::{
         curve::{NistP256, NistP384, WeierstrassCurve},
         Asn1Signature, FixedSignature, PublicKey,
     },
     generic_array::typenum::{U32, U48},
-    DigestSigner, Error, PublicKeyed, Signature,
+    public_key::PublicKeyed,
+    signature::{DigestSigner, Error, Signature},
 };
-#[cfg(feature = "secp256k1")]
-use signatory::{ecdsa::curve::Secp256k1, generic_array::GenericArray};
+use signature::digest::Digest;
 use signature_derive::Signer;
 use std::marker::PhantomData;
 

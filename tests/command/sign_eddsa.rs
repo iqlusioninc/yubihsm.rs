@@ -1,9 +1,10 @@
+//! Tests for producing Ed25519 signatures
+
 use crate::{
     generate_asymmetric_key, put_asymmetric_key, test_vectors::ED25519_TEST_VECTORS, TEST_KEY_ID,
     TEST_MESSAGE,
 };
-use ring;
-use untrusted;
+use ring::signature::UnparsedPublicKey;
 use yubihsm::{asymmetric, Capability};
 
 /// Test Ed25519 against RFC 8032 test vectors
@@ -55,11 +56,7 @@ fn generated_key_test() {
         .sign_ed25519(TEST_KEY_ID, TEST_MESSAGE)
         .unwrap_or_else(|err| panic!("error performing Ed25519 signature: {}", err));
 
-    ring::signature::verify(
-        &ring::signature::ED25519,
-        untrusted::Input::from(pubkey.bytes.as_ref()),
-        untrusted::Input::from(TEST_MESSAGE),
-        untrusted::Input::from(signature.as_ref()),
-    )
-    .unwrap();
+    UnparsedPublicKey::new(&ring::signature::ED25519, &pubkey.bytes)
+        .verify(TEST_MESSAGE, signature.as_ref())
+        .unwrap();
 }

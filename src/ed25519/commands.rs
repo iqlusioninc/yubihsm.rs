@@ -2,6 +2,7 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Sign_Eddsa.html>
 
+use super::Signature;
 use crate::{
     client::{self, ErrorKind::ResponseError},
     command::{self, Command},
@@ -9,8 +10,7 @@ use crate::{
     response::Response,
 };
 use serde::{Deserialize, Serialize};
-// TODO(tarcieri): `use signatory::Signature as _`
-use signatory::Signature;
+use signature::Signature as _;
 
 /// Request parameters for `command::sign_ed25519`
 #[derive(Serialize, Deserialize, Debug)]
@@ -35,7 +35,7 @@ impl Response for SignEddsaResponse {
 }
 
 impl SignEddsaResponse {
-    pub(crate) fn signature(&self) -> Result<super::Signature, client::Error> {
-        super::Signature::from_bytes(&self.0).map_err(|e| err!(ResponseError, e))
+    pub(crate) fn signature(&self) -> Result<Signature, client::Error> {
+        Signature::from_bytes(&self.0).map_err(|e| err!(ResponseError, e))
     }
 }

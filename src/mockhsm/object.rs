@@ -9,10 +9,6 @@ pub(crate) use self::{objects::Objects, payload::Payload};
 use crate::{object, Algorithm};
 use serde::{Deserialize, Serialize};
 
-/// Size of the wrap algorithm's MAC tag. The MockHsm uses AES-GCM instead of
-/// AES-CCM as there isn't a readily available Rust implementation
-const WRAPPED_DATA_MAC_SIZE: usize = 16;
-
 /// Label for the default auth key
 const DEFAULT_AUTHENTICATION_KEY_LABEL: &str = "DEFAULT AUTHKEY CHANGE THIS ASAP";
 
