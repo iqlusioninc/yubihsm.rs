@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct PutOpaqueCommand {
     /// Common parameters to all put object commands
-    pub params: object::import::Params,
+    pub params: object::put::Params,
 
     /// Serialized object
     pub data: Vec<u8>,

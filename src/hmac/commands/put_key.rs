@@ -16,7 +16,7 @@ pub const HMAC_MIN_KEY_SIZE: usize = 8;
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct PutHmacKeyCommand {
     /// Common parameters to all put object commands
-    pub params: object::import::Params,
+    pub params: object::put::Params,
 
     /// Serialized object
     pub hmac_key: Vec<u8>,
