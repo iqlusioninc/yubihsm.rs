@@ -96,8 +96,8 @@ supported, please open an issue requesting support.
 | [Sign Data ECDSA]              | ✅     | ✅        | Compute an ECDSA signature using HSM-backed key |
 | [Sign Data EdDSA]              | ✅     | ✅        | Compute an Ed25519 signature using HSM-backed key |
 | [Sign HMAC]                    | ✅     | ✅        | Perform an HMAC operation using an HSM-backed key |
-| [Sign Data PKCS1]              | ⚠️      | ⛔        | Compute an RSASSA-PKCS#1v1.5 signature using HSM-backed key |
-| [Sign Data PSS]                | ⚠️      | ⛔        | Compute an RSASSA-PSS signature using HSM-backed key |
+| [Sign Data PKCS1]              | ⚠️     | ⛔        | Compute an RSASSA-PKCS#1v1.5 signature using HSM-backed key |
+| [Sign Data PSS]                | ⚠️     | ⛔        | Compute an RSASSA-PSS signature using HSM-backed key |
 | [Unwrap Data]                  | ✅     | ⛔        | Decrypt data encrypted using a wrap key |
 | [Verify HMAC]                  | ✅     | ✅        | Verify that an HMAC tag for given data is valid |
 | [Wrap Data]                    | ✅     | ⛔        | Encrypt data using a wrap key |
@@ -107,6 +107,11 @@ supported, please open an issue requesting support.
 | ✅ | Supported                |
 | ⚠️ | Partial/Untested Support |
 | ⛔ | Unsupported              |
+
+NOTE: Commands marked ⚠️ have not been properly tested and may contain bugs or
+not work at all. They are disabled by default: to use them you must enable the
+`yolocrypto` cargo feature. If you do get them to work, please open an issue
+(or PR) reporting success so we can promote them to ✅.
 
 ## Testing
 
