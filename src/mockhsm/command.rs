@@ -30,7 +30,6 @@ use ring::signature::Ed25519KeyPair;
 use sha2::Sha256;
 use std::{io::Cursor, str::FromStr};
 use subtle::ConstantTimeEq;
-use untrusted;
 
 /// Create a new HSM session
 pub(crate) fn create_session(
@@ -617,8 +616,7 @@ fn sign_eddsa(state: &State, cmd_data: &[u8]) -> response::Message {
         .get(command.key_id, object::Type::AsymmetricKey)
     {
         if let Payload::Ed25519KeyPair(ref seed) = obj.payload {
-            let keypair =
-                Ed25519KeyPair::from_seed_unchecked(untrusted::Input::from(seed)).unwrap();
+            let keypair = Ed25519KeyPair::from_seed_unchecked(seed).unwrap();
 
             let signature_bytes = keypair.sign(command.data.as_ref());
             SignEddsaResponse(signature_bytes.as_ref().into()).serialize()

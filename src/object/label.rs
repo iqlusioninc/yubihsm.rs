@@ -35,7 +35,7 @@ impl Label {
     /// Borrow this label as a string ref
     pub fn try_as_str(&self) -> Result<&str, Error> {
         str::from_utf8(match self.0.iter().position(|b| *b == b'\0') {
-            Some(pos) => &self.0.as_ref()[..pos],
+            Some(pos) => &self.0[..pos],
             None => self.0.as_ref(),
         })
         .map_err(|err| format_err!("{}", err))

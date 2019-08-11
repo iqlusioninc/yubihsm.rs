@@ -1,7 +1,6 @@
 use crate::{generate_asymmetric_key, TEST_KEY_ID, TEST_MESSAGE};
-use ring;
+use ring::signature::UnparsedPublicKey;
 use sha2::{Digest, Sha256};
-use untrusted;
 use yubihsm::{asymmetric, Capability};
 
 /// Test ECDSA signatures (using NIST P-256)
@@ -32,11 +31,7 @@ fn generated_nistp256_key_test() {
         .sign_ecdsa(TEST_KEY_ID, test_digest)
         .unwrap_or_else(|err| panic!("error performing ECDSA signature: {}", err));
 
-    ring::signature::verify(
-        &ring::signature::ECDSA_P256_SHA256_ASN1,
-        untrusted::Input::from(&pubkey),
-        untrusted::Input::from(TEST_MESSAGE),
-        untrusted::Input::from(signature.as_ref()),
-    )
-    .unwrap();
+    UnparsedPublicKey::new(&ring::signature::ECDSA_P256_SHA256_ASN1, &pubkey[..])
+        .verify(TEST_MESSAGE, signature.as_ref())
+        .unwrap();
 }

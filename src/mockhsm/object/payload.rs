@@ -5,7 +5,6 @@ use ring::{
     rand::{SecureRandom, SystemRandom},
     signature::{Ed25519KeyPair, KeyPair},
 };
-use untrusted;
 
 use crate::{algorithm::Algorithm, asymmetric, authentication, hmac, opaque, wrap};
 
@@ -114,7 +113,7 @@ impl Payload {
     pub fn public_key_bytes(&self) -> Option<Vec<u8>> {
         match *self {
             Payload::Ed25519KeyPair(ref k) => Some(
-                Ed25519KeyPair::from_seed_unchecked(untrusted::Input::from(k))
+                Ed25519KeyPair::from_seed_unchecked(k)
                     .unwrap()
                     .public_key()
                     .as_ref()

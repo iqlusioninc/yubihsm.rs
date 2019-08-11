@@ -11,4 +11,4 @@ pub(crate) mod commands;
 mod public_key;
 
 pub use self::{algorithm::Algorithm, public_key::PublicKey};
-pub use signatory::Signer;
+pub use signature;

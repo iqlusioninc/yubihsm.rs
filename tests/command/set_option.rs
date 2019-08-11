@@ -21,8 +21,8 @@ fn command_audit_options_test() {
 
 /// Configure the "force audit" option setting
 // TODO(tarcieri): clear audit log when tests start. See notes on PR#185
-#[cfg(feature = "force-audit-test")]
 #[test]
+#[ignore]
 fn force_audit_option_test() {
     let client = crate::get_hsm_client();
 

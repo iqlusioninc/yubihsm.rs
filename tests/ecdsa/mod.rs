@@ -8,12 +8,13 @@ use signatory::{
         curve::{NistP256, NistP384, WeierstrassCurve, WeierstrassCurveKind},
         Asn1Signature,
     },
-    PublicKeyed, Verifier,
+    public_key::PublicKeyed,
+    signature::Verifier,
 };
 #[cfg(all(feature = "secp256k1", not(feature = "mockhsm")))]
 use signatory_secp256k1::EcdsaVerifier as Secp256k1Verifier;
 use yubihsm::{
-    asymmetric::{self, Signer as SignerTrait},
+    asymmetric::{self, signature::Signer as _},
     ecdsa, object, Client,
 };
 

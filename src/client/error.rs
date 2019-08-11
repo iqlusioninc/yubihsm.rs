@@ -95,8 +95,8 @@ impl From<serialization::Error> for Error {
     }
 }
 
-impl From<Error> for signatory::Error {
-    fn from(client_error: Error) -> signatory::Error {
-        signatory::Error::from_cause(client_error)
+impl From<Error> for signature::Error {
+    fn from(client_error: Error) -> signature::Error {
+        signature::Error::from_cause(client_error)
     }
 }
