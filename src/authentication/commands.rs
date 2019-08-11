@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct PutAuthenticationKeyCommand {
     /// Common parameters to all put object command
-    pub params: object::import::Params,
+    pub params: object::put::Params,
 
     /// Delegated capabilities
     pub delegated_capabilities: Capability,

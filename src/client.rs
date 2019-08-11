@@ -29,6 +29,7 @@ use crate::{
     otp::{self, commands::*},
     serialization::{deserialize, serialize},
     session::{self, Session},
+    template::{commands::*, Template},
     uuid,
     wrap::{self, commands::*},
 };
@@ -417,6 +418,13 @@ impl Client {
         Ok(self.send_command(GetStorageInfoCommand {})?.into())
     }
 
+    /// Get a certificate template (i.e. for SSH CA) stored in the HSM.
+    ///
+    /// <https://developers.yubico.com/YubiHSM2/Commands/Get_Template.html>
+    pub fn get_template(&self, object_id: object::Id) -> Result<Vec<u8>, Error> {
+        Ok(self.send_command(GetTemplateCommand { object_id })?.0)
+    }
+
     /// Import an encrypted object from the HSM using the given key-wrapping key.
     ///
     /// <https://developers.yubico.com/YubiHSM2/Commands/Import_Wrapped.html>
@@ -487,7 +495,7 @@ impl Client {
 
         Ok(self
             .send_command(PutAsymmetricKeyCommand {
-                params: object::import::Params {
+                params: object::put::Params {
                     id: key_id,
                     label,
                     domains,
@@ -517,7 +525,7 @@ impl Client {
     {
         Ok(self
             .send_command(PutAuthenticationKeyCommand {
-                params: object::import::Params {
+                params: object::put::Params {
                     id: key_id,
                     label,
                     domains,
@@ -560,7 +568,7 @@ impl Client {
 
         Ok(self
             .send_command(PutHmacKeyCommand {
-                params: object::import::Params {
+                params: object::put::Params {
                     id: key_id,
                     label,
                     domains,
@@ -589,7 +597,7 @@ impl Client {
     {
         Ok(self
             .send_command(PutOpaqueCommand {
-                params: object::import::Params {
+                params: object::put::Params {
                     id: object_id,
                     label,
                     domains,
@@ -630,7 +638,7 @@ impl Client {
 
         Ok(self
             .send_command(PutOTPAEADKeyCommand {
-                params: object::import::Params {
+                params: object::put::Params {
                     id: key_id,
                     label,
                     domains,
@@ -672,7 +680,7 @@ impl Client {
 
         Ok(self
             .send_command(PutWrapKeyCommand {
-                params: object::import::Params {
+                params: object::put::Params {
                     id: key_id,
                     label,
                     domains,
@@ -683,6 +691,38 @@ impl Client {
                 data,
             })?
             .key_id)
+    }
+
+    /// Put a template object (i.e. for SSH CA) into the HSM.
+    ///
+    /// Use the `yubihsm::ssh::Template` type for SSH CA templates.
+    ///
+    /// <https://developers.yubico.com/YubiHSM2/Commands/Put_Template.html>
+    pub fn put_template<T>(
+        &self,
+        object_id: object::Id,
+        label: object::Label,
+        domains: Domain,
+        capabilities: Capability,
+        template: T,
+    ) -> Result<object::Id, Error>
+    where
+        T: Into<Template>,
+    {
+        let template: Template = template.into();
+
+        Ok(self
+            .send_command(PutTemplateCommand {
+                params: object::put::Params {
+                    id: object_id,
+                    label,
+                    domains,
+                    capabilities,
+                    algorithm: template.algorithm().into(),
+                },
+                data: template.as_ref().into(),
+            })?
+            .object_id)
     }
 
     /// Reset the HSM to a factory default state and reboot, clearing all

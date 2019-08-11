@@ -15,7 +15,7 @@ use zeroize::{Zeroize, Zeroizing};
 #[derive(Clone)]
 pub struct Key {
     /// Object parameters
-    pub(crate) import_params: object::import::Params,
+    pub(crate) import_params: object::put::Params,
 
     /// Delegated capabilities apply to objects imported by this key
     pub(crate) delegated_capabilities: Capability,
@@ -45,7 +45,7 @@ impl Key {
             ),
         };
 
-        let object_params = object::import::Params::new(key_id, alg.into());
+        let object_params = object::put::Params::new(key_id, alg.into());
 
         Ok(Self {
             import_params: object_params,

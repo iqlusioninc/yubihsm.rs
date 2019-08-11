@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct PutWrapKeyCommand {
     /// Common parameters to all put object commands
-    pub params: object::import::Params,
+    pub params: object::put::Params,
 
     /// Delegated capabilities
     pub delegated_capabilities: Capability,
