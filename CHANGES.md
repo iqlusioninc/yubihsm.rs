@@ -1,3 +1,12 @@
+## [0.27.0] (2019-08-11)
+
+- Refactor `Algorithm` names to be camel case and subdivide RSA ([#228])
+- ecdh: Initial support for Derive ECDH command ([#227])
+- ssh: Initial support for the Sign SSH Certificate command ([#226])
+- template: Add support for get/put commands ([#225])
+- Rename `rsa-preview` cargo feature to `yolocrypto` ([#224])
+- Upgrade to signatory v0.13 ([#223])
+
 ## [0.26.4] (2019-06-24)
 
 - Improve missing auth key errors ([#221])
@@ -263,6 +272,13 @@ to adding support for several commands.
 
 - Initial release
 
+[0.27.0]: https://github.com/tendermint/yubihsm-rs/pull/229
+[#228]: https://github.com/tendermint/yubihsm-rs/pull/228
+[#227]: https://github.com/tendermint/yubihsm-rs/pull/227
+[#226]: https://github.com/tendermint/yubihsm-rs/pull/226
+[#225]: https://github.com/tendermint/yubihsm-rs/pull/225
+[#224]: https://github.com/tendermint/yubihsm-rs/pull/224
+[#223]: https://github.com/tendermint/yubihsm-rs/pull/223
 [0.26.4]: https://github.com/tendermint/yubihsm-rs/pull/222
 [#221]: https://github.com/tendermint/yubihsm-rs/pull/221
 [0.26.3]: https://github.com/tendermint/yubihsm-rs/pull/220

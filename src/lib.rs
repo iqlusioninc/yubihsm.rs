@@ -51,18 +51,11 @@
 //! [commands]: https://developers.yubico.com/YubiHSM2/Commands/
 //! [yubihsm-connector]: https://developers.yubico.com/YubiHSM2/Component_Reference/yubihsm-connector/
 
-#![deny(
-    warnings,
-    missing_docs,
-    trivial_casts,
-    trivial_numeric_casts,
-    unused_import_braces,
-    unused_qualifications
-)]
+#![deny(warnings, missing_docs, trivial_casts, unused_qualifications)]
 #![forbid(unsafe_code)]
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/tendermint/yubihsm-rs/develop/img/logo.png",
-    html_root_url = "https://docs.rs/yubihsm/0.26.4"
+    html_root_url = "https://docs.rs/yubihsm/0.27.0"
 )]
 
 #[macro_use]
