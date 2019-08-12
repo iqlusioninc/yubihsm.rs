@@ -8,7 +8,7 @@ fn attest_asymmetric_test() {
 
     generate_asymmetric_key(
         &client,
-        asymmetric::Algorithm::EC_P256,
+        asymmetric::Algorithm::EcP256,
         Capability::SIGN_ECDSA,
     );
 

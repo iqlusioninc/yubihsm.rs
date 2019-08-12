@@ -46,7 +46,7 @@ pub fn init_with_profile(client: Client, profile: Profile) -> Result<Report, Err
         Domain::all(),
         Capability::all(),
         Capability::all(),
-        authentication::Algorithm::YUBICO_AES,
+        authentication::Algorithm::YubicoAes,
         temp_auth_key.clone(),
     )?;
 

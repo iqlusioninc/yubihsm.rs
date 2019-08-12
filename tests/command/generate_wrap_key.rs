@@ -6,7 +6,7 @@ use yubihsm::{object, wrap, Capability};
 fn wrap_key_test() {
     let client = crate::get_hsm_client();
 
-    let algorithm = wrap::Algorithm::AES256_CCM;
+    let algorithm = wrap::Algorithm::Aes256Ccm;
     let capabilities = Capability::EXPORT_WRAPPED
         | Capability::IMPORT_WRAPPED
         | Capability::UNWRAP_DATA

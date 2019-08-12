@@ -10,9 +10,8 @@
 mod algorithm;
 pub mod mgf;
 
-#[cfg(feature = "yolocrypto")]
+pub mod oaep;
 pub mod pkcs1;
-#[cfg(feature = "yolocrypto")]
 pub mod pss;
 
 pub use self::algorithm::*;

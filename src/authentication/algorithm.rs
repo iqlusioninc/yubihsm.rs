@@ -2,18 +2,17 @@ use crate::algorithm;
 
 /// Valid algorithms for auth keys
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
-#[allow(non_camel_case_types)]
 #[repr(u8)]
 pub enum Algorithm {
     /// YubiHSM AES PSK authentication
-    YUBICO_AES = 0x26,
+    YubicoAes = 0x26,
 }
 
 impl Algorithm {
     /// Convert an unsigned byte tag into an `authentication::Algorithm` (if valid)
     pub fn from_u8(tag: u8) -> Result<Self, algorithm::Error> {
         Ok(match tag {
-            0x26 => Algorithm::YUBICO_AES,
+            0x26 => Algorithm::YubicoAes,
             _ => fail!(
                 algorithm::ErrorKind::TagInvalid,
                 "unknown auth algorithm ID: 0x{:02x}",
@@ -30,14 +29,14 @@ impl Algorithm {
     /// Return the size of the given key (as expected by the `YubiHSM 2`) in bytes
     pub fn key_len(self) -> usize {
         match self {
-            Algorithm::YUBICO_AES => 32,
+            Algorithm::YubicoAes => 32,
         }
     }
 }
 
 impl Default for Algorithm {
     fn default() -> Self {
-        Algorithm::YUBICO_AES
+        Algorithm::YubicoAes
     }
 }
 

@@ -1,27 +1,35 @@
-//! Pseudo-algorithms for opaque data
+//! RSASSA-PSS algorithms
 
 use crate::algorithm;
 
-/// Valid algorithms for opaque data
+/// RSASSA-PSS algorithms
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[repr(u8)]
 pub enum Algorithm {
-    /// Arbitrary opaque data
-    Data = 0x1e,
+    /// `rsa-pss-sha1`
+    Sha1 = 0x05,
 
-    /// X.509 certificates
-    X509Certificate = 0x1f,
+    /// `rsa-pss-sha256`
+    Sha256 = 0x06,
+
+    /// `rsa-pss-sha384`
+    Sha384 = 0x07,
+
+    /// `rsa-pss-sha512`
+    Sha512 = 0x08,
 }
 
 impl Algorithm {
     /// Convert an unsigned byte tag into an `Algorithm` (if valid)
     pub fn from_u8(tag: u8) -> Result<Self, algorithm::Error> {
         Ok(match tag {
-            0x1e => Algorithm::Data,
-            0x1f => Algorithm::X509Certificate,
+            0x05 => Algorithm::Sha1,
+            0x06 => Algorithm::Sha256,
+            0x07 => Algorithm::Sha384,
+            0x08 => Algorithm::Sha512,
             _ => fail!(
                 algorithm::ErrorKind::TagInvalid,
-                "unknown opaque data ID: 0x{:02x}",
+                "unknown RSASSA-PSS algorithm ID: 0x{:02x}",
                 tag
             ),
         })

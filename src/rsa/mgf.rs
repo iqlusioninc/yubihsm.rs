@@ -4,30 +4,29 @@ use crate::algorithm;
 
 /// Mask generating functions for RSASSA-PSS
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
-#[allow(non_camel_case_types)]
 #[repr(u8)]
 pub enum Algorithm {
-    /// mgf-sha1
-    SHA1 = 0x20,
+    /// `mgf-sha1`
+    Sha1 = 0x20,
 
-    /// mgf-sha256
-    SHA256 = 0x21,
+    /// `mgf-sha256`
+    Sha256 = 0x21,
 
-    /// mgf-sha384
-    SHA384 = 0x22,
+    /// `mgf-sha384`
+    Sha384 = 0x22,
 
-    /// mgf-sha512
-    SHA512 = 0x23,
+    /// `mgf-sha512`
+    Sha512 = 0x23,
 }
 
 impl Algorithm {
-    /// Convert an unsigned byte tag into an `Algorithmorithm` (if valid)
+    /// Convert an unsigned byte tag into an `Algorithm` (if valid)
     pub fn from_u8(tag: u8) -> Result<Self, algorithm::Error> {
         Ok(match tag {
-            0x20 => Algorithm::SHA1,
-            0x21 => Algorithm::SHA256,
-            0x22 => Algorithm::SHA384,
-            0x23 => Algorithm::SHA512,
+            0x20 => Algorithm::Sha1,
+            0x21 => Algorithm::Sha256,
+            0x22 => Algorithm::Sha384,
+            0x23 => Algorithm::Sha512,
             _ => fail!(
                 algorithm::ErrorKind::TagInvalid,
                 "unknown MGF algorithm ID: 0x{:02x}",

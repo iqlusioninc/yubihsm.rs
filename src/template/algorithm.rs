@@ -4,18 +4,17 @@ use crate::algorithm;
 
 /// Template algorithms (for SSH)
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
-#[allow(non_camel_case_types)]
 #[repr(u8)]
 pub enum Algorithm {
-    /// template-ssh
-    SSH = 0x24,
+    /// `template-ssh`
+    Ssh = 0x24,
 }
 
 impl Algorithm {
-    /// Convert an unsigned byte tag into a `template::Algorithmorithm` (if valid)
+    /// Convert an unsigned byte tag into a `template::Algorithm` (if valid)
     pub fn from_u8(tag: u8) -> Result<Self, algorithm::Error> {
         Ok(match tag {
-            0x24 => Algorithm::SSH,
+            0x24 => Algorithm::Ssh,
             _ => fail!(
                 algorithm::ErrorKind::TagInvalid,
                 "unknown SSH template algorithm ID: 0x{:02x}",

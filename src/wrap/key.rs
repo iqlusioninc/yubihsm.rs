@@ -35,9 +35,9 @@ impl Key {
     /// Create a new `wrap::Key` instance. Must be 16, 24, or 32-bytes long.
     pub fn from_bytes(key_id: object::Id, bytes: &[u8]) -> Result<Self, device::Error> {
         let alg = match bytes.len() {
-            16 => wrap::Algorithm::AES128_CCM,
-            24 => wrap::Algorithm::AES192_CCM,
-            32 => wrap::Algorithm::AES256_CCM,
+            16 => wrap::Algorithm::Aes128Ccm,
+            24 => wrap::Algorithm::Aes192Ccm,
+            32 => wrap::Algorithm::Aes256Ccm,
             other => fail!(
                 device::ErrorKind::WrongLength,
                 "expected 16, 24, or 32-byte wrap key (got {})",

@@ -22,7 +22,7 @@ fn default_authkey_test() {
     assert_eq!(object_info.object_type, object::Type::AuthenticationKey);
     assert_eq!(
         object_info.algorithm,
-        authentication::Algorithm::YUBICO_AES.into()
+        authentication::Algorithm::YubicoAes.into()
     );
     assert_eq!(object_info.origin, object::Origin::Imported);
     assert_eq!(

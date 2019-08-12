@@ -27,7 +27,7 @@ impl Default for Objects {
         let authentication_key_info = Info {
             object_id: DEFAULT_AUTHENTICATION_KEY_ID,
             object_type: Type::AuthenticationKey,
-            algorithm: Algorithm::Authentication(authentication::Algorithm::YUBICO_AES),
+            algorithm: Algorithm::Authentication(authentication::Algorithm::YubicoAes),
             capabilities: Capability::all(),
             delegated_capabilities: Capability::all(),
             domains: Domain::all(),
@@ -152,10 +152,10 @@ impl Objects {
 
         let sealing_key = match wrap_key.algorithm().wrap().unwrap() {
             // TODO: actually use AES-CCM
-            wrap::Algorithm::AES128_CCM => {
+            wrap::Algorithm::Aes128Ccm => {
                 aead::UnboundKey::new(&AES_128_GCM, wrap_key.payload.as_ref())
             }
-            wrap::Algorithm::AES256_CCM => {
+            wrap::Algorithm::Aes256Ccm => {
                 aead::UnboundKey::new(&AES_256_GCM, wrap_key.payload.as_ref())
             }
             unsupported => bail!("unsupported wrap key algorithm: {:?}", unsupported),
@@ -216,10 +216,10 @@ impl Objects {
     ) -> Result<Handle, Error> {
         let opening_key = match self.get(wrap_key_id, Type::WrapKey) {
             Some(k) => match k.algorithm().wrap().unwrap() {
-                wrap::Algorithm::AES128_CCM => {
+                wrap::Algorithm::Aes128Ccm => {
                     aead::UnboundKey::new(&AES_128_GCM, k.payload.as_ref())
                 }
-                wrap::Algorithm::AES256_CCM => {
+                wrap::Algorithm::Aes256Ccm => {
                     aead::UnboundKey::new(&AES_256_GCM, k.payload.as_ref())
                 }
                 unsupported => bail!("unsupported wrap key algorithm: {:?}", unsupported),

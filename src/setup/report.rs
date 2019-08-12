@@ -81,7 +81,7 @@ impl Report {
                 object::Label::from(REPORT_OBJECT_LABEL),
                 Domain::all(),
                 Capability::GET_OPAQUE,
-                opaque::Algorithm::DATA,
+                opaque::Algorithm::Data,
                 self.to_json(),
             )
             .map_err(|e| format_err!("{}", e))?;

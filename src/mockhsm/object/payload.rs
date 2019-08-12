@@ -88,7 +88,7 @@ impl Payload {
     pub fn algorithm(&self) -> Algorithm {
         match *self {
             Payload::AuthenticationKey(_) => {
-                Algorithm::Authentication(authentication::Algorithm::YUBICO_AES)
+                Algorithm::Authentication(authentication::Algorithm::YubicoAes)
             }
             Payload::Ed25519KeyPair(_) => Algorithm::Asymmetric(asymmetric::Algorithm::Ed25519),
             Payload::HmacKey(alg, _) => alg.into(),

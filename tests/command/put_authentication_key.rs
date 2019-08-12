@@ -6,7 +6,7 @@ use crate::{clear_test_key_slot, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL, TEST
 #[test]
 fn put_authentication_key() {
     let client = crate::get_hsm_client();
-    let algorithm = authentication::Algorithm::YUBICO_AES;
+    let algorithm = authentication::Algorithm::YubicoAes;
     let capabilities = Capability::all();
     let delegated_capabilities = Capability::all();
 

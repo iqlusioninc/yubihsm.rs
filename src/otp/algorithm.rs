@@ -4,26 +4,25 @@ use crate::algorithm;
 
 /// Valid algorithms for Yubico OTP (AES-based one time password) keys
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
-#[allow(non_camel_case_types)]
 #[repr(u8)]
 pub enum Algorithm {
     /// Yubico OTP using AES-128
-    AES128 = 0x25,
+    Aes128 = 0x25,
 
     /// Yubico OTP using AES-192
-    AES192 = 0x27,
+    Aes192 = 0x27,
 
     /// Yubico OTP using AES-256
-    AES256 = 0x28,
+    Aes256 = 0x28,
 }
 
 impl Algorithm {
     /// Convert an unsigned byte tag into an `OtpAlgorithm` (if valid)
     pub fn from_u8(tag: u8) -> Result<Self, algorithm::Error> {
         Ok(match tag {
-            0x25 => Algorithm::AES128,
-            0x27 => Algorithm::AES192,
-            0x28 => Algorithm::AES256,
+            0x25 => Algorithm::Aes128,
+            0x27 => Algorithm::Aes192,
+            0x28 => Algorithm::Aes256,
             _ => fail!(
                 algorithm::ErrorKind::TagInvalid,
                 "unknown OTP algorithm ID: 0x{:02x}",
@@ -40,9 +39,9 @@ impl Algorithm {
     /// Return the size of the given key (as expected by the `YubiHSM 2`) in bytes
     pub fn key_len(self) -> usize {
         match self {
-            Algorithm::AES128 => 16,
-            Algorithm::AES192 => 24,
-            Algorithm::AES256 => 32,
+            Algorithm::Aes128 => 16,
+            Algorithm::Aes192 => 24,
+            Algorithm::Aes256 => 32,
         }
     }
 }
