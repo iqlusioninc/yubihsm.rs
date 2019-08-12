@@ -43,6 +43,7 @@ use std::{thread, time::SystemTime};
 use {
     crate::{
         algorithm::Algorithm,
+        ecdh::{self, commands::*},
         rsa::{self, pkcs1::commands::*, pss::commands::*},
         ssh::{self, commands::*},
     },
@@ -202,6 +203,25 @@ impl Client {
             object_type,
         })?;
         Ok(())
+    }
+
+    /// Elliptic Curve Diffie-Hellman: derive a shared secret via key exchange.
+    ///
+    /// **WARNING**: This functionality has not been tested and has not yet been
+    /// confirmed to actually work! USE AT YOUR OWN RISK!
+    ///
+    /// You will need to enable the `yolocrypto` cargo feature to use it.
+    ///
+    /// <https://developers.yubico.com/YubiHSM2/Commands/Derive_Ecdh.html>
+    #[cfg(feature = "yolocrypto")]
+    pub fn derive_ecdh(
+        &self,
+        key_id: object::Id,
+        public_key: ecdh::UncompressedPoint,
+    ) -> Result<ecdh::UncompressedPoint, Error> {
+        Ok(self
+            .send_command(DeriveEcdhCommand { key_id, public_key })?
+            .into())
     }
 
     /// Get information about the HSM device.

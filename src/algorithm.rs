@@ -4,7 +4,7 @@ mod error;
 
 pub use self::error::{Error, ErrorKind};
 
-use crate::{asymmetric, authentication, ecdsa, hmac, kex, opaque, otp, rsa, template, wrap};
+use crate::{asymmetric, authentication, ecdh, ecdsa, hmac, opaque, otp, rsa, template, wrap};
 
 /// Cryptographic algorithm types supported by the `YubiHSM 2`
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -14,17 +14,17 @@ pub enum Algorithm {
     /// Asymmetric algorithms
     Asymmetric(asymmetric::Algorithm),
 
-    /// YubiHSM 2 PSK authentication
+    /// YubiHSM 2 symmetric PSK authentication
     Authentication(authentication::Algorithm),
+
+    /// Elliptic Curve Diffie-Hellman (i.e. key exchange) algorithms
+    Ecdh(ecdh::Algorithm),
 
     /// ECDSA algorithms
     Ecdsa(ecdsa::Algorithm),
 
     /// HMAC algorithms
     Hmac(hmac::Algorithm),
-
-    /// Key exchange algorithms (i.e. Diffie-Hellman)
-    Kex(kex::Algorithm),
 
     /// RSA-PSS mask generating functions
     Mgf(rsa::mgf::Algorithm),
@@ -55,7 +55,7 @@ impl Algorithm {
             }
             0x13..=0x16 => Algorithm::Hmac(hmac::Algorithm::from_u8(byte)?),
             0x17 | 0x2b..=0x2d => Algorithm::Ecdsa(ecdsa::Algorithm::from_u8(byte)?),
-            0x18 => Algorithm::Kex(kex::Algorithm::from_u8(byte)?),
+            0x18 => Algorithm::Ecdh(ecdh::Algorithm::from_u8(byte)?),
             0x1d | 0x29 | 0x2a => Algorithm::Wrap(wrap::Algorithm::from_u8(byte)?),
             0x1e | 0x1f => Algorithm::Opaque(opaque::Algorithm::from_u8(byte)?),
             0x20..=0x23 => Algorithm::Mgf(rsa::mgf::Algorithm::from_u8(byte)?),
@@ -75,9 +75,9 @@ impl Algorithm {
         match self {
             Algorithm::Asymmetric(alg) => alg.to_u8(),
             Algorithm::Authentication(alg) => alg.to_u8(),
+            Algorithm::Ecdh(alg) => alg.to_u8(),
             Algorithm::Ecdsa(alg) => alg.to_u8(),
             Algorithm::Hmac(alg) => alg.to_u8(),
-            Algorithm::Kex(alg) => alg.to_u8(),
             Algorithm::Mgf(alg) => alg.to_u8(),
             Algorithm::Opaque(alg) => alg.to_u8(),
             Algorithm::YubicoOtp(alg) => alg.to_u8(),
@@ -103,6 +103,14 @@ impl Algorithm {
         }
     }
 
+    /// Get `ecdh::Algorithm`
+    pub fn ecdh(self) -> Option<ecdh::Algorithm> {
+        match self {
+            Algorithm::Ecdh(alg) => Some(alg),
+            _ => None,
+        }
+    }
+
     /// Get `ecdsa::Algorithm`
     pub fn ecdsa(self) -> Option<ecdsa::Algorithm> {
         match self {
@@ -115,14 +123,6 @@ impl Algorithm {
     pub fn hmac(self) -> Option<hmac::Algorithm> {
         match self {
             Algorithm::Hmac(alg) => Some(alg),
-            _ => None,
-        }
-    }
-
-    /// Get `kex::Algorithm`
-    pub fn kex(self) -> Option<kex::Algorithm> {
-        match self {
-            Algorithm::Kex(alg) => Some(alg),
             _ => None,
         }
     }
@@ -190,6 +190,12 @@ impl From<authentication::Algorithm> for Algorithm {
     }
 }
 
+impl From<ecdh::Algorithm> for Algorithm {
+    fn from(alg: ecdh::Algorithm) -> Algorithm {
+        Algorithm::Ecdh(alg)
+    }
+}
+
 impl From<ecdsa::Algorithm> for Algorithm {
     fn from(alg: ecdsa::Algorithm) -> Algorithm {
         Algorithm::Ecdsa(alg)
@@ -199,12 +205,6 @@ impl From<ecdsa::Algorithm> for Algorithm {
 impl From<hmac::Algorithm> for Algorithm {
     fn from(alg: hmac::Algorithm) -> Algorithm {
         Algorithm::Hmac(alg)
-    }
-}
-
-impl From<kex::Algorithm> for Algorithm {
-    fn from(alg: kex::Algorithm) -> Algorithm {
-        Algorithm::Kex(alg)
     }
 }
 
@@ -272,7 +272,7 @@ mod tests {
         (0x15, Algorithm::Hmac(hmac::Algorithm::SHA384)),
         (0x16, Algorithm::Hmac(hmac::Algorithm::SHA512)),
         (0x17, Algorithm::Ecdsa(ecdsa::Algorithm::SHA1)),
-        (0x18, Algorithm::Kex(kex::Algorithm::ECDH)),
+        (0x18, Algorithm::Ecdh(ecdh::Algorithm::ECDH)),
         (0x19, Algorithm::Rsa(rsa::Algorithm::OAEP_SHA1)),
         (0x1a, Algorithm::Rsa(rsa::Algorithm::OAEP_SHA256)),
         (0x1b, Algorithm::Rsa(rsa::Algorithm::OAEP_SHA384)),
