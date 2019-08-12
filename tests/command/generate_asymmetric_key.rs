@@ -29,7 +29,7 @@ fn ed25519_key_test() {
 #[test]
 fn nistp256_key_test() {
     let client = crate::get_hsm_client();
-    let algorithm = asymmetric::Algorithm::EC_P256;
+    let algorithm = asymmetric::Algorithm::EcP256;
     let capabilities = Capability::SIGN_EDDSA;
 
     generate_asymmetric_key(&client, algorithm, capabilities);

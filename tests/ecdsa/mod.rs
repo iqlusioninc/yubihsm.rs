@@ -39,9 +39,9 @@ where
 {
     let client = crate::get_hsm_client();
     let alg = match C::CURVE_KIND {
-        WeierstrassCurveKind::NistP256 => asymmetric::Algorithm::EC_P256,
-        WeierstrassCurveKind::NistP384 => asymmetric::Algorithm::EC_P384,
-        WeierstrassCurveKind::Secp256k1 => asymmetric::Algorithm::EC_K256,
+        WeierstrassCurveKind::NistP256 => asymmetric::Algorithm::EcP256,
+        WeierstrassCurveKind::NistP384 => asymmetric::Algorithm::EcP384,
+        WeierstrassCurveKind::Secp256k1 => asymmetric::Algorithm::EcK256,
     };
 
     create_yubihsm_key(&client, key_id, alg);

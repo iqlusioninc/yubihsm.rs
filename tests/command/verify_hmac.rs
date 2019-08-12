@@ -8,7 +8,7 @@ use yubihsm::{hmac, Capability};
 #[test]
 fn hmac_test_vectors() {
     let client = crate::get_hsm_client();
-    let algorithm = hmac::Algorithm::SHA256;
+    let algorithm = hmac::Algorithm::Sha256;
     let capabilities = Capability::SIGN_HMAC | Capability::VERIFY_HMAC;
 
     for vector in HMAC_SHA256_TEST_VECTORS {

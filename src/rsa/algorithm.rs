@@ -1,65 +1,29 @@
 //! RSA-related algorithms
 
+use super::{oaep, pkcs1, pss};
 use crate::algorithm;
 
 /// RSA algorithms (signing and encryption)
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
-#[allow(non_camel_case_types)]
 #[repr(u8)]
 pub enum Algorithm {
-    /// rsa-pkcs1-sha1
-    PKCS1_SHA1 = 0x01,
+    /// RSA encryption with Optimal Asymmetric Encryption Padding (OAEP)
+    Oaep(oaep::Algorithm),
 
-    /// rsa-pkcs1-sha256
-    PKCS1_SHA256 = 0x02,
+    /// RSA PKCS#1v1.5: legacy signature and encryption algorithms
+    Pkcs1(pkcs1::Algorithm),
 
-    /// rsa-pkcs1-sha384
-    PKCS1_SHA384 = 0x03,
-
-    /// rsa-pkcs1-sha512
-    PKCS1_SHA512 = 0x04,
-
-    /// rsa-pss-sha1
-    PSS_SHA1 = 0x05,
-
-    /// rsa-pss-sha256
-    PSS_SHA256 = 0x06,
-
-    /// rsa-pss-sha384
-    PSS_SHA384 = 0x07,
-
-    /// rsa-pss-sha512
-    PSS_SHA512 = 0x08,
-
-    /// rsa-oaep-sha1
-    OAEP_SHA1 = 0x19,
-
-    /// rsa-oaep-sha256
-    OAEP_SHA256 = 0x1a,
-
-    /// rsa-oaep-sha384
-    OAEP_SHA384 = 0x1b,
-
-    /// rsa-oaep-sha512
-    OAEP_SHA512 = 0x1c,
+    /// RSASSA-PSS: Probabilistic Signature Scheme
+    Pss(pss::Algorithm),
 }
 
 impl Algorithm {
-    /// Convert an unsigned byte tag into an `Algorithmorithm` (if valid)
+    /// Convert an unsigned byte tag into an `Algorithm` (if valid)
     pub fn from_u8(tag: u8) -> Result<Self, algorithm::Error> {
         Ok(match tag {
-            0x01 => Algorithm::PKCS1_SHA1,
-            0x02 => Algorithm::PKCS1_SHA256,
-            0x03 => Algorithm::PKCS1_SHA384,
-            0x04 => Algorithm::PKCS1_SHA512,
-            0x05 => Algorithm::PSS_SHA1,
-            0x06 => Algorithm::PSS_SHA256,
-            0x07 => Algorithm::PSS_SHA384,
-            0x08 => Algorithm::PSS_SHA512,
-            0x19 => Algorithm::OAEP_SHA1,
-            0x1a => Algorithm::OAEP_SHA256,
-            0x1b => Algorithm::OAEP_SHA384,
-            0x1c => Algorithm::OAEP_SHA512,
+            0x01..=0x04 => Algorithm::Pkcs1(pkcs1::Algorithm::from_u8(tag)?),
+            0x05..=0x08 => Algorithm::Pss(pss::Algorithm::from_u8(tag)?),
+            0x19..=0x1c => Algorithm::Oaep(oaep::Algorithm::from_u8(tag)?),
             _ => fail!(
                 algorithm::ErrorKind::TagInvalid,
                 "unknown RSA algorithm ID: 0x{:02x}",
@@ -70,8 +34,30 @@ impl Algorithm {
 
     /// Serialize algorithm ID as a byte
     pub fn to_u8(self) -> u8 {
-        self as u8
+        match self {
+            Algorithm::Oaep(alg) => alg.to_u8(),
+            Algorithm::Pkcs1(alg) => alg.to_u8(),
+            Algorithm::Pss(alg) => alg.to_u8(),
+        }
     }
 }
 
 impl_algorithm_serializers!(Algorithm);
+
+impl From<oaep::Algorithm> for Algorithm {
+    fn from(alg: oaep::Algorithm) -> Algorithm {
+        Algorithm::Oaep(alg)
+    }
+}
+
+impl From<pkcs1::Algorithm> for Algorithm {
+    fn from(alg: pkcs1::Algorithm) -> Algorithm {
+        Algorithm::Pkcs1(alg)
+    }
+}
+
+impl From<pss::Algorithm> for Algorithm {
+    fn from(alg: pss::Algorithm) -> Algorithm {
+        Algorithm::Pss(alg)
+    }
+}

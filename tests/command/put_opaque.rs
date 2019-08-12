@@ -15,7 +15,7 @@ fn opaque_object_test() {
             TEST_KEY_LABEL.into(),
             TEST_DOMAINS,
             Capability::default(),
-            opaque::Algorithm::DATA,
+            opaque::Algorithm::Data,
             TEST_MESSAGE,
         )
         .unwrap_or_else(|err| panic!("error putting opaque object: {}", err));

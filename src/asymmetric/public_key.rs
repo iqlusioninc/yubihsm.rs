@@ -48,7 +48,7 @@ impl PublicKey {
         C: ecdsa::curve::WeierstrassCurve,
     {
         match self.algorithm {
-            asymmetric::Algorithm::EC_P256 => {
+            asymmetric::Algorithm::EcP256 => {
                 if C::CURVE_KIND == WeierstrassCurveKind::NistP256 {
                     Some(ecdsa::PublicKey::from_untagged_point(
                         GenericArray::from_slice(&self.bytes),
@@ -57,7 +57,7 @@ impl PublicKey {
                     None
                 }
             }
-            asymmetric::Algorithm::EC_P384 => {
+            asymmetric::Algorithm::EcP384 => {
                 if C::CURVE_KIND == WeierstrassCurveKind::NistP384 {
                     Some(ecdsa::PublicKey::from_untagged_point(
                         GenericArray::from_slice(&self.bytes),
@@ -66,7 +66,7 @@ impl PublicKey {
                     None
                 }
             }
-            asymmetric::Algorithm::EC_K256 => {
+            asymmetric::Algorithm::EcK256 => {
                 if C::CURVE_KIND == WeierstrassCurveKind::Secp256k1 {
                     Some(ecdsa::PublicKey::from_untagged_point(
                         GenericArray::from_slice(&self.bytes),

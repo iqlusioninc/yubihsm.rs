@@ -9,7 +9,7 @@ use yubihsm::{asymmetric, object, wrap, Capability};
 #[test]
 fn wrap_key_test() {
     let client = crate::get_hsm_client();
-    let algorithm = wrap::Algorithm::AES128_CCM;
+    let algorithm = wrap::Algorithm::Aes128Ccm;
     let capabilities = Capability::EXPORT_WRAPPED | Capability::IMPORT_WRAPPED;
     let delegated_capabilities = Capability::all();
 

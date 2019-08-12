@@ -1006,7 +1006,7 @@ impl Client {
         Ok(self
             .send_command(SignPssCommand {
                 key_id,
-                mgf1_hash_alg: rsa::mgf::Algorithm::SHA256,
+                mgf1_hash_alg: rsa::mgf::Algorithm::Sha256,
                 salt_len: digest.as_slice().len() as u16,
                 digest: digest.as_slice().into(),
             })?

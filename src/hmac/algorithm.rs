@@ -4,30 +4,29 @@ use crate::algorithm;
 
 /// Valid algorithms for HMAC keys
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
-#[allow(non_camel_case_types)]
 #[repr(u8)]
 pub enum Algorithm {
-    /// hmac-sha1
-    SHA1 = 0x13,
+    /// `hmac-sha1`
+    Sha1 = 0x13,
 
-    /// hmac-sha256
-    SHA256 = 0x14,
+    /// `hmac-sha256`
+    Sha256 = 0x14,
 
-    /// hmac-sha384
-    SHA384 = 0x15,
+    /// `hmac-sha384`
+    Sha384 = 0x15,
 
-    /// hmac-sha512
-    SHA512 = 0x16,
+    /// `hmac-sha512`
+    Sha512 = 0x16,
 }
 
 impl Algorithm {
-    /// Convert an unsigned byte tag into an `Algorithmorithm` (if valid)
+    /// Convert an unsigned byte tag into an `Algorithm` (if valid)
     pub fn from_u8(tag: u8) -> Result<Self, algorithm::Error> {
         Ok(match tag {
-            0x13 => Algorithm::SHA1,
-            0x14 => Algorithm::SHA256,
-            0x15 => Algorithm::SHA384,
-            0x16 => Algorithm::SHA512,
+            0x13 => Algorithm::Sha1,
+            0x14 => Algorithm::Sha256,
+            0x15 => Algorithm::Sha384,
+            0x16 => Algorithm::Sha512,
             _ => fail!(
                 algorithm::ErrorKind::TagInvalid,
                 "unknown HMAC algorithm ID: 0x{:02x}",
@@ -44,20 +43,20 @@ impl Algorithm {
     /// Recommended key length (identical to output size)
     pub fn key_len(self) -> usize {
         match self {
-            Algorithm::SHA1 => 20,
-            Algorithm::SHA256 => 32,
-            Algorithm::SHA384 => 48,
-            Algorithm::SHA512 => 64,
+            Algorithm::Sha1 => 20,
+            Algorithm::Sha256 => 32,
+            Algorithm::Sha384 => 48,
+            Algorithm::Sha512 => 64,
         }
     }
 
     /// Return the size of the given key (as expected by the `YubiHSM 2`) in bytes
     pub fn max_key_len(self) -> usize {
         match self {
-            Algorithm::SHA1 => 64,
-            Algorithm::SHA256 => 64,
-            Algorithm::SHA384 => 128,
-            Algorithm::SHA512 => 128,
+            Algorithm::Sha1 => 64,
+            Algorithm::Sha256 => 64,
+            Algorithm::Sha384 => 128,
+            Algorithm::Sha512 => 128,
         }
     }
 }

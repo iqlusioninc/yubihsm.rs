@@ -10,7 +10,7 @@ fn generated_nistp256_key_test() {
 
     generate_asymmetric_key(
         &client,
-        asymmetric::Algorithm::EC_P256,
+        asymmetric::Algorithm::EcP256,
         Capability::SIGN_ECDSA,
     );
 
@@ -18,7 +18,7 @@ fn generated_nistp256_key_test() {
         .get_public_key(TEST_KEY_ID)
         .unwrap_or_else(|err| panic!("error getting public key: {}", err));
 
-    assert_eq!(pubkey_response.algorithm, asymmetric::Algorithm::EC_P256);
+    assert_eq!(pubkey_response.algorithm, asymmetric::Algorithm::EcP256);
     assert_eq!(pubkey_response.bytes.len(), 64);
 
     let mut pubkey = [0u8; 65];

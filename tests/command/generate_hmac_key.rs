@@ -6,7 +6,7 @@ use yubihsm::{hmac, object, Capability};
 fn hmac_key_test() {
     let client = crate::get_hsm_client();
 
-    let algorithm = hmac::Algorithm::SHA256;
+    let algorithm = hmac::Algorithm::Sha256;
     let capabilities = Capability::SIGN_HMAC | Capability::VERIFY_HMAC;
 
     clear_test_key_slot(&client, object::Type::HmacKey);
