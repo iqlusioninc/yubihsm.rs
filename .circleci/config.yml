@@ -76,12 +76,11 @@ jobs:
           rustc --version
           cargo --version
           cargo test --features=mockhsm,secp256k1,yolocrypto
-    # TODO(tarcieri): re-enable when libusb is replaced
-    #- run:
-    #    name: audit
-    #    command: |
-    #      cargo audit --version
-    #      cargo audit
+    - run:
+        name: audit
+        command: |
+          cargo audit --version
+          cargo audit
     - save_cache:
         key: cache-2019-06-05-v0 # bump restore_cache key above too
         paths:

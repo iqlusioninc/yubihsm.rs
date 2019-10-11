@@ -3,7 +3,7 @@
 //! - [HTTP][http-connector]: communicate with YubiHSM via the `yubihsm-connector`
 //!   process from the Yubico SDK.
 //! - [USB][usb-connector]: communicate directly with the YubiHSM over USB using
-//!   the [libusb] crate.
+//!   the [rusb] crate.
 //!
 //! Additionally, this crate includes an optional development-only [mockhsm]
 //! (gated under a `mockhsm` cargo feature) which can be used as a drop-in
@@ -11,6 +11,7 @@
 //!
 //! [http-connector]: https://docs.rs/yubihsm/latest/yubihsm/connector/struct.Connector.html#method.http
 //! [usb-connector]: https://docs.rs/yubihsm/latest/yubihsm/connector/struct.Connector.html#method.usb
+//! [rusb]: https://github.com/a1ien/rusb
 //! [mockhsm]: https://docs.rs/yubihsm/latest/yubihsm/connector/struct.Connector.html#method.mockhsm
 
 #[macro_use]

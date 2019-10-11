@@ -36,9 +36,8 @@ pub const YUBIHSM2_BULK_IN_ENDPOINT: u8 = 0x81;
 /// Connect to the HSM via USB.
 ///
 /// `UsbConnector` is available when the `usb` cargo feature is enabled.
-/// It requires `libusb` as a dependency, but does not otherwise need the
-/// [Yubico SDK] (which is a vicarious dependency of `UsbConnector` which
-/// needs the `yubihsm-connector` process).
+/// It requires `rusb` as a dependency, but does not otherwise need the
+/// [Yubico SDK].
 ///
 /// [Yubico SDK]: https://developers.yubico.com/YubiHSM2/Releases/
 #[derive(Clone, Default, Debug)]

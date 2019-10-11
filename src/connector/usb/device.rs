@@ -1,4 +1,4 @@
-//! Support for connecting to the YubiHSM 2 USB device using libusb
+//! Support for connecting to the YubiHSM 2 USB device using rusb
 
 use super::{
     UsbConnection, UsbTimeout, YUBICO_VENDOR_ID, YUBIHSM2_BULK_IN_ENDPOINT, YUBIHSM2_INTERFACE_NUM,
@@ -12,24 +12,12 @@ use crate::{
     },
     device::SerialNumber,
 };
-use lazy_static::lazy_static;
-use libusb;
 use std::{
     fmt::{self, Debug},
-    process::exit,
     slice::Iter,
-    str::FromStr,
     time::Duration,
     vec::IntoIter,
 };
-
-lazy_static! {
-    /// Global USB context for accessing YubiHSM 2s
-    static ref GLOBAL_USB_CONTEXT: libusb::Context = libusb::Context::new().unwrap_or_else(|e| {
-        eprintln!("*** ERROR: yubihsm-rs USB context init failed: {}", e);
-        exit(1);
-    });
-}
 
 /// A collection of detected YubiHSM 2 devices, represented as `Device`
 pub struct Devices(Vec<Device>);
@@ -83,7 +71,8 @@ impl Devices {
 
     /// Detect connected YubiHSM 2s, returning a collection of them
     pub fn detect(timeout: UsbTimeout) -> Result<Self, connector::Error> {
-        let device_list = GLOBAL_USB_CONTEXT.devices()?;
+        use rusb::UsbContext;
+        let device_list = rusb::GlobalContext::default().devices()?;
         let mut devices = vec![];
 
         debug!("USB: enumerating devices...");
@@ -102,7 +91,7 @@ impl Devices {
                 .map_err(|e| usb_err!(device, "error opening device: {}", e))?;
 
             handle.reset().map_err(|error| match error {
-                libusb::Error::NoDevice => err!(
+                rusb::Error::NoDevice => err!(
                     DeviceBusyError,
                     "USB(bus={},addr={}): couldn't reset device (already in use or disconnected)",
                     device.bus_number(),
@@ -125,9 +114,10 @@ impl Devices {
             let manufacturer = handle.read_manufacturer_string(language, &desc, t)?;
             let product = handle.read_product_string(language, &desc, t)?;
             let product_name = format!("{} {}", manufacturer, product);
-            let serial_number =
-                SerialNumber::from_str(&handle.read_serial_number_string(language, &desc, t)?)
-                    .map_err(|e| err!(AddrInvalid, "{}", e))?;
+            let serial_number: SerialNumber = handle
+                .read_serial_number_string(language, &desc, t)?
+                .parse()
+                .map_err(|e| err!(AddrInvalid, "{}", e))?;
 
             debug!(
                 "USB(bus={},addr={}): found {} (serial #{})",
@@ -179,8 +169,8 @@ impl IntoIterator for Devices {
 
 /// A USB device we've identified as a YubiHSM 2
 pub struct Device {
-    /// Underlying `libusb` device
-    pub(super) device: libusb::Device<'static>,
+    /// Underlying `rusb` device
+    pub(super) device: rusb::Device<rusb::GlobalContext>,
 
     /// Product vendor and name
     pub product_name: String,
@@ -192,7 +182,7 @@ pub struct Device {
 impl Device {
     /// Create a new device
     pub(super) fn new(
-        device: libusb::Device<'static>,
+        device: rusb::Device<rusb::GlobalContext>,
         product_name: String,
         serial_number: SerialNumber,
     ) -> Self {
@@ -229,7 +219,9 @@ impl Device {
     }
 
     /// Open a handle to the underlying device (for use by `UsbConnection`)
-    pub(super) fn open_handle(&self) -> Result<libusb::DeviceHandle<'static>, connector::Error> {
+    pub(super) fn open_handle(
+        &self,
+    ) -> Result<rusb::DeviceHandle<rusb::GlobalContext>, connector::Error> {
         let mut handle = self.device.open()?;
         handle.reset()?;
         handle.claim_interface(YUBIHSM2_INTERFACE_NUM)?;
@@ -255,7 +247,7 @@ impl Debug for Device {
 
 /// Flush any unconsumed messages still in the buffer to get the connection
 /// back into a clean state
-fn flush(handle: &mut libusb::DeviceHandle) -> Result<(), connector::Error> {
+fn flush(handle: &mut rusb::DeviceHandle<rusb::GlobalContext>) -> Result<(), connector::Error> {
     let mut buffer = [0u8; MAX_MSG_SIZE];
 
     // Use a near instantaneous (but non-zero) timeout to drain the buffer.
@@ -263,7 +255,7 @@ fn flush(handle: &mut libusb::DeviceHandle) -> Result<(), connector::Error> {
     let timeout = Duration::from_millis(1);
 
     match handle.read_bulk(YUBIHSM2_BULK_IN_ENDPOINT, &mut buffer, timeout) {
-        Ok(_) | Err(libusb::Error::Timeout) => Ok(()),
+        Ok(_) | Err(rusb::Error::Timeout) => Ok(()),
         Err(e) => Err(e.into()),
     }
 }

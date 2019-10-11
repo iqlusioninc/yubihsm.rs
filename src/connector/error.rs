@@ -3,8 +3,6 @@
 use failure::Fail;
 #[cfg(feature = "http")]
 use gaunt;
-#[cfg(feature = "usb")]
-use libusb;
 use std::{fmt, io, num::ParseIntError, str::Utf8Error};
 
 /// `yubihsm-connector` related errors
@@ -76,12 +74,12 @@ impl From<gaunt::Error> for Error {
 }
 
 #[cfg(feature = "usb")]
-impl From<libusb::Error> for Error {
-    fn from(err: libusb::Error) -> Error {
+impl From<rusb::Error> for Error {
+    fn from(err: rusb::Error) -> Error {
         match err {
-            libusb::Error::Access => err!(ErrorKind::AccessDenied, "{}", err),
-            libusb::Error::Io => err!(ErrorKind::IoError, "{}", err),
-            libusb::Error::Pipe => err!(ErrorKind::UsbError, "lost connection to USB device"),
+            rusb::Error::Access => err!(ErrorKind::AccessDenied, "{}", err),
+            rusb::Error::Io => err!(ErrorKind::IoError, "{}", err),
+            rusb::Error::Pipe => err!(ErrorKind::UsbError, "lost connection to USB device"),
             _ => err!(ErrorKind::UsbError, "{}", err),
         }
     }
