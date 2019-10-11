@@ -171,7 +171,7 @@ impl Session {
         if response.is_err() {
             if let Some(kind) = device::ErrorKind::from_response_message(&response) {
                 session_debug!(self, "uuid={} failed={:?} error={:?}", uuid, cmd_type, kind);
-                Err(kind)?;
+                return Err(kind.into());
             } else {
                 session_debug!(self, "uuid={} failed={:?} error=unknown", uuid, cmd_type);
                 fail!(ErrorKind::ResponseError, "{:?} failed: HSM error", cmd_type);

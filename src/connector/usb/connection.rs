@@ -113,7 +113,7 @@ fn recv_message(
                 );
             }
             // All other errors we return immediately
-            Err(err) => Err(err)?,
+            Err(err) => return Err(err.into()),
         }
     }
 

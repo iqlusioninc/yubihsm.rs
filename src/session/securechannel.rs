@@ -123,7 +123,7 @@ impl SecureChannel {
                     "auth key not found: 0x{:04x}",
                     credentials.authentication_key_id
                 ),
-                Some(kind) => Err(kind)?,
+                Some(kind) => return Err(kind.into()),
                 None => fail!(
                     ErrorKind::ResponseError,
                     "HSM error: {:?}",

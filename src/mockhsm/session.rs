@@ -54,7 +54,7 @@ impl HsmSession {
 }
 
 impl Debug for HsmSession {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "mockhsm::Session {{ id: {} }}", self.id.to_u8())
     }
 }
