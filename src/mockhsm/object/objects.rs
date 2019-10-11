@@ -264,7 +264,7 @@ impl Objects {
     }
 
     /// Iterate over the objects
-    pub fn iter(&self) -> Iter {
+    pub fn iter(&self) -> Iter<'_> {
         self.0.iter()
     }
 }

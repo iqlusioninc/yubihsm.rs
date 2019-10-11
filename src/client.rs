@@ -113,7 +113,7 @@ impl Client {
 
     /// Get current `Session` (either opening a new one or returning an already
     /// open one).
-    pub fn session(&self) -> Result<session::Guard, Error> {
+    pub fn session(&self) -> Result<session::Guard<'_>, Error> {
         // TODO(tarcieri): handle PoisonError better?
         let mut session_mutex_guard = self.session.lock().unwrap();
 
@@ -171,7 +171,7 @@ impl Client {
                 if e.kind() == session::ErrorKind::CommandLimitExceeded {
                     Ok(self.session()?.send_command(&command)?)
                 } else {
-                    Err(e)?
+                    Err(e.into())
                 }
             }
         }

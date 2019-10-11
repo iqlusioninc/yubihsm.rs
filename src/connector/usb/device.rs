@@ -153,7 +153,7 @@ impl Devices {
     }
 
     /// Iterate over the detected YubiHSM 2s
-    pub fn iter(&self) -> Iter<Device> {
+    pub fn iter(&self) -> Iter<'_, Device> {
         self.0.iter()
     }
 }
@@ -234,7 +234,7 @@ impl Device {
 }
 
 impl Debug for Device {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "yubihsm::connector::usb::Device(bus={} addr={} serial=#{})",
