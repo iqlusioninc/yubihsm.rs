@@ -46,7 +46,7 @@ impl Connectable for MockHsm {
     }
 
     /// Create a new connection with a clone of the MockHsm state
-    fn connect(&self) -> Result<Box<Connection>, connector::Error> {
+    fn connect(&self) -> Result<Box<dyn Connection>, connector::Error> {
         Ok(Box::new(MockConnection::new(self)))
     }
 }
@@ -58,7 +58,7 @@ impl Default for MockHsm {
 }
 
 impl Into<Box<dyn Connectable>> for MockHsm {
-    fn into(self) -> Box<Connectable> {
+    fn into(self) -> Box<dyn Connectable> {
         Box::new(self)
     }
 }

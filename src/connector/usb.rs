@@ -63,8 +63,8 @@ impl Connectable for UsbConnector {
     }
 }
 
-impl Into<Box<Connectable>> for UsbConnector {
-    fn into(self) -> Box<Connectable> {
+impl Into<Box<dyn Connectable>> for UsbConnector {
+    fn into(self) -> Box<dyn Connectable> {
         Box::new(self)
     }
 }

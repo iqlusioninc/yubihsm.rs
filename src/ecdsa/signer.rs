@@ -15,11 +15,10 @@ use signatory::{
     signature::{DigestSigner, Error, Signature},
 };
 use signature::digest::Digest;
-use signature_derive::Signer;
 use std::marker::PhantomData;
 
 /// ECDSA signature provider for yubihsm-client
-#[derive(Signer)]
+#[derive(signature::Signer)]
 pub struct Signer<C>
 where
     C: WeierstrassCurve,

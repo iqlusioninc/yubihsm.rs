@@ -49,7 +49,7 @@ pub struct Connector {
     connection: Arc<Mutex<Option<Box<dyn Connection>>>>,
 
     /// Backend connector driver
-    driver: Box<Connectable>,
+    driver: Box<dyn Connectable>,
 }
 
 impl Connector {
