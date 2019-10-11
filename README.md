@@ -21,7 +21,7 @@ It provides two backends for communicating with YubiHSMs:
 - [HTTP][http-connector]: communicate with YubiHSM via the `yubihsm-connector`
   process from the Yubico SDK.
 - [USB][usb-connector]: communicate directly with the YubiHSM over USB using
-  the [libusb] crate.
+  the [rusb] crate.
 
 The [yubihsm::Client] type provides access to [HSM commands][command].
 
@@ -184,7 +184,7 @@ See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT) for details.
 [usb-connector]: https://docs.rs/yubihsm/latest/yubihsm/connector/struct.Connector.html#method.usb
 [yubihsm::Client]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html
 [command]: https://developers.yubico.com/YubiHSM2/Commands/
-[libusb]: https://github.com/dcuddeback/libusb-rs
+[rusb]: https://github.com/a1ien/rusb
 [thinks it's awesome]: https://twitter.com/Yubico/status/971186516796915712
 [YubiHSM2 commands]: https://developers.yubico.com/YubiHSM2/Commands/
 [Serde-based message parser]: https://github.com/tendermint/yubihsm-rs/tree/develop/src/serialization

@@ -7,7 +7,6 @@ use crate::{
     command::MAX_MSG_SIZE,
     connector::{self, Connection, ErrorKind::UsbError, Message},
 };
-use libusb;
 use std::sync::Mutex;
 use uuid::Uuid;
 
@@ -17,7 +16,7 @@ const MAX_RECV_RETRIES: usize = 3;
 /// Connection to HSM via USB
 pub struct UsbConnection {
     /// Handle to the underlying USB device
-    handle: Mutex<libusb::DeviceHandle<'static>>,
+    handle: Mutex<rusb::DeviceHandle<rusb::GlobalContext>>,
 
     /// YubiHSM 2 USB device this connection is connected to
     device: Device,
@@ -32,7 +31,7 @@ impl UsbConnection {
         Devices::open(config.serial, UsbTimeout::from_millis(config.timeout_ms))
     }
 
-    /// Create a new YubiHSM device from a libusb device
+    /// Create a new YubiHSM device from a rusb device
     pub(super) fn create(device: Device, timeout: UsbTimeout) -> Result<Self, connector::Error> {
         let mut handle = device.open_handle()?;
 
@@ -73,7 +72,7 @@ impl Default for UsbConnection {
 
 /// Write a bulk message to the YubiHSM 2
 fn send_message(
-    handle: &mut libusb::DeviceHandle,
+    handle: &mut rusb::DeviceHandle<rusb::GlobalContext>,
     data: &[u8],
     timeout: UsbTimeout,
 ) -> Result<usize, connector::Error> {
@@ -93,7 +92,7 @@ fn send_message(
 
 /// Receive a message
 fn recv_message(
-    handle: &mut libusb::DeviceHandle,
+    handle: &mut rusb::DeviceHandle<rusb::GlobalContext>,
     timeout: UsbTimeout,
 ) -> Result<Message, connector::Error> {
     // Allocate a buffer which is the maximum size we expect to receive
@@ -107,7 +106,7 @@ fn recv_message(
             }
             // Sometimes I/O errors occur sporadically. When this happens,
             // retry the read for `MAX_RECV_RETRIES` attempts
-            Err(libusb::Error::Io) => {
+            Err(rusb::Error::Io) => {
                 debug!(
                     "I/O error during USB bulk message receive, retrying ({} attempts remaining)",
                     attempts_remaining
