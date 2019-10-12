@@ -1,16 +1,15 @@
 //! Objects stored in the `MockHsm`
 
-use failure::{bail, format_err, Error};
-use ring::aead::{self, AES_128_GCM, AES_256_GCM};
-use std::collections::{btree_map::Iter as BTreeMapIter, BTreeMap};
-
 use super::{Object, Payload, WrappedObject, DEFAULT_AUTHENTICATION_KEY_LABEL};
 use crate::{
     authentication::{self, DEFAULT_AUTHENTICATION_KEY_ID},
+    mockhsm::{Error, ErrorKind},
     object::{Handle, Id, Info, Label, Origin, Type},
     serialization::{deserialize, serialize},
     wrap, Algorithm, Capability, Domain,
 };
+use ring::aead::{self, AES_128_GCM, AES_256_GCM};
+use std::collections::{btree_map::Iter as BTreeMapIter, BTreeMap};
 
 /// Objects stored in the `MockHsm`
 #[derive(Debug)]
@@ -147,7 +146,11 @@ impl Objects {
     ) -> Result<Vec<u8>, Error> {
         let wrap_key = match self.get(wrap_key_id, Type::WrapKey) {
             Some(k) => k,
-            None => bail!("no such wrap key: {:?}", wrap_key_id),
+            None => fail!(
+                ErrorKind::ObjectNotFound,
+                "no such wrap key: {:?}",
+                wrap_key_id
+            ),
         };
 
         let sealing_key = match wrap_key.algorithm().wrap().unwrap() {
@@ -158,13 +161,22 @@ impl Objects {
             wrap::Algorithm::Aes256Ccm => {
                 aead::UnboundKey::new(&AES_256_GCM, wrap_key.payload.as_ref())
             }
-            unsupported => bail!("unsupported wrap key algorithm: {:?}", unsupported),
+            unsupported => fail!(
+                ErrorKind::UnsupportedAlgorithm,
+                "unsupported wrap key algorithm: {:?}",
+                unsupported
+            ),
         }
         .unwrap();
 
         let object_to_wrap = match self.get(object_id, object_type) {
             Some(o) => o,
-            None => bail!("no such {:?} object: {:?}", object_type, object_id),
+            None => fail!(
+                ErrorKind::ObjectNotFound,
+                "no such {:?} object: {:?}",
+                object_type,
+                object_id
+            ),
         };
 
         if !object_to_wrap
@@ -172,7 +184,8 @@ impl Objects {
             .capabilities
             .contains(Capability::EXPORTABLE_UNDER_WRAP)
         {
-            bail!(
+            fail!(
+                ErrorKind::AccessDenied,
                 "object {:?} of type {:?} does not have EXPORT_UNDER_WRAP capability",
                 object_id,
                 object_type
@@ -222,10 +235,18 @@ impl Objects {
                 wrap::Algorithm::Aes256Ccm => {
                     aead::UnboundKey::new(&AES_256_GCM, k.payload.as_ref())
                 }
-                unsupported => bail!("unsupported wrap key algorithm: {:?}", unsupported),
+                unsupported => fail!(
+                    ErrorKind::UnsupportedAlgorithm,
+                    "unsupported wrap key algorithm: {:?}",
+                    unsupported
+                ),
             }
             .unwrap(),
-            None => bail!("no such wrap key: {:?}", wrap_key_id),
+            None => fail!(
+                ErrorKind::ObjectNotFound,
+                "no such wrap key: {:?}",
+                wrap_key_id
+            ),
         };
 
         let mut wrapped_data: Vec<u8> = ciphertext.into();
@@ -239,7 +260,7 @@ impl Objects {
                 aead::Aad::from(b""),
                 &mut wrapped_data,
             )
-            .map_err(|_| format_err!("error decrypting wrapped object!"))?;
+            .map_err(|_| format_err!(ErrorKind::CryptoError, "error decrypting wrapped object!"))?;
 
         let unwrapped_object: WrappedObject = deserialize(plaintext).unwrap();
 

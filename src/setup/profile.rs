@@ -1,9 +1,7 @@
 //! Device provisioning profiles: all attributes required to initialize a device
 
-use super::role::Role;
-use super::Report;
+use super::{role::Role, Error, Report};
 use crate::{object, wrap, AuditOption, Client};
-use failure::Error;
 use std::time::Duration;
 
 /// Temporary account key to use for device provisioning.

@@ -1,87 +1,66 @@
 //! Error types
 
-pub use failure::{Backtrace, Context, Fail};
-use std::{
-    error::Error as StdError,
-    fmt::{self, Display},
-};
-
-/// Placeholder for when we have no description for an error
-const NO_DESCRIPTION: &str = "(no description)";
+use std::fmt::{self, Debug, Display};
 
 /// Error types used by this library
 #[derive(Debug)]
-pub struct Error<T>
+pub struct Error<K>
 where
-    T: Copy + Display + Fail + PartialEq + Eq,
+    K: Copy + Debug + Display + PartialEq + Eq,
 {
-    inner: Context<T>,
-    description: Option<String>,
+    /// Kind of error
+    kind: K,
+
+    /// Optional associated error message
+    msg: Option<String>,
 }
 
-impl<T> Error<T>
+impl<K> Error<K>
 where
-    T: Copy + Display + Fail + PartialEq + Eq,
+    K: Copy + Debug + Display + PartialEq + Eq,
 {
     /// Create a new error type from its kind
-    pub fn new(kind: T, description: Option<String>) -> Self {
-        Self {
-            inner: Context::new(kind),
-            description,
-        }
+    pub fn new(kind: K, msg: Option<String>) -> Self {
+        Self { kind, msg }
     }
 
     /// Obtain the error's `Kind`
-    pub fn kind(&self) -> T {
-        *self.inner.get_context()
+    pub fn kind(&self) -> K {
+        self.kind
     }
 }
 
-impl<T> Display for Error<T>
+impl<K> Display for Error<K>
 where
-    T: Copy + Display + Fail + PartialEq + Eq,
+    K: Copy + Debug + Display + PartialEq + Eq,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self.description {
-            None => Display::fmt(&self.inner, f),
-            Some(ref desc) => {
-                if desc == NO_DESCRIPTION {
-                    Display::fmt(&self.inner, f)
-                } else {
-                    write!(f, "{}: {}", &self.inner, desc)
-                }
-            }
+        write!(f, "{}", self.kind)?;
+
+        if let Some(msg) = &self.msg {
+            write!(f, ": {}", msg)?;
         }
+
+        Ok(())
     }
 }
 
-impl<T> StdError for Error<T>
-where
-    T: Copy + Display + Fail + PartialEq + Eq,
-{
-    /// Obtain the error's description
-    fn description(&self) -> &str {
-        match self.description {
-            Some(ref s) => s,
-            None => NO_DESCRIPTION,
-        }
-    }
-}
+impl<K> std::error::Error for Error<K> where K: Copy + Debug + Display + PartialEq + Eq {}
 
 /// Create a new error (of a given kind) with a formatted message
-macro_rules! err {
+macro_rules! format_err {
     ($kind:path, $msg:expr) => {
         crate::error::Error::new($kind, Some($msg.to_string()))
     };
     ($kind:path, $fmt:expr, $($arg:tt)+) => {
-        err!($kind, &format!($fmt, $($arg)+))
+        format_err!($kind, &format!($fmt, $($arg)+))
     };
 }
 
 /// Create and return an error with a formatted message
 macro_rules! fail {
     ($kind:path, $msg:expr) => {
-        return Err(err!($kind, $msg).into());
+        return Err(format_err!($kind, $msg).into());
     };
     ($kind:path, $fmt:expr, $($arg:tt)+) => {
         fail!($kind, &format!($fmt, $($arg)+));
@@ -92,12 +71,12 @@ macro_rules! fail {
 macro_rules! ensure {
     ($cond:expr, $kind:path, $msg:expr) => {
         if !($cond) {
-            return Err(err!($kind, $msg).into());
+            return Err(format_err!($kind, $msg).into());
         }
     };
     ($cond:expr, $kind:path, $fmt:expr, $($arg:tt)+) => {
         if !($cond) {
-            return Err(err!($kind, $fmt, $($arg)+).into());
+            return Err(format_err!($kind, $fmt, $($arg)+).into());
         }
     };
 }

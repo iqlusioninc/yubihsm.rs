@@ -1,6 +1,6 @@
 //! Object labels: descriptions of objects
 
-use failure::{bail, format_err, Error};
+use super::{Error, ErrorKind};
 use std::{
     fmt::{self, Debug, Display},
     ops::{Deref, DerefMut},
@@ -20,7 +20,8 @@ impl Label {
     /// Create a new label from a slice, returning an error if it's over 40-bytes
     pub fn from_bytes(label_slice: &[u8]) -> Result<Self, Error> {
         if label_slice.len() > LABEL_SIZE {
-            bail!(
+            fail!(
+                ErrorKind::LabelInvalid,
                 "label too long: {}-bytes (max {})",
                 label_slice.len(),
                 LABEL_SIZE
@@ -38,7 +39,7 @@ impl Label {
             Some(pos) => &self.0[..pos],
             None => self.0.as_ref(),
         })
-        .map_err(|err| format_err!("{}", err))
+        .map_err(|err| format_err!(ErrorKind::LabelInvalid, "{}", err))
     }
 }
 

@@ -40,7 +40,7 @@ impl Server {
     /// Create a new HTTP service which provides access to the YubiHSM2
     pub fn new(config: &HttpConfig, connector: Connector) -> Result<Server, Error> {
         let server = http::Server::http(format!("{}:{}", &config.addr, config.port))
-            .map_err(|e| err!(AddrInvalid, "couldn't create HTTP server: {}", e))?;
+            .map_err(|e| format_err!(AddrInvalid, "couldn't create HTTP server: {}", e))?;
 
         info!(
             "yubihsm::http-server[{}:{}]: listening for connections",
@@ -128,7 +128,7 @@ impl Server {
         let command = command_msg
             .clone()
             .parse()
-            .map_err(|e| err!(RequestError, "couldn't parse request message: {}", e))?;
+            .map_err(|e| format_err!(RequestError, "couldn't parse request message: {}", e))?;
 
         let started_at = Instant::now();
         let response_msg = self.connector.send_message(uuid::new_v4(), command_msg)?;

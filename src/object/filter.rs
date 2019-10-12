@@ -87,18 +87,20 @@ impl Filter {
         Ok(match tag {
             0x01 => Filter::Id(read_be_bytes!(reader, u16)),
             0x02 => Filter::Type(
-                object::Type::from_u8(read_byte!(reader)).map_err(|e| err!(ProtocolError, e))?,
+                object::Type::from_u8(read_byte!(reader))
+                    .map_err(|e| format_err!(ProtocolError, e))?,
             ),
             0x03 => Filter::Domains(
                 Domain::from_bits(read_be_bytes!(reader, u16))
-                    .ok_or_else(|| err!(ProtocolError, "invalid domain bitflags"))?,
+                    .ok_or_else(|| format_err!(ProtocolError, "invalid domain bitflags"))?,
             ),
             0x04 => Filter::Capabilities(
                 Capability::from_bits(read_be_bytes!(reader, u64))
-                    .ok_or_else(|| err!(ProtocolError, "invalid capability bitflags"))?,
+                    .ok_or_else(|| format_err!(ProtocolError, "invalid capability bitflags"))?,
             ),
             0x05 => Filter::Algorithm(
-                Algorithm::from_u8(read_byte!(reader)).map_err(|e| err!(ProtocolError, e))?,
+                Algorithm::from_u8(read_byte!(reader))
+                    .map_err(|e| format_err!(ProtocolError, e))?,
             ),
             0x06 => {
                 let mut label_bytes = [0u8; LABEL_SIZE];

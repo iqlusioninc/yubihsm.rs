@@ -1,8 +1,8 @@
 //! Roles for interacting with the YubiHSM 2
 
+use super::{Error, ErrorKind};
 use crate::Client;
 pub use crate::{object, Capability, Credentials, Domain};
-use failure::{format_err, Error};
 
 /// Roles represent accounts on the device with specific permissions
 #[derive(Clone, Debug)]
@@ -74,7 +74,7 @@ impl Role {
                 Default::default(),
                 self.credentials.authentication_key.clone(),
             )
-            .map_err(|e| format_err!("error creating role: {}", e))?;
+            .map_err(|e| format_err!(ErrorKind::SetupFailed, "error creating role: {}", e))?;
 
         Ok(())
     }

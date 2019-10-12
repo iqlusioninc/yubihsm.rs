@@ -1,6 +1,6 @@
 //! `YubiHSM 2` authentication keys (2 * AES-128 symmetric PSK) from which session keys are derived
 
-use failure::Fail;
+use super::{Error, ErrorKind};
 use getrandom::getrandom;
 #[cfg(feature = "hmac")]
 use hmac::Hmac;
@@ -55,7 +55,7 @@ impl Key {
     pub fn from_slice(key_slice: &[u8]) -> Result<Self, Error> {
         ensure!(
             key_slice.len() == SIZE,
-            ErrorKind::SizeInvalid,
+            ErrorKind::KeySizeInvalid,
             "expected {}-byte key, got {}",
             SIZE,
             key_slice.len()
@@ -116,14 +116,3 @@ impl From<[u8; SIZE]> for Key {
 }
 
 impl_array_serializers!(Key, SIZE);
-
-/// `authentication::Key`-related errors
-pub type Error = crate::Error<ErrorKind>;
-
-/// Kinds of `authentication::Key`-related errors
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
-pub enum ErrorKind {
-    /// Size is invalid
-    #[fail(display = "invalid size")]
-    SizeInvalid,
-}

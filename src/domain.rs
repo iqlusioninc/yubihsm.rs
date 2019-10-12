@@ -2,12 +2,11 @@
 
 #![allow(missing_docs)]
 
+mod error;
+
+pub use self::error::{Error, ErrorKind};
 use bitflags::bitflags;
-use failure::{bail, Error};
-use serde::{
-    de::{self, Deserialize, Deserializer, Visitor},
-    ser::{Serialize, Serializer},
-};
+use serde::{de, ser, Deserialize, Serialize};
 use std::fmt;
 
 /// All domains as an array of bitflag types
@@ -62,7 +61,11 @@ impl Domain {
     pub fn at(index: usize) -> Result<Self, Error> {
         match index {
             1..=16 => Ok(DOMAINS[index - 1]),
-            _ => bail!("invalid domain: {} (valid domains are 1-16)", index),
+            _ => fail!(
+                ErrorKind::DomainInvalid,
+                "invalid domain: {} (valid domains are 1-16)",
+                index
+            ),
         }
     }
 }
@@ -70,7 +73,7 @@ impl Domain {
 impl Serialize for Domain {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: Serializer,
+        S: ser::Serializer,
     {
         serializer.serialize_u16(self.bits())
     }
@@ -79,11 +82,11 @@ impl Serialize for Domain {
 impl<'de> Deserialize<'de> for Domain {
     fn deserialize<D>(deserializer: D) -> Result<Domain, D::Error>
     where
-        D: Deserializer<'de>,
+        D: de::Deserializer<'de>,
     {
         struct DomainVisitor;
 
-        impl<'de> Visitor<'de> for DomainVisitor {
+        impl<'de> de::Visitor<'de> for DomainVisitor {
             type Value = Domain;
 
             fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {

@@ -1,91 +1,72 @@
 //! Error types which map directly to the YubiHSM2's error codes
 
 use crate::response;
-use failure::Fail;
+use std::fmt;
 
 /// Errors which originate in the HSM
 pub type Error = crate::Error<ErrorKind>;
 
 /// Kinds of errors which originate in the HSM
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum ErrorKind {
     /// Unknown HSM error codes
-    #[fail(display = "unknown HSM error code: 0x{:02x}", code)]
     Unknown {
         /// Unknown error code
         code: u8,
     },
 
     /// Invalid command
-    #[fail(display = "invalid command")]
     InvalidCommand,
 
     /// Invalid data
-    #[fail(display = "invalid data")]
     InvalidData,
 
     /// Invalid session
-    #[fail(display = "invalid session")]
     InvalidSession,
 
     /// Authentication failure
-    #[fail(display = "authentication failed")]
     AuthenticationFailed,
 
     /// Sessions full (HSM has a max of 16)
-    #[fail(display = "sessions full (max 16)")]
     SessionsFull,
 
     /// Session failed
-    #[fail(display = "session failed")]
     SessionFailed,
 
     /// Storage failed
-    #[fail(display = "storage failed")]
     StorageFailed,
 
     /// Wrong length
-    #[fail(display = "incorrect length")]
     WrongLength,
 
     /// Insufficient permissions
-    #[fail(display = "invalid permissions")]
     InsufficientPermissions,
 
     /// Audit log full
-    #[fail(display = "audit log full")]
     LogFull,
 
     /// Object not found
-    #[fail(display = "object not found")]
     ObjectNotFound,
 
     /// Invalid ID
-    #[fail(display = "invalid ID")]
     InvalidId,
 
     /// Invalid OTP
-    #[fail(display = "invalid OTP")]
     InvalidOtp,
 
     /// Demo mode(?)
-    #[fail(display = "demo mode")]
     DemoMode,
 
     /// Command unexecuted
-    #[fail(display = "command unexecuted")]
     CommandUnexecuted,
 
     /// Generic error
-    #[fail(display = "generic error")]
     GenericError,
 
     /// Object already exists
-    #[fail(display = "object already exists")]
     ObjectExists,
 
     /// SSH CA constraint violation
-    #[fail(display = "SSH CA constraint violation")]
     SshCaConstraintViolation,
 }
 
@@ -174,6 +155,32 @@ impl ErrorKind {
             Some(ErrorKind::from_u8(response.data[0]))
         } else {
             None
+        }
+    }
+}
+
+impl fmt::Display for ErrorKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ErrorKind::Unknown { code } => write!(f, "unknown HSM error code: 0x{:02x}", code),
+            ErrorKind::InvalidCommand => f.write_str("invalid command"),
+            ErrorKind::InvalidData => f.write_str("invalid data"),
+            ErrorKind::InvalidSession => f.write_str("invalid session"),
+            ErrorKind::AuthenticationFailed => f.write_str("authentication failed"),
+            ErrorKind::SessionsFull => f.write_str("sessions full (max 16)"),
+            ErrorKind::SessionFailed => f.write_str("session failed"),
+            ErrorKind::StorageFailed => f.write_str("storage failed"),
+            ErrorKind::WrongLength => f.write_str("incorrect length"),
+            ErrorKind::InsufficientPermissions => f.write_str("invalid permissions"),
+            ErrorKind::LogFull => f.write_str("audit log full"),
+            ErrorKind::ObjectNotFound => f.write_str("object not found"),
+            ErrorKind::InvalidId => f.write_str("invalid ID"),
+            ErrorKind::InvalidOtp => f.write_str("invalid OTP"),
+            ErrorKind::DemoMode => f.write_str("demo mode"),
+            ErrorKind::CommandUnexecuted => f.write_str("command unexecuted"),
+            ErrorKind::GenericError => f.write_str("generic error"),
+            ErrorKind::ObjectExists => f.write_str("object already exists"),
+            ErrorKind::SshCaConstraintViolation => f.write_str("SSH CA constraint violation"),
         }
     }
 }

@@ -22,7 +22,7 @@ macro_rules! usb_debug {
 /// Create `UsbError`s that include bus and address information
 macro_rules! usb_err {
     ($device:expr, $msg:expr) => {
-        err!(
+        format_err!(
             UsbError,
             "USB(bus={},addr={}): {}",
             $device.bus_number(),
@@ -31,7 +31,7 @@ macro_rules! usb_err {
         );
     };
     ($device:expr, $fmt:expr, $($arg:tt)+) => {
-        err!(
+        format_err!(
             UsbError,
             concat!("USB(bus={},addr={}): ", $fmt),
             $device.bus_number(),

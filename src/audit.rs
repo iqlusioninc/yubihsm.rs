@@ -1,9 +1,10 @@
 //! Auditing options (for use with the `get_option` and `put_option` command)
 
 pub(crate) mod commands;
+mod error;
 
+pub use self::error::{Error, ErrorKind};
 use crate::command;
-use failure::{bail, Error};
 use serde::{de, ser, Deserialize, Serialize};
 use std::fmt;
 
@@ -44,7 +45,11 @@ impl AuditOption {
             0x00 => AuditOption::Off,
             0x01 => AuditOption::On,
             0x02 => AuditOption::Fix,
-            _ => bail!("invalid audit option value: {}", byte),
+            _ => fail!(
+                ErrorKind::OptionInvalid,
+                "invalid audit option value: {}",
+                byte
+            ),
         })
     }
 
@@ -72,12 +77,12 @@ impl<'de> Deserialize<'de> for AuditOption {
             }
 
             fn visit_u8<E: de::Error>(self, value: u8) -> Result<AuditOption, E> {
-                AuditOption::from_u8(value).or_else(|e| Err(E::custom(format!("{}", e))))
+                AuditOption::from_u8(value).or_else(|e| Err(E::custom(e)))
             }
 
             fn visit_u64<E: de::Error>(self, value: u64) -> Result<AuditOption, E> {
                 assert!(value < 255);
-                AuditOption::from_u8(value as u8).or_else(|e| Err(E::custom(format!("{}", e))))
+                AuditOption::from_u8(value as u8).or_else(|e| Err(E::custom(e)))
             }
         }
 
@@ -99,7 +104,7 @@ impl AuditTag {
         Ok(match byte {
             0x01 => AuditTag::Force,
             0x03 => AuditTag::Command,
-            _ => bail!("invalid audit tag value: {}", byte),
+            _ => fail!(ErrorKind::TagInvalid, "invalid audit tag value: {}", byte),
         })
     }
 

@@ -9,12 +9,16 @@ use std::sync::{Arc, Mutex};
 mod audit;
 mod command;
 mod connection;
+mod error;
 mod object;
 mod session;
 mod state;
 
-pub use self::connection::MockConnection;
 use self::state::State;
+pub use self::{
+    connection::MockConnection,
+    error::{Error, ErrorKind},
+};
 use crate::connector::{self, Connectable, Connection};
 
 /// Mock serial number for the MockHsm

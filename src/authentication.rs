@@ -4,6 +4,12 @@
 mod algorithm;
 pub mod commands;
 mod credentials;
+mod error;
 pub mod key;
 
-pub use self::{algorithm::Algorithm, credentials::*, key::Key};
+pub use self::{
+    algorithm::Algorithm,
+    credentials::*,
+    error::{Error, ErrorKind},
+    key::Key,
+};

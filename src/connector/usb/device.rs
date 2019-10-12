@@ -91,7 +91,7 @@ impl Devices {
                 .map_err(|e| usb_err!(device, "error opening device: {}", e))?;
 
             handle.reset().map_err(|error| match error {
-                rusb::Error::NoDevice => err!(
+                rusb::Error::NoDevice => format_err!(
                     DeviceBusyError,
                     "USB(bus={},addr={}): couldn't reset device (already in use or disconnected)",
                     device.bus_number(),
@@ -117,7 +117,7 @@ impl Devices {
             let serial_number: SerialNumber = handle
                 .read_serial_number_string(language, &desc, t)?
                 .parse()
-                .map_err(|e| err!(AddrInvalid, "{}", e))?;
+                .map_err(|e| format_err!(AddrInvalid, "{}", e))?;
 
             debug!(
                 "USB(bus={},addr={}): found {} (serial #{})",

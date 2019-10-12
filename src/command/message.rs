@@ -106,7 +106,7 @@ impl Message {
         }
 
         let command_type =
-            command::Code::from_u8(bytes[0]).map_err(|e| err!(ProtocolError, "{}", e))?;
+            command::Code::from_u8(bytes[0]).map_err(|e| format_err!(ProtocolError, "{}", e))?;
 
         let mut length_bytes = [0u8; 2];
         length_bytes.copy_from_slice(&bytes[1..3]);
