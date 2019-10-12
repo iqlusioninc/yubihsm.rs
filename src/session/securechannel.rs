@@ -143,7 +143,7 @@ impl SecureChannel {
 
         let id = response_message
             .session_id
-            .ok_or_else(|| err!(ErrorKind::CreateFailed, "no session ID in response"))?;
+            .ok_or_else(|| format_err!(ErrorKind::CreateFailed, "no session ID in response"))?;
 
         let session_response: CreateSessionResponse = deserialize(response_message.data.as_ref())?;
 
@@ -331,7 +331,7 @@ impl SecureChannel {
             .decrypt(&mut response_message)
             .map_err(|e| {
                 self.terminate();
-                err!(
+                format_err!(
                     ErrorKind::ProtocolError,
                     "error decrypting response: {:?}",
                     e
@@ -355,7 +355,7 @@ impl SecureChannel {
 
         let session_id = response.session_id.ok_or_else(|| {
             self.terminate();
-            err!(ErrorKind::ProtocolError, "no session ID in response")
+            format_err!(ErrorKind::ProtocolError, "no session ID in response")
         })?;
 
         if self.id != session_id {
@@ -458,7 +458,7 @@ impl SecureChannel {
             .decrypt(&mut command_data)
             .map_err(|e| {
                 self.terminate();
-                err!(
+                format_err!(
                     ErrorKind::ProtocolError,
                     "error decrypting command: {:?}",
                     e

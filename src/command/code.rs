@@ -1,10 +1,7 @@
 //! YubiHSM2 command codes
 
-use failure::{bail, Error};
-use serde::{
-    de::{Deserialize, Deserializer, Error as DeError},
-    ser::{Serialize, Serializer},
-};
+use super::{Error, ErrorKind};
+use serde::{de, ser, Deserialize, Serialize};
 
 /// Command IDs for `YubiHSM 2` operations
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
@@ -127,7 +124,7 @@ impl Code {
             0x6b => Code::BlinkDevice,
             0x6c => Code::ChangeAuthenticationKey,
             0x7f => Code::Error,
-            _ => bail!("invalid command type: {}", byte),
+            _ => fail!(ErrorKind::CodeInvalid, "invalid command type: {}", byte),
         })
     }
 
@@ -140,7 +137,7 @@ impl Code {
 impl Serialize for Code {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: Serializer,
+        S: ser::Serializer,
     {
         serializer.serialize_u8(self.to_u8())
     }
@@ -149,9 +146,9 @@ impl Serialize for Code {
 impl<'de> Deserialize<'de> for Code {
     fn deserialize<D>(deserializer: D) -> Result<Code, D::Error>
     where
-        D: Deserializer<'de>,
+        D: de::Deserializer<'de>,
     {
-        Code::from_u8(u8::deserialize(deserializer)?)
-            .or_else(|e| Err(D::Error::custom(format!("{}", e))))
+        use de::Error;
+        Code::from_u8(u8::deserialize(deserializer)?).map_err(D::Error::custom)
     }
 }

@@ -1,8 +1,7 @@
 //! Information about where a key originates (i.e. where it was generated)
 
-use failure::{bail, Error};
-use serde::de::{self, Deserialize, Deserializer, Visitor};
-use serde::ser::{Serialize, Serializer};
+use super::{Error, ErrorKind};
+use serde::{de, ser, Deserialize, Serialize};
 use std::fmt;
 
 /// Information about how a key was originally generated
@@ -29,7 +28,7 @@ impl Origin {
             0x02 => Origin::Imported,
             0x11 => Origin::WrappedGenerated,
             0x12 => Origin::WrappedImported,
-            _ => bail!("invalid object origin: {}", byte),
+            _ => fail!(ErrorKind::OriginInvalid, "invalid object origin: {}", byte),
         })
     }
 
@@ -42,7 +41,7 @@ impl Origin {
 impl Serialize for Origin {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: Serializer,
+        S: ser::Serializer,
     {
         serializer.serialize_u8(self.to_u8())
     }
@@ -51,11 +50,11 @@ impl Serialize for Origin {
 impl<'de> Deserialize<'de> for Origin {
     fn deserialize<D>(deserializer: D) -> Result<Origin, D::Error>
     where
-        D: Deserializer<'de>,
+        D: de::Deserializer<'de>,
     {
         struct OriginVisitor;
 
-        impl<'de> Visitor<'de> for OriginVisitor {
+        impl<'de> de::Visitor<'de> for OriginVisitor {
             type Value = Origin;
 
             fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -66,7 +65,7 @@ impl<'de> Deserialize<'de> for Origin {
             where
                 E: de::Error,
             {
-                Origin::from_u8(value).or_else(|e| Err(E::custom(format!("{}", e))))
+                Origin::from_u8(value).map_err(E::custom)
             }
         }
 

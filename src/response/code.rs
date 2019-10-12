@@ -1,11 +1,8 @@
 //! Response codes
 
+use super::{Error, ErrorKind};
 use crate::command;
-use failure::{bail, Error};
-use serde::{
-    de::{Deserialize, Deserializer, Error as DeError},
-    ser::{Serialize, Serializer},
-};
+use serde::{de, ser, Deserialize, Serialize};
 
 /// Codes associated with HSM responses
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -110,7 +107,10 @@ impl Code {
         let code = i16::from(byte).checked_sub(0x80).unwrap() as i8;
 
         Ok(match code {
-            0..=0x7F => Code::Success(command::Code::from_u8(code as u8)?),
+            0..=0x7F => Code::Success(
+                command::Code::from_u8(code as u8)
+                    .map_err(|e| format_err!(ErrorKind::CodeInvalid, "{}", e.kind()))?,
+            ),
             -1 => Code::MemoryError,
             -2 => Code::InitError,
             -3 => Code::ConnectionError,
@@ -141,7 +141,7 @@ impl Code {
             -28 => Code::DeviceObjectExists,
             -29 => Code::ConnectorError,
             -30 => Code::DeviceSshCaConstraintViolation,
-            _ => bail!("invalid response code: {}", code),
+            _ => fail!(ErrorKind::CodeInvalid, "invalid response code: {}", code),
         })
     }
 
@@ -201,7 +201,7 @@ impl Code {
 impl Serialize for Code {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: Serializer,
+        S: ser::Serializer,
     {
         serializer.serialize_u8(self.to_u8())
     }
@@ -210,12 +210,13 @@ impl Serialize for Code {
 impl<'de> Deserialize<'de> for Code {
     fn deserialize<D>(deserializer: D) -> Result<Code, D::Error>
     where
-        D: Deserializer<'de>,
+        D: de::Deserializer<'de>,
     {
         let value = u8::deserialize(deserializer)?;
 
+        use de::Error;
         Code::from_u8(value)
             .or_else(|_| Code::from_u8(Code::DeviceOK.to_u8() - value))
-            .or_else(|e| Err(D::Error::custom(format!("{}", e))))
+            .map_err(D::Error::custom)
     }
 }

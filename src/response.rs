@@ -1,10 +1,14 @@
 //! Responses to command sent from the HSM.
 
 mod code;
+mod error;
 mod message;
 
-pub use self::code::Code;
 pub(crate) use self::message::Message;
+pub use self::{
+    code::Code,
+    error::{Error, ErrorKind},
+};
 use crate::command;
 #[cfg(feature = "mockhsm")]
 use crate::serialization::serialize;

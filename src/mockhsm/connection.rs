@@ -22,12 +22,12 @@ impl Connection for MockConnection {
     fn send_message(&self, _uuid: Uuid, message: Message) -> Result<Message, connector::Error> {
         let command = message
             .parse()
-            .map_err(|e| err!(ConnectionFailed, "error parsing command: {}", e))?;
+            .map_err(|e| format_err!(ConnectionFailed, "error parsing command: {}", e))?;
 
         let mut state = self
             .0
             .lock()
-            .map_err(|e| err!(ConnectionFailed, "error obtaining state lock: {}", e))?;
+            .map_err(|e| format_err!(ConnectionFailed, "error obtaining state lock: {}", e))?;
 
         match command.command_type {
             Code::CreateSession => command::create_session(&mut state, &command),

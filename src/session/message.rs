@@ -105,7 +105,7 @@ impl command::Message {
         }
 
         let command_type =
-            command::Code::from_u8(bytes[0]).map_err(|e| err!(ProtocolError, "{}", e))?;
+            command::Code::from_u8(bytes[0]).map_err(|e| format_err!(ProtocolError, "{}", e))?;
 
         let length = BigEndian::read_u16(&bytes[1..3]) as usize;
 
@@ -220,7 +220,7 @@ impl response::Message {
             );
         }
 
-        let code = response::Code::from_u8(bytes[0]).map_err(|e| err!(ProtocolError, "{}", e))?;
+        let code = response::Code::from_u8(bytes[0]).map_err(|e| format_err!(ProtocolError, "{}", e))?;
         let length = BigEndian::read_u16(&bytes[1..3]) as usize;
 
         if length.checked_add(3).unwrap() != bytes.len() {

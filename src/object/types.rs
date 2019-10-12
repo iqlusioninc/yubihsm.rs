@@ -1,14 +1,8 @@
 //! Types of objects
 
-use failure::{bail, Error};
-use serde::{
-    de::{self, Deserialize, Deserializer, Visitor},
-    ser::{Serialize, Serializer},
-};
-use std::{
-    fmt::{self, Display},
-    str::FromStr,
-};
+use super::{Error, ErrorKind};
+use serde::{de, ser, Deserialize, Serialize};
+use std::{fmt, str::FromStr};
 
 /// Types of objects
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
@@ -46,7 +40,7 @@ impl Type {
             0x05 => Type::HmacKey,
             0x06 => Type::Template,
             0x07 => Type::OtpAeadKey,
-            _ => bail!("invalid object type: {}", byte),
+            _ => fail!(ErrorKind::TypeInvalid, "invalid object type: {}", byte),
         })
     }
 
@@ -56,9 +50,9 @@ impl Type {
     }
 }
 
-impl Display for Type {
+impl fmt::Display for Type {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let s = match *self {
+        f.write_str(match *self {
             Type::Opaque => "opaque",
             Type::AuthenticationKey => "authentication-key",
             Type::AsymmetricKey => "asymmetric-key",
@@ -66,9 +60,7 @@ impl Display for Type {
             Type::HmacKey => "hmac-key",
             Type::Template => "template",
             Type::OtpAeadKey => "otp-aead-key",
-        };
-
-        write!(f, "{}", s)
+        })
     }
 }
 
@@ -90,16 +82,16 @@ impl FromStr for Type {
 }
 
 impl Serialize for Type {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+    fn serialize<S: ser::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         serializer.serialize_u8(self.to_u8())
     }
 }
 
 impl<'de> Deserialize<'de> for Type {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Type, D::Error> {
+    fn deserialize<D: de::Deserializer<'de>>(deserializer: D) -> Result<Type, D::Error> {
         struct TypeVisitor;
 
-        impl<'de> Visitor<'de> for TypeVisitor {
+        impl<'de> de::Visitor<'de> for TypeVisitor {
             type Value = Type;
 
             fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -107,12 +99,12 @@ impl<'de> Deserialize<'de> for Type {
             }
 
             fn visit_u8<E: de::Error>(self, value: u8) -> Result<Type, E> {
-                Type::from_u8(value).or_else(|e| Err(E::custom(format!("{}", e))))
+                Type::from_u8(value).map_err(E::custom)
             }
 
             fn visit_u64<E: de::Error>(self, value: u64) -> Result<Type, E> {
                 assert!(value < 255);
-                Type::from_u8(value as u8).or_else(|e| Err(E::custom(format!("{}", e))))
+                Type::from_u8(value as u8).map_err(E::custom)
             }
         }
 

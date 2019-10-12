@@ -4,6 +4,7 @@
 
 #![allow(clippy::new_without_default)]
 
+use super::{Error, ErrorKind};
 use crate::{
     device::SerialNumber,
     object, opaque,
@@ -11,7 +12,6 @@ use crate::{
     Capability, Client, Domain,
 };
 use chrono::{DateTime, Utc};
-use failure::{format_err, Error};
 use serde::{Deserialize, Serialize};
 use std::{env, str::FromStr};
 
@@ -84,7 +84,7 @@ impl Report {
                 opaque::Algorithm::Data,
                 self.to_json(),
             )
-            .map_err(|e| format_err!("{}", e))?;
+            .map_err(|e| format_err!(ErrorKind::ReportFailed, "{}", e))?;
 
         Ok(())
     }
@@ -95,7 +95,12 @@ impl FromStr for Report {
 
     /// Parse a `yubihsm::setup::Report` from its JSON serialization
     fn from_str(s: &str) -> Result<Self, Error> {
-        serde_json::from_str(s)
-            .map_err(|e| format_err!("error parsing yubihsm::setup::Report JSON: {}", e))
+        serde_json::from_str(s).map_err(|e| {
+            format_err!(
+                ErrorKind::ReportFailed,
+                "error parsing yubihsm::setup::Report JSON: {}",
+                e
+            )
+        })
     }
 }

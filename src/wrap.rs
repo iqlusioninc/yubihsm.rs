@@ -3,8 +3,15 @@
 
 mod algorithm;
 pub(crate) mod commands;
+mod error;
 mod key;
 mod message;
 mod nonce;
 
-pub use self::{algorithm::Algorithm, key::Key, message::Message, nonce::Nonce};
+pub use self::{
+    algorithm::Algorithm,
+    error::{Error, ErrorKind},
+    key::Key,
+    message::Message,
+    nonce::Nonce,
+};

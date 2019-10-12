@@ -1,7 +1,7 @@
 //! Wrap messages
 
 use super::nonce::{self, Nonce};
-use failure::{bail, Error};
+use super::{Error, ErrorKind};
 use serde::{Deserialize, Serialize};
 
 /// Wrap wessage (encrypted HSM object or arbitrary data) encrypted under a wrap key
@@ -18,7 +18,11 @@ impl Message {
     /// Load a `Message` from a byte vector
     pub fn from_vec(mut vec: Vec<u8>) -> Result<Self, Error> {
         if vec.len() < nonce::SIZE {
-            bail!("message must be at least {}-bytes", nonce::SIZE);
+            fail!(
+                ErrorKind::LengthInvalid,
+                "message must be at least {}-bytes",
+                nonce::SIZE
+            );
         }
 
         let ciphertext = vec.split_off(nonce::SIZE);
@@ -55,7 +59,6 @@ impl Into<Vec<u8>> for Message {
         let mut vec = Vec::with_capacity(nonce::SIZE + ciphertext.len());
         vec.extend_from_slice(nonce.as_ref());
         vec.append(&mut ciphertext);
-
         vec
     }
 }

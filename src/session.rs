@@ -115,7 +115,7 @@ impl Session {
     pub fn messages_sent(&self) -> Result<usize, Error> {
         self.secure_channel
             .as_ref()
-            .ok_or_else(|| err!(ErrorKind::ClosedError, "session is already closed"))
+            .ok_or_else(|| format_err!(ErrorKind::ClosedError, "session is already closed"))
             .map(SecureChannel::counter)
     }
 
@@ -263,7 +263,7 @@ impl Session {
     fn secure_channel(&mut self) -> Result<&mut SecureChannel, Error> {
         self.secure_channel
             .as_mut()
-            .ok_or_else(|| err!(ErrorKind::ClosedError, "session is already closed"))
+            .ok_or_else(|| format_err!(ErrorKind::ClosedError, "session is already closed"))
     }
 }
 

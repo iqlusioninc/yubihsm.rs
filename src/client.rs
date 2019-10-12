@@ -127,7 +127,7 @@ impl Client {
         let session = Session::open(
             self.connector.clone(),
             self.credentials.as_ref().ok_or_else(|| {
-                err!(
+                format_err!(
                     ErrorKind::AuthenticationError,
                     "session reconnection disabled"
                 )
@@ -406,7 +406,7 @@ impl Client {
             response.0.len()
         );
 
-        AuditOption::from_u8(response.0[0]).map_err(|e| err!(ErrorKind::ProtocolError, e))
+        AuditOption::from_u8(response.0[0]).map_err(|e| format_err!(ErrorKind::ProtocolError, e))
     }
 
     /// Get some number of bytes of pseudo random data generated on the device.
@@ -1081,7 +1081,10 @@ impl Client {
         if result.0 == 1 {
             Ok(())
         } else {
-            Err(err!(ErrorKind::ResponseError, "HMAC verification failure"))
+            Err(format_err!(
+                ErrorKind::ResponseError,
+                "HMAC verification failure"
+            ))
         }
     }
 

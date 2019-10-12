@@ -1,47 +1,39 @@
 //! YubiHSM client errors
 
 use crate::{connector, device, serialization, session};
-use failure::Fail;
-use std::{error::Error as StdError, io};
+use std::{fmt, io};
 
 /// Client errors
 pub type Error = crate::Error<ErrorKind>;
 
 /// Client error kinds
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Fail)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum ErrorKind {
     /// Couldn't authenticate session
-    #[fail(display = "authentication failed")]
     AuthenticationError,
 
     /// Session is closed
-    #[fail(display = "session closed")]
     ClosedSessionError,
 
     /// Errors with the connection to the HSM
-    #[fail(display = "connection error")]
     ConnectorError {
         /// Connection error kind
         kind: connector::ErrorKind,
     },
 
     /// Couldn't create session
-    #[fail(display = "couldn't create session")]
     CreateFailed,
 
     /// Errors originating in the HSM device
-    #[fail(display = "HSM error: {}", kind)]
     DeviceError {
         /// HSM error kind
         kind: device::ErrorKind,
     },
 
     /// Protocol error occurred
-    #[fail(display = "protocol error")]
     ProtocolError,
 
     /// Error response from HSM we can't further specify
-    #[fail(display = "HSM error")]
     ResponseError,
 }
 
@@ -55,11 +47,25 @@ impl ErrorKind {
     }
 }
 
+impl fmt::Display for ErrorKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ErrorKind::AuthenticationError => f.write_str("authentication failed"),
+            ErrorKind::ClosedSessionError => f.write_str("session closed"),
+            ErrorKind::ConnectorError { kind } => write!(f, "connection error: {}", kind),
+            ErrorKind::CreateFailed => f.write_str("couldn't create session"),
+            ErrorKind::DeviceError { kind } => write!(f, "HSM error: {}", kind),
+            ErrorKind::ProtocolError => f.write_str("protocol error"),
+            ErrorKind::ResponseError => f.write_str("HSM error"),
+        }
+    }
+}
+
 // TODO: capture causes?
 impl From<connector::Error> for Error {
     fn from(err: connector::Error) -> Self {
         let kind = ErrorKind::ConnectorError { kind: err.kind() };
-        err!(kind, err.description())
+        format_err!(kind, "{}", err)
     }
 }
 
@@ -78,20 +84,20 @@ impl From<session::Error> for Error {
             session::ErrorKind::ResponseError => ErrorKind::ResponseError,
         };
 
-        err!(kind, err.description())
+        format_err!(kind, "{}", err)
     }
 }
 
 impl From<io::Error> for Error {
     fn from(err: io::Error) -> Self {
-        err!(ErrorKind::ProtocolError, err.description())
+        format_err!(ErrorKind::ProtocolError, "{}", err)
     }
 }
 
 // TODO: capture causes?
 impl From<serialization::Error> for Error {
     fn from(err: serialization::Error) -> Self {
-        err!(ErrorKind::ProtocolError, err.description())
+        format_err!(ErrorKind::ProtocolError, "{}", err)
     }
 }
 

@@ -5,6 +5,7 @@
 
 pub(crate) mod commands;
 mod entry;
+mod error;
 mod filter;
 pub(crate) mod generate;
 mod handle;
@@ -16,6 +17,7 @@ mod types;
 
 pub use self::{
     entry::Entry,
+    error::{Error, ErrorKind},
     filter::Filter,
     handle::Handle,
     info::Info,

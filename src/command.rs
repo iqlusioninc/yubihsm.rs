@@ -2,9 +2,13 @@
 //! by the HSM device, implemented in relevant modules.
 
 mod code;
+mod error;
 mod message;
 
-pub use self::code::Code;
+pub use self::{
+    code::Code,
+    error::{Error, ErrorKind},
+};
 
 pub(crate) use self::message::Message;
 use crate::{response::Response, serialization::serialize};
