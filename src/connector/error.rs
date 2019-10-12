@@ -63,15 +63,15 @@ impl From<io::Error> for Error {
 }
 
 #[cfg(feature = "http")]
-impl From<gaunt::Error> for Error {
-    fn from(err: gaunt::Error) -> Error {
+impl From<harp::Error> for Error {
+    fn from(err: harp::Error) -> Error {
         let kind = match err.kind() {
-            gaunt::ErrorKind::AddrInvalid => ErrorKind::AddrInvalid,
-            gaunt::ErrorKind::IoError => ErrorKind::IoError,
-            gaunt::ErrorKind::ParseError | gaunt::ErrorKind::ResponseError => {
+            harp::ErrorKind::AddrInvalid => ErrorKind::AddrInvalid,
+            harp::ErrorKind::IoError => ErrorKind::IoError,
+            harp::ErrorKind::ParseError | harp::ErrorKind::ResponseError => {
                 ErrorKind::ResponseError
             }
-            gaunt::ErrorKind::RequestError => ErrorKind::RequestError,
+            harp::ErrorKind::RequestError => ErrorKind::RequestError,
         };
 
         format_err!(kind, err)

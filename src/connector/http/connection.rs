@@ -2,7 +2,6 @@
 
 use super::config::HttpConfig;
 use crate::connector::{self, Connection};
-use gaunt;
 use uuid::Uuid;
 
 // TODO: send user agent string
@@ -20,13 +19,13 @@ use uuid::Uuid;
 /// <https://developers.yubico.com/YubiHSM2/Component_Reference/yubihsm-connector/>
 pub struct HttpConnection {
     /// HTTP connection
-    connection: gaunt::Connection,
+    connection: harp::Connection,
 }
 
 impl HttpConnection {
     /// Open a connection to a `yubihsm-connector` service
     pub(crate) fn open(config: &HttpConfig) -> Result<Self, connector::Error> {
-        let connection = gaunt::Connection::new(&config.addr, config.port, &Default::default())?;
+        let connection = harp::Connection::open(&config.addr, config.port, &Default::default())?;
 
         Ok(HttpConnection { connection })
     }
@@ -41,7 +40,7 @@ impl HttpConnection {
         // TODO: send UUID as `X-Request-ID` header, zero copy body creation
         Ok(self
             .connection
-            .post(path, &gaunt::request::Body::from(body))?
+            .post(path, &harp::request::Body::new(body))?
             .into_vec())
     }
 }
