@@ -1,3 +1,10 @@
+## [0.28.0] (2019-10-12)
+
+- Replace `gaunt` with `harp` ([#235])
+- Remove failure ([#234])
+- connector: Switch from `libusb` to `rusb` ([#232])
+- Upgrade to signatory v0.15 ([#231])
+
 ## [0.27.0] (2019-08-11)
 
 - Refactor `Algorithm` names to be camel case and subdivide RSA ([#228])
@@ -272,6 +279,11 @@ to adding support for several commands.
 
 - Initial release
 
+[0.28.0]: https://github.com/tendermint/yubihsm-rs/pull/236
+[#235]: https://github.com/tendermint/yubihsm-rs/pull/235
+[#234]: https://github.com/tendermint/yubihsm-rs/pull/234
+[#232]: https://github.com/tendermint/yubihsm-rs/pull/232
+[#231]: https://github.com/tendermint/yubihsm-rs/pull/231
 [0.27.0]: https://github.com/tendermint/yubihsm-rs/pull/229
 [#228]: https://github.com/tendermint/yubihsm-rs/pull/228
 [#227]: https://github.com/tendermint/yubihsm-rs/pull/227
