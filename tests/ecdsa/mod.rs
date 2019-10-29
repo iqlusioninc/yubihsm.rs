@@ -5,7 +5,11 @@
 use signatory::ecdsa::curve::Secp256k1;
 use signatory::{
     ecdsa::{
-        curve::{NistP256, NistP384, WeierstrassCurve, WeierstrassCurveKind},
+        curve::{
+            point::{CompressedPointSize, UncompressedPointSize},
+            Curve, NistP256, NistP384,
+        },
+        generic_array::{typenum::U1, ArrayLength},
         Asn1Signature,
     },
     public_key::PublicKeyed,
@@ -13,9 +17,11 @@ use signatory::{
 };
 #[cfg(all(feature = "secp256k1", not(feature = "mockhsm")))]
 use signatory_secp256k1::EcdsaVerifier as Secp256k1Verifier;
+use std::ops::Add;
 use yubihsm::{
     asymmetric::{self, signature::Signer as _},
-    ecdsa, object, Client,
+    ecdsa::{self, algorithm::CurveAlgorithm},
+    object, Client,
 };
 
 /// Domain IDs for test key
@@ -33,18 +39,15 @@ const TEST_MESSAGE: &[u8] =
       Digital Signature Algorithm (DSA) which uses elliptic curve cryptography.";
 
 /// Create the signer for this test
-fn create_signer<C>(key_id: object::Id) -> ecdsa::Signer<C>
+fn create_signer<C: Curve>(key_id: object::Id) -> ecdsa::Signer<C>
 where
-    C: WeierstrassCurve,
+    C: Curve + CurveAlgorithm,
+    <C::ScalarSize as Add>::Output: Add<U1> + ArrayLength<u8>,
+    CompressedPointSize<C::ScalarSize>: ArrayLength<u8>,
+    UncompressedPointSize<C::ScalarSize>: ArrayLength<u8>,
 {
     let client = crate::get_hsm_client();
-    let alg = match C::CURVE_KIND {
-        WeierstrassCurveKind::NistP256 => asymmetric::Algorithm::EcP256,
-        WeierstrassCurveKind::NistP384 => asymmetric::Algorithm::EcP384,
-        WeierstrassCurveKind::Secp256k1 => asymmetric::Algorithm::EcK256,
-    };
-
-    create_yubihsm_key(&client, key_id, alg);
+    create_yubihsm_key(&client, key_id, C::asymmetric_algorithm());
     ecdsa::Signer::create(client.clone(), key_id).unwrap()
 }
 

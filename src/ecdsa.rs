@@ -1,6 +1,6 @@
 //! Elliptic Curve Digital Signature Algorithm (ECDSA) support
 
-mod algorithm;
+pub mod algorithm;
 pub(crate) mod commands;
 mod signature;
 mod signer;

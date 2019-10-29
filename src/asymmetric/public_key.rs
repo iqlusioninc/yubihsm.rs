@@ -1,8 +1,17 @@
 //! Public keys for use with asymmetric cryptography / signatures
 
-use crate::{asymmetric, ecdsa, ed25519};
+use crate::{
+    asymmetric,
+    ecdsa::{self, algorithm::CurveAlgorithm},
+    ed25519,
+};
 use serde::{Deserialize, Serialize};
-use signatory::{ecdsa::curve::WeierstrassCurveKind, generic_array::GenericArray};
+use signatory::ecdsa::{
+    curve::point::{CompressedPointSize, UncompressedPointSize},
+    generic_array::{typenum::U1, ArrayLength, GenericArray},
+    Curve,
+};
+use std::ops::Add;
 
 /// Response from `command::get_public_key`
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -45,37 +54,17 @@ impl PublicKey {
     /// Return the ECDSA public key of the given curve type if applicable
     pub fn ecdsa<C>(&self) -> Option<ecdsa::PublicKey<C>>
     where
-        C: ecdsa::curve::WeierstrassCurve,
+        C: Curve + CurveAlgorithm,
+        <C::ScalarSize as Add>::Output: Add<U1> + ArrayLength<u8>,
+        CompressedPointSize<C::ScalarSize>: ArrayLength<u8>,
+        UncompressedPointSize<C::ScalarSize>: ArrayLength<u8>,
     {
-        match self.algorithm {
-            asymmetric::Algorithm::EcP256 => {
-                if C::CURVE_KIND == WeierstrassCurveKind::NistP256 {
-                    Some(ecdsa::PublicKey::from_untagged_point(
-                        GenericArray::from_slice(&self.bytes),
-                    ))
-                } else {
-                    None
-                }
-            }
-            asymmetric::Algorithm::EcP384 => {
-                if C::CURVE_KIND == WeierstrassCurveKind::NistP384 {
-                    Some(ecdsa::PublicKey::from_untagged_point(
-                        GenericArray::from_slice(&self.bytes),
-                    ))
-                } else {
-                    None
-                }
-            }
-            asymmetric::Algorithm::EcK256 => {
-                if C::CURVE_KIND == WeierstrassCurveKind::Secp256k1 {
-                    Some(ecdsa::PublicKey::from_untagged_point(
-                        GenericArray::from_slice(&self.bytes),
-                    ))
-                } else {
-                    None
-                }
-            }
-            _ => None,
+        if self.algorithm == C::asymmetric_algorithm() {
+            Some(ecdsa::PublicKey::from_untagged_point(
+                GenericArray::from_slice(&self.bytes),
+            ))
+        } else {
+            None
         }
     }
 
