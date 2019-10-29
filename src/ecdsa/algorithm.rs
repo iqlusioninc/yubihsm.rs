@@ -1,6 +1,7 @@
 //! ECDSA algorithms (i.e. hash functions)
 
-use crate::algorithm;
+use crate::{algorithm, asymmetric};
+use signatory::ecdsa::curve::{NistP256, NistP384, Secp256k1};
 
 /// Valid algorithms for asymmetric keys
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -42,3 +43,27 @@ impl Algorithm {
 }
 
 impl_algorithm_serializers!(Algorithm);
+
+/// Mappings from ECDSA curves to their corresponding asymmetric algorithm
+pub trait CurveAlgorithm {
+    /// YubiHSM asymmetric algorithm for this elliptic curve
+    fn asymmetric_algorithm() -> asymmetric::Algorithm;
+}
+
+impl CurveAlgorithm for NistP256 {
+    fn asymmetric_algorithm() -> asymmetric::Algorithm {
+        asymmetric::Algorithm::EcP256
+    }
+}
+
+impl CurveAlgorithm for NistP384 {
+    fn asymmetric_algorithm() -> asymmetric::Algorithm {
+        asymmetric::Algorithm::EcP384
+    }
+}
+
+impl CurveAlgorithm for Secp256k1 {
+    fn asymmetric_algorithm() -> asymmetric::Algorithm {
+        asymmetric::Algorithm::EcK256
+    }
+}

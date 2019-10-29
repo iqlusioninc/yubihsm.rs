@@ -103,6 +103,6 @@ impl From<serialization::Error> for Error {
 
 impl From<Error> for signature::Error {
     fn from(client_error: Error) -> signature::Error {
-        signature::Error::from_cause(client_error)
+        signature::Error::from_source(client_error)
     }
 }

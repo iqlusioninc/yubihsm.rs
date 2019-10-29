@@ -2,27 +2,30 @@
 //!
 //! To enable secp256k1 support, build with the `secp256k1` cargo feature enabled.
 
-use crate::{object, Client};
+use crate::{ecdsa::algorithm::CurveAlgorithm, object, Client};
 #[cfg(feature = "secp256k1")]
-use signatory::{ecdsa::curve::Secp256k1, generic_array::GenericArray};
+use signatory::ecdsa::{curve::Secp256k1, generic_array::GenericArray};
 use signatory::{
     ecdsa::{
-        curve::{NistP256, NistP384, WeierstrassCurve},
+        curve::{
+            point::{CompressedPointSize, UncompressedPointSize},
+            Curve, NistP256, NistP384,
+        },
+        generic_array::{
+            typenum::{U1, U32, U48},
+            ArrayLength,
+        },
         Asn1Signature, FixedSignature, PublicKey,
     },
-    generic_array::typenum::{U32, U48},
     public_key::PublicKeyed,
     signature::{DigestSigner, Error, Signature},
 };
 use signature::digest::Digest;
-use std::marker::PhantomData;
+use std::{marker::PhantomData, ops::Add};
 
 /// ECDSA signature provider for yubihsm-client
 #[derive(signature::Signer)]
-pub struct Signer<C>
-where
-    C: WeierstrassCurve,
-{
+pub struct Signer<C: Curve> {
     /// YubiHSM client
     client: Client,
 
@@ -35,7 +38,10 @@ where
 
 impl<C> Signer<C>
 where
-    C: WeierstrassCurve,
+    C: Curve + CurveAlgorithm,
+    <C::ScalarSize as Add>::Output: Add<U1> + ArrayLength<u8>,
+    CompressedPointSize<C::ScalarSize>: ArrayLength<u8>,
+    UncompressedPointSize<C::ScalarSize>: ArrayLength<u8>,
 {
     /// Create a new YubiHSM-backed ECDSA signer
     pub fn create(client: Client, signing_key_id: object::Id) -> Result<Self, Error> {
@@ -54,7 +60,10 @@ where
 
 impl<C> PublicKeyed<PublicKey<C>> for Signer<C>
 where
-    C: WeierstrassCurve,
+    C: Curve + CurveAlgorithm,
+    <C::ScalarSize as Add>::Output: Add<U1> + ArrayLength<u8>,
+    CompressedPointSize<C::ScalarSize>: ArrayLength<u8>,
+    UncompressedPointSize<C::ScalarSize>: ArrayLength<u8>,
 {
     /// Obtain the public key which identifies this signer
     fn public_key(&self) -> Result<PublicKey<C>, Error> {
