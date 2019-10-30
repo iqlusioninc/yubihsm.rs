@@ -1,9 +1,13 @@
+## [0.29.0] (2019-10-29)
+
+- Upgrade to `signatory` v0.16; `zeroize` 1.0 ([#238])
+
 ## [0.28.0] (2019-10-12)
 
 - Replace `gaunt` with `harp` ([#235])
 - Remove failure ([#234])
 - connector: Switch from `libusb` to `rusb` ([#232])
-- Upgrade to signatory v0.15 ([#231])
+- Upgrade to `signatory` v0.15 ([#231])
 
 ## [0.27.0] (2019-08-11)
 
@@ -12,7 +16,7 @@
 - ssh: Initial support for the Sign SSH Certificate command ([#226])
 - template: Add support for get/put commands ([#225])
 - Rename `rsa-preview` cargo feature to `yolocrypto` ([#224])
-- Upgrade to signatory v0.13 ([#223])
+- Upgrade to `signatory` v0.13 ([#223])
 
 ## [0.26.4] (2019-06-24)
 
@@ -41,7 +45,7 @@
 ## [0.24.0] (2019-06-04)
 
 - Eliminate module name prefixes from error types ([#209])
-- Upgrade to zeroize 0.9 ([#208])
+- Upgrade to `zeroize` 0.9 ([#208])
 - Improve `yubihsm::Client`'s `reset_device_and_reconnect` API ([#204])
 - Retry commands after session messages limits are exceeded ([#203])
 
@@ -279,6 +283,8 @@ to adding support for several commands.
 
 - Initial release
 
+[0.29.0]: https://github.com/tendermint/yubihsm-rs/pull/239
+[#238]: https://github.com/tendermint/yubihsm-rs/pull/238
 [0.28.0]: https://github.com/tendermint/yubihsm-rs/pull/236
 [#235]: https://github.com/tendermint/yubihsm-rs/pull/235
 [#234]: https://github.com/tendermint/yubihsm-rs/pull/234
