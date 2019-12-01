@@ -25,9 +25,12 @@ It provides two backends for communicating with YubiHSMs:
 
 The [yubihsm::Client] type provides access to [HSM commands][command].
 
-Note that this is **NOT** an official Yubico project and is in no way supported
+This is **NOT** an official Yubico project and is in no way supported
 or endorsed by Yubico (although whoever runs their Twitter account
 [thinks it's awesome]).
+
+*NOTE: Looking for a YubiKey library instead of YubiHSM? Check out
+[yubikey-piv.rs] instead.*
 
 ## Prerequisites
 
@@ -186,6 +189,7 @@ See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT) for details.
 [command]: https://developers.yubico.com/YubiHSM2/Commands/
 [rusb]: https://github.com/a1ien/rusb
 [thinks it's awesome]: https://twitter.com/Yubico/status/971186516796915712
+[yubikey-piv.rs]: https://github.com/iqlusioninc/yubikey-piv.rs
 [YubiHSM2 commands]: https://developers.yubico.com/YubiHSM2/Commands/
 [Serde-based message parser]: https://github.com/tendermint/yubihsm-rs/tree/develop/src/serialization
 [commands]: https://github.com/tendermint/yubihsm-rs/tree/develop/src/command
