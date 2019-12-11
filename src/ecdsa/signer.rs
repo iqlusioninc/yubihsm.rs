@@ -7,10 +7,7 @@ use crate::{ecdsa::algorithm::CurveAlgorithm, object, Client};
 use signatory::ecdsa::{curve::Secp256k1, generic_array::GenericArray};
 use signatory::{
     ecdsa::{
-        curve::{
-            point::{CompressedPointSize, UncompressedPointSize},
-            Curve, NistP256, NistP384,
-        },
+        curve::{CompressedPointSize, Curve, NistP256, NistP384, UncompressedPointSize},
         generic_array::{
             typenum::{U1, U32, U48},
             ArrayLength,
