@@ -1,3 +1,7 @@
+## [0.30.0] (2019-12-11)
+
+- Upgrade to `signatory` v0.17 ([#241])
+
 ## [0.29.0] (2019-10-29)
 
 - Upgrade to `signatory` v0.16; `zeroize` 1.0 ([#238])
@@ -283,6 +287,8 @@ to adding support for several commands.
 
 - Initial release
 
+[0.30.0]: https://github.com/tendermint/yubihsm-rs/pull/242
+[#241]: https://github.com/tendermint/yubihsm-rs/pull/241
 [0.29.0]: https://github.com/tendermint/yubihsm-rs/pull/239
 [#238]: https://github.com/tendermint/yubihsm-rs/pull/238
 [0.28.0]: https://github.com/tendermint/yubihsm-rs/pull/236
