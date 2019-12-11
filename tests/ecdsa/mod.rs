@@ -5,10 +5,7 @@
 use signatory::ecdsa::curve::Secp256k1;
 use signatory::{
     ecdsa::{
-        curve::{
-            point::{CompressedPointSize, UncompressedPointSize},
-            Curve, NistP256, NistP384,
-        },
+        curve::{CompressedPointSize, Curve, NistP256, NistP384, UncompressedPointSize},
         generic_array::{typenum::U1, ArrayLength},
         Asn1Signature,
     },

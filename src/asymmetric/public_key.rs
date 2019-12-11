@@ -7,7 +7,7 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 use signatory::ecdsa::{
-    curve::point::{CompressedPointSize, UncompressedPointSize},
+    curve::{CompressedPointSize, UncompressedPointSize},
     generic_array::{typenum::U1, ArrayLength, GenericArray},
     Curve,
 };
