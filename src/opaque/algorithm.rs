@@ -1,6 +1,7 @@
 //! Pseudo-algorithms for opaque data
 
 use crate::algorithm;
+use anomaly::fail;
 
 /// Valid algorithms for opaque data
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]

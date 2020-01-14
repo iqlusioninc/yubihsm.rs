@@ -1,27 +1,30 @@
-use std::fmt;
+//! Object errors
+
+use anomaly::{BoxError, Context};
+use thiserror::Error;
 
 /// `Object`-related errors
 pub type Error = crate::Error<ErrorKind>;
 
 /// Kinds of `Object`-related errors
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Debug, Eq, Error, PartialEq)]
 pub enum ErrorKind {
     /// Invalid label
+    #[error("invalid label")]
     LabelInvalid,
 
     /// Invalid object origin
+    #[error("invalid object origin")]
     OriginInvalid,
 
     /// Invalid object type
+    #[error("invalid object type")]
     TypeInvalid,
 }
 
-impl fmt::Display for ErrorKind {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(match self {
-            ErrorKind::LabelInvalid => "invalid label",
-            ErrorKind::OriginInvalid => "invalid object origin",
-            ErrorKind::TypeInvalid => "invalid object type",
-        })
+impl ErrorKind {
+    /// Create an error context from this error
+    pub fn context(self, source: impl Into<BoxError>) -> Context<ErrorKind> {
+        Context::new(self, Some(source.into()))
     }
 }

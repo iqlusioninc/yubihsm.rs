@@ -7,6 +7,7 @@
 //! lower (~2^32 messages).
 
 use crate::session;
+use anomaly::fail;
 use cmac::crypto_mac::generic_array::{typenum::U16, GenericArray};
 use std::fmt;
 use subtle::{Choice, ConstantTimeEq};

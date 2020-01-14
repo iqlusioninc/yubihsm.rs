@@ -1,6 +1,7 @@
 //! Key exchange algorithms
 
 use crate::algorithm;
+use anomaly::fail;
 
 /// Key exchange algorithms (a.k.a. Diffie-Hellman)
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]

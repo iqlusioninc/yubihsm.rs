@@ -1,6 +1,7 @@
 //! Asymmetric algorithm support
 
 use crate::algorithm;
+use anomaly::fail;
 
 /// Asymmetric algorithms (RSA or ECC)
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]

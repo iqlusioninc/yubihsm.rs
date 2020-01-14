@@ -1,19 +1,22 @@
-use std::fmt;
+//! Domain errors
+
+use anomaly::{BoxError, Context};
+use thiserror::Error;
 
 /// Audit-related errors
 pub type Error = crate::Error<ErrorKind>;
 
 /// Kinds of audit-related errors
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, Error, PartialEq)]
 pub enum ErrorKind {
     /// Invalid domain
+    #[error("invalid domain")]
     DomainInvalid,
 }
 
-impl fmt::Display for ErrorKind {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(match self {
-            ErrorKind::DomainInvalid => "invalid domain",
-        })
+impl ErrorKind {
+    /// Create an error context from this error
+    pub fn context(self, source: impl Into<BoxError>) -> Context<ErrorKind> {
+        Context::new(self, Some(source.into()))
     }
 }

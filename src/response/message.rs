@@ -4,8 +4,6 @@
 
 // TODO: this code predates the serde serializers. It could be rewritten with serde.
 
-#[cfg(feature = "mockhsm")]
-use crate::device;
 use crate::{
     command, connector, response,
     session::{
@@ -14,6 +12,10 @@ use crate::{
         ErrorKind::ProtocolError,
     },
 };
+use anomaly::{fail, format_err};
+
+#[cfg(feature = "mockhsm")]
+use crate::device;
 
 /// Command responses
 #[derive(Debug)]

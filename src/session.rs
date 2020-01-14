@@ -28,6 +28,7 @@ use crate::{
     device, response,
     serialization::deserialize,
 };
+use anomaly::{ensure, fail, format_err};
 use std::{
     panic::{self, AssertUnwindSafe},
     time::{Duration, Instant},
@@ -115,7 +116,7 @@ impl Session {
     pub fn messages_sent(&self) -> Result<usize, Error> {
         self.secure_channel
             .as_ref()
-            .ok_or_else(|| format_err!(ErrorKind::ClosedError, "session is already closed"))
+            .ok_or_else(|| format_err!(ErrorKind::ClosedError, "session is already closed").into())
             .map(SecureChannel::counter)
     }
 
@@ -263,7 +264,7 @@ impl Session {
     fn secure_channel(&mut self) -> Result<&mut SecureChannel, Error> {
         self.secure_channel
             .as_mut()
-            .ok_or_else(|| format_err!(ErrorKind::ClosedError, "session is already closed"))
+            .ok_or_else(|| format_err!(ErrorKind::ClosedError, "session is already closed").into())
     }
 }
 

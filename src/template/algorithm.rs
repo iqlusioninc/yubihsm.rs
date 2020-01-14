@@ -1,6 +1,7 @@
 //! SSH certificate templates
 
 use crate::algorithm;
+use anomaly::fail;
 
 /// Template algorithms (for SSH)
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]

@@ -33,6 +33,7 @@ use crate::{
     uuid,
     wrap::{self, commands::*},
 };
+use anomaly::{ensure, fail, format_err};
 use std::{
     sync::{Arc, Mutex},
     time::{Duration, Instant},
@@ -168,7 +169,7 @@ impl Client {
                 //
                 // Attempt to inititiate a new session and retry the command.
                 // (the original command was never sent in this case)
-                if e.kind() == session::ErrorKind::CommandLimitExceeded {
+                if *e.kind() == session::ErrorKind::CommandLimitExceeded {
                     Ok(self.session()?.send_command(&command)?)
                 } else {
                     Err(e.into())
@@ -406,7 +407,8 @@ impl Client {
             response.0.len()
         );
 
-        AuditOption::from_u8(response.0[0]).map_err(|e| format_err!(ErrorKind::ProtocolError, e))
+        AuditOption::from_u8(response.0[0])
+            .map_err(|e| format_err!(ErrorKind::ProtocolError, e).into())
     }
 
     /// Get some number of bytes of pseudo random data generated on the device.
@@ -1078,14 +1080,11 @@ impl Client {
             data: msg.into(),
         })?;
 
-        if result.0 == 1 {
-            Ok(())
-        } else {
-            Err(format_err!(
-                ErrorKind::ResponseError,
-                "HMAC verification failure"
-            ))
+        if result.0 == 0 {
+            fail!(ErrorKind::ResponseError, "HMAC verification failure")
         }
+
+        Ok(())
     }
 
     /// Encrypt data (with AES-CCM) using the given wrap key.

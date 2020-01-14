@@ -111,7 +111,7 @@ pub fn clear_test_key_slot(client: &Client, object_type: object::Type) {
     if let Err(e) = client.delete_object(TEST_KEY_ID, object_type) {
         // Ignore errors for nonexistent objects. We're here to make sure the
         // slot is clear, so it's irrelevant if there was no obj to begin with
-        if e.kind().device_error() != Some(device::ErrorKind::ObjectNotFound) {
+        if e.device_error() != Some(device::ErrorKind::ObjectNotFound) {
             panic!("error clearing test key: {}", e);
         }
     }
@@ -120,7 +120,7 @@ pub fn clear_test_key_slot(client: &Client, object_type: object::Type) {
     match client.get_object_info(TEST_KEY_ID, object_type) {
         Ok(obj) => panic!("expected test key to be deleted! {:?}", obj),
         Err(e) => {
-            if e.kind().device_error() != Some(device::ErrorKind::ObjectNotFound) {
+            if e.device_error() != Some(device::ErrorKind::ObjectNotFound) {
                 panic!("error ensuring test key slot is clear: {}", e);
             }
         }

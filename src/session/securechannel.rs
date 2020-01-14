@@ -46,6 +46,7 @@ use aes::{
     },
     Aes128,
 };
+use anomaly::{fail, format_err};
 use block_modes::{block_padding::Iso7816, BlockMode, Cbc};
 use cmac::{crypto_mac::Mac as CryptoMac, Cmac};
 use subtle::ConstantTimeEq;
@@ -733,7 +734,7 @@ mod tests {
         assert_eq!(host_channel.security_level, SecurityLevel::Terminated);
         assert_eq!(
             response.err().unwrap().to_string(),
-            "verification failed: R-MAC mismatch!"
+            "cryptographic verification failed: R-MAC mismatch!"
         );
     }
 }

@@ -1,34 +1,36 @@
-use std::fmt;
+//! YubiHSM setup errors
+
+use anomaly::{BoxError, Context};
+use thiserror::Error;
 
 /// Setup-related errors
 pub type Error = crate::Error<ErrorKind>;
 
 /// Kinds of setup-related errors
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Debug, Eq, Error, PartialEq)]
 pub enum ErrorKind {
     /// Invalid label
+    #[error("invalid label")]
     LabelInvalid,
 
     /// Errors involving setup report generation
+    #[error("report failed")]
     ReportFailed,
 
     /// Error performing setup
+    #[error("setup failed")]
     SetupFailed,
 }
 
-impl fmt::Display for ErrorKind {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(match self {
-            ErrorKind::LabelInvalid => "invalid label",
-            ErrorKind::ReportFailed => "report failed",
-            ErrorKind::SetupFailed => "setup failed",
-        })
+impl ErrorKind {
+    /// Create an error context from this error
+    pub fn context(self, source: impl Into<BoxError>) -> Context<ErrorKind> {
+        Context::new(self, Some(source.into()))
     }
 }
 
 impl From<crate::client::Error> for Error {
     fn from(client_error: crate::client::Error) -> Error {
-        // TODO(tarcieri): finer grained error reporting / ErrorKind mapping?
-        format_err!(ErrorKind::SetupFailed, "{}", client_error)
+        ErrorKind::SetupFailed.context(client_error).into()
     }
 }

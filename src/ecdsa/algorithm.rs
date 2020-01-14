@@ -1,6 +1,7 @@
 //! ECDSA algorithms (i.e. hash functions)
 
 use crate::{algorithm, asymmetric};
+use anomaly::fail;
 use signatory::ecdsa::curve::{NistP256, NistP384, Secp256k1};
 
 /// Valid algorithms for asymmetric keys
