@@ -2,6 +2,7 @@
 
 use super::{oaep, pkcs1, pss};
 use crate::algorithm;
+use anomaly::fail;
 
 /// RSA algorithms (signing and encryption)
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]

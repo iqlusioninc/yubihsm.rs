@@ -36,6 +36,6 @@ impl Response for SignEddsaResponse {
 
 impl SignEddsaResponse {
     pub(crate) fn signature(&self) -> Result<Signature, client::Error> {
-        Signature::from_bytes(&self.0).map_err(|e| format_err!(ResponseError, e))
+        Signature::from_bytes(&self.0).map_err(|e| ResponseError.context(e).into())
     }
 }

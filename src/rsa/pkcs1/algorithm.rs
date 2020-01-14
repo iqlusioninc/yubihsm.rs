@@ -1,6 +1,7 @@
 //! RSA PKCS#1v1.5 algorithms
 
 use crate::algorithm;
+use anomaly::fail;
 
 /// RSA PKCS#1v1.5: legacy algorithms
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]

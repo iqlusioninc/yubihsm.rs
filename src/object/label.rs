@@ -1,6 +1,7 @@
 //! Object labels: descriptions of objects
 
 use super::{Error, ErrorKind};
+use anomaly::fail;
 use std::{
     fmt::{self, Debug, Display},
     ops::{Deref, DerefMut},
@@ -39,7 +40,7 @@ impl Label {
             Some(pos) => &self.0[..pos],
             None => self.0.as_ref(),
         })
-        .map_err(|err| format_err!(ErrorKind::LabelInvalid, "{}", err))
+        .map_err(|err| ErrorKind::LabelInvalid.context(err).into())
     }
 }
 

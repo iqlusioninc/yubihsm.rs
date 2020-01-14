@@ -12,6 +12,7 @@ use crate::{
     },
     device::SerialNumber,
 };
+use anomaly::{fail, format_err};
 use std::{
     fmt::{self, Debug},
     slice::Iter,

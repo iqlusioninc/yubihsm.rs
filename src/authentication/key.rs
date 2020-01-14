@@ -1,6 +1,7 @@
 //! `YubiHSM 2` authentication keys (2 * AES-128 symmetric PSK) from which session keys are derived
 
 use super::{Error, ErrorKind};
+use anomaly::ensure;
 use getrandom::getrandom;
 #[cfg(feature = "hmac")]
 use hmac::Hmac;

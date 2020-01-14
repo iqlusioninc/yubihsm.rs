@@ -1,82 +1,60 @@
 //! Error types
 
-use std::fmt::{self, Debug, Display};
+use anomaly::{BoxError, Context};
+use std::{
+    fmt::{self, Debug, Display},
+    ops::Deref,
+};
 
-/// Error types used by this library
+/// Error type
 #[derive(Debug)]
-pub struct Error<K>
+pub struct Error<K>(Box<Context<K>>)
 where
-    K: Copy + Debug + Display + PartialEq + Eq,
-{
-    /// Kind of error
-    kind: K,
+    K: Clone + Debug + Display + Eq + PartialEq + Into<BoxError>;
 
-    /// Optional associated error message
-    msg: Option<String>,
-}
-
-impl<K> Error<K>
+impl<K> Deref for Error<K>
 where
-    K: Copy + Debug + Display + PartialEq + Eq,
+    K: Clone + Debug + Display + Eq + PartialEq + Into<BoxError>,
 {
-    /// Create a new error type from its kind
-    pub fn new(kind: K, msg: Option<String>) -> Self {
-        Self { kind, msg }
-    }
+    type Target = Context<K>;
 
-    /// Obtain the error's `Kind`
-    pub fn kind(&self) -> K {
-        self.kind
+    fn deref(&self) -> &Context<K> {
+        &self.0
     }
 }
 
 impl<K> Display for Error<K>
 where
-    K: Copy + Debug + Display + PartialEq + Eq,
+    K: Clone + Debug + Display + Eq + PartialEq + Into<BoxError>,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.kind)?;
-
-        if let Some(msg) = &self.msg {
-            write!(f, ": {}", msg)?;
-        }
-
-        Ok(())
+        write!(f, "{}", self.0)
     }
 }
 
-impl<K> std::error::Error for Error<K> where K: Copy + Debug + Display + PartialEq + Eq {}
-
-/// Create a new error (of a given kind) with a formatted message
-macro_rules! format_err {
-    ($kind:path, $msg:expr) => {
-        crate::error::Error::new($kind, Some($msg.to_string()))
-    };
-    ($kind:path, $fmt:expr, $($arg:tt)+) => {
-        format_err!($kind, &format!($fmt, $($arg)+))
-    };
+impl<K> std::error::Error for Error<K>
+where
+    K: Clone + Debug + Display + Eq + PartialEq + Into<BoxError>,
+{
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        self.0.source()
+    }
 }
 
-/// Create and return an error with a formatted message
-macro_rules! fail {
-    ($kind:path, $msg:expr) => {
-        return Err(format_err!($kind, $msg).into());
-    };
-    ($kind:path, $fmt:expr, $($arg:tt)+) => {
-        fail!($kind, &format!($fmt, $($arg)+));
-    };
+impl<K> From<K> for Error<K>
+where
+    K: Clone + Debug + Display + Eq + PartialEq + Into<BoxError>,
+{
+    fn from(kind: K) -> Self {
+        Context::new(kind, None).into()
+    }
 }
 
-/// Assert a condition is true, returning an error type with a formatted message if not
-macro_rules! ensure {
-    ($cond:expr, $kind:path, $msg:expr) => {
-        if !($cond) {
-            return Err(format_err!($kind, $msg).into());
-        }
-    };
-    ($cond:expr, $kind:path, $fmt:expr, $($arg:tt)+) => {
-        if !($cond) {
-            return Err(format_err!($kind, $fmt, $($arg)+).into());
-        }
-    };
+impl<K> From<Context<K>> for Error<K>
+where
+    K: Clone + Debug + Display + Eq + PartialEq + Into<BoxError>,
+{
+    fn from(context: Context<K>) -> Self {
+        Error(Box::new(context))
+    }
 }

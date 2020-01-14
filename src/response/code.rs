@@ -2,6 +2,7 @@
 
 use super::{Error, ErrorKind};
 use crate::command;
+use anomaly::{fail, format_err};
 use serde::{de, ser, Deserialize, Serialize};
 
 /// Codes associated with HSM responses

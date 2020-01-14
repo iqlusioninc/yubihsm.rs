@@ -1,6 +1,7 @@
 //! `MockHsm` presents a thread-safe API by locking interior mutable state,
 //! contained in the `State` struct defined in this module.
 
+use super::{audit::CommandAuditOptions, object::Objects, session::HsmSession};
 use crate::{
     audit::AuditOption,
     connector, object,
@@ -9,9 +10,8 @@ use crate::{
         securechannel::{Challenge, SecureChannel},
     },
 };
+use anomaly::format_err;
 use std::collections::BTreeMap;
-
-use super::{audit::CommandAuditOptions, object::Objects, session::HsmSession};
 
 /// Mutable interior state of the `MockHsm`
 #[derive(Debug)]
@@ -88,10 +88,12 @@ impl State {
     /// Obtain the channel for a session by its ID
     pub fn get_session(&mut self, id: session::Id) -> Result<&mut HsmSession, connector::Error> {
         self.sessions.get_mut(&id).ok_or_else(|| {
-            connector::Error::new(
+            format_err!(
                 connector::ErrorKind::RequestError,
-                Some(format!("invalid session ID: {:?}", id)),
+                "invalid session ID: {:?}",
+                id
             )
+            .into()
         })
     }
 

@@ -1,6 +1,7 @@
 //! Mask generating functions for use with RSASSA-PSS signatures
 
 use crate::algorithm;
+use anomaly::fail;
 
 /// Mask generating functions for RSASSA-PSS
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]

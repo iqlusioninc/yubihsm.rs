@@ -1,3 +1,6 @@
+//! Mock connection to the MockHSM
+
+use anomaly::{fail, format_err};
 use std::sync::{Arc, Mutex};
 use uuid::Uuid;
 

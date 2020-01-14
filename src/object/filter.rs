@@ -1,13 +1,16 @@
 //! Filters for selecting objects in the list object command
 
+use crate::{algorithm::Algorithm, capability::Capability, client, domain::Domain, object};
+use std::io::Write;
+
 #[cfg(feature = "mockhsm")]
 use crate::client::ErrorKind::ProtocolError;
 #[cfg(feature = "mockhsm")]
 use crate::object::LABEL_SIZE;
-use crate::{algorithm::Algorithm, capability::Capability, client, domain::Domain, object};
+#[cfg(feature = "mockhsm")]
+use anomaly::{fail, format_err};
 #[cfg(feature = "mockhsm")]
 use std::io::Read;
-use std::io::Write;
 
 /// Filters to apply when listing objects
 pub enum Filter {

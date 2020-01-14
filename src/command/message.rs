@@ -18,6 +18,9 @@ use crate::{
     },
     uuid::{self, Uuid},
 };
+use anomaly::ensure;
+#[cfg(any(feature = "http-server", feature = "mockhsm"))]
+use anomaly::{fail, format_err};
 
 /// A command sent from the host to the `YubiHSM 2`. May or may not be
 /// authenticated using SCP03's chained/evolving MAC protocol.

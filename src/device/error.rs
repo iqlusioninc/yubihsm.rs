@@ -1,76 +1,101 @@
 //! Error types which map directly to the YubiHSM2's error codes
 
 use crate::response;
-use std::fmt;
+use anomaly::{BoxError, Context};
+use thiserror::Error;
 
 /// Errors which originate in the HSM
 pub type Error = crate::Error<ErrorKind>;
 
 /// Kinds of errors which originate in the HSM
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Debug, Eq, Error, PartialEq)]
 pub enum ErrorKind {
     /// Unknown HSM error codes
+    #[error("unknown HSM error code: {code:?}")]
     Unknown {
         /// Unknown error code
         code: u8,
     },
 
     /// Invalid command
+    #[error("invalid command")]
     InvalidCommand,
 
     /// Invalid data
+    #[error("invalid data")]
     InvalidData,
 
     /// Invalid session
+    #[error("invalid session")]
     InvalidSession,
 
     /// Authentication failure
+    #[error("authentication failed")]
     AuthenticationFailed,
 
     /// Sessions full (HSM has a max of 16)
+    #[error("sessions full (max 16)")]
     SessionsFull,
 
     /// Session failed
+    #[error("session failed")]
     SessionFailed,
 
     /// Storage failed
+    #[error("storage failed")]
     StorageFailed,
 
     /// Wrong length
+    #[error("wrong length")]
     WrongLength,
 
     /// Insufficient permissions
+    #[error("insufficient permissions")]
     InsufficientPermissions,
 
     /// Audit log full
+    #[error("audit log full")]
     LogFull,
 
     /// Object not found
+    #[error("object not found")]
     ObjectNotFound,
 
     /// Invalid ID
+    #[error("invalid ID")]
     InvalidId,
 
     /// Invalid OTP
+    #[error("invalid OTP")]
     InvalidOtp,
 
     /// Demo mode(?)
+    #[error("demo mode")]
     DemoMode,
 
     /// Command unexecuted
+    #[error("command unexecuted")]
     CommandUnexecuted,
 
     /// Generic error
+    #[error("generic error")]
     GenericError,
 
     /// Object already exists
+    #[error("object already exists")]
     ObjectExists,
 
     /// SSH CA constraint violation
+    #[error("SSH CA constraint violation")]
     SshCaConstraintViolation,
 }
 
 impl ErrorKind {
+    /// Create an error context from this error
+    pub fn context(self, source: impl Into<BoxError>) -> Context<ErrorKind> {
+        Context::new(self, Some(source.into()))
+    }
+
     /// Create a `device::ErrorKind` from the given byte tag
     pub fn from_u8(tag: u8) -> ErrorKind {
         match tag {
@@ -155,32 +180,6 @@ impl ErrorKind {
             Some(ErrorKind::from_u8(response.data[0]))
         } else {
             None
-        }
-    }
-}
-
-impl fmt::Display for ErrorKind {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            ErrorKind::Unknown { code } => write!(f, "unknown HSM error code: 0x{:02x}", code),
-            ErrorKind::InvalidCommand => f.write_str("invalid command"),
-            ErrorKind::InvalidData => f.write_str("invalid data"),
-            ErrorKind::InvalidSession => f.write_str("invalid session"),
-            ErrorKind::AuthenticationFailed => f.write_str("authentication failed"),
-            ErrorKind::SessionsFull => f.write_str("sessions full (max 16)"),
-            ErrorKind::SessionFailed => f.write_str("session failed"),
-            ErrorKind::StorageFailed => f.write_str("storage failed"),
-            ErrorKind::WrongLength => f.write_str("incorrect length"),
-            ErrorKind::InsufficientPermissions => f.write_str("invalid permissions"),
-            ErrorKind::LogFull => f.write_str("audit log full"),
-            ErrorKind::ObjectNotFound => f.write_str("object not found"),
-            ErrorKind::InvalidId => f.write_str("invalid ID"),
-            ErrorKind::InvalidOtp => f.write_str("invalid OTP"),
-            ErrorKind::DemoMode => f.write_str("demo mode"),
-            ErrorKind::CommandUnexecuted => f.write_str("command unexecuted"),
-            ErrorKind::GenericError => f.write_str("generic error"),
-            ErrorKind::ObjectExists => f.write_str("object already exists"),
-            ErrorKind::SshCaConstraintViolation => f.write_str("SSH CA constraint violation"),
         }
     }
 }

@@ -1,6 +1,7 @@
 //! Session IDs: the YubiHSM2 supports up to 16 concurrent sessions.
 
 use super::{Error, ErrorKind::ProtocolError};
+use anomaly::fail;
 use std::fmt::{self, Display};
 
 /// Maximum session identifier

@@ -1,6 +1,7 @@
 //! RSA OAEP algorithms
 
 use crate::algorithm;
+use anomaly::fail;
 
 /// RSA Optimal Asymmetric Encryption Padding (OAEP) algorithms
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]

@@ -8,6 +8,7 @@ use crate::{
     serialization::{deserialize, serialize},
     wrap, Algorithm, Capability, Domain,
 };
+use anomaly::{fail, format_err};
 use ring::aead::{self, AES_128_GCM, AES_256_GCM};
 use std::collections::{btree_map::Iter as BTreeMapIter, BTreeMap};
 

@@ -1,6 +1,7 @@
 //! HMAC algorithms
 
 use crate::algorithm;
+use anomaly::fail;
 
 /// Valid algorithms for HMAC keys
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]

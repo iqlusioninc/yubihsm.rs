@@ -7,6 +7,7 @@ use crate::{
     command::MAX_MSG_SIZE,
     connector::{self, Connection, ErrorKind::UsbError, Message},
 };
+use anomaly::fail;
 use std::sync::Mutex;
 use uuid::Uuid;
 

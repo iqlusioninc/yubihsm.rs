@@ -1,6 +1,7 @@
 //! RSASSA-PSS algorithms
 
 use crate::algorithm;
+use anomaly::fail;
 
 /// RSASSA-PSS algorithms
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
