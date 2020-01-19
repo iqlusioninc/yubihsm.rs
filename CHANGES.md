@@ -1,3 +1,8 @@
+## [0.31.0] (2020-01-19)
+
+- Upgrade `signatory` to v0.18 ([#245])
+- Use Anomaly for error handling ([#244])
+
 ## [0.30.0] (2019-12-11)
 
 - Upgrade to `signatory` v0.17 ([#241])
@@ -287,6 +292,9 @@ to adding support for several commands.
 
 - Initial release
 
+[0.31.0]: https://github.com/tendermint/yubihsm-rs/pull/246
+[#245]: https://github.com/tendermint/yubihsm-rs/pull/245
+[#244]: https://github.com/tendermint/yubihsm-rs/pull/244
 [0.30.0]: https://github.com/tendermint/yubihsm-rs/pull/242
 [#241]: https://github.com/tendermint/yubihsm-rs/pull/241
 [0.29.0]: https://github.com/tendermint/yubihsm-rs/pull/239
