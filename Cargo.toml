@@ -55,8 +55,8 @@ http = ["harp"]
 mockhsm = ["passwords", "ring"]
 passwords = ["hmac", "pbkdf2", "sha2"]
 setup = ["chrono", "passwords", "serde_json", "uuid/serde"]
+untested = ["sha2"]
 usb = ["rusb"]
-yolocrypto = ["sha2"]
 
 [package.metadata.docs.rs]
 all-features = true
