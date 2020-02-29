@@ -46,7 +46,7 @@ uuid = { version = "0.8", default-features = false }
 zeroize = { version = "1", features = ["zeroize_derive"] }
 
 [dev-dependencies]
-criterion = "0.2"
+criterion = "0.3"
 lazy_static = "1"
 ring = { version = "0.16", default-features = false }
 signatory-ring = "0.18"
