@@ -54,7 +54,7 @@
 #![forbid(unsafe_code)]
 #![warn(missing_docs, rust_2018_idioms, unused_qualifications)]
 #![doc(
-    html_logo_url = "https://raw.githubusercontent.com/tendermint/yubihsm-rs/develop/img/logo.png",
+    html_logo_url = "https://raw.githubusercontent.com/iqlusioninc/yubihsm.rs/develop/img/logo.png",
     html_root_url = "https://docs.rs/yubihsm/0.31.0"
 )]
 
