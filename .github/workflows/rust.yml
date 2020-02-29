@@ -227,7 +227,7 @@ jobs:
           RUSTFLAGS: -D warnings
         with:
           command: test
-          args: --features=mockhsm,secp256k1,yolocrypto
+          args: --features=mockhsm,secp256k1,untested
 
   fmt:
     name: Rustfmt
@@ -279,11 +279,11 @@ jobs:
       - name: Install clippy
         run: rustup component add clippy
 
-      - name: Run cargo clippy --features=secp256k1,usb,yolocrypto
+      - name: Run cargo clippy --features=secp256k1,usb,untested
         uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: --features=secp256k1,usb,yolocrypto
+          args: --features=secp256k1,usb,untested
 
       - name: Run cargo clippy --features=mockhsm
         uses: actions-rs/cargo@v1

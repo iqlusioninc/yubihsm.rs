@@ -2,15 +2,15 @@
 //! primitives with the EMSA-PSS encoding method.
 
 mod algorithm;
-#[cfg(feature = "yolocrypto")]
+#[cfg(feature = "untested")]
 pub(crate) mod commands;
-#[cfg(feature = "yolocrypto")]
+#[cfg(feature = "untested")]
 mod signature;
 
 /// Maximum message size supported for RSASSA-PSS
-#[cfg(feature = "yolocrypto")]
+#[cfg(feature = "untested")]
 pub const MAX_MESSAGE_SIZE: usize = 0xFFFF;
 
 pub use self::algorithm::Algorithm;
-#[cfg(feature = "yolocrypto")]
+#[cfg(feature = "untested")]
 pub use self::signature::Signature;

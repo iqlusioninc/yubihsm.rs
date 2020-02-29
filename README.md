@@ -111,7 +111,7 @@ supported, please open an issue requesting support.
 
 NOTE: Commands marked ⚠️ have not been properly tested and may contain bugs or
 not work at all. They are disabled by default: to use them you must enable the
-`yolocrypto` cargo feature. If you do get them to work, please open an issue
+`untested` cargo feature. If you do get them to work, please open an issue
 (or PR) reporting success so we can promote them to ✅.
 
 ## Testing
