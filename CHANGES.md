@@ -1,3 +1,14 @@
+## [0.32.0] (2020-02-29)
+
+- Rename `yolocrypto` feature to `untested` ([#5])
+- MSRV 1.40+ ([#3])
+- Update `anomaly` requirement from 0.1.2 to 0.2.0 ([#2])
+
+[0.32.0]: https://github.com/iqlusioninc/yubihsm.rs/pull/6
+[#2]: https://github.com/iqlusioninc/yubihsm.rs/pull/2
+[#3]: https://github.com/iqlusioninc/yubihsm.rs/pull/3
+[#5]: https://github.com/iqlusioninc/yubihsm.rs/pull/5
+
 ## 0.31.0 (2020-01-19)
 
 - Upgrade `signatory` to v0.18 
