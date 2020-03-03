@@ -958,9 +958,9 @@ dependencies = [
 
 [[package]]
 name = "signatory-ring"
-version = "0.18.0"
+version = "0.18.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "85c34f49036792d5dfc7539624f146253bebd28e1f49e909a804fa257226e280"
+checksum = "65e33c8f5d1c40202702692ee7a3880de45b4d708eb002f7d7fac72e67130560"
 dependencies = [
  "ring",
  "signatory",
