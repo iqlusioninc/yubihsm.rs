@@ -1,6 +1,12 @@
 //! Support for connecting to the YubiHSM 2 via USB.
 //!
-//! The [yubihsm::connector::usb::Devices] can be used to
+//! Typically to access a YubiHSM 2 via USB, you'll use the [`Connector::usb`]
+//! method in the event there is only one expected to be connected at a time.
+//!
+//! To enumerate available USB devices (e.g. in the case there is more than
+//! one YubiHSM connected to the same computer), use [`Devices`].
+//!
+//! [`Connector::usb`]: https://docs.rs/yubihsm/latest/yubihsm/connector/struct.Connector.html#method.usb
 
 #[macro_use]
 mod macros;

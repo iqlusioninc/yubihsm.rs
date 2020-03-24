@@ -1,3 +1,10 @@
+## [0.32.1] (2020-03-24)
+
+- connector/usb: Use `rusb::Context` instead of `GlobalContext` ([#15])
+
+[0.32.1]: https://github.com/iqlusioninc/yubihsm.rs/pull/16
+[#15]: https://github.com/iqlusioninc/yubihsm.rs/pull/15
+
 ## [0.32.0] (2020-02-29)
 
 - Rename `yolocrypto` feature to `untested` ([#5])
