@@ -73,7 +73,7 @@ impl Devices {
     /// Detect connected YubiHSM 2s, returning a collection of them
     pub fn detect(timeout: UsbTimeout) -> Result<Self, connector::Error> {
         use rusb::UsbContext;
-        let device_list = rusb::GlobalContext::default().devices()?;
+        let device_list = rusb::Context::new()?.devices()?;
         let mut devices = vec![];
 
         debug!("USB: enumerating devices...");
@@ -171,7 +171,7 @@ impl IntoIterator for Devices {
 /// A USB device we've identified as a YubiHSM 2
 pub struct Device {
     /// Underlying `rusb` device
-    pub(super) device: rusb::Device<rusb::GlobalContext>,
+    pub(super) device: rusb::Device<rusb::Context>,
 
     /// Product vendor and name
     pub product_name: String,
@@ -183,7 +183,7 @@ pub struct Device {
 impl Device {
     /// Create a new device
     pub(super) fn new(
-        device: rusb::Device<rusb::GlobalContext>,
+        device: rusb::Device<rusb::Context>,
         product_name: String,
         serial_number: SerialNumber,
     ) -> Self {
@@ -222,7 +222,7 @@ impl Device {
     /// Open a handle to the underlying device (for use by `UsbConnection`)
     pub(super) fn open_handle(
         &self,
-    ) -> Result<rusb::DeviceHandle<rusb::GlobalContext>, connector::Error> {
+    ) -> Result<rusb::DeviceHandle<rusb::Context>, connector::Error> {
         let mut handle = self.device.open()?;
         handle.reset()?;
         handle.claim_interface(YUBIHSM2_INTERFACE_NUM)?;
@@ -248,7 +248,7 @@ impl Debug for Device {
 
 /// Flush any unconsumed messages still in the buffer to get the connection
 /// back into a clean state
-fn flush(handle: &mut rusb::DeviceHandle<rusb::GlobalContext>) -> Result<(), connector::Error> {
+fn flush(handle: &mut rusb::DeviceHandle<rusb::Context>) -> Result<(), connector::Error> {
     let mut buffer = [0u8; MAX_MSG_SIZE];
 
     // Use a near instantaneous (but non-zero) timeout to drain the buffer.

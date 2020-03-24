@@ -17,7 +17,7 @@ const MAX_RECV_RETRIES: usize = 3;
 /// Connection to HSM via USB
 pub struct UsbConnection {
     /// Handle to the underlying USB device
-    handle: Mutex<rusb::DeviceHandle<rusb::GlobalContext>>,
+    handle: Mutex<rusb::DeviceHandle<rusb::Context>>,
 
     /// YubiHSM 2 USB device this connection is connected to
     device: Device,
@@ -73,7 +73,7 @@ impl Default for UsbConnection {
 
 /// Write a bulk message to the YubiHSM 2
 fn send_message(
-    handle: &mut rusb::DeviceHandle<rusb::GlobalContext>,
+    handle: &mut rusb::DeviceHandle<rusb::Context>,
     data: &[u8],
     timeout: UsbTimeout,
 ) -> Result<usize, connector::Error> {
@@ -93,7 +93,7 @@ fn send_message(
 
 /// Receive a message
 fn recv_message(
-    handle: &mut rusb::DeviceHandle<rusb::GlobalContext>,
+    handle: &mut rusb::DeviceHandle<rusb::Context>,
     timeout: UsbTimeout,
 ) -> Result<Message, connector::Error> {
     // Allocate a buffer which is the maximum size we expect to receive
