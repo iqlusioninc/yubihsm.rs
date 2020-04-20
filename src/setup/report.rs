@@ -60,8 +60,8 @@ impl Report {
             version: Version(1),
             uuid: uuid::new_v4(),
             device_serial_number: serial_number.to_string(),
-            username: env::var("LOGNAME").map(|u| u.to_owned()).ok(),
-            hostname: env::var("HOSTNAME").map(|h| h.to_owned()).ok(),
+            username: env::var("LOGNAME").ok(),
+            hostname: env::var("HOSTNAME").ok(),
             date: Utc::now(),
             software: format!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION")),
         }

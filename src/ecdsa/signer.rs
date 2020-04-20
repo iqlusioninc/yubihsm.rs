@@ -141,10 +141,11 @@ impl Signer<NistP256> {
     where
         D: Digest<OutputSize = U32> + Default,
     {
-        Asn1Signature::from_bytes(
-            self.client
-                .sign_ecdsa(self.signing_key_id, digest.result().as_slice())?,
-        )
+        let signature = self
+            .client
+            .sign_ecdsa(self.signing_key_id, digest.result().as_slice())?;
+
+        Asn1Signature::from_bytes(signature.as_ref())
     }
 }
 
@@ -154,10 +155,11 @@ impl Signer<NistP384> {
     where
         D: Digest<OutputSize = U48> + Default,
     {
-        Asn1Signature::from_bytes(
-            self.client
-                .sign_ecdsa(self.signing_key_id, digest.result().as_slice())?,
-        )
+        let signature = self
+            .client
+            .sign_ecdsa(self.signing_key_id, digest.result().as_slice())?;
+
+        Asn1Signature::from_bytes(signature.as_ref())
     }
 }
 

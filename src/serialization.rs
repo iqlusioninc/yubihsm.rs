@@ -5,7 +5,6 @@ mod error;
 mod ser;
 
 pub use self::error::{Error, ErrorKind};
-use serde;
 use std::io::Cursor;
 
 /// Serialize a message into a byte vector
