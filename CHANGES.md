@@ -1,3 +1,12 @@
+## [0.33.0] (2020-04-20)
+
+- Upgrade to `signature` crate v1.0; `ecdsa` crate v0.5 ([#24])
+- Bump `tiny_http` from 0.6 to 0.7 ([#23])
+
+[0.33.0]: https://github.com/iqlusioninc/yubihsm.rs/pull/26
+[#24]: https://github.com/iqlusioninc/yubihsm.rs/pull/24
+[#23]: https://github.com/iqlusioninc/yubihsm.rs/pull/23
+
 ## [0.32.1] (2020-03-24)
 
 - connector/usb: Use `rusb::Context` instead of `GlobalContext` ([#15])
