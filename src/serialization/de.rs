@@ -1,7 +1,6 @@
 //! Serde-powered deserializer for `YubiHSM` messages
 
 use super::error::Error;
-use serde;
 use serde::de::{DeserializeSeed, SeqAccess, Visitor};
 use std::io::Read;
 

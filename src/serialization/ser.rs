@@ -1,7 +1,6 @@
 //! Serde-powered serializer for `YubiHSM` messages
 
 use super::error::Error;
-use serde;
 use serde::ser::{
     SerializeMap, SerializeSeq, SerializeStruct, SerializeStructVariant, SerializeTuple,
     SerializeTupleStruct, SerializeTupleVariant,
