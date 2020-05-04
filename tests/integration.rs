@@ -46,7 +46,7 @@ lazy_static! {
 
 lazy_static! {
     static ref HSM_CLIENT: Mutex<Client> =
-        { Mutex::new(Client::open(HSM_CONNECTOR.clone(), Default::default(), true).unwrap()) };
+        Mutex::new(Client::open(HSM_CONNECTOR.clone(), Default::default(), true).unwrap());
 }
 
 /// Create a `yubihsm::Client` to run the test suite against
