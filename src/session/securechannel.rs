@@ -42,15 +42,14 @@ use crate::{
 use aes::{
     block_cipher::{
         generic_array::{typenum::U16, GenericArray},
-        BlockCipher,
-        NewBlockCipher,
+        BlockCipher, NewBlockCipher,
     },
     Aes128,
 };
 use anomaly::{fail, format_err};
 use block_modes::{block_padding::Iso7816, BlockMode, Cbc};
+use cmac::crypto_mac::NewMac;
 use cmac::{crypto_mac::Mac as CryptoMac, Cmac};
-use cmac::{crypto_mac::NewMac};
 use subtle::ConstantTimeEq;
 use zeroize::{Zeroize, Zeroizing};
 
