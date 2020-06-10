@@ -19,7 +19,7 @@ edition       = "2018"
 aes = "0.3"
 anomaly = "0.2"
 bitflags = "1"
-block-modes = "0.3"
+block-modes = "0.4"
 chrono = { version = "0.4", features=["serde"], optional = true }
 cmac = "0.2"
 getrandom = "0.1"
