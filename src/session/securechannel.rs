@@ -486,15 +486,15 @@ impl SecureChannel {
         );
 
         let mut mac = Cmac::<Aes128>::new_varkey(self.mac_key.as_ref()).unwrap();
-        mac.input(&self.mac_chaining_value);
-        mac.input(&[command.command_type.to_u8()]);
+        mac.update(&self.mac_chaining_value);
+        mac.update(&[command.command_type.to_u8()]);
 
         let length = command.len() as u16;
-        mac.input(&length.to_be_bytes());
-        mac.input(&[command.session_id.unwrap().to_u8()]);
-        mac.input(&command.data);
+        mac.update(&length.to_be_bytes());
+        mac.update(&[command.session_id.unwrap().to_u8()]);
+        mac.update(&command.data);
 
-        let tag = mac.result().code();
+        let tag = mac.finalize().into_bytes();
 
         if command
             .mac
@@ -552,13 +552,13 @@ impl SecureChannel {
         let body = response_data.into();
 
         let mut mac = Cmac::<Aes128>::new_varkey(self.rmac_key.as_ref()).unwrap();
-        mac.input(&self.mac_chaining_value);
-        mac.input(&[code.to_u8()]);
+        mac.update(&self.mac_chaining_value);
+        mac.update(&[code.to_u8()]);
 
         let length = (1 + body.len() + MAC_SIZE) as u16;
-        mac.input(&length.to_be_bytes());
-        mac.input(&[self.id.to_u8()]);
-        mac.input(&body);
+        mac.update(&length.to_be_bytes());
+        mac.update(&[self.id.to_u8()]);
+        mac.update(&body);
 
         self.increment_counter();
 
@@ -566,7 +566,7 @@ impl SecureChannel {
             code,
             self.id,
             body,
-            &mac.result().code(),
+            &mac.finalize().into_bytes(),
         ))
     }
 

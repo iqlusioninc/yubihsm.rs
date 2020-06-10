@@ -24,6 +24,7 @@ use crate::{
     Capability,
 };
 use ::hmac::{Hmac, Mac};
+use cmac::crypto_mac::NewMac;
 use getrandom::getrandom;
 use ring::signature::Ed25519KeyPair;
 use sha2::Sha256;
@@ -638,9 +639,9 @@ fn sign_hmac(state: &State, cmd_data: &[u8]) -> response::Message {
         if let Payload::HmacKey(alg, ref key) = obj.payload {
             assert_eq!(alg, hmac::Algorithm::Sha256);
             let mut mac = Hmac::<Sha256>::new_varkey(key).unwrap();
-            mac.input(&command.data);
-            let tag = mac.result();
-            SignHmacResponse(hmac::Tag(tag.code().as_ref().into())).serialize()
+            mac.update(&command.data);
+            let tag = mac.finalize();
+            SignHmacResponse(hmac::Tag(tag.into_bytes().as_slice().into())).serialize()
         } else {
             debug!("not an HMAC key: {:?}", obj.algorithm());
             device::ErrorKind::InvalidCommand.into()
@@ -664,8 +665,8 @@ fn verify_hmac(state: &State, cmd_data: &[u8]) -> response::Message {
             let data = command.tag.into_vec();
 
             let mut mac = Hmac::<Sha256>::new_varkey(key).unwrap();
-            mac.input(&data[32..]);
-            let tag = mac.result().code();
+            mac.update(&data[32..]);
+            let tag = mac.finalize().into_bytes();
             let is_ok = tag.as_slice().ct_eq(&data[..32]).unwrap_u8();
 
             VerifyHmacResponse(is_ok).serialize()
