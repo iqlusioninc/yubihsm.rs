@@ -122,7 +122,7 @@ dependencies = [
  "block-padding",
  "byte-tools",
  "byteorder",
- "generic-array",
+ "generic-array 0.12.3",
 ]
 
 [[package]]
@@ -131,7 +131,7 @@ version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1c924d49bd09e7c06003acda26cd9742e796e34282ec6c1189404dee0c1f4774"
 dependencies = [
- "generic-array",
+ "generic-array 0.12.3",
 ]
 
 [[package]]
@@ -240,7 +240,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6f4a435124bcc292eba031f1f725d7abacdaf13cbf9f935450e8c45aa9e96cad"
 dependencies = [
  "block-cipher-trait",
- "crypto-mac",
+ "crypto-mac 0.7.0",
  "dbl",
 ]
 
@@ -341,8 +341,18 @@ version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4434400df11d95d556bac068ddfedd482915eb18fe8bea89bc80b6e4b1c179e5"
 dependencies = [
- "generic-array",
+ "generic-array 0.12.3",
  "subtle 1.0.0",
+]
+
+[[package]]
+name = "crypto-mac"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b584a330336237c1eecd3e94266efb216c56ed91225d634cb2991c5f3fd1aeab"
+dependencies = [
+ "generic-array 0.14.1",
+ "subtle 2.2.2",
 ]
 
 [[package]]
@@ -373,7 +383,7 @@ version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "28dc203b75decc900220c4d9838e738d08413e663c26826ba92b669bed1d0795"
 dependencies = [
- "generic-array",
+ "generic-array 0.12.3",
 ]
 
 [[package]]
@@ -382,7 +392,16 @@ version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f3d0c8c8752312f9713efd397ff63acb9f85585afbf179282e720e7704954dd5"
 dependencies = [
- "generic-array",
+ "generic-array 0.12.3",
+]
+
+[[package]]
+name = "digest"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d3dd60d1080a57a05ab032377049e0591415d2b31afd7028356dbf3cc6dcb066"
+dependencies = [
+ "generic-array 0.14.1",
 ]
 
 [[package]]
@@ -392,7 +411,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5a7aaf89875554fab12c9d0855d694803a8820b73bfb89cdc96546b6bcab69e4"
 dependencies = [
  "elliptic-curve",
- "generic-array",
+ "generic-array 0.12.3",
  "k256",
  "p256",
  "p384",
@@ -421,7 +440,7 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "01f69be7d1feb7a7a04f158aaf32c7deaa7604e9bd58145525e536438c4e5096"
 dependencies = [
- "generic-array",
+ "generic-array 0.12.3",
  "getrandom",
  "subtle 2.2.2",
  "zeroize",
@@ -455,6 +474,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "generic-array"
+version = "0.14.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6d2664c2cf08049036f31015b04c6ac3671379a1d86f52ed2416893f16022deb"
+dependencies = [
+ "typenum",
+]
+
+[[package]]
 name = "getrandom"
 version = "0.1.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -482,12 +510,12 @@ dependencies = [
 
 [[package]]
 name = "hmac"
-version = "0.7.1"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5dcb5e64cda4c23119ab41ba960d1e170a774c8e4b9d9e6a9bc18aabf5e59695"
+checksum = "b87b580bd66811cc2324a27f3587de707cacf7525b96dca8122f7493e6cce0da"
 dependencies = [
- "crypto-mac",
- "digest",
+ "crypto-mac 0.8.0",
+ "digest 0.9.0",
 ]
 
 [[package]]
@@ -674,7 +702,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "006c038a43a45995a9670da19e67600114740e8511d4333bf97a56e66a7542d9"
 dependencies = [
  "byteorder",
- "crypto-mac",
+ "crypto-mac 0.7.0",
 ]
 
 [[package]]
@@ -911,7 +939,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "27044adfd2e1f077f649f59deb9490d3941d674002f7d062870a60ebe9bd47a0"
 dependencies = [
  "block-buffer",
- "digest",
+ "digest 0.8.1",
  "fake-simd",
  "opaque-debug",
 ]
@@ -958,7 +986,7 @@ version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "685e1c5b65c6cc6fd0eb9ba63c6cfb8431f7f9c7e078c626f23f50e13fa378d7"
 dependencies = [
- "digest",
+ "digest 0.8.1",
  "signature_derive",
 ]
 
