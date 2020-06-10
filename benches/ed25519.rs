@@ -3,7 +3,7 @@
 #![deny(warnings)]
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use yubihsm;
+
 
 const EXAMPLE_MESSAGE: &[u8] =
     b"The Edwards-curve Digital Signature yubihsm::AsymmetricAlgorithm  (EdDSA) is a \
