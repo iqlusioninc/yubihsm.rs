@@ -40,14 +40,15 @@ use crate::{
     session::{self, ErrorKind},
 };
 use aes::{
-    block_cipher_trait::{
+    block_cipher::{
         generic_array::{typenum::U16, GenericArray},
-        BlockCipher,
+        BlockCipher, NewBlockCipher,
     },
     Aes128,
 };
 use anomaly::{fail, format_err};
 use block_modes::{block_padding::Iso7816, BlockMode, Cbc};
+use cmac::crypto_mac::NewMac;
 use cmac::{crypto_mac::Mac as CryptoMac, Cmac};
 use subtle::ConstantTimeEq;
 use zeroize::{Zeroize, Zeroizing};
@@ -235,15 +236,15 @@ impl SecureChannel {
         }
 
         let mut mac = Cmac::<Aes128>::new_varkey(self.mac_key.as_ref()).unwrap();
-        mac.input(&self.mac_chaining_value);
-        mac.input(&[command_type.to_u8()]);
+        mac.update(&self.mac_chaining_value);
+        mac.update(&[command_type.to_u8()]);
 
         let length = (1 + command_data.len() + MAC_SIZE) as u16;
-        mac.input(&length.to_be_bytes());
-        mac.input(&[self.id.to_u8()]);
-        mac.input(command_data);
+        mac.update(&length.to_be_bytes());
+        mac.update(&[self.id.to_u8()]);
+        mac.update(command_data);
 
-        let tag = mac.result().code();
+        let tag = mac.finalize().into_bytes();
         self.mac_chaining_value.copy_from_slice(tag.as_slice());
 
         Ok(command::Message::new_with_mac(
@@ -370,19 +371,19 @@ impl SecureChannel {
         }
 
         let mut mac = Cmac::<Aes128>::new_varkey(self.rmac_key.as_ref()).unwrap();
-        mac.input(&self.mac_chaining_value);
-        mac.input(&[response.code.to_u8()]);
+        mac.update(&self.mac_chaining_value);
+        mac.update(&[response.code.to_u8()]);
 
         let length = response.len() as u16;
-        mac.input(&length.to_be_bytes());
-        mac.input(&[session_id.to_u8()]);
-        mac.input(&response.data);
+        mac.update(&length.to_be_bytes());
+        mac.update(&[session_id.to_u8()]);
+        mac.update(&response.data);
 
         if response
             .mac
             .as_ref()
             .expect("missing R-MAC tag!")
-            .verify(&mac.result().code())
+            .verify(&mac.finalize().into_bytes())
             .is_err()
         {
             self.terminate();
@@ -485,15 +486,15 @@ impl SecureChannel {
         );
 
         let mut mac = Cmac::<Aes128>::new_varkey(self.mac_key.as_ref()).unwrap();
-        mac.input(&self.mac_chaining_value);
-        mac.input(&[command.command_type.to_u8()]);
+        mac.update(&self.mac_chaining_value);
+        mac.update(&[command.command_type.to_u8()]);
 
         let length = command.len() as u16;
-        mac.input(&length.to_be_bytes());
-        mac.input(&[command.session_id.unwrap().to_u8()]);
-        mac.input(&command.data);
+        mac.update(&length.to_be_bytes());
+        mac.update(&[command.session_id.unwrap().to_u8()]);
+        mac.update(&command.data);
 
-        let tag = mac.result().code();
+        let tag = mac.finalize().into_bytes();
 
         if command
             .mac
@@ -551,13 +552,13 @@ impl SecureChannel {
         let body = response_data.into();
 
         let mut mac = Cmac::<Aes128>::new_varkey(self.rmac_key.as_ref()).unwrap();
-        mac.input(&self.mac_chaining_value);
-        mac.input(&[code.to_u8()]);
+        mac.update(&self.mac_chaining_value);
+        mac.update(&[code.to_u8()]);
 
         let length = (1 + body.len() + MAC_SIZE) as u16;
-        mac.input(&length.to_be_bytes());
-        mac.input(&[self.id.to_u8()]);
-        mac.input(&body);
+        mac.update(&length.to_be_bytes());
+        mac.update(&[self.id.to_u8()]);
+        mac.update(&body);
 
         self.increment_counter();
 
@@ -565,7 +566,7 @@ impl SecureChannel {
             code,
             self.id,
             body,
-            &mac.result().code(),
+            &mac.finalize().into_bytes(),
         ))
     }
 

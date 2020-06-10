@@ -25,7 +25,7 @@ pub const PBKDF2_SALT: &[u8] = b"Yubico";
 
 /// Number of PBKDF2 iterations to perform when deriving auth keys.
 /// This number of iterations matches what is performed by yubihsm-shell.
-pub const PBKDF2_ITERATIONS: usize = 10_000;
+pub const PBKDF2_ITERATIONS: u32 = 10_000;
 
 /// `YubiHSM 2` authentication keys (2 * AES-128 symmetric PSK) from which
 /// session keys are derived.c

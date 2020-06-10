@@ -79,12 +79,12 @@ impl<'de> Deserialize<'de> for AuditOption {
             }
 
             fn visit_u8<E: de::Error>(self, value: u8) -> Result<AuditOption, E> {
-                AuditOption::from_u8(value).or_else(|e| Err(E::custom(e)))
+                AuditOption::from_u8(value).map_err(E::custom)
             }
 
             fn visit_u64<E: de::Error>(self, value: u64) -> Result<AuditOption, E> {
                 assert!(value < 255);
-                AuditOption::from_u8(value as u8).or_else(|e| Err(E::custom(e)))
+                AuditOption::from_u8(value as u8).map_err(E::custom)
             }
         }
 
@@ -134,12 +134,12 @@ impl<'de> Deserialize<'de> for AuditTag {
             }
 
             fn visit_u8<E: de::Error>(self, value: u8) -> Result<AuditTag, E> {
-                AuditTag::from_u8(value).or_else(|e| Err(E::custom(format!("{}", e))))
+                AuditTag::from_u8(value).map_err(|e| E::custom(format!("{}", e)))
             }
 
             fn visit_u64<E: de::Error>(self, value: u64) -> Result<AuditTag, E> {
                 assert!(value < 255);
-                AuditTag::from_u8(value as u8).or_else(|e| Err(E::custom(format!("{}", e))))
+                AuditTag::from_u8(value as u8).map_err(|e| E::custom(format!("{}", e)))
             }
         }
 

@@ -4,7 +4,7 @@
 
 use super::{Context, KEY_SIZE};
 use aes::Aes128;
-use cmac::{crypto_mac::Mac, Cmac};
+use cmac::{crypto_mac::Mac, crypto_mac::NewMac, Cmac};
 
 /// Derive a slice of output data using SCP03's KDF
 pub fn derive(mac_key: &[u8], derivation_constant: u8, context: &Context, output: &mut [u8]) {
@@ -38,6 +38,6 @@ pub fn derive(mac_key: &[u8], derivation_constant: u8, context: &Context, output
     derivation_data[16..].copy_from_slice(context.as_slice());
 
     let mut mac = Cmac::<Aes128>::new_varkey(mac_key).unwrap();
-    mac.input(&derivation_data);
-    output.copy_from_slice(&mac.result().code().as_slice()[..output_len]);
+    mac.update(&derivation_data);
+    output.copy_from_slice(&mac.finalize().into_bytes().as_slice()[..output_len]);
 }
