@@ -4,7 +4,6 @@
 
 use criterion::{criterion_group, criterion_main, Criterion};
 
-
 const EXAMPLE_MESSAGE: &[u8] =
     b"The Edwards-curve Digital Signature yubihsm::AsymmetricAlgorithm  (EdDSA) is a \
     variant of Schnorr's signature system with (possibly twisted) Edwards curves.";
