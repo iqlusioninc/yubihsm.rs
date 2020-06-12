@@ -173,7 +173,7 @@ impl Signer<Secp256k1> {
         // Sign the data using the YubiHSM, producing an ASN.1 DER encoded signature
         let raw_sig = self
             .client
-            .sign_ecdsa(self.signing_key_id, digest.result().as_slice())?;
+            .sign_ecdsa(self.signing_key_id, digest.finalize().as_slice())?;
 
         // Parse the signature using libsecp256k1
         let mut sig = secp256k1::Signature::from_der_lax(raw_sig.as_ref()).unwrap();
