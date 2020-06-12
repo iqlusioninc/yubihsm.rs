@@ -143,7 +143,7 @@ impl Signer<NistP256> {
     {
         let signature = self
             .client
-            .sign_ecdsa(self.signing_key_id, digest.result().as_slice())?;
+            .sign_ecdsa(self.signing_key_id, digest.finalize().as_slice())?;
 
         Asn1Signature::from_bytes(signature.as_ref())
     }
@@ -157,7 +157,7 @@ impl Signer<NistP384> {
     {
         let signature = self
             .client
-            .sign_ecdsa(self.signing_key_id, digest.result().as_slice())?;
+            .sign_ecdsa(self.signing_key_id, digest.finalize().as_slice())?;
 
         Asn1Signature::from_bytes(signature.as_ref())
     }
