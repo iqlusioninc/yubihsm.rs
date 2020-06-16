@@ -25,7 +25,7 @@ fn generated_nistp256_key_test() {
     pubkey[0] = 0x04; // DER OCTET STRING tag
     pubkey[1..].copy_from_slice(pubkey_response.bytes.as_slice());
 
-    let test_digest = Vec::from(Sha256::digest(TEST_MESSAGE).slice());
+    let test_digest = Vec::from(Sha256::digest(TEST_MESSAGE).as_slice());
 
     let signature = client
         .sign_ecdsa(TEST_KEY_ID, test_digest)
