@@ -1,26 +1,37 @@
-## [0.33.0] (2020-04-20)
+# Changelog
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## 0.34.0 (2020-06-18)
+### Changed
+- Update `signatory` to v0.20 ([#56])
+- Update `aes`, `block-modes`, `cmac`, `hmac`, `pbkdf2`, `sha2` dependencies ([#55])
+
+[#56]: https://github.com/iqlusioninc/yubihsm.rs/pull/56
+[#55]: https://github.com/iqlusioninc/yubihsm.rs/pull/55
+
+## 0.33.0 (2020-04-20)
 
 - Upgrade to `signature` crate v1.0; `ecdsa` crate v0.5 ([#24])
 - Bump `tiny_http` from 0.6 to 0.7 ([#23])
 
-[0.33.0]: https://github.com/iqlusioninc/yubihsm.rs/pull/26
 [#24]: https://github.com/iqlusioninc/yubihsm.rs/pull/24
 [#23]: https://github.com/iqlusioninc/yubihsm.rs/pull/23
 
-## [0.32.1] (2020-03-24)
+## 0.32.1 (2020-03-24)
 
 - connector/usb: Use `rusb::Context` instead of `GlobalContext` ([#15])
 
-[0.32.1]: https://github.com/iqlusioninc/yubihsm.rs/pull/16
 [#15]: https://github.com/iqlusioninc/yubihsm.rs/pull/15
 
-## [0.32.0] (2020-02-29)
+## 0.32.0 (2020-02-29)
 
 - Rename `yolocrypto` feature to `untested` ([#5])
 - MSRV 1.40+ ([#3])
 - Update `anomaly` requirement from 0.1.2 to 0.2.0 ([#2])
 
-[0.32.0]: https://github.com/iqlusioninc/yubihsm.rs/pull/6
 [#2]: https://github.com/iqlusioninc/yubihsm.rs/pull/2
 [#3]: https://github.com/iqlusioninc/yubihsm.rs/pull/3
 [#5]: https://github.com/iqlusioninc/yubihsm.rs/pull/5
