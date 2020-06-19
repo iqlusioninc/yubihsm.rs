@@ -1,6 +1,6 @@
 [package]
 name          = "yubihsm"
-version       = "0.33.0" # Also update html_root_url in lib.rs when bumping this
+version       = "0.34.0" # Also update html_root_url in lib.rs when bumping this
 description   = """
 Pure Rust client for YubiHSM2 devices with support for HTTP and
 USB-based access to the device. Supports most HSM functionality
@@ -68,3 +68,6 @@ harness = false
 [[example]]
 name = "connector_http_server"
 required-features = ["http-server", "usb"]
+
+[patch.crates-io]
+backtrace = { git = "https://github.com/rust-lang/backtrace-rs/" }

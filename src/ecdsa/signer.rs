@@ -3,8 +3,6 @@
 //! To enable secp256k1 support, build with the `secp256k1` cargo feature enabled.
 
 use crate::{ecdsa::algorithm::CurveAlgorithm, object, Client};
-#[cfg(feature = "secp256k1")]
-use signatory::ecdsa::{curve::Secp256k1, generic_array::GenericArray};
 use signatory::{
     ecdsa::{
         curve::{CompressedPointSize, Curve, NistP256, NistP384, UncompressedPointSize},
@@ -19,6 +17,9 @@ use signatory::{
 };
 use signature::digest::Digest;
 use std::{marker::PhantomData, ops::Add};
+
+#[cfg(feature = "secp256k1")]
+use signatory::ecdsa::{curve::Secp256k1, generic_array::GenericArray};
 
 /// ECDSA signature provider for yubihsm-client
 #[derive(signature::Signer)]
