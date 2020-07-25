@@ -38,7 +38,7 @@ impl UsbConnection {
 
         // Clear any lingering messages
         for _ in 0..MAX_RECV_RETRIES {
-            if recv_message(&mut handle, UsbTimeout::from_millis(1)).is_err() {
+            if recv_message(&handle, UsbTimeout::from_millis(1)).is_err() {
                 break;
             }
         }
