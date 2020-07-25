@@ -34,11 +34,11 @@ impl UsbConnection {
 
     /// Create a new YubiHSM device from a rusb device
     pub(super) fn create(device: Device, timeout: UsbTimeout) -> Result<Self, connector::Error> {
-        let mut handle = device.open_handle()?;
+        let handle = device.open_handle()?;
 
         // Clear any lingering messages
         for _ in 0..MAX_RECV_RETRIES {
-            if recv_message(&mut handle, UsbTimeout::from_millis(1)).is_err() {
+            if recv_message(&handle, UsbTimeout::from_millis(1)).is_err() {
                 break;
             }
         }
@@ -59,9 +59,9 @@ impl UsbConnection {
 impl Connection for UsbConnection {
     /// Send a command to the YubiHSM and read its response
     fn send_message(&self, _uuid: Uuid, cmd: Message) -> Result<Message, connector::Error> {
-        let mut handle = self.handle.lock().unwrap();
-        send_message(&mut handle, cmd.as_ref(), self.timeout)?;
-        recv_message(&mut handle, self.timeout)
+        let handle = self.handle.lock().unwrap();
+        send_message(&handle, cmd.as_ref(), self.timeout)?;
+        recv_message(&handle, self.timeout)
     }
 }
 
@@ -73,7 +73,7 @@ impl Default for UsbConnection {
 
 /// Write a bulk message to the YubiHSM 2
 fn send_message(
-    handle: &mut rusb::DeviceHandle<rusb::Context>,
+    handle: &rusb::DeviceHandle<rusb::Context>,
     data: &[u8],
     timeout: UsbTimeout,
 ) -> Result<usize, connector::Error> {
@@ -93,7 +93,7 @@ fn send_message(
 
 /// Receive a message
 fn recv_message(
-    handle: &mut rusb::DeviceHandle<rusb::Context>,
+    handle: &rusb::DeviceHandle<rusb::Context>,
     timeout: UsbTimeout,
 ) -> Result<Message, connector::Error> {
     // Allocate a buffer which is the maximum size we expect to receive
