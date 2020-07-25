@@ -34,7 +34,7 @@ impl UsbConnection {
 
     /// Create a new YubiHSM device from a rusb device
     pub(super) fn create(device: Device, timeout: UsbTimeout) -> Result<Self, connector::Error> {
-        let mut handle = device.open_handle()?;
+        let handle = device.open_handle()?;
 
         // Clear any lingering messages
         for _ in 0..MAX_RECV_RETRIES {
