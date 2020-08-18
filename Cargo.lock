@@ -29,7 +29,7 @@ checksum = "f7001367fde4c768a19d1029f0a8be5abd9308e1119846d5bd9ad26297b8faf5"
 dependencies = [
  "aes-soft",
  "aesni",
- "block-cipher",
+ "block-cipher 0.7.1",
 ]
 
 [[package]]
@@ -38,7 +38,7 @@ version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4925647ee64e5056cf231608957ce7c81e12d6d6e316b9ce1404778cc1d35fa7"
 dependencies = [
- "block-cipher",
+ "block-cipher 0.7.1",
  "byteorder",
  "opaque-debug 0.2.3",
 ]
@@ -49,7 +49,7 @@ version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d050d39b0b7688b3a3254394c3e30a9d66c41dcf9b05b0e2dbdc623f6505d264"
 dependencies = [
- "block-cipher",
+ "block-cipher 0.7.1",
  "opaque-debug 0.2.3",
 ]
 
@@ -123,23 +123,29 @@ dependencies = [
 ]
 
 [[package]]
-name = "block-modes"
-version = "0.4.0"
+name = "block-cipher"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "538b66bc25a51ce985544067a9c3e17d426447f468c495dd6cb00040e5953692"
+checksum = "f337a3e6da609650eb74e02bc9fac7b735049f7623ab12f2e4c719316fcc7e80"
 dependencies = [
- "block-cipher",
+ "generic-array",
+]
+
+[[package]]
+name = "block-modes"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0c9b14fd8a4739e6548d4b6018696cf991dcf8c6effd9ef9eb33b29b8a650972"
+dependencies = [
+ "block-cipher 0.8.0",
  "block-padding",
 ]
 
 [[package]]
 name = "block-padding"
-version = "0.1.5"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fa79dedbb091f449f1f39e53edf88d5dbe95f895dae6135a8d7b881fb5af73f5"
-dependencies = [
- "byte-tools",
-]
+checksum = "8d696c370c750c948ada61c69a0ee2cbbb9c50b1019ddb86d9317157a99c2cae"
 
 [[package]]
 name = "bstr"
@@ -158,12 +164,6 @@ name = "bumpalo"
 version = "3.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2e8c087f005730276d1096a652e92a8bacee2e2472bcc9715a74d2bec38b5820"
-
-[[package]]
-name = "byte-tools"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e3b5ca7a04898ad4bcd41c90c5285445ff5b791899bb1b0abdd2a2aa791211d7"
 
 [[package]]
 name = "byteorder"
@@ -227,7 +227,7 @@ version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a681d7c344a6fbe3dcd1565e76dac74eed379c8a9326b29654ae34a718d16a49"
 dependencies = [
- "block-cipher",
+ "block-cipher 0.7.1",
  "crypto-mac",
  "dbl",
 ]
