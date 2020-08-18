@@ -2,7 +2,7 @@
 //!
 //! ## Prerequisites
 //!
-//! This crate builds on Rust 1.40+ and by default uses SIMD features
+//! This crate builds on Rust 1.43+ and by default uses SIMD features
 //! which require the following `RUSTFLAGS`:
 //!
 //! `RUSTFLAGS=-Ctarget-feature=+aes,+ssse3`

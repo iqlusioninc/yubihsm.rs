@@ -48,7 +48,7 @@ jobs:
           - macos-latest
         toolchain:
           - stable
-          - 1.41.0
+          - 1.43.0 # MSRV
     steps:
       - name: Checkout sources
         uses: actions/checkout@v1
@@ -190,7 +190,7 @@ jobs:
           - macos-latest
         toolchain:
           - stable
-          - 1.41.0
+          - 1.43.0 # MSRV
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout sources
@@ -273,7 +273,7 @@ jobs:
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: 1.43.0 # MSRV
           override: true
 
       - name: Install clippy
