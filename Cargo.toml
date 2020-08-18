@@ -16,7 +16,7 @@ keywords      = ["ecdsa", "ed25519", "hmac", "hsm", "yubikey"]
 edition       = "2018"
 
 [dependencies]
-aes = "0.4"
+aes = "0.5"
 anomaly = "0.2"
 bitflags = "1"
 block-modes = "0.4"
