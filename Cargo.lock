@@ -409,7 +409,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2298f66754d859f4c099b0e645cfd258d2dfdfd1bac9496fd514d603ff6a5c6b"
 dependencies = [
  "generic-array",
- "getrandom",
+ "getrandom 0.1.15",
  "subtle",
  "zeroize",
 ]
@@ -438,9 +438,20 @@ dependencies = [
 
 [[package]]
 name = "getrandom"
-version = "0.1.14"
+version = "0.1.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7abc8dd8451921606d809ba32e95b6111925cd2906060d2dcc29c070220503eb"
+checksum = "fc587bc0ec293155d5bfa6b9891ec18a1e330c234f896ea47fbada4cadbe47e6"
+dependencies = [
+ "cfg-if",
+ "libc",
+ "wasi",
+]
+
+[[package]]
+name = "getrandom"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ee8025cf36f917e6a52cce185b7c7177689b838b7ec138364e50cc2277a56cf4"
 dependencies = [
  "cfg-if",
  "libc",
@@ -943,7 +954,7 @@ checksum = "7c20cbcf205bedce2ce5944ab41dd2e10b1dcee2831a0a2a071806761ed6eaba"
 dependencies = [
  "ecdsa",
  "ed25519",
- "getrandom",
+ "getrandom 0.1.15",
  "sha2",
  "signature",
  "subtle-encoding",
@@ -1329,7 +1340,7 @@ dependencies = [
  "chrono",
  "cmac",
  "criterion",
- "getrandom",
+ "getrandom 0.2.0",
  "harp",
  "hmac",
  "lazy_static",

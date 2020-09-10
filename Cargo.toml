@@ -22,7 +22,7 @@ bitflags = "1"
 block-modes = "0.6"
 chrono = { version = "0.4", features = ["serde"], optional = true }
 cmac = "0.4"
-getrandom = "0.1"
+getrandom = "0.2"
 harp = { version = "0.1", optional = true }
 hmac = { version = "0.9", optional = true }
 log = "0.4"
