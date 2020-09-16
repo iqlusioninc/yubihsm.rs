@@ -1,10 +1,10 @@
-//! Tests for producing Ed25519 signatures
+//! Ed25519 signing test
 
 use crate::{
     generate_asymmetric_key, put_asymmetric_key, test_vectors::ED25519_TEST_VECTORS, TEST_KEY_ID,
     TEST_MESSAGE,
 };
-use ring::signature::UnparsedPublicKey;
+use ed25519_dalek::Verifier;
 use yubihsm::{asymmetric, Capability};
 
 /// Test Ed25519 against RFC 8032 test vectors
@@ -46,17 +46,20 @@ fn generated_key_test() {
         Capability::SIGN_EDDSA,
     );
 
-    let pubkey = client
+    let public_key = client
         .get_public_key(TEST_KEY_ID)
         .unwrap_or_else(|err| panic!("error getting public key: {}", err));
 
-    assert_eq!(pubkey.algorithm, asymmetric::Algorithm::Ed25519);
+    assert_eq!(public_key.algorithm, asymmetric::Algorithm::Ed25519);
 
     let signature = client
         .sign_ed25519(TEST_KEY_ID, TEST_MESSAGE)
         .unwrap_or_else(|err| panic!("error performing Ed25519 signature: {}", err));
 
-    UnparsedPublicKey::new(&ring::signature::ED25519, &pubkey.bytes)
-        .verify(TEST_MESSAGE, signature.as_ref())
-        .unwrap();
+    assert!(
+        ed25519_dalek::PublicKey::from_bytes(public_key.ed25519().unwrap().as_bytes())
+            .unwrap()
+            .verify(TEST_MESSAGE, &signature)
+            .is_ok()
+    );
 }

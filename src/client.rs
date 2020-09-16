@@ -21,7 +21,7 @@ use crate::{
     connector::Connector,
     device::{self, commands::*, StorageInfo},
     domain::Domain,
-    ecdsa::{self, commands::*},
+    ecdsa::commands::*,
     ed25519::{self, commands::*},
     hmac::{self, commands::*},
     object::{self, commands::*, generate},
@@ -903,27 +903,22 @@ impl Client {
     ///
     /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Ecdsa.html>
     ///
-    /// # secp256k1 notes
+    /// # Security Warning
     ///
-    /// The YubiHSM 2 does not produce signatures in "low S" form, which is expected
-    /// for most cryptocurrency applications (the typical use case for secp256k1).
+    /// This is a low-level ECDSA API, and if used incorrectly could potentially
+    /// result in forgeable signatures.
     ///
-    /// If your application demands this (e.g. Bitcoin), you'll need to normalize
-    /// the signatures. One option for this is the `secp256k1` crate's
-    /// [Signature::normalize_s] function.
-    ///
-    /// Normalization functionality is built into the `yubihsm::signatory` API
-    /// found in this crate (when the `secp256k1` feature is enabled).
-    pub fn sign_ecdsa<T>(&self, key_id: object::Id, digest: T) -> Result<ecdsa::Signature, Error>
+    /// We recommend using the [`ecdsa::Signer`] type instead, which provides a
+    /// high-level, well-typed, misuse resistant API.
+    pub fn sign_ecdsa_prehash_raw<T>(&self, key_id: object::Id, digest: T) -> Result<Vec<u8>, Error>
     where
         T: Into<Vec<u8>>,
     {
-        Ok(self
-            .send_command(SignEcdsaCommand {
-                key_id,
-                digest: digest.into(),
-            })?
-            .into())
+        self.send_command(SignEcdsaCommand {
+            key_id,
+            digest: digest.into(),
+        })
+        .map(Into::into)
     }
 
     /// Compute an Ed25519 signature with the given key ID.

@@ -20,21 +20,26 @@ aes = "0.5"
 anomaly = "0.2"
 bitflags = "1"
 block-modes = "0.6"
+ccm = { version = "0.2", optional = true, features = ["std"] }
 chrono = { version = "0.4", features = ["serde"], optional = true }
 cmac = "0.4"
-getrandom = "0.1"
+digest = { version = "0.9", optional = true, default-features = false }
+ecdsa = { version = "0.8", default-features = false }
+ed25519 = "1"
+ed25519-dalek = { version = "1", optional = true }
 harp = { version = "0.1", optional = true }
 hmac = { version = "0.9", optional = true }
+k256 = { version = "0.5", optional = true, features = ["ecdsa", "keccak256", "sha256"] }
 log = "0.4"
+p256 = { version = "0.5", default-features = false, features = ["ecdsa-core"] }
+p384 = { version = "0.4", default-features = false, features = ["ecdsa"] }
 pbkdf2 = { version = "0.5", optional = true, default-features = false }
 serde = { version = "1", features = ["serde_derive"] }
 serde_json = { version = "1", optional = true }
-ring = { version = "0.16", optional = true, default-features = false }
+rand_core = { version = "0.5", features = ["std"] }
 rusb = { version = "0.6", optional = true }
-secp256k1 = { version = "0.17", optional = true }
 sha2 = { version = "0.9", optional = true }
-signatory = { version = "0.20", features = ["digest", "ecdsa", "ed25519", "k256", "p256", "p384"] }
-signature = { version = "1.1.0", features = ["derive-preview"] }
+signature = { version = "1", features = ["derive-preview"] }
 subtle = "2"
 thiserror = "1"
 tiny_http = { version = "0.7", optional = true }
@@ -43,23 +48,24 @@ zeroize = { version = "1", features = ["zeroize_derive"] }
 
 [dev-dependencies]
 criterion = "0.3"
+ed25519-dalek = "1"
 lazy_static = "1"
-ring = { version = "0.16", default-features = false }
-signatory-ring = "0.20"
-signatory-secp256k1 = "0.20"
+p256 = { version = "0.5", features = ["ecdsa"] }
 
 [features]
 default = ["http", "passwords", "setup"]
 http-server = ["tiny_http"]
 http = ["harp"]
-mockhsm = ["passwords", "ring"]
+mockhsm = ["ccm", "digest", "ed25519-dalek", "p256/ecdsa", "secp256k1"]
 passwords = ["hmac", "pbkdf2", "sha2"]
+secp256k1 = ["k256"]
 setup = ["chrono", "passwords", "serde_json", "uuid/serde"]
 untested = ["sha2"]
 usb = ["rusb"]
 
 [package.metadata.docs.rs]
 all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 
 [[bench]]
 name = "ed25519"

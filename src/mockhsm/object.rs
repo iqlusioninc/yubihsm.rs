@@ -42,7 +42,7 @@ impl<'a> From<&'a Object> for WrappedObject {
     fn from(obj: &'a Object) -> Self {
         Self {
             object_info: obj.object_info.clone(),
-            data: obj.payload.as_ref().into(),
+            data: obj.payload.to_bytes(),
         }
     }
 }

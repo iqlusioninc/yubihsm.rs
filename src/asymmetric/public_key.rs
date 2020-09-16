@@ -1,16 +1,17 @@
 //! Public keys for use with asymmetric cryptography / signatures
 
-use crate::{
-    asymmetric,
-    ecdsa::{self, algorithm::CurveAlgorithm},
-    ed25519,
+use crate::{asymmetric, ecdsa::algorithm::CurveAlgorithm, ed25519};
+use ::ecdsa::{
+    elliptic_curve::{
+        sec1::{self, UncompressedPointSize, UntaggedPointSize},
+        weierstrass::{point, Curve},
+    },
+    generic_array::{
+        typenum::{Unsigned, U1},
+        ArrayLength, GenericArray,
+    },
 };
 use serde::{Deserialize, Serialize};
-use signatory::ecdsa::{
-    curve::{CompressedPointSize, UncompressedPointSize},
-    generic_array::{typenum::U1, ArrayLength, GenericArray},
-    Curve,
-};
 use std::ops::Add;
 
 /// Response from `command::get_public_key`
@@ -52,19 +53,26 @@ impl PublicKey {
     }
 
     /// Return the ECDSA public key of the given curve type if applicable
-    pub fn ecdsa<C>(&self) -> Option<ecdsa::PublicKey<C>>
+    pub fn ecdsa<C>(&self) -> Option<sec1::EncodedPoint<C>>
     where
-        C: Curve + CurveAlgorithm,
-        <C::ScalarSize as Add>::Output: Add<U1> + ArrayLength<u8>,
-        CompressedPointSize<C::ScalarSize>: ArrayLength<u8>,
-        UncompressedPointSize<C::ScalarSize>: ArrayLength<u8>,
+        C: Curve + CurveAlgorithm + point::Compression,
+        UntaggedPointSize<C>: Add<U1> + ArrayLength<u8>,
+        UncompressedPointSize<C>: ArrayLength<u8>,
     {
-        if self.algorithm == C::asymmetric_algorithm() {
-            Some(ecdsa::PublicKey::from_untagged_point(
-                GenericArray::from_slice(&self.bytes),
-            ))
+        if self.algorithm != C::asymmetric_algorithm()
+            || self.bytes.len() != C::FieldSize::to_usize() * 2
+        {
+            return None;
+        }
+
+        let mut bytes = GenericArray::default();
+        bytes.copy_from_slice(&self.bytes);
+        let result = sec1::EncodedPoint::from_untagged_bytes(&bytes);
+
+        if C::COMPRESS_POINTS {
+            Some(result.compress())
         } else {
-            None
+            Some(result)
         }
     }
 

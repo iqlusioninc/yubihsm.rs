@@ -8,7 +8,7 @@
 
 use crate::{client, device, object, wrap, Capability, Client, Domain};
 use anomaly::fail;
-use getrandom::getrandom;
+use rand_core::{OsRng, RngCore};
 use std::fmt::{self, Debug};
 use zeroize::{Zeroize, Zeroizing};
 
@@ -29,7 +29,7 @@ impl Key {
     /// Generate a random wrap key with the given key size.
     pub fn generate_random(key_id: object::Id, algorithm: wrap::Algorithm) -> Self {
         let mut bytes = Zeroizing::new(vec![0u8; algorithm.key_len()]);
-        getrandom(&mut bytes).expect("RNG failure!");
+        OsRng.fill_bytes(&mut bytes);
         Self::from_bytes(key_id, &bytes).unwrap()
     }
 
