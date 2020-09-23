@@ -2,7 +2,6 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/Sign_Ecdsa.html>
 
-use super::Signature;
 use crate::{
     command::{self, Command},
     object,
@@ -26,14 +25,14 @@ impl Command for SignEcdsaCommand {
 
 /// Response from ECDSA signing request
 #[derive(Serialize, Deserialize, Debug)]
-pub struct SignEcdsaResponse(pub(crate) Signature);
+pub struct SignEcdsaResponse(pub Vec<u8>);
 
 impl Response for SignEcdsaResponse {
     const COMMAND_CODE: command::Code = command::Code::SignEcdsa;
 }
 
-impl From<SignEcdsaResponse> for Signature {
-    fn from(response: SignEcdsaResponse) -> Signature {
+impl From<SignEcdsaResponse> for Vec<u8> {
+    fn from(response: SignEcdsaResponse) -> Vec<u8> {
         response.0
     }
 }

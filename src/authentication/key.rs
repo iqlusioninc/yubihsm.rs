@@ -2,11 +2,11 @@
 
 use super::{Error, ErrorKind};
 use anomaly::ensure;
-use getrandom::getrandom;
 #[cfg(feature = "hmac")]
 use hmac::Hmac;
 #[cfg(feature = "pbkdf2")]
 use pbkdf2::pbkdf2;
+use rand_core::{OsRng, RngCore};
 #[cfg(feature = "sha2")]
 use sha2::Sha256;
 use std::fmt::{self, Debug};
@@ -36,7 +36,7 @@ impl Key {
     /// Generate a random `Key` using `OsRng`.
     pub fn random() -> Self {
         let mut challenge = [0u8; SIZE];
-        getrandom(&mut challenge).expect("RNG failure!");
+        OsRng.fill_bytes(&mut challenge);
         Key(challenge)
     }
 

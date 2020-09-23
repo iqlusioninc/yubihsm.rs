@@ -1,6 +1,6 @@
 //! Commands supported by the `MockHsm`
 
-use super::{object::Payload, state::State, MOCK_SERIAL_NUMBER};
+use super::{digest::MockDigest256, object::Payload, state::State, MOCK_SERIAL_NUMBER};
 use crate::{
     algorithm::*,
     asymmetric::{self, commands::*, PublicKey},
@@ -9,7 +9,8 @@ use crate::{
     command::{Code, Message},
     connector,
     device::{self, commands::*, SerialNumber, StorageInfo},
-    ecdh, ecdsa,
+    ecdh,
+    ecdsa::{self, commands::*},
     ed25519::commands::*,
     hmac::{self, commands::*},
     object::{self, commands::*},
@@ -23,10 +24,14 @@ use crate::{
     wrap::{self, commands::*},
     Capability,
 };
+use ::ecdsa::{
+    elliptic_curve::{Field, FromDigest},
+    hazmat::SignPrimitive,
+};
 use ::hmac::{Hmac, Mac};
 use cmac::crypto_mac::NewMac;
-use getrandom::getrandom;
-use ring::signature::Ed25519KeyPair;
+use ed25519_dalek as ed25519;
+use rand_core::{OsRng, RngCore};
 use sha2::Sha256;
 use std::{io::Cursor, str::FromStr};
 use subtle::ConstantTimeEq;
@@ -111,6 +116,7 @@ pub(crate) fn session_message(
         Code::PutWrapKey => put_wrap_key(state, &command.data),
         Code::ResetDevice => return Ok(reset_device(state, session_id)),
         Code::SetLogIndex => SetLogIndexResponse {}.serialize(),
+        Code::SignEcdsa => sign_ecdsa(state, &command.data),
         Code::SignEddsa => sign_eddsa(state, &command.data),
         Code::GetStorageInfo => get_storage_info(),
         Code::VerifyHmac => verify_hmac(state, &command.data),
@@ -231,7 +237,7 @@ fn export_wrapped(state: &mut State, cmd_data: &[u8]) -> response::Message {
 
     match state
         .objects
-        .wrap(wrap_key_id, object_id, object_type, &nonce)
+        .wrap_obj(wrap_key_id, object_id, object_type, &nonce)
     {
         Ok(ciphertext) => ExportWrappedResponse(wrap::Message { nonce, ciphertext }).serialize(),
         Err(e) => {
@@ -340,7 +346,7 @@ fn get_opaque(state: &State, cmd_data: &[u8]) -> response::Message {
         .unwrap_or_else(|e| panic!("error parsing Code::GetOpaqueObject: {:?}", e));
 
     if let Some(obj) = state.objects.get(command.object_id, object::Type::Opaque) {
-        GetOpaqueResponse(obj.payload.as_ref().into()).serialize()
+        GetOpaqueResponse(obj.payload.to_bytes()).serialize()
     } else {
         debug!("no such opaque object ID: {:?}", command.object_id);
         device::ErrorKind::ObjectNotFound.into()
@@ -366,7 +372,7 @@ fn get_pseudo_random(_state: &State, cmd_data: &[u8]) -> response::Message {
         .unwrap_or_else(|e| panic!("error parsing Code::GetPseudoRandom: {:?}", e));
 
     let mut bytes = vec![0u8; command.bytes as usize];
-    getrandom(&mut bytes).expect("RNG failure!");
+    OsRng.fill_bytes(&mut bytes);
 
     GetPseudoRandomResponse { bytes }.serialize()
 }
@@ -414,7 +420,7 @@ fn import_wrapped(state: &mut State, cmd_data: &[u8]) -> response::Message {
     } = deserialize(cmd_data)
         .unwrap_or_else(|e| panic!("error parsing Code::ImportWrapped: {:?}", e));
 
-    match state.objects.unwrap(wrap_key_id, &nonce, ciphertext) {
+    match state.objects.unwrap_obj(wrap_key_id, &nonce, ciphertext) {
         Ok(obj) => ImportWrappedResponse {
             object_type: obj.object_type,
             object_id: obj.object_id,
@@ -606,6 +612,47 @@ fn reset_device(state: &mut State, session_id: session::Id) -> Vec<u8> {
     response
 }
 
+/// Sign a message using the ECDSA signature algorithm
+fn sign_ecdsa(state: &State, cmd_data: &[u8]) -> response::Message {
+    let command: SignEcdsaCommand =
+        deserialize(cmd_data).unwrap_or_else(|e| panic!("error parsing Code::SignEcdsa: {:?}", e));
+
+    if let Some(obj) = state
+        .objects
+        .get(command.key_id, object::Type::AsymmetricKey)
+    {
+        match &obj.payload {
+            Payload::EcdsaNistP256(secret_key) => {
+                let k = p256::Scalar::random(&mut OsRng);
+                let z = p256::Scalar::from_digest(MockDigest256::from(&command));
+                let signature = secret_key
+                    .secret_scalar()
+                    .try_sign_prehashed(&k, &z)
+                    .expect("ECDSA failure!");
+
+                SignEcdsaResponse(signature.to_asn1().as_ref().into()).serialize()
+            }
+            Payload::EcdsaSecp256k1(secret_key) => {
+                let k = k256::Scalar::random(&mut OsRng);
+                let z = k256::Scalar::from_digest(MockDigest256::from(&command));
+                let signature = secret_key
+                    .secret_scalar()
+                    .try_sign_prehashed(&k, &z)
+                    .expect("ECDSA failure!");
+
+                SignEcdsaResponse(signature.to_asn1().as_ref().into()).serialize()
+            }
+            _ => {
+                debug!("not an ECDSA key: {:?}", obj.algorithm());
+                device::ErrorKind::InvalidCommand.into()
+            }
+        }
+    } else {
+        debug!("no such object ID: {:?}", command.key_id);
+        device::ErrorKind::ObjectNotFound.into()
+    }
+}
+
 /// Sign a message using the Ed25519 signature algorithm
 fn sign_eddsa(state: &State, cmd_data: &[u8]) -> response::Message {
     let command: SignEddsaCommand =
@@ -615,10 +662,10 @@ fn sign_eddsa(state: &State, cmd_data: &[u8]) -> response::Message {
         .objects
         .get(command.key_id, object::Type::AsymmetricKey)
     {
-        if let Payload::Ed25519KeyPair(ref seed) = obj.payload {
-            let keypair = Ed25519KeyPair::from_seed_unchecked(seed).unwrap();
-
-            let signature_bytes = keypair.sign(command.data.as_ref());
+        if let Payload::Ed25519Key(secret_key) = &obj.payload {
+            let expanded_secret_key = ed25519::ExpandedSecretKey::from(secret_key);
+            let public_key = ed25519::PublicKey::from(secret_key);
+            let signature_bytes = expanded_secret_key.sign(command.data.as_ref(), &public_key);
             SignEddsaResponse(signature_bytes.as_ref().into()).serialize()
         } else {
             debug!("not an Ed25519 key: {:?}", obj.algorithm());

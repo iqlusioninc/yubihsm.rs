@@ -1,7 +1,7 @@
 //! Nonces used by the YubiHSM 2's AES-CCM encrypted `wrap::Message`
 
 #[cfg(feature = "mockhsm")]
-use getrandom::getrandom;
+use rand_core::{OsRng, RngCore};
 
 /// Number of bytes in a nonce used for "wrapping" (i.e AES-CCM encryption)
 pub const SIZE: usize = 13;
@@ -15,7 +15,7 @@ impl Nonce {
     #[cfg(feature = "mockhsm")]
     pub fn generate() -> Self {
         let mut bytes = [0u8; SIZE];
-        getrandom(&mut bytes).expect("RNG failure!");
+        OsRng.fill_bytes(&mut bytes);
         Nonce(bytes)
     }
 }

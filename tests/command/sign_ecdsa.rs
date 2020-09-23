@@ -1,5 +1,10 @@
+//! ECDSA signing test
+
 use crate::{generate_asymmetric_key, TEST_KEY_ID, TEST_MESSAGE};
-use ring::signature::UnparsedPublicKey;
+use p256::{
+    ecdsa::{signature::Verifier, Signature, VerifyKey},
+    NistP256,
+};
 use sha2::{Digest, Sha256};
 use yubihsm::{asymmetric, Capability};
 
@@ -14,24 +19,23 @@ fn generated_nistp256_key_test() {
         Capability::SIGN_ECDSA,
     );
 
-    let pubkey_response = client
+    let raw_public_key = client
         .get_public_key(TEST_KEY_ID)
         .unwrap_or_else(|err| panic!("error getting public key: {}", err));
 
-    assert_eq!(pubkey_response.algorithm, asymmetric::Algorithm::EcP256);
-    assert_eq!(pubkey_response.bytes.len(), 64);
+    assert_eq!(raw_public_key.algorithm, asymmetric::Algorithm::EcP256);
+    assert_eq!(raw_public_key.bytes.len(), 64);
 
-    let mut pubkey = [0u8; 65];
-    pubkey[0] = 0x04; // DER OCTET STRING tag
-    pubkey[1..].copy_from_slice(pubkey_response.bytes.as_slice());
+    let public_key = raw_public_key.ecdsa::<NistP256>().unwrap();
+    let test_digest = Sha256::digest(TEST_MESSAGE);
 
-    let test_digest = Vec::from(Sha256::digest(TEST_MESSAGE).as_slice());
+    let signature = Signature::from_asn1(
+        &client
+            .sign_ecdsa_prehash_raw(TEST_KEY_ID, test_digest.as_slice())
+            .unwrap_or_else(|err| panic!("error performing ECDSA signature: {}", err)),
+    )
+    .unwrap();
 
-    let signature = client
-        .sign_ecdsa(TEST_KEY_ID, test_digest)
-        .unwrap_or_else(|err| panic!("error performing ECDSA signature: {}", err));
-
-    UnparsedPublicKey::new(&ring::signature::ECDSA_P256_SHA256_ASN1, &pubkey[..])
-        .verify(TEST_MESSAGE, signature.as_ref())
-        .unwrap();
+    let verify_key = VerifyKey::from_encoded_point(&public_key).unwrap();
+    assert!(verify_key.verify(TEST_MESSAGE, &signature).is_ok());
 }

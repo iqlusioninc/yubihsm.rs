@@ -8,17 +8,71 @@ use crate::{
     serialization::{deserialize, serialize},
     wrap, Algorithm, Capability, Domain,
 };
+use aes::block_cipher::consts::{U13, U8};
 use anomaly::{fail, format_err};
-use ring::aead::{self, AES_128_GCM, AES_256_GCM};
-use std::collections::{btree_map::Iter as BTreeMapIter, BTreeMap};
+use ccm::aead::{AeadInPlace, NewAead};
+use std::collections::{btree_map::Iter as MapIter, BTreeMap as Map};
+
+/// AES-CCM with a 128-bit key
+pub(crate) type Aes128Ccm = ccm::Ccm<aes::Aes128, U8, U13>;
+
+/// AES-CCM with a 256-bit key
+pub(crate) type Aes256Ccm = ccm::Ccm<aes::Aes256, U8, U13>;
+
+/// AES-CCM key
+pub(crate) enum AesCcmKey {
+    /// AES-CCM with a 128-bit key
+    Aes128Ccm(Aes128Ccm),
+
+    /// AES-CCM with a 256-bit key
+    Aes256Ccm(Aes256Ccm),
+}
+
+impl AesCcmKey {
+    /// Encrypt data in-place
+    pub fn encrypt_in_place(
+        &self,
+        nonce: &wrap::Nonce,
+        associated_data: &[u8],
+        buffer: &mut Vec<u8>,
+    ) -> Result<(), Error> {
+        match self {
+            AesCcmKey::Aes128Ccm(ccm) => {
+                ccm.encrypt_in_place(&nonce.0.into(), associated_data, buffer)
+            }
+            AesCcmKey::Aes256Ccm(ccm) => {
+                ccm.encrypt_in_place(&nonce.0.into(), associated_data, buffer)
+            }
+        }
+        .map_err(|_| format_err!(ErrorKind::CryptoError, "error encrypting wrapped object!").into())
+    }
+
+    /// Decrypt data in-place
+    pub fn decrypt_in_place(
+        &self,
+        nonce: &wrap::Nonce,
+        associated_data: &[u8],
+        buffer: &mut Vec<u8>,
+    ) -> Result<(), Error> {
+        match self {
+            AesCcmKey::Aes128Ccm(ccm) => {
+                ccm.decrypt_in_place(&nonce.0.into(), associated_data, buffer)
+            }
+            AesCcmKey::Aes256Ccm(ccm) => {
+                ccm.decrypt_in_place(&nonce.0.into(), associated_data, buffer)
+            }
+        }
+        .map_err(|_| format_err!(ErrorKind::CryptoError, "error decrypting wrapped object!").into())
+    }
+}
 
 /// Objects stored in the `MockHsm`
 #[derive(Debug)]
-pub(crate) struct Objects(BTreeMap<Handle, Object>);
+pub(crate) struct Objects(Map<Handle, Object>);
 
 impl Default for Objects {
     fn default() -> Self {
-        let mut objects = BTreeMap::new();
+        let mut objects = Map::new();
 
         // Insert default authentication key
         let authentication_key_handle =
@@ -137,38 +191,15 @@ impl Objects {
         self.0.remove(&Handle::new(object_id, object_type))
     }
 
-    /// Serialize an object as ciphertext
-    pub fn wrap(
+    /// Encrypt and serialize an object as ciphertext
+    pub fn wrap_obj(
         &mut self,
         wrap_key_id: Id,
         object_id: Id,
         object_type: Type,
-        wrap_nonce: &wrap::Nonce,
+        nonce: &wrap::Nonce,
     ) -> Result<Vec<u8>, Error> {
-        let wrap_key = match self.get(wrap_key_id, Type::WrapKey) {
-            Some(k) => k,
-            None => fail!(
-                ErrorKind::ObjectNotFound,
-                "no such wrap key: {:?}",
-                wrap_key_id
-            ),
-        };
-
-        let sealing_key = match wrap_key.algorithm().wrap().unwrap() {
-            // TODO: actually use AES-CCM
-            wrap::Algorithm::Aes128Ccm => {
-                aead::UnboundKey::new(&AES_128_GCM, wrap_key.payload.as_ref())
-            }
-            wrap::Algorithm::Aes256Ccm => {
-                aead::UnboundKey::new(&AES_256_GCM, wrap_key.payload.as_ref())
-            }
-            unsupported => fail!(
-                ErrorKind::UnsupportedAlgorithm,
-                "unsupported wrap key algorithm: {:?}",
-                unsupported
-            ),
-        }
-        .unwrap();
+        let wrap_key = self.get_wrap_key(wrap_key_id)?;
 
         let object_to_wrap = match self.get(object_id, object_type) {
             Some(o) => o,
@@ -203,67 +234,29 @@ impl Objects {
 
         let mut wrapped_object = serialize(&WrappedObject {
             object_info,
-            data: object_to_wrap.payload.as_ref().into(),
+            data: object_to_wrap.payload.to_bytes(),
         })
         .unwrap();
 
-        let mut nonce = [0u8; 12];
-        nonce.copy_from_slice(&wrap_nonce.as_ref()[..12]);
-
-        aead::LessSafeKey::new(sealing_key)
-            .seal_in_place_append_tag(
-                aead::Nonce::assume_unique_for_key(nonce),
-                aead::Aad::from(b""),
-                &mut wrapped_object,
-            )
+        wrap_key
+            .encrypt_in_place(nonce, b"", &mut wrapped_object)
             .unwrap();
 
         Ok(wrapped_object)
     }
 
     /// Deserialize an encrypted object and insert it into the HSM
-    pub fn unwrap<V: Into<Vec<u8>>>(
+    pub fn unwrap_obj<V: Into<Vec<u8>>>(
         &mut self,
         wrap_key_id: Id,
-        wrap_nonce: &wrap::Nonce,
+        nonce: &wrap::Nonce,
         ciphertext: V,
     ) -> Result<Handle, Error> {
-        let opening_key = match self.get(wrap_key_id, Type::WrapKey) {
-            Some(k) => match k.algorithm().wrap().unwrap() {
-                wrap::Algorithm::Aes128Ccm => {
-                    aead::UnboundKey::new(&AES_128_GCM, k.payload.as_ref())
-                }
-                wrap::Algorithm::Aes256Ccm => {
-                    aead::UnboundKey::new(&AES_256_GCM, k.payload.as_ref())
-                }
-                unsupported => fail!(
-                    ErrorKind::UnsupportedAlgorithm,
-                    "unsupported wrap key algorithm: {:?}",
-                    unsupported
-                ),
-            }
-            .unwrap(),
-            None => fail!(
-                ErrorKind::ObjectNotFound,
-                "no such wrap key: {:?}",
-                wrap_key_id
-            ),
-        };
-
+        let wrap_key = self.get_wrap_key(wrap_key_id)?;
         let mut wrapped_data: Vec<u8> = ciphertext.into();
+        wrap_key.decrypt_in_place(nonce, b"", &mut wrapped_data)?;
 
-        let mut nonce = [0u8; 12];
-        nonce.copy_from_slice(&wrap_nonce.as_ref()[..12]);
-
-        let plaintext = aead::LessSafeKey::new(opening_key)
-            .open_in_place(
-                aead::Nonce::assume_unique_for_key(nonce),
-                aead::Aad::from(b""),
-                &mut wrapped_data,
-            )
-            .map_err(|_| format_err!(ErrorKind::CryptoError, "error decrypting wrapped object!"))?;
-
-        let unwrapped_object: WrappedObject = deserialize(plaintext).unwrap();
+        let unwrapped_object: WrappedObject = deserialize(&wrapped_data).unwrap();
 
         let payload = Payload::new(
             unwrapped_object.object_info.algorithm,
@@ -289,7 +282,33 @@ impl Objects {
     pub fn iter(&self) -> Iter<'_> {
         self.0.iter()
     }
+
+    /// Get a wrapping key
+    fn get_wrap_key(&self, wrap_key_id: Id) -> Result<AesCcmKey, Error> {
+        let wrap_key = match self.get(wrap_key_id, Type::WrapKey) {
+            Some(k) => k,
+            None => fail!(
+                ErrorKind::ObjectNotFound,
+                "no such wrap key: {:?}",
+                wrap_key_id
+            ),
+        };
+
+        match wrap_key.algorithm().wrap().unwrap() {
+            wrap::Algorithm::Aes128Ccm => Ok(AesCcmKey::Aes128Ccm(
+                Aes128Ccm::new_varkey(&wrap_key.payload.to_bytes()).unwrap(),
+            )),
+            wrap::Algorithm::Aes256Ccm => Ok(AesCcmKey::Aes256Ccm(
+                Aes256Ccm::new_varkey(&wrap_key.payload.to_bytes()).unwrap(),
+            )),
+            unsupported => fail!(
+                ErrorKind::UnsupportedAlgorithm,
+                "unsupported wrap key algorithm: {:?}",
+                unsupported
+            ),
+        }
+    }
 }
 
 /// Iterator over objects
-pub(crate) type Iter<'a> = BTreeMapIter<'a, Handle, Object>;
+pub(crate) type Iter<'a> = MapIter<'a, Handle, Object>;

@@ -1,6 +1,6 @@
 //! Challenge messages used as part of SCP03's challenge/response protocol.
 
-use getrandom::getrandom;
+use rand_core::{OsRng, RngCore};
 use serde::{Deserialize, Serialize};
 
 /// Size of a challenge message
@@ -14,7 +14,7 @@ impl Challenge {
     /// Create a new random `Challenge`
     pub fn new() -> Self {
         let mut challenge = [0u8; CHALLENGE_SIZE];
-        getrandom(&mut challenge).expect("RNG failure!");
+        OsRng.fill_bytes(&mut challenge);
         Challenge(challenge)
     }
 

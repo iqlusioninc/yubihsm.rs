@@ -1,8 +1,11 @@
 //! ECDSA algorithms (i.e. hash functions)
 
+use super::{NistP256, NistP384};
 use crate::{algorithm, asymmetric};
 use anomaly::fail;
-use signatory::ecdsa::curve::{NistP256, NistP384, Secp256k1};
+
+#[cfg(feature = "secp256k1")]
+use super::Secp256k1;
 
 /// Valid algorithms for asymmetric keys
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -63,6 +66,7 @@ impl CurveAlgorithm for NistP384 {
     }
 }
 
+#[cfg(feature = "secp256k1")]
 impl CurveAlgorithm for Secp256k1 {
     fn asymmetric_algorithm() -> asymmetric::Algorithm {
         asymmetric::Algorithm::EcK256
