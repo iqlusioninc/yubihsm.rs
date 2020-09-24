@@ -425,9 +425,9 @@ dependencies = [
 
 [[package]]
 name = "ecdsa"
-version = "0.8.0"
+version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4cda7dd00e9ace9867955ef64a176447b45f3e385f827bc686c832213bb7ec0e"
+checksum = "6b586654f7964785521b07db8e9a02ca2361ceb0ca82bef37226faa091049487"
 dependencies = [
  "elliptic-curve",
  "hmac",
