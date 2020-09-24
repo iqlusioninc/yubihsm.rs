@@ -20,6 +20,7 @@ pub(crate) type Aes128Ccm = ccm::Ccm<aes::Aes128, U8, U13>;
 pub(crate) type Aes256Ccm = ccm::Ccm<aes::Aes256, U8, U13>;
 
 /// AES-CCM key
+#[allow(clippy::large_enum_variant)]
 pub(crate) enum AesCcmKey {
     /// AES-CCM with a 128-bit key
     Aes128Ccm(Aes128Ccm),

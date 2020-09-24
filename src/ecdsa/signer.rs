@@ -54,7 +54,7 @@ where
         Ok(Self {
             client,
             signing_key_id,
-            public_key: public_key,
+            public_key,
         })
     }
 
