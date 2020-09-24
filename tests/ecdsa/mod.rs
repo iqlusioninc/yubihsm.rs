@@ -66,16 +66,31 @@ fn create_yubihsm_key(client: &Client, key_id: object::Id, alg: yubihsm::asymmet
 #[test]
 fn ecdsa_nistp256_sign_test() {
     let signer = create_signer::<NistP256>(201);
+    let verify_key = p256::ecdsa::VerifyKey::from_encoded_point(&signer.public_key()).unwrap();
+
     let signature = signer.sign(TEST_MESSAGE);
-    let verifier = p256::ecdsa::VerifyKey::from_encoded_point(&signer.public_key()).unwrap();
-    assert!(verifier.verify(TEST_MESSAGE, &signature).is_ok());
+    assert!(verify_key.verify(TEST_MESSAGE, &signature).is_ok());
 }
 
 #[cfg(feature = "secp256k1")]
 #[test]
 fn ecdsa_secp256k1_sign_test() {
+    let signer = create_signer::<Secp256k1>(202);
+    let verify_key = k256::ecdsa::VerifyKey::from_encoded_point(&signer.public_key()).unwrap();
+
+    let signature: ecdsa::Signature<Secp256k1> = signer.sign(TEST_MESSAGE);
+    assert!(verify_key.verify(TEST_MESSAGE, &signature).is_ok());
+}
+
+#[cfg(feature = "secp256k1")]
+#[test]
+fn ecdsa_secp256k1_sign_recoverable_test() {
     let signer = create_signer::<Secp256k1>(203);
-    let signature = signer.sign(TEST_MESSAGE);
-    let verifier = k256::ecdsa::VerifyKey::from_encoded_point(&signer.public_key()).unwrap();
-    assert!(verifier.verify(TEST_MESSAGE, &signature).is_ok());
+    let verify_key = k256::ecdsa::VerifyKey::from_encoded_point(&signer.public_key()).unwrap();
+
+    let signature: k256::ecdsa::recoverable::Signature = signer.sign(TEST_MESSAGE);
+    assert!(verify_key.verify(TEST_MESSAGE, &signature).is_ok());
+
+    let recovered_verify_key = signature.recover_verify_key(TEST_MESSAGE).unwrap();
+    assert_eq!(verify_key, recovered_verify_key);
 }
