@@ -129,10 +129,14 @@ impl Payload {
     pub fn public_key_bytes(&self) -> Option<Vec<u8>> {
         match self {
             Payload::EcdsaNistP256(secret_key) => {
-                Some(p256::EncodedPoint::from_secret_key(secret_key, false).as_bytes()[1..].into())
+                p256::EncodedPoint::from_secret_key(secret_key, false)
+                    .to_untagged_bytes()
+                    .map(|b| b.to_vec())
             }
             Payload::EcdsaSecp256k1(secret_key) => {
-                Some(k256::EncodedPoint::from_secret_key(secret_key, false).as_bytes()[1..].into())
+                k256::EncodedPoint::from_secret_key(secret_key, false)
+                    .to_untagged_bytes()
+                    .map(|b| b.to_vec())
             }
             Payload::Ed25519Key(secret_key) => {
                 Some(ed25519::PublicKey::from(secret_key).as_ref().into())
