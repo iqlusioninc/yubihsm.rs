@@ -8,6 +8,7 @@ pub const DEFAULT_TIMEOUT_MILLIS: u64 = 5000;
 
 /// Configuration options for the HTTP (i.e. `yubihsm-connector`) connection
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[cfg_attr(docsrs, doc(cfg(feature = "http")))]
 pub struct HttpConfig {
     /// Address of `yubihsm-connector` (IP address or DNS name)
     pub addr: String,

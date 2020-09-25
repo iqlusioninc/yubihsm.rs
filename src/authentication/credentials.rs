@@ -29,6 +29,7 @@ impl Credentials {
     /// (PBKDF2 + static salt), which is not particularly strong, so use
     /// of a long, random password is recommended.
     #[cfg(feature = "passwords")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "passwords")))]
     pub fn from_password(authentication_key_id: object::Id, password: &[u8]) -> Self {
         Self::new(
             authentication_key_id,
@@ -38,6 +39,7 @@ impl Credentials {
 }
 
 #[cfg(feature = "passwords")]
+#[cfg_attr(docsrs, doc(cfg(feature = "passwords")))]
 impl Default for Credentials {
     fn default() -> Self {
         Self::new(
