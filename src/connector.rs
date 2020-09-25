@@ -20,19 +20,23 @@ mod error;
 mod connectable;
 mod connection;
 #[cfg(feature = "http")]
+#[cfg_attr(docsrs, doc(cfg(feature = "http")))]
 pub mod http;
 mod message;
 #[cfg(feature = "usb")]
+#[cfg_attr(docsrs, doc(cfg(feature = "usb")))]
 pub mod usb;
 
 pub use self::connection::Connection;
 pub use self::error::*;
+
 pub(crate) use self::{connectable::Connectable, message::Message};
 use std::sync::{Arc, Mutex};
 use uuid::Uuid;
 
 #[cfg(feature = "http")]
 pub use self::http::HttpConfig;
+
 #[cfg(feature = "http")]
 use self::http::HttpConnector;
 
@@ -56,6 +60,7 @@ pub struct Connector {
 impl Connector {
     /// Create a new HTTP connector
     #[cfg(feature = "http")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "http")))]
     pub fn http(config: &HttpConfig) -> Self {
         Self::from(HttpConnector::create(config))
     }
@@ -66,8 +71,17 @@ impl Connector {
     ///
     /// [yubihsm::connector::usb]: https://docs.rs/yubihsm/latest/yubihsm/connector/usb/index.html
     #[cfg(feature = "usb")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "usb")))]
     pub fn usb(config: &UsbConfig) -> Self {
         Self::from(UsbConnector::create(config))
+    }
+
+    /// Create a mock HSM connector (useful for testing)
+    #[cfg(feature = "mockhsm")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "mockhsm")))]
+    pub fn mockhsm() -> Self {
+        let mockhsm: Box<dyn Connectable> = MockHsm::new().into();
+        Self::from(mockhsm)
     }
 
     /// Send a command message to the HSM, then read and return the response
@@ -87,13 +101,6 @@ impl Connector {
                 *connection = None;
                 e
             })
-    }
-
-    /// Create a mock HSM connector (useful for testing)
-    #[cfg(feature = "mockhsm")]
-    pub fn mockhsm() -> Self {
-        let mockhsm: Box<dyn Connectable> = MockHsm::new().into();
-        Self::from(mockhsm)
     }
 }
 

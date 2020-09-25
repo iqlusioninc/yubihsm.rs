@@ -45,6 +45,7 @@ impl Key {
     /// you use a long, random password when using this method as the key
     /// derivation algorithm used does little to prevent brute force attacks.
     #[cfg(feature = "passwords")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "passwords")))]
     pub fn derive_from_password(password: &[u8]) -> Self {
         let mut kdf_output = [0u8; SIZE];
         pbkdf2::<Hmac<Sha256>>(password, PBKDF2_SALT, PBKDF2_ITERATIONS, &mut kdf_output);
@@ -98,6 +99,7 @@ impl Debug for Key {
 
 /// Derive the default authentication key for all YubiHSM 2s
 #[cfg(feature = "passwords")]
+#[cfg_attr(docsrs, doc(cfg(feature = "passwords")))]
 impl Default for Key {
     fn default() -> Self {
         Key::derive_from_password(DEFAULT_PASSWORD)

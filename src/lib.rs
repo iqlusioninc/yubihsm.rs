@@ -27,7 +27,7 @@
 //! The following is an example of how to create a [yubihsm::Client] by
 //! connecting via USB, and then performing an Ed25519 signature:
 //!
-//! ```no_build
+//! ```ignore
 //! use yubihsm::{Client, Credentials, UsbConnector};
 //!
 //! // Connect to the first YubiHSM 2 we detect
@@ -93,6 +93,7 @@ pub mod response;
 pub mod rsa;
 pub mod session;
 #[cfg(feature = "setup")]
+#[cfg_attr(docsrs, doc(cfg(feature = "setup")))]
 pub mod setup;
 pub mod ssh;
 pub mod template;
