@@ -1,6 +1,6 @@
 [package]
 name          = "yubihsm"
-version       = "0.34.0" # Also update html_root_url in lib.rs when bumping this
+version       = "0.35.0-rc" # Also update html_root_url in lib.rs when bumping this
 description   = """
 Pure Rust client for YubiHSM2 devices with support for HTTP and
 USB-based access to the device. Supports most HSM functionality
