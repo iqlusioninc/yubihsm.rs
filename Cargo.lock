@@ -615,9 +615,9 @@ dependencies = [
 
 [[package]]
 name = "k256"
-version = "0.5.3"
+version = "0.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fb737ace8aba588f48f94ffdada8872a29a658244e9d2b5a7ce8f1283c35df86"
+checksum = "d40ed5be56fa1935a65f60c134ad258343a79a2a6a693a0dfd5a84f795540cdc"
 dependencies = [
  "cfg-if",
  "ecdsa",
