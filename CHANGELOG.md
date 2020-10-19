@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.35.0 (2020-10-19)
+### Added
+- Support for k256::ecdsa::recoverable::Signature ([#95])
+
+### Changed
+- Bump RustCrypto dependencies ([#82], [#116])
+
+### Removed
+- Signatory-based types ([#91])
+
+[#116]: https://github.com/iqlusioninc/yubihsm.rs/pull/116
+[#95]: https://github.com/iqlusioninc/yubihsm.rs/pull/95
+[#91]: https://github.com/iqlusioninc/yubihsm.rs/pull/91
+[#82]: https://github.com/iqlusioninc/yubihsm.rs/pull/82
+
 ## 0.34.0 (2020-06-18)
 ### Changed
 - Update `signatory` to v0.20 ([#56])
