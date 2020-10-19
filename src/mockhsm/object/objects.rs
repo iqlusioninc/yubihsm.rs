@@ -8,7 +8,7 @@ use crate::{
     serialization::{deserialize, serialize},
     wrap, Algorithm, Capability, Domain,
 };
-use aes::block_cipher::consts::{U13, U8};
+use aes::cipher::consts::{U13, U8};
 use anomaly::{fail, format_err};
 use ccm::aead::{AeadInPlace, NewAead};
 use std::collections::{btree_map::Iter as MapIter, BTreeMap as Map};

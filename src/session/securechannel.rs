@@ -40,10 +40,7 @@ use crate::{
     session::{self, ErrorKind},
 };
 use aes::{
-    block_cipher::{
-        generic_array::{typenum::U16, GenericArray},
-        BlockCipher, NewBlockCipher,
-    },
+    cipher::{consts::U16, generic_array::GenericArray, BlockCipher, NewBlockCipher},
     Aes128,
 };
 use anomaly::{fail, format_err};
