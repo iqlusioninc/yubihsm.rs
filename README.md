@@ -1,4 +1,4 @@
-<img src="https://raw.githubusercontent.com/iqlusioninc/yubihsm.rs/develop/img/logo.png" width="150" height="110">
+<img src="https://raw.githubusercontent.com/iqlusioninc/yubihsm.rs/main/img/logo.png" width="150" height="110">
 
 # yubihsm.rs [![crate][crate-image]][crate-link] [![Docs][docs-image]][docs-link] ![Apache2/MIT licensed][license-image] ![MSRV][rustc-image] [![Build Status][build-image]][build-link] [![Gitter Chat][gitter-image]][gitter-link]
 
@@ -168,7 +168,7 @@ See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT) for details.
 [docs-link]: https://docs.rs/yubihsm/
 [license-image]: https://img.shields.io/badge/license-Apache2.0/MIT-blue.svg
 [rustc-image]: https://img.shields.io/badge/rustc-1.46+-blue.svg
-[build-image]: https://github.com/iqlusioninc/yubihsm.rs/workflows/CI/badge.svg?branch=develop&event=push
+[build-image]: https://github.com/iqlusioninc/yubihsm.rs/workflows/CI/badge.svg?branch=main&event=push
 [build-link]: https://github.com/iqlusioninc/yubihsm.rs/actions?query=workflow:CI
 [gitter-image]: https://badges.gitter.im/iqlusioninc/community.svg
 [gitter-link]: https://gitter.im/iqlusioninc/community
@@ -187,9 +187,9 @@ See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT) for details.
 [thinks it's awesome]: https://twitter.com/Yubico/status/971186516796915712
 [yubikey-piv.rs]: https://github.com/iqlusioninc/yubikey-piv.rs
 [YubiHSM2 commands]: https://developers.yubico.com/YubiHSM2/Commands/
-[Serde-based message parser]: https://github.com/iqlusioninc/yubihsm.rs/tree/develop/src/serialization
-[commands]: https://github.com/iqlusioninc/yubihsm.rs/tree/develop/src/command
-[integration test]:  https://github.com/iqlusioninc/yubihsm.rs/blob/develop/tests/integration.rs
+[Serde-based message parser]: https://github.com/iqlusioninc/yubihsm.rs/tree/main/src/serialization
+[commands]: https://github.com/iqlusioninc/yubihsm.rs/tree/main/src/command
+[integration test]:  https://github.com/iqlusioninc/yubihsm.rs/blob/main/tests/integration.rs
 [MockHSM]: https://docs.rs/yubihsm/latest/yubihsm/mockhsm/struct.MockHsm.html
 [YubiHSM2 SDK]: https://developers.yubico.com/YubiHSM2/Releases/
 [yubihsm-shell reset]: https://developers.yubico.com/YubiHSM2/Commands/Reset_Device.html
