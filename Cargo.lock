@@ -270,6 +270,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2d9162b7289a46e86208d6af2c686ca5bfde445878c41a458a9fac706252d0b"
 
 [[package]]
+name = "const-oid"
+version = "0.3.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81f31e8ecbfc556990ae313b64aedaa11d901616af2a886e8caf57883caa43f0"
+
+[[package]]
 name = "cpuid-bool"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -447,8 +453,19 @@ version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "87bf8bfb05ea8a6f74ddf48c7d1774851ba77bbe51ac984fdfa6c30310e1ff5f"
 dependencies = [
- "elliptic-curve",
+ "elliptic-curve 0.6.6",
  "hmac 0.9.0",
+ "signature",
+]
+
+[[package]]
+name = "ecdsa"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f488ad19df443921d9fa5b9ce13a282b552709c511d2d90b1fd635e0204d74d5"
+dependencies = [
+ "elliptic-curve 0.7.0",
+ "hmac 0.10.1",
  "signature",
 ]
 
@@ -488,11 +505,28 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "396db09c483e7fca5d4fdb9112685632b3e76c9a607a2649c1bf904404a01366"
 dependencies = [
  "bitvec",
- "const-oid",
+ "const-oid 0.1.0",
  "digest",
  "ff",
  "generic-array",
  "group",
+ "rand_core",
+ "subtle",
+ "zeroize",
+]
+
+[[package]]
+name = "elliptic-curve"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "64b8d753346ae41b448a0a97f5d5cbe787a05ee1bda63d629def34c679eaa0d6"
+dependencies = [
+ "bitvec",
+ "digest",
+ "ff",
+ "generic-array",
+ "group",
+ "pkcs8",
  "rand_core",
  "subtle",
  "zeroize",
@@ -648,8 +682,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2967b7caf19e57f5d01ac0893551b0aaae1a8e2e2b2a28996e12c9c51b3b486"
 dependencies = [
  "cfg-if 1.0.0",
- "ecdsa",
- "elliptic-curve",
+ "ecdsa 0.8.5",
+ "elliptic-curve 0.6.6",
  "sha2",
  "sha3",
 ]
@@ -799,12 +833,12 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 
 [[package]]
 name = "p256"
-version = "0.5.2"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "280ed58e7e5f3052b6e2f596fa40c7eff4c27c4b6b6deecb5d685ba5c2080980"
+checksum = "4cead7739968fb4c7622c6664a9a3de0c9d92cb9e75b3a5f2467aad99b3cd3f5"
 dependencies = [
- "ecdsa",
- "elliptic-curve",
+ "ecdsa 0.9.0",
+ "elliptic-curve 0.7.0",
  "sha2",
 ]
 
@@ -814,8 +848,8 @@ version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "06de0548166c258c22bb6bdcff3074eac4b07125040aa74db3f61db87fe5f275"
 dependencies = [
- "ecdsa",
- "elliptic-curve",
+ "ecdsa 0.8.5",
+ "elliptic-curve 0.6.6",
 ]
 
 [[package]]
@@ -832,6 +866,15 @@ name = "percent-encoding"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d4fd5641d01c8f18a23da7b6fe29298ff4b55afcccdf78973b24cf3175fee32e"
+
+[[package]]
+name = "pkcs8"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6529960a627342f19f68d43a07b268c98fd347e68668df3743a3cb9211c0975f"
+dependencies = [
+ "const-oid 0.3.4",
+]
 
 [[package]]
 name = "pkg-config"
@@ -1457,7 +1500,7 @@ dependencies = [
  "cmac",
  "criterion",
  "digest",
- "ecdsa",
+ "ecdsa 0.8.5",
  "ed25519",
  "ed25519-dalek",
  "harp",

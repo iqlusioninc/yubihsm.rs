@@ -31,7 +31,7 @@ harp = { version = "0.1", optional = true }
 hmac = { version = "0.10", optional = true }
 k256 = { version = "0.5", optional = true, features = ["ecdsa", "keccak256", "sha256"] }
 log = "0.4"
-p256 = { version = "0.5", default-features = false, features = ["ecdsa-core"] }
+p256 = { version = "0.6", default-features = false, features = ["ecdsa-core"] }
 p384 = { version = "0.4", default-features = false, features = ["ecdsa"] }
 pbkdf2 = { version = "0.6", optional = true, default-features = false }
 serde = { version = "1", features = ["serde_derive"] }
@@ -50,7 +50,7 @@ zeroize = { version = "1", features = ["zeroize_derive"] }
 criterion = "0.3"
 ed25519-dalek = "1"
 lazy_static = "1"
-p256 = { version = "0.5", features = ["ecdsa"] }
+p256 = { version = "0.6", features = ["ecdsa"] }
 
 [features]
 default = ["http", "passwords", "setup"]
