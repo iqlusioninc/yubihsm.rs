@@ -1,9 +1,11 @@
 //! **yubihsm.rs**: pure Rust client for YubiHSM 2 hardware security modules
 //!
-//! ## Prerequisites
+//! ## Minimum Supported Rust Version
 //!
-//! This crate builds on Rust 1.43+ and by default uses SIMD features
-//! which require the following `RUSTFLAGS`:
+//! This crate requires Rust **1.46** or newer.
+//!
+//! We also recommend building with the following `RUSTFLAGS` on i686/x86_64
+//! architectures for optimal security and performance:
 //!
 //! `RUSTFLAGS=-Ctarget-feature=+aes,+ssse3`
 //!

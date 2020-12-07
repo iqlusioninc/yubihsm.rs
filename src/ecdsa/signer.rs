@@ -130,7 +130,7 @@ where
 {
     /// Compute an Ethereum-style ECDSA/secp256k1 signature of the given digest
     fn try_sign_digest(&self, digest: D) -> Result<k256::ecdsa::recoverable::Signature, Error> {
-        let pk = k256::ecdsa::VerifyKey::from_encoded_point(&self.public_key)?;
+        let pk = k256::ecdsa::VerifyingKey::from_encoded_point(&self.public_key)?;
         let sig = self.try_sign_digest(digest.clone())?;
         k256::ecdsa::recoverable::Signature::from_digest_trial_recovery(&pk, digest, &sig)
     }
