@@ -28,7 +28,7 @@ or endorsed by Yubico (although whoever runs their Twitter account
 
 ## Prerequisites
 
-Minimum Supported Rust Version: Rust 1.46+.
+Minimum Supported Rust Version: Rust **1.46**+.
 
 On x86(-64) targets, add the following `RUSTFLAGS` to enable AES-NI to better
 secure communication with the YubiHSM:
