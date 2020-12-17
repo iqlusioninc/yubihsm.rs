@@ -441,8 +441,18 @@ version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f488ad19df443921d9fa5b9ce13a282b552709c511d2d90b1fd635e0204d74d5"
 dependencies = [
- "elliptic-curve",
+ "elliptic-curve 0.7.1",
  "hmac",
+ "signature",
+]
+
+[[package]]
+name = "ecdsa"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d39be153f0e278ffba17d1c05e8999641fcf3df7584a7251b5e660742fcab1ef"
+dependencies = [
+ "elliptic-curve 0.8.1",
  "signature",
 ]
 
@@ -490,6 +500,17 @@ dependencies = [
  "rand_core",
  "subtle",
  "zeroize",
+]
+
+[[package]]
+name = "elliptic-curve"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "02b76528f382c916bbb94470b4e7ad107a3d01619503f7ffba86c93aea04e215"
+dependencies = [
+ "generic-array",
+ "rand_core",
+ "subtle",
 ]
 
 [[package]]
@@ -642,8 +663,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4aebc14f2c1f2c5fd414f878084102b9ccb100fd90706e35979cd70a32f5d938"
 dependencies = [
  "cfg-if 1.0.0",
- "ecdsa",
- "elliptic-curve",
+ "ecdsa 0.9.0",
+ "elliptic-curve 0.7.1",
  "sha2",
  "sha3",
 ]
@@ -791,8 +812,8 @@ version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4cead7739968fb4c7622c6664a9a3de0c9d92cb9e75b3a5f2467aad99b3cd3f5"
 dependencies = [
- "ecdsa",
- "elliptic-curve",
+ "ecdsa 0.9.0",
+ "elliptic-curve 0.7.1",
  "sha2",
 ]
 
@@ -802,8 +823,8 @@ version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6d97796d16cdc6bca56f1177aecaefb62c057fd8a0faa8b861e24d77a9e8993a"
 dependencies = [
- "ecdsa",
- "elliptic-curve",
+ "ecdsa 0.9.0",
+ "elliptic-curve 0.7.1",
 ]
 
 [[package]]
@@ -1464,7 +1485,7 @@ dependencies = [
  "cmac",
  "criterion",
  "digest",
- "ecdsa",
+ "ecdsa 0.10.1",
  "ed25519",
  "ed25519-dalek",
  "harp",
