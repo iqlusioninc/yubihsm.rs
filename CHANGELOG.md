@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.37.0 (2020-12-22)
+### Changed
+- Bump `ecdsa` crate to v0.10 ([#141])
+- Bump `k256` crate to v0.7 ([#141])
+- Bump `p256` crate to v0.7 ([#141])
+- Bump `p384` crate to v0.7 ([#141])
+
+[#141]: https://github.com/iqlusioninc/yubihsm.rs/pull/141
+
 ## 0.36.0 (2020-12-07)
 ### Changed
 - Bump `ecdsa` crate dependency to v0.9; MSRV 1.46+ ([#130])
