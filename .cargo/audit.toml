@@ -2,3 +2,7 @@
 
 [advisories]
 ignore = ["RUSTSEC-2020-0031"]
+
+# Output Configuration
+[output]
+deny = ["warnings"] # exit on error if warnings are found
