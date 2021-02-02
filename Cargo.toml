@@ -36,7 +36,7 @@ p384 = { version = "0.6", default-features = false, features = ["ecdsa"] }
 pbkdf2 = { version = "0.7", optional = true, default-features = false }
 serde = { version = "1", features = ["serde_derive"] }
 serde_json = { version = "1", optional = true }
-rand_core = { version = "0.5", features = ["std"] }
+rand_core = { version = "0.6", features = ["std"] }
 rusb = { version = "0.7", optional = true }
 sha2 = { version = "0.9", optional = true }
 signature = { version = "1.2.0", features = ["derive-preview"] }
