@@ -55,7 +55,7 @@
 
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/iqlusioninc/yubihsm.rs/main/img/logo.png",
-    html_root_url = "https://docs.rs/yubihsm/0.37.0"
+    html_root_url = "https://docs.rs/yubihsm/0.38.0"
 )]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![forbid(unsafe_code)]

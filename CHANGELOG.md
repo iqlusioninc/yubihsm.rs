@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.38.0 (2021-02-02)
+### Changed
+- Bump `tiny_http` dependency to 0.8.0; fixes `RUSTSEC-2020-0031` ([#158])
+- Bump `pbkdf2` dependency to v0.7 ([#162])
+
+[#158]: https://github.com/iqlusioninc/yubihsm.rs/pull/158
+[#162]: https://github.com/iqlusioninc/yubihsm.rs/pull/162
+
 ## 0.37.0 (2020-12-22)
 ### Changed
 - Bump `ecdsa` crate to v0.10 ([#141])
