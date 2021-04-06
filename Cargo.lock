@@ -947,9 +947,9 @@ checksum = "24d5f089152e60f62d28b835fbff2cd2e8dc0baf1ac13343bef92ab7eed84548"
 
 [[package]]
 name = "rusb"
-version = "0.7.0"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c470dc7dc6e4710b6f85e9c4aa4650bc742260b39a36328180578db76fa258c1"
+checksum = "12f3264859095257507e4c011ab420ff9b2d9cc3349c6c08a1d3a019260bb437"
 dependencies = [
  "libc",
  "libusb1-sys",
