@@ -5,7 +5,7 @@ use ::ecdsa::{
         consts::U1,
         generic_array::ArrayLength,
         sec1::{UncompressedPointSize, UntaggedPointSize},
-        weierstrass::{point, Curve},
+        weierstrass::{Curve, PointCompression},
     },
     signature::Verifier,
 };
@@ -36,7 +36,7 @@ const TEST_MESSAGE: &[u8] =
 /// Create the signer for this test
 fn create_signer<C>(key_id: object::Id) -> ecdsa::Signer<C>
 where
-    C: Curve + CurveAlgorithm + point::Compression,
+    C: Curve + CurveAlgorithm + PointCompression,
     UntaggedPointSize<C>: Add<U1> + ArrayLength<u8>,
     UncompressedPointSize<C>: ArrayLength<u8>,
 {

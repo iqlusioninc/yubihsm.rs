@@ -78,7 +78,11 @@ impl Payload {
                     Payload::EcdsaSecp256k1(k256::SecretKey::random(&mut OsRng))
                 }
                 asymmetric::Algorithm::Ed25519 => {
-                    Payload::Ed25519Key(ed25519::SecretKey::generate(&mut OsRng))
+                    let mut sk = [0u8; 32];
+                    OsRng.fill_bytes(&mut sk);
+                    Payload::Ed25519Key(
+                        ed25519::SecretKey::from_bytes(&sk).expect("Ed25519 keygen failure"),
+                    )
                 }
                 _ => panic!(
                     "MockHsm doesn't support this asymmetric algorithm: {:?}",

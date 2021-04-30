@@ -1,15 +1,13 @@
 //! Public keys for use with asymmetric cryptography / signatures
 
 use crate::{asymmetric, ecdsa::algorithm::CurveAlgorithm, ed25519};
-use ::ecdsa::{
-    elliptic_curve::{
-        sec1::{self, UncompressedPointSize, UntaggedPointSize},
-        weierstrass::{point, Curve},
-    },
+use ::ecdsa::elliptic_curve::{
     generic_array::{
         typenum::{Unsigned, U1},
         ArrayLength, GenericArray,
     },
+    sec1::{self, UncompressedPointSize, UntaggedPointSize},
+    weierstrass::{Curve, PointCompression},
 };
 use serde::{Deserialize, Serialize};
 use std::ops::Add;
@@ -55,7 +53,7 @@ impl PublicKey {
     /// Return the ECDSA public key of the given curve type if applicable
     pub fn ecdsa<C>(&self) -> Option<sec1::EncodedPoint<C>>
     where
-        C: Curve + CurveAlgorithm + point::Compression,
+        C: Curve + CurveAlgorithm + PointCompression,
         UntaggedPointSize<C>: Add<U1> + ArrayLength<u8>,
         UncompressedPointSize<C>: ArrayLength<u8>,
     {

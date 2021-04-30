@@ -138,10 +138,7 @@ impl Message {
 
     /// Did an error occur?
     pub fn is_err(&self) -> bool {
-        match self.code {
-            response::Code::Success(_) => false,
-            _ => true,
-        }
+        !matches!(self.code, response::Code::Success(_))
     }
 
     /// Get the command being responded to
@@ -202,21 +199,15 @@ impl Into<Vec<u8>> for Message {
 /// Do responses with the given code include a session ID?
 fn has_session_id(code: response::Code) -> bool {
     match code {
-        response::Code::Success(cmd_type) => match cmd_type {
-            command::Code::CreateSession | command::Code::SessionMessage => true,
-            _ => false,
-        },
+        response::Code::Success(cmd_type) => matches!(
+            cmd_type,
+            command::Code::CreateSession | command::Code::SessionMessage
+        ),
         _ => false,
     }
 }
 
 /// Do responses with the given code have a Response-MAC (R-MAC) value?
 fn has_rmac(code: response::Code) -> bool {
-    match code {
-        response::Code::Success(cmd_type) => match cmd_type {
-            command::Code::SessionMessage => true,
-            _ => false,
-        },
-        _ => false,
-    }
+    code == response::Code::Success(command::Code::SessionMessage)
 }

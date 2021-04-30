@@ -40,7 +40,7 @@ use crate::{
     session::{self, ErrorKind},
 };
 use aes::{
-    cipher::{consts::U16, generic_array::GenericArray, BlockCipher, NewBlockCipher},
+    cipher::{consts::U16, generic_array::GenericArray, BlockEncrypt, NewBlockCipher},
     Aes128,
 };
 use anomaly::{fail, format_err};
@@ -232,7 +232,7 @@ impl SecureChannel {
             );
         }
 
-        let mut mac = Cmac::<Aes128>::new_varkey(self.mac_key.as_ref()).unwrap();
+        let mut mac = Cmac::<Aes128>::new_from_slice(self.mac_key.as_ref()).unwrap();
         mac.update(&self.mac_chaining_value);
         mac.update(&[command_type.to_u8()]);
 
@@ -244,12 +244,7 @@ impl SecureChannel {
         let tag = mac.finalize().into_bytes();
         self.mac_chaining_value.copy_from_slice(tag.as_slice());
 
-        Ok(command::Message::new_with_mac(
-            command_type,
-            self.id,
-            command_data,
-            &tag,
-        )?)
+        command::Message::new_with_mac(command_type, self.id, command_data, &tag)
     }
 
     /// Compute a message for authenticating the host to the card
@@ -302,7 +297,7 @@ impl SecureChannel {
         // Provide space at the end of the vec for the padding
         message.extend_from_slice(&[0u8; AES_BLOCK_SIZE]);
 
-        let cipher = Aes128::new_varkey(&self.enc_key).unwrap();
+        let cipher = Aes128::new_from_slice(&self.enc_key).unwrap();
         let icv = compute_icv(&cipher, self.counter);
         let cbc_encryptor = Aes128Cbc::new(cipher, &icv);
         let ciphertext = cbc_encryptor.encrypt(&mut message, pos).unwrap();
@@ -317,12 +312,12 @@ impl SecureChannel {
     ) -> Result<response::Message, session::Error> {
         assert_eq!(self.security_level, SecurityLevel::Authenticated);
 
-        let cipher = Aes128::new_varkey(&self.enc_key).unwrap();
+        let cipher = Aes128::new_from_slice(&self.enc_key).unwrap();
         let icv = compute_icv(&cipher, self.counter);
 
         self.verify_response_mac(&encrypted_response)?;
 
-        let cipher = Aes128::new_varkey(&self.enc_key).unwrap();
+        let cipher = Aes128::new_from_slice(&self.enc_key).unwrap();
         let cbc_decryptor = Aes128Cbc::new(cipher, &icv);
 
         let mut response_message = encrypted_response.data;
@@ -367,7 +362,7 @@ impl SecureChannel {
             );
         }
 
-        let mut mac = Cmac::<Aes128>::new_varkey(self.rmac_key.as_ref()).unwrap();
+        let mut mac = Cmac::<Aes128>::new_from_slice(self.rmac_key.as_ref()).unwrap();
         mac.update(&self.mac_chaining_value);
         mac.update(&[response.code.to_u8()]);
 
@@ -444,12 +439,12 @@ impl SecureChannel {
     ) -> Result<command::Message, session::Error> {
         assert_eq!(self.security_level, SecurityLevel::Authenticated);
 
-        let cipher = Aes128::new_varkey(&self.enc_key).unwrap();
+        let cipher = Aes128::new_from_slice(&self.enc_key).unwrap();
         let icv = compute_icv(&cipher, self.counter);
 
         self.verify_command_mac(&encrypted_command)?;
 
-        let cipher = Aes128::new_varkey(&self.enc_key).unwrap();
+        let cipher = Aes128::new_from_slice(&self.enc_key).unwrap();
         let cbc_decryptor = Aes128Cbc::new(cipher, &icv);
 
         let mut command_data = encrypted_command.data;
@@ -482,7 +477,7 @@ impl SecureChannel {
             command.session_id
         );
 
-        let mut mac = Cmac::<Aes128>::new_varkey(self.mac_key.as_ref()).unwrap();
+        let mut mac = Cmac::<Aes128>::new_from_slice(self.mac_key.as_ref()).unwrap();
         mac.update(&self.mac_chaining_value);
         mac.update(&[command.command_type.to_u8()]);
 
@@ -522,7 +517,7 @@ impl SecureChannel {
         // Provide space at the end of the vec for the padding
         message.extend_from_slice(&[0u8; AES_BLOCK_SIZE]);
 
-        let cipher = Aes128::new_varkey(&self.enc_key).unwrap();
+        let cipher = Aes128::new_from_slice(&self.enc_key).unwrap();
         let icv = compute_icv(&cipher, self.counter);
         let cbc_encryptor = Aes128Cbc::new(cipher, &icv);
 
@@ -548,7 +543,7 @@ impl SecureChannel {
         assert_eq!(self.security_level, SecurityLevel::Authenticated);
         let body = response_data.into();
 
-        let mut mac = Cmac::<Aes128>::new_varkey(self.rmac_key.as_ref()).unwrap();
+        let mut mac = Cmac::<Aes128>::new_from_slice(self.rmac_key.as_ref()).unwrap();
         mac.update(&self.mac_chaining_value);
         mac.update(&[code.to_u8()]);
 

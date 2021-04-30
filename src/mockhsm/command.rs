@@ -25,8 +25,8 @@ use crate::{
     Capability,
 };
 use ::ecdsa::{
-    elliptic_curve::{Field, FromDigest},
-    hazmat::SignPrimitive,
+    elliptic_curve::Field,
+    hazmat::{FromDigest, SignPrimitive},
 };
 use ::hmac::{Hmac, Mac};
 use cmac::crypto_mac::NewMac;
@@ -630,7 +630,7 @@ fn sign_ecdsa(state: &State, cmd_data: &[u8]) -> response::Message {
                     .try_sign_prehashed(&k, &z)
                     .expect("ECDSA failure!");
 
-                SignEcdsaResponse(signature.to_asn1().as_ref().into()).serialize()
+                SignEcdsaResponse(signature.to_der().as_ref().into()).serialize()
             }
             Payload::EcdsaSecp256k1(secret_key) => {
                 let k = k256::Scalar::random(&mut OsRng);
@@ -640,7 +640,7 @@ fn sign_ecdsa(state: &State, cmd_data: &[u8]) -> response::Message {
                     .try_sign_prehashed(&k, &z)
                     .expect("ECDSA failure!");
 
-                SignEcdsaResponse(signature.to_asn1().as_ref().into()).serialize()
+                SignEcdsaResponse(signature.to_der().as_ref().into()).serialize()
             }
             _ => {
                 debug!("not an ECDSA key: {:?}", obj.algorithm());
@@ -685,7 +685,7 @@ fn sign_hmac(state: &State, cmd_data: &[u8]) -> response::Message {
     if let Some(obj) = state.objects.get(command.key_id, object::Type::HmacKey) {
         if let Payload::HmacKey(alg, ref key) = obj.payload {
             assert_eq!(alg, hmac::Algorithm::Sha256);
-            let mut mac = Hmac::<Sha256>::new_varkey(key).unwrap();
+            let mut mac = Hmac::<Sha256>::new_from_slice(key).unwrap();
             mac.update(&command.data);
             let tag = mac.finalize();
             SignHmacResponse(hmac::Tag(tag.into_bytes().as_slice().into())).serialize()
@@ -711,7 +711,7 @@ fn verify_hmac(state: &State, cmd_data: &[u8]) -> response::Message {
             // Because of a quirk of our serde parser everything winds up in the tag field
             let data = command.tag.into_vec();
 
-            let mut mac = Hmac::<Sha256>::new_varkey(key).unwrap();
+            let mut mac = Hmac::<Sha256>::new_from_slice(key).unwrap();
             mac.update(&data[32..]);
             let tag = mac.finalize().into_bytes();
             let is_ok = tag.as_slice().ct_eq(&data[..32]).unwrap_u8();

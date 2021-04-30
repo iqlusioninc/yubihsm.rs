@@ -291,7 +291,7 @@ impl Drop for Session {
                 .downcast_ref::<String>()
                 .map(AsRef::as_ref)
                 .or_else(|| err.downcast_ref::<&str>().cloned())
-                .unwrap_or_else(|| "unknown cause!");
+                .unwrap_or("unknown cause!");
 
             error!(
                 "session={} panic closing dropped session: {}",

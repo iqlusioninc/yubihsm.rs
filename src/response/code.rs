@@ -187,10 +187,7 @@ impl Code {
 
     /// Is this a successful response?
     pub fn is_success(self) -> bool {
-        match self {
-            Code::Success(_) => true,
-            _ => false,
-        }
+        matches!(self, Code::Success(_))
     }
 
     /// Is this an error response?
