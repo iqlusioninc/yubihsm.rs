@@ -29,7 +29,7 @@ fn generated_nistp256_key_test() {
     let public_key = raw_public_key.ecdsa::<NistP256>().unwrap();
     let test_digest = Sha256::digest(TEST_MESSAGE);
 
-    let signature = Signature::from_asn1(
+    let signature = Signature::from_der(
         &client
             .sign_ecdsa_prehash_raw(TEST_KEY_ID, test_digest.as_slice())
             .unwrap_or_else(|err| panic!("error performing ECDSA signature: {}", err)),

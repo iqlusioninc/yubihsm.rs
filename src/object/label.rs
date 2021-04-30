@@ -67,8 +67,7 @@ impl Debug for Label {
         write!(
             f,
             "{}",
-            self.try_as_str()
-                .unwrap_or_else(|_| INVALID_LABEL_STR_PLACEHOLDER)
+            self.try_as_str().unwrap_or(INVALID_LABEL_STR_PLACEHOLDER)
         )
     }
 }
@@ -78,8 +77,7 @@ impl Display for Label {
         write!(
             f,
             "{}",
-            self.try_as_str()
-                .unwrap_or_else(|_| INVALID_LABEL_STR_PLACEHOLDER)
+            self.try_as_str().unwrap_or(INVALID_LABEL_STR_PLACEHOLDER)
         )
     }
 }

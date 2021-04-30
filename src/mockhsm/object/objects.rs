@@ -297,10 +297,10 @@ impl Objects {
 
         match wrap_key.algorithm().wrap().unwrap() {
             wrap::Algorithm::Aes128Ccm => Ok(AesCcmKey::Aes128Ccm(
-                Aes128Ccm::new_varkey(&wrap_key.payload.to_bytes()).unwrap(),
+                Aes128Ccm::new_from_slice(&wrap_key.payload.to_bytes()).unwrap(),
             )),
             wrap::Algorithm::Aes256Ccm => Ok(AesCcmKey::Aes256Ccm(
-                Aes256Ccm::new_varkey(&wrap_key.payload.to_bytes()).unwrap(),
+                Aes256Ccm::new_from_slice(&wrap_key.payload.to_bytes()).unwrap(),
             )),
             unsupported => fail!(
                 ErrorKind::UnsupportedAlgorithm,

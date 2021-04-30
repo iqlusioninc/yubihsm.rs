@@ -9,7 +9,7 @@ use ::ecdsa::{
         consts::{U1, U32},
         generic_array::ArrayLength,
         sec1::{self, UncompressedPointSize, UntaggedPointSize},
-        weierstrass::{point, Curve},
+        weierstrass::{Curve, PointCompression},
     },
     Signature,
 };
@@ -24,7 +24,7 @@ use super::Secp256k1;
 #[derive(signature::Signer)]
 pub struct Signer<C>
 where
-    C: Curve + CurveAlgorithm + point::Compression,
+    C: Curve + CurveAlgorithm + PointCompression,
     UntaggedPointSize<C>: Add<U1> + ArrayLength<u8>,
     UncompressedPointSize<C>: ArrayLength<u8>,
 {
@@ -40,7 +40,7 @@ where
 
 impl<C> Signer<C>
 where
-    C: Curve + CurveAlgorithm + point::Compression,
+    C: Curve + CurveAlgorithm + PointCompression,
     UntaggedPointSize<C>: Add<U1> + ArrayLength<u8>,
     UncompressedPointSize<C>: ArrayLength<u8>,
 {
@@ -74,7 +74,7 @@ where
 impl<C> From<&Signer<C>> for sec1::EncodedPoint<C>
 where
     Self: Clone,
-    C: Curve + CurveAlgorithm + point::Compression,
+    C: Curve + CurveAlgorithm + PointCompression,
     UntaggedPointSize<C>: Add<U1> + ArrayLength<u8>,
     UncompressedPointSize<C>: ArrayLength<u8>,
 {
@@ -90,7 +90,7 @@ where
     /// Compute a fixed-sized P-256 ECDSA signature of the given digest
     fn try_sign_digest(&self, digest: D) -> Result<Signature<NistP256>, Error> {
         let sig = self.sign_ecdsa_digest(digest)?;
-        Signature::from_asn1(&sig)
+        Signature::from_der(&sig)
     }
 }
 
@@ -101,7 +101,7 @@ where
     /// Compute a fixed-sized P-384 ECDSA signature of the given digest
     fn try_sign_digest(&self, digest: D) -> Result<Signature<NistP384>, Error> {
         let sig = self.sign_ecdsa_digest(digest)?;
-        Signature::from_asn1(&sig)
+        Signature::from_der(&sig)
     }
 }
 
@@ -114,7 +114,7 @@ where
     fn try_sign_digest(&self, digest: D) -> Result<Signature<Secp256k1>, Error> {
         let mut signature = self
             .sign_ecdsa_digest(digest)
-            .and_then(|sig| Signature::from_asn1(&sig))?;
+            .and_then(|sig| Signature::from_der(&sig))?;
 
         // Low-S normalize per BIP 0062: Dealing with Malleability:
         // <https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki>

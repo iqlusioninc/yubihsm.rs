@@ -12,7 +12,7 @@ pub(crate) mod commands;
 mod signer;
 
 pub use self::{algorithm::Algorithm, nistp256::NistP256, nistp384::NistP384, signer::Signer};
-pub use ::ecdsa::{asn1, elliptic_curve::sec1, signature, Signature};
+pub use ::ecdsa::{der, elliptic_curve::sec1, signature, Signature};
 
 #[cfg(feature = "secp256k1")]
 #[cfg_attr(docsrs, doc(cfg(feature = "secp256k1")))]

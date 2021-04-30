@@ -347,7 +347,7 @@ impl Client {
     ///
     /// <https://developers.yubico.com/YubiHSM2/Commands/Get_Log_Entries.html>
     pub fn get_log_entries(&self) -> Result<LogEntries, Error> {
-        Ok(self.send_command(GetLogEntriesCommand {})?)
+        self.send_command(GetLogEntriesCommand {})
     }
 
     /// Get information about an object.
@@ -899,10 +899,10 @@ impl Client {
         key_id: object::Id,
         attestation_key_id: Option<object::Id>,
     ) -> Result<attestation::Certificate, Error> {
-        Ok(self.send_command(SignAttestationCertificateCommand {
+        self.send_command(SignAttestationCertificateCommand {
             key_id,
             attestation_key_id: attestation_key_id.unwrap_or(0),
-        })?)
+        })
     }
 
     /// Compute an ECDSA signature of the given digest (i.e. a precomputed SHA-2 digest)

@@ -17,7 +17,7 @@ pub fn serialize<T: serde::Serialize>(value: &T) -> Result<Vec<u8>, Error> {
 /// Deserialize a byte slice into an instance of `T`
 pub fn deserialize<T: serde::de::DeserializeOwned>(bytes: &[u8]) -> Result<T, Error> {
     let mut deserializer = de::Deserializer::new(Cursor::new(bytes));
-    Ok(serde::Deserialize::deserialize(&mut deserializer)?)
+    serde::Deserialize::deserialize(&mut deserializer)
 }
 
 /// Implement serde serializers/deserializers for array newtypes
