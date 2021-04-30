@@ -28,7 +28,7 @@ or endorsed by Yubico (although whoever runs their Twitter account
 
 ## Prerequisites
 
-Minimum Supported Rust Version: Rust **1.46**+.
+Minimum Supported Rust Version: Rust **1.49**+.
 
 On x86(-64) targets, add the following `RUSTFLAGS` to enable AES-NI to better
 secure communication with the YubiHSM:
@@ -167,7 +167,7 @@ See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT) for details.
 [docs-image]: https://docs.rs/yubihsm/badge.svg
 [docs-link]: https://docs.rs/yubihsm/
 [license-image]: https://img.shields.io/badge/license-Apache2.0/MIT-blue.svg
-[rustc-image]: https://img.shields.io/badge/rustc-1.46+-blue.svg
+[rustc-image]: https://img.shields.io/badge/rustc-1.49+-blue.svg
 [build-image]: https://github.com/iqlusioninc/yubihsm.rs/workflows/CI/badge.svg?branch=main&event=push
 [build-link]: https://github.com/iqlusioninc/yubihsm.rs/actions?query=workflow:CI
 [gitter-image]: https://badges.gitter.im/iqlusioninc/community.svg
