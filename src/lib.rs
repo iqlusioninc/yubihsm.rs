@@ -2,19 +2,7 @@
 //!
 //! ## Minimum Supported Rust Version
 //!
-//! This crate requires Rust **1.46** or newer.
-//!
-//! We also recommend building with the following `RUSTFLAGS` on i686/x86_64
-//! architectures for optimal security and performance:
-//!
-//! `RUSTFLAGS=-Ctarget-feature=+aes,+ssse3`
-//!
-//! You can configure your `~/.cargo/config` to always pass these flags:
-//!
-//! ```toml
-//! [build]
-//! rustflags = ["-Ctarget-feature=+aes,+ssse3"]
-//! ```
+//! This crate requires Rust **1.49** or newer.
 //!
 //! # Getting Started
 //!
