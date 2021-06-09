@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.39.0 (2021-06-09)
+### Changed
+- Bump `rusb` to 0.8.0 ([#170])
+- Bump `aes` to v0.7 ([#183])
+- Bump `aead` to v0.4 ([#183])
+- Bump `ccm` to v0.4 ([#183])
+- Bump `cmac` to v0.6 ([#183])
+- Bump `hmac` to v0.11 ([#183])
+- Bump `pbkdf2` to v0.8 ([#183])
+- Bump `ecdsa` crate to v0.12 ([#207])
+- Bump `k256` crate to v0.9 ([#207])
+- Bump `p256` crate to v0.9 ([#207])
+- Bump `p384` crate to v0.8 ([#207])
+- MSRV 1.51+ ([#207])
+
+[#170]: https://github.com/iqlusioninc/yubihsm.rs/pull/170
+[#183]: https://github.com/iqlusioninc/yubihsm.rs/pull/183
+[#207]: https://github.com/iqlusioninc/yubihsm.rs/pull/207
+
 ## 0.38.0 (2021-02-02)
 ### Changed
 - Bump `tiny_http` dependency to 0.8.0; fixes `RUSTSEC-2020-0031` ([#158])
