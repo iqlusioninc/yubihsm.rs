@@ -24,7 +24,7 @@ ccm = { version = "0.4", optional = true, features = ["std"] }
 chrono = { version = "0.4", features = ["serde"], optional = true }
 cmac = "0.6"
 digest = { version = "0.9", optional = true, default-features = false }
-ecdsa = { version = "0.11", default-features = false }
+ecdsa = { version = "0.12", default-features = false }
 ed25519 = "1"
 ed25519-dalek = { version = "1", optional = true }
 harp = { version = "0.1", optional = true }
