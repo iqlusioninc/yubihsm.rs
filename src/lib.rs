@@ -2,7 +2,7 @@
 //!
 //! ## Minimum Supported Rust Version
 //!
-//! This crate requires Rust **1.49** or newer.
+//! This crate requires Rust **1.51** or newer.
 //!
 //! # Getting Started
 //!
@@ -48,6 +48,8 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![forbid(unsafe_code)]
 #![warn(missing_docs, rust_2018_idioms, unused_qualifications)]
+// TODO(tarcieri): address these clippy nits
+#![allow(clippy::from_over_into, clippy::unnecessary_wraps)]
 
 #[macro_use]
 extern crate log;

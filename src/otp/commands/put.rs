@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 
 /// Request parameters for `command::put_otp_aead_key`
 #[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct PutOTPAEADKeyCommand {
+pub(crate) struct PutOtpAeadKeyCommand {
     /// Common parameters to all put object commands
     pub params: object::put::Params,
 
@@ -19,17 +19,17 @@ pub(crate) struct PutOTPAEADKeyCommand {
     pub data: Vec<u8>,
 }
 
-impl Command for PutOTPAEADKeyCommand {
-    type ResponseType = PutOTPAEADKeyResponse;
+impl Command for PutOtpAeadKeyCommand {
+    type ResponseType = PutOtpAeadKeyResponse;
 }
 
 /// Response from `command::put_otp_aead_key`
 #[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct PutOTPAEADKeyResponse {
+pub(crate) struct PutOtpAeadKeyResponse {
     /// ID of the key
     pub key_id: object::Id,
 }
 
-impl Response for PutOTPAEADKeyResponse {
+impl Response for PutOtpAeadKeyResponse {
     const COMMAND_CODE: command::Code = command::Code::PutOtpAead;
 }

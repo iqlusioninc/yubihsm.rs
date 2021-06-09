@@ -188,9 +188,9 @@ impl Device {
         serial_number: SerialNumber,
     ) -> Self {
         Self {
-            serial_number,
-            product_name,
             device,
+            product_name,
+            serial_number,
         }
     }
 

@@ -2,10 +2,8 @@
 
 use crate::{asymmetric, ecdsa::algorithm::CurveAlgorithm, ed25519};
 use ::ecdsa::elliptic_curve::{
-    generic_array::{
-        typenum::{Unsigned, U1},
-        ArrayLength, GenericArray,
-    },
+    bigint::Encoding as _,
+    generic_array::{typenum::U1, ArrayLength, GenericArray},
     sec1::{self, UncompressedPointSize, UntaggedPointSize},
     weierstrass::{Curve, PointCompression},
 };
@@ -57,8 +55,7 @@ impl PublicKey {
         UntaggedPointSize<C>: Add<U1> + ArrayLength<u8>,
         UncompressedPointSize<C>: ArrayLength<u8>,
     {
-        if self.algorithm != C::asymmetric_algorithm()
-            || self.bytes.len() != C::FieldSize::to_usize() * 2
+        if self.algorithm != C::asymmetric_algorithm() || self.bytes.len() != C::UInt::BYTE_SIZE * 2
         {
             return None;
         }

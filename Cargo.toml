@@ -24,15 +24,15 @@ ccm = { version = "0.4", optional = true, features = ["std"] }
 chrono = { version = "0.4", features = ["serde"], optional = true }
 cmac = "0.6"
 digest = { version = "0.9", optional = true, default-features = false }
-ecdsa = { version = "0.11", default-features = false }
+ecdsa = { version = "0.12", default-features = false }
 ed25519 = "1"
 ed25519-dalek = { version = "1", optional = true }
 harp = { version = "0.1", optional = true }
 hmac = { version = "0.11", optional = true }
-k256 = { version = "0.8", optional = true, features = ["ecdsa", "keccak256", "sha256"] }
+k256 = { version = "0.9", optional = true, features = ["ecdsa", "keccak256", "sha256"] }
 log = "0.4"
-p256 = { version = "0.8", default-features = false, features = ["ecdsa-core"] }
-p384 = { version = "0.7", default-features = false, features = ["ecdsa"] }
+p256 = { version = "0.9", default-features = false, features = ["ecdsa-core"] }
+p384 = { version = "0.8", default-features = false, features = ["ecdsa"] }
 pbkdf2 = { version = "0.8", optional = true, default-features = false }
 serde = { version = "1", features = ["serde_derive"] }
 serde_json = { version = "1", optional = true }
@@ -50,7 +50,7 @@ zeroize = { version = "1", features = ["zeroize_derive"] }
 criterion = "0.3"
 ed25519-dalek = "1"
 lazy_static = "1"
-p256 = { version = "0.8", features = ["ecdsa"] }
+p256 = { version = "0.9", features = ["ecdsa"] }
 
 [features]
 default = ["http", "passwords", "setup"]
