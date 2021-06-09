@@ -669,7 +669,7 @@ impl Client {
         }
 
         Ok(self
-            .send_command(PutOTPAEADKeyCommand {
+            .send_command(PutOtpAeadKeyCommand {
                 params: object::put::Params {
                     id: key_id,
                     label,

@@ -42,7 +42,7 @@ pub enum Code {
     MacMismatch,
 
     /// OK (HSM)
-    DeviceOK,
+    DeviceOk,
 
     /// Invalid command (HSM)
     DeviceInvalidCommand,
@@ -122,7 +122,7 @@ impl Code {
             -8 => Code::CryptogramMismatch,
             -9 => Code::SessionAuthenticationFailed,
             -10 => Code::MacMismatch,
-            -11 => Code::DeviceOK,
+            -11 => Code::DeviceOk,
             -12 => Code::DeviceInvalidCommand,
             -13 => Code::DeviceInvalidData,
             -14 => Code::DeviceInvalidSession,
@@ -160,7 +160,7 @@ impl Code {
             Code::CryptogramMismatch => -8,
             Code::SessionAuthenticationFailed => -9,
             Code::MacMismatch => -10,
-            Code::DeviceOK => -11,
+            Code::DeviceOk => -11,
             Code::DeviceInvalidCommand => -12,
             Code::DeviceInvalidData => -13,
             Code::DeviceInvalidSession => -14,
@@ -214,7 +214,7 @@ impl<'de> Deserialize<'de> for Code {
 
         use de::Error;
         Code::from_u8(value)
-            .or_else(|_| Code::from_u8(Code::DeviceOK.to_u8() - value))
+            .or_else(|_| Code::from_u8(Code::DeviceOk.to_u8() - value))
             .map_err(D::Error::custom)
     }
 }

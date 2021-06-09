@@ -626,7 +626,7 @@ fn sign_ecdsa(state: &State, cmd_data: &[u8]) -> response::Message {
                 let k = p256::Scalar::random(&mut OsRng);
                 let z = p256::Scalar::from_digest(MockDigest256::from(&command));
                 let signature = secret_key
-                    .secret_scalar()
+                    .to_secret_scalar()
                     .try_sign_prehashed(&k, &z)
                     .expect("ECDSA failure!");
 
@@ -636,7 +636,7 @@ fn sign_ecdsa(state: &State, cmd_data: &[u8]) -> response::Message {
                 let k = k256::Scalar::random(&mut OsRng);
                 let z = k256::Scalar::from_digest(MockDigest256::from(&command));
                 let signature = secret_key
-                    .secret_scalar()
+                    .to_secret_scalar()
                     .try_sign_prehashed(&k, &z)
                     .expect("ECDSA failure!");
 
