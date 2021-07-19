@@ -1,6 +1,6 @@
 <img src="https://raw.githubusercontent.com/iqlusioninc/yubihsm.rs/main/img/logo.png" width="150" height="110">
 
-# yubihsm.rs [![crate][crate-image]][crate-link] [![Docs][docs-image]][docs-link] ![Apache2/MIT licensed][license-image] ![MSRV][rustc-image] [![Build Status][build-image]][build-link] [![Gitter Chat][gitter-image]][gitter-link]
+# yubihsm.rs [![crate][crate-image]][crate-link][![Docs][docs-image]][docs-link] ![Apache2/MIT licensed][license-image] ![MSRV][rustc-image] [![Build Status][build-image]][build-link] [![Gitter Chat][gitter-image]][gitter-link] [![dependency status][deps-image]][deps-link]
 
 Pure Rust client for [YubiHSM 2] devices from [Yubico].
 
@@ -158,6 +158,8 @@ See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT) for details.
 [build-link]: https://github.com/iqlusioninc/yubihsm.rs/actions?query=workflow:CI
 [gitter-image]: https://badges.gitter.im/iqlusioninc/community.svg
 [gitter-link]: https://gitter.im/iqlusioninc/community
+[deps-image]: https://deps.rs/repo/github/iqlusioninc/yubihsm.rs/status.svg
+[deps-link]: https://deps.rs/repo/github/iqlusioninc/yubihsm.rs
 
 [//]: # (general links)
 
