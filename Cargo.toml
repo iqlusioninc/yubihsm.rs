@@ -47,7 +47,6 @@ uuid = { version = "0.8", default-features = false }
 zeroize = { version = "1", features = ["zeroize_derive"] }
 
 [dev-dependencies]
-criterion = "0.3"
 ed25519-dalek = "1"
 lazy_static = "1"
 p256 = { version = "0.9", features = ["ecdsa"] }
@@ -66,10 +65,6 @@ usb = ["rusb"]
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
-
-[[bench]]
-name = "ed25519"
-harness = false
 
 [[example]]
 name = "connector_http_server"
