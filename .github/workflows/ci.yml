@@ -107,22 +107,3 @@ jobs:
         with:
           command: clippy
           args: --all-features -- -D warnings
-
-  codecov:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - uses: actions-rs/tarpaulin@v0.1
-        with:
-          version: latest
-          args: --all-features -- --test-threads 1
-      - uses: codecov/codecov-action@v1
-      - uses: actions/upload-artifact@v1
-        with:
-          name: code-coverage-report
-          path: cobertura.xml
