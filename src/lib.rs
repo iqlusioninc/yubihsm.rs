@@ -1,9 +1,5 @@
-//! **yubihsm.rs**: pure Rust client for YubiHSM 2 hardware security modules
-//!
-//! ## Minimum Supported Rust Version
-//!
-//! This crate requires Rust **1.51** or newer.
-//!
+#![doc = include_str!("../README.md")]
+
 //! # Getting Started
 //!
 //! Most crate functionality can be found in the `Client` type:

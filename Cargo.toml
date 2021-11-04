@@ -1,19 +1,20 @@
 [package]
-name          = "yubihsm"
-version       = "0.39.0" # Also update html_root_url in lib.rs when bumping this
-description   = """
+name = "yubihsm"
+version = "0.39.0" # Also update html_root_url in lib.rs when bumping this
+description = """
 Pure Rust client for YubiHSM2 devices with support for HTTP and
 USB-based access to the device. Supports most HSM functionality
 including ECDSA, Ed25519, HMAC, and RSA.
 """
-license       = "Apache-2.0 OR MIT"
-authors       = ["Tony Arcieri <tony@iqlusion.io>"]
+license = "Apache-2.0 OR MIT"
+authors = ["Tony Arcieri <tony@iqlusion.io>"]
 documentation = "https://docs.rs/yubihsm"
-repository    = "https://github.com/iqlusioninc/yubihsm.rs"
-readme        = "README.md"
-categories    = ["cryptography", "hardware-support"]
-keywords      = ["ecdsa", "ed25519", "hmac", "hsm", "yubikey"]
-edition       = "2018"
+repository = "https://github.com/iqlusioninc/yubihsm.rs"
+readme = "README.md"
+categories = ["cryptography", "hardware-support"]
+keywords = ["ecdsa", "ed25519", "hmac", "hsm", "yubikey"]
+edition = "2021"
+rust-version = "1.56"
 
 [dependencies]
 aes = "0.7"

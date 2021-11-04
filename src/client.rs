@@ -400,6 +400,7 @@ impl Client {
     /// refuse operations if the [log store] becomes full.
     ///
     /// <https://developers.yubico.com/YubiHSM2/Commands/Get_Option.html>
+    ///
     /// [log store]: https://developers.yubico.com/YubiHSM2/Concepts/Logs.html
     pub fn get_force_audit_option(&self) -> Result<AuditOption, Error> {
         let response = self.send_command(GetOptionCommand {
