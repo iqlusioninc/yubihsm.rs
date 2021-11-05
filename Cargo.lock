@@ -384,12 +384,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "harp"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "60bf12c625ed5e96f81609ae4377c34e9fa3e4d1fada392404322daeace511ab"
-
-[[package]]
 name = "hmac"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -956,7 +950,6 @@ dependencies = [
  "ecdsa",
  "ed25519",
  "ed25519-dalek",
- "harp",
  "hmac",
  "k256",
  "lazy_static",

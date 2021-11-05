@@ -1,12 +1,8 @@
 //! Persistent HTTP connection to `yubihsm-connector`
 
-use super::config::HttpConfig;
+use super::{client, config::HttpConfig};
 use crate::connector::{self, Connection};
 use uuid::Uuid;
-
-// TODO: send user agent string
-// User-Agent string to supply
-// pub const USER_AGENT: &str = concat!("yubihsm.rs ", env!("CARGO_PKG_VERSION"));
 
 /// Connection to YubiHSM via HTTP requests to `yubihsm-connector`.
 ///
@@ -19,13 +15,13 @@ use uuid::Uuid;
 /// <https://developers.yubico.com/YubiHSM2/Component_Reference/yubihsm-connector/>
 pub struct HttpConnection {
     /// HTTP connection
-    connection: harp::Connection,
+    connection: client::Connection,
 }
 
 impl HttpConnection {
     /// Open a connection to a `yubihsm-connector` service
     pub(crate) fn open(config: &HttpConfig) -> Result<Self, connector::Error> {
-        let connection = harp::Connection::open(&config.addr, config.port, &Default::default())?;
+        let connection = client::Connection::open(&config.addr, config.port, &Default::default())?;
 
         Ok(HttpConnection { connection })
     }
@@ -40,7 +36,7 @@ impl HttpConnection {
         // TODO: send UUID as `X-Request-ID` header, zero copy body creation
         Ok(self
             .connection
-            .post(path, &harp::request::Body::new(body))?
+            .post(path, &client::request::Body::new(body))?
             .into_vec())
     }
 }

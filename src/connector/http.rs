@@ -2,6 +2,7 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Component_Reference/yubihsm-connector/>
 
+pub(super) mod client;
 mod config;
 mod connection;
 #[cfg(feature = "http-server")]
