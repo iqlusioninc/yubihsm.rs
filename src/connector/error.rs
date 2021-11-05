@@ -4,6 +4,9 @@ use anomaly::{BoxError, Context};
 use std::{fmt, io, num::ParseIntError, str::Utf8Error};
 use thiserror::Error;
 
+#[cfg(feature = "http")]
+use super::http;
+
 #[cfg(feature = "usb")]
 use anomaly::format_err;
 
@@ -67,15 +70,15 @@ impl From<io::Error> for Error {
 }
 
 #[cfg(feature = "http")]
-impl From<harp::Error> for Error {
-    fn from(err: harp::Error) -> Error {
+impl From<http::client::Error> for Error {
+    fn from(err: http::client::Error) -> Error {
         let kind = match err.kind() {
-            harp::ErrorKind::AddrInvalid => ErrorKind::AddrInvalid,
-            harp::ErrorKind::IoError => ErrorKind::IoError,
-            harp::ErrorKind::ParseError | harp::ErrorKind::ResponseError => {
+            http::client::ErrorKind::AddrInvalid => ErrorKind::AddrInvalid,
+            http::client::ErrorKind::IoError => ErrorKind::IoError,
+            http::client::ErrorKind::ParseError | http::client::ErrorKind::ResponseError => {
                 ErrorKind::ResponseError
             }
-            harp::ErrorKind::RequestError => ErrorKind::RequestError,
+            http::client::ErrorKind::RequestError => ErrorKind::RequestError,
         };
 
         kind.context(err).into()
