@@ -9,7 +9,6 @@ use crate::{
     wrap, Algorithm, Capability, Domain,
 };
 use aes::cipher::consts::{U13, U8};
-use anomaly::{fail, format_err};
 use ccm::aead::{AeadInPlace, NewAead};
 use std::collections::{btree_map::Iter as MapIter, BTreeMap as Map};
 

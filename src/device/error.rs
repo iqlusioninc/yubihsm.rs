@@ -1,7 +1,7 @@
 //! Error types which map directly to the YubiHSM2's error codes
 
+use crate::error::{BoxError, Context};
 use crate::response;
-use anomaly::{BoxError, Context};
 use thiserror::Error;
 
 /// Errors which originate in the HSM

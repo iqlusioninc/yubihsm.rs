@@ -1,7 +1,6 @@
 //! Object labels: descriptions of objects
 
 use super::{Error, ErrorKind};
-use anomaly::fail;
 use std::{
     fmt::{self, Debug, Display},
     ops::{Deref, DerefMut},

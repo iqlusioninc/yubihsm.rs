@@ -1,6 +1,6 @@
 //! Serialization errors
 
-use anomaly::{format_err, BoxError, Context};
+use crate::error::{BoxError, Context};
 use serde::{de, ser};
 use std::{fmt, io};
 use thiserror::Error;

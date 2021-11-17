@@ -1,6 +1,6 @@
 //! Authentication errors
 
-use anomaly::{BoxError, Context};
+use crate::error::{BoxError, Context};
 use thiserror::Error;
 
 /// Authentication errors

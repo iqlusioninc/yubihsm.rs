@@ -18,7 +18,6 @@ rust-version = "1.56"
 
 [dependencies]
 aes = "0.7"
-anomaly = "0.2"
 bitflags = "1"
 block-modes = "0.8"
 ccm = { version = "0.4", optional = true, features = ["std"] }

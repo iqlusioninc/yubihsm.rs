@@ -7,7 +7,6 @@
 // TODO(tarcieri): use this for `yubihsm::client::put_wrap_key` in general?
 
 use crate::{client, device, object, wrap, Capability, Client, Domain};
-use anomaly::fail;
 use rand_core::{OsRng, RngCore};
 use std::fmt::{self, Debug};
 use zeroize::{Zeroize, Zeroizing};

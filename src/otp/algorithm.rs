@@ -1,7 +1,6 @@
 //! Yubico OTP algorithms
 
 use crate::algorithm;
-use anomaly::fail;
 
 /// Valid algorithms for Yubico OTP (AES-based one time password) keys
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]

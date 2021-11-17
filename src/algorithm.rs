@@ -5,7 +5,6 @@ mod error;
 pub use self::error::{Error, ErrorKind};
 
 use crate::{asymmetric, authentication, ecdh, ecdsa, hmac, opaque, otp, rsa, template, wrap};
-use anomaly::fail;
 
 /// Cryptographic algorithm types supported by the `YubiHSM 2`
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]

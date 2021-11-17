@@ -1,7 +1,6 @@
 //! Types of objects
 
 use super::{Error, ErrorKind};
-use anomaly::fail;
 use serde::{de, ser, Deserialize, Serialize};
 use std::{fmt, str::FromStr};
 

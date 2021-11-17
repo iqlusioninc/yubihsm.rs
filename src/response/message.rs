@@ -12,7 +12,6 @@ use crate::{
         ErrorKind::ProtocolError,
     },
 };
-use anomaly::{fail, format_err};
 
 #[cfg(feature = "mockhsm")]
 use crate::device;

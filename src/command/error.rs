@@ -1,6 +1,6 @@
 //! Command-related errors
 
-use anomaly::{BoxError, Context};
+use crate::error::{BoxError, Context};
 use thiserror::Error;
 
 /// Command-related errors

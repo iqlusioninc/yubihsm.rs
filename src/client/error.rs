@@ -1,7 +1,10 @@
 //! YubiHSM client errors
 
-use crate::{connector, device, serialization, session};
-use anomaly::{BoxError, Context};
+use crate::{
+    connector, device,
+    error::{BoxError, Context},
+    serialization, session,
+};
 use std::io;
 use thiserror::Error;
 

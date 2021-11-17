@@ -1,7 +1,6 @@
 //! Authentication algorithms
 
 use crate::algorithm;
-use anomaly::fail;
 
 /// Valid algorithms for auth keys
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]

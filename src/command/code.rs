@@ -1,7 +1,6 @@
 //! YubiHSM2 command codes
 
 use super::{Error, ErrorKind};
-use anomaly::fail;
 use serde::{de, ser, Deserialize, Serialize};
 
 /// Command IDs for `YubiHSM 2` operations

@@ -3,7 +3,6 @@
 use super::{Error, ErrorKind};
 use crate::Client;
 pub use crate::{object, Capability, Credentials, Domain};
-use anomaly::format_err;
 
 /// Roles represent accounts on the device with specific permissions
 #[derive(Clone, Debug)]

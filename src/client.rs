@@ -11,6 +11,7 @@
 mod error;
 
 pub use self::error::{Error, ErrorKind};
+
 use crate::{
     asymmetric::{self, commands::*, PublicKey},
     attestation::{self, commands::*},
@@ -33,7 +34,6 @@ use crate::{
     uuid,
     wrap::{self, commands::*},
 };
-use anomaly::{ensure, fail, format_err};
 use std::{
     sync::{Arc, Mutex},
     time::{Duration, Instant},

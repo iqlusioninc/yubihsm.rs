@@ -1,7 +1,6 @@
 //! Information about where a key originates (i.e. where it was generated)
 
 use super::{Error, ErrorKind};
-use anomaly::fail;
 use serde::{de, ser, Deserialize, Serialize};
 use std::fmt;
 

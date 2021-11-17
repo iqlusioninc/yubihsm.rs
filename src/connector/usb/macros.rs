@@ -23,7 +23,7 @@ macro_rules! usb_debug {
 macro_rules! usb_err {
     ($device:expr, $msg:expr) => {
         {
-            use anomaly::format_err;
+
             format_err!(
                 UsbError,
                 "USB(bus={},addr={}): {}",
@@ -35,7 +35,7 @@ macro_rules! usb_err {
     };
     ($device:expr, $fmt:expr, $($arg:tt)+) => {
         {
-            use anomaly::format_err;
+
             format_err!(
                 UsbError,
                 concat!("USB(bus={},addr={}): ", $fmt),
