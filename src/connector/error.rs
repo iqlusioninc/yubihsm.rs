@@ -1,14 +1,11 @@
 //! Error types for `yubihsm-connector`
 
-use anomaly::{BoxError, Context};
+use crate::error::{BoxError, Context};
 use std::{fmt, io, num::ParseIntError, str::Utf8Error};
 use thiserror::Error;
 
 #[cfg(feature = "http")]
 use super::http;
-
-#[cfg(feature = "usb")]
-use anomaly::format_err;
 
 /// `yubihsm-connector` related errors
 pub type Error = crate::Error<ErrorKind>;

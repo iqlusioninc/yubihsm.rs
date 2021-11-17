@@ -16,7 +16,6 @@ use crate::{
     authentication::{self, Credentials, DEFAULT_AUTHENTICATION_KEY_ID},
     object, Capability, Client, Connector, Domain,
 };
-use anomaly::format_err;
 
 /// Label to place on the temporary setup auth key ID
 const SETUP_KEY_LABEL: &str = "yubihsm.rs temporary setup key";

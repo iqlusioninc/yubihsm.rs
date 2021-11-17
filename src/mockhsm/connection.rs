@@ -1,14 +1,12 @@
 //! Mock connection to the MockHSM
 
-use anomaly::{fail, format_err};
-use std::sync::{Arc, Mutex};
-use uuid::Uuid;
-
 use super::{command, state::State, MockHsm};
 use crate::{
     command::Code,
     connector::{self, Connection, ErrorKind::ConnectionFailed, Message},
 };
+use std::sync::{Arc, Mutex};
+use uuid::Uuid;
 
 /// A mocked connection to the MockHsm
 pub struct MockConnection(Arc<Mutex<State>>);

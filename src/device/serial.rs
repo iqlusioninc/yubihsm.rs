@@ -1,7 +1,6 @@
 //! YubiHSM 2 device serial numbers
 
 use super::error::{Error, ErrorKind};
-use anomaly::{fail, format_err};
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::{self, Display},

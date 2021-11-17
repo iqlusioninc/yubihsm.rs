@@ -1,7 +1,7 @@
 //! Session error types
 
+use crate::error::{BoxError, Context};
 use crate::{connector, device, serialization};
-use anomaly::{BoxError, Context};
 use thiserror::Error;
 
 /// Session errors

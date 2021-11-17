@@ -9,7 +9,6 @@ use crate::{
     uuid::{self, Uuid},
     Capability, Client, Domain,
 };
-use anomaly::format_err;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::{env, str::FromStr};

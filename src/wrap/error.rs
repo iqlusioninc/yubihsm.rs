@@ -1,6 +1,6 @@
 //! Key wrapping errors
 
-use anomaly::{BoxError, Context};
+use crate::error::{BoxError, Context};
 use thiserror::Error;
 
 /// Wrap-related errors

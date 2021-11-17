@@ -4,13 +4,10 @@ use crate::{algorithm::Algorithm, capability::Capability, client, domain::Domain
 use std::io::Write;
 
 #[cfg(feature = "mockhsm")]
-use crate::client::ErrorKind::ProtocolError;
-#[cfg(feature = "mockhsm")]
-use crate::object::LABEL_SIZE;
-#[cfg(feature = "mockhsm")]
-use anomaly::{fail, format_err};
-#[cfg(feature = "mockhsm")]
-use std::io::Read;
+use {
+    crate::{client::ErrorKind::ProtocolError, object::LABEL_SIZE},
+    std::io::Read,
+};
 
 /// Filters to apply when listing objects
 pub enum Filter {

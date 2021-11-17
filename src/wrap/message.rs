@@ -2,7 +2,6 @@
 
 use super::nonce::{self, Nonce};
 use super::{Error, ErrorKind};
-use anomaly::fail;
 use serde::{Deserialize, Serialize};
 
 /// Wrap wessage (encrypted HSM object or arbitrary data) encrypted under a wrap key

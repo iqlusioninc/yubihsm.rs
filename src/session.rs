@@ -28,7 +28,6 @@ use crate::{
     device, response,
     serialization::deserialize,
 };
-use anomaly::{ensure, fail, format_err};
 use std::{
     panic::{self, AssertUnwindSafe},
     time::{Duration, Instant},

@@ -6,7 +6,6 @@ mod error;
 pub use self::error::{Error, ErrorKind};
 
 use crate::command;
-use anomaly::fail;
 use serde::{de, ser, Deserialize, Serialize};
 use std::fmt;
 

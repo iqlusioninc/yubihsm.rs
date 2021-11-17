@@ -43,7 +43,7 @@ use aes::{
     cipher::{consts::U16, generic_array::GenericArray, BlockEncrypt, NewBlockCipher},
     Aes128,
 };
-use anomaly::{fail, format_err};
+
 use block_modes::{block_padding::Iso7816, BlockMode, Cbc};
 use cmac::crypto_mac::NewMac;
 use cmac::{crypto_mac::Mac as CryptoMac, Cmac};
@@ -633,10 +633,8 @@ mod tests {
 
     fn create_channel_pair() -> (SecureChannel, SecureChannel) {
         let authentication_key = authentication::Key::derive_from_password(PASSWORD);
-
         let host_challenge = Challenge::from_slice(HOST_CHALLENGE);
         let card_challenge = Challenge::from_slice(CARD_CHALLENGE);
-
         let session_id = session::Id::from_u8(0).unwrap();
 
         // Create channels
@@ -646,6 +644,7 @@ mod tests {
             host_challenge,
             card_challenge,
         );
+
         let mut card_channel = SecureChannel::new(
             session_id,
             &authentication_key,

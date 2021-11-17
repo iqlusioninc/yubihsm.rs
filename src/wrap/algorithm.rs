@@ -1,7 +1,6 @@
 //! Wrap algorithms
 
 use crate::algorithm;
-use anomaly::fail;
 
 /// Valid algorithms for "wrap" (symmetric encryption/key wrapping) keys
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]

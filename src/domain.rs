@@ -6,7 +6,6 @@ mod error;
 
 pub use self::error::{Error, ErrorKind};
 
-use anomaly::fail;
 use bitflags::bitflags;
 use serde::{de, ser, Deserialize, Serialize};
 use std::fmt;

@@ -10,7 +10,6 @@ use crate::{
         securechannel::{Challenge, SecureChannel},
     },
 };
-use anomaly::format_err;
 use std::collections::BTreeMap;
 
 /// Mutable interior state of the `MockHsm`

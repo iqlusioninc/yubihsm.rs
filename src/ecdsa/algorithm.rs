@@ -2,7 +2,6 @@
 
 use super::{NistP256, NistP384};
 use crate::{algorithm, asymmetric};
-use anomaly::fail;
 
 #[cfg(feature = "secp256k1")]
 use super::Secp256k1;
