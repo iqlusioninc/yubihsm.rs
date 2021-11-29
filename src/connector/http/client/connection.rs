@@ -13,8 +13,8 @@ use std::{
 
 use super::{error::Error, path::PathBuf, request, response, HTTP_VERSION, USER_AGENT};
 
-/// Default timeout in milliseconds (5 seconds)
-const DEFAULT_TIMEOUT_MS: u64 = 5000;
+/// Default timeout in milliseconds (20 seconds)
+const DEFAULT_TIMEOUT_MS: u64 = 20000;
 
 /// Options when building a `Connection`
 pub struct ConnectionOptions {
