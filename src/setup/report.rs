@@ -9,9 +9,9 @@ use crate::{
     uuid::{self, Uuid},
     Capability, Client, Domain,
 };
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::{env, str::FromStr};
+use time::OffsetDateTime as DateTime;
 
 /// Label string for the provisioning report object
 pub const REPORT_OBJECT_LABEL: &str = "yubihsm.rs setup report";
@@ -45,7 +45,7 @@ pub struct Report {
     pub username: Option<String>,
 
     /// Date the device was provisioned
-    pub date: DateTime<Utc>,
+    pub date: DateTime,
 
     /// Software that performed the provisioning
     pub software: String,
@@ -61,7 +61,7 @@ impl Report {
             device_serial_number: serial_number.to_string(),
             username: env::var("LOGNAME").ok(),
             hostname: env::var("HOSTNAME").ok(),
-            date: Utc::now(),
+            date: DateTime::now_utc(),
             software: format!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION")),
         }
     }
