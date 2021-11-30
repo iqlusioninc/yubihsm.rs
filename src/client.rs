@@ -165,21 +165,23 @@ impl Client {
 
     /// Encrypt a command, send it to the HSM, then read and decrypt the response.
     fn send_command<T: Command>(&self, command: T) -> Result<T::ResponseType, Error> {
-        match self.session()?.send_command(&command) {
+        let mut session = self.session()?;
+
+        match session.send_command(&command) {
             Ok(response) => Ok(response),
-            Err(e) => {
+            Err(err) if *err.kind() == session::ErrorKind::CommandLimitExceeded => {
                 // If we encounter this, we've exceeded the maximum number of
                 // messages allowed under the data volume limits and need to
                 // rekey the connection by creating a new session.
-                //
-                // Attempt to inititiate a new session and retry the command.
+
+                // Drop the stale `session::Guard` to release the session mutex.
+                drop(session);
+
+                // Attempt to initiate a new session and retry the command.
                 // (the original command was never sent in this case)
-                if *e.kind() == session::ErrorKind::CommandLimitExceeded {
-                    Ok(self.session()?.send_command(&command)?)
-                } else {
-                    Err(e.into())
-                }
+                Ok(self.session()?.send_command(&command)?)
             }
+            Err(err) => Err(err.into()),
         }
     }
 
