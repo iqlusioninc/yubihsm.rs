@@ -10,7 +10,6 @@ use crate::{
     response::Response,
 };
 use serde::{Deserialize, Serialize};
-use signature::Signature as _;
 
 /// Request parameters for `command::sign_ed25519`
 #[derive(Serialize, Deserialize, Debug)]
@@ -36,6 +35,6 @@ impl Response for SignEddsaResponse {
 
 impl SignEddsaResponse {
     pub(crate) fn signature(&self) -> Result<Signature, client::Error> {
-        Signature::from_bytes(&self.0).map_err(|e| ResponseError.context(e).into())
+        Signature::try_from(self.0.as_slice()).map_err(|e| ResponseError.context(e).into())
     }
 }
