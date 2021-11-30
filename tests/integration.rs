@@ -1,6 +1,6 @@
 //! Integration tests (using live YubiHSM 2 or MockHsm)
 
-use lazy_static::lazy_static;
+use once_cell::sync::Lazy;
 use std::sync::{Mutex, MutexGuard};
 use yubihsm::{asymmetric, device, object, Capability, Client, Connector, Domain};
 
@@ -40,14 +40,11 @@ const TEST_MESSAGE: &[u8] = b"The YubiHSM 2 is a simple, affordable, and secure 
 /// Size of a NIST P-256 public key
 pub const EC_P256_PUBLIC_KEY_SIZE: usize = 64;
 
-lazy_static! {
-    static ref HSM_CONNECTOR: Connector = create_hsm_connector();
-}
+static HSM_CONNECTOR: Lazy<Connector> = Lazy::new(create_hsm_connector);
 
-lazy_static! {
-    static ref HSM_CLIENT: Mutex<Client> =
-        Mutex::new(Client::open(HSM_CONNECTOR.clone(), Default::default(), true).unwrap());
-}
+static HSM_CLIENT: Lazy<Mutex<Client>> = Lazy::new(|| {
+    Mutex::new(Client::open(HSM_CONNECTOR.clone(), Default::default(), true).unwrap())
+});
 
 /// Create a `yubihsm::Client` to run the test suite against
 pub fn get_hsm_client() -> MutexGuard<'static, Client> {
