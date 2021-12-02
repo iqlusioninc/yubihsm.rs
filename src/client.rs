@@ -28,6 +28,7 @@ use crate::{
     object::{self, commands::*, generate},
     opaque::{self, commands::*},
     otp::{self, commands::*},
+    rsa::{self, oaep::commands::*},
     serialization::{deserialize, serialize},
     session::{self, Session},
     template::{commands::*, Template},
@@ -47,7 +48,7 @@ use {
     crate::{
         algorithm::Algorithm,
         ecdh::{self, commands::*},
-        rsa::{self, pkcs1::commands::*, pss::commands::*},
+        rsa::{pkcs1::commands::*, pss::commands::*},
         ssh::{self, commands::*},
     },
     sha2::{Digest, Sha256},
@@ -196,6 +197,29 @@ impl Client {
     pub fn blink_device(&self, num_seconds: u8) -> Result<(), Error> {
         self.send_command(BlinkDeviceCommand { num_seconds })?;
         Ok(())
+    }
+
+    /// Decrypt data encrypted with RSA-OAEP
+    ///
+    /// <https://developers.yubico.com/YubiHSM2/Commands/Decrypt_Oaep.html>
+    pub fn decrypt_oaep<T>(
+        &self,
+        key_id: object::Id,
+        mgf1_hash_alg: rsa::mgf::Algorithm,
+        data: T,
+        label_hash: Vec<u8>,
+    ) -> Result<rsa::oaep::DecryptedData, Error>
+    where
+        T: Into<Vec<u8>>,
+    {
+        Ok(self
+            .send_command(DecryptOaepCommand {
+                key_id,
+                mgf1_hash_alg,
+                data: data.into(),
+                label_hash,
+            })?
+            .into())
     }
 
     /// Delete an object of the given ID and type.

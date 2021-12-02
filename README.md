@@ -43,7 +43,7 @@ supported, please open an issue requesting support.
 | [Close Session]                | ✅     | ✅        | Terminate an encrypted session with the HSM |
 | [Create OTP AEAD]              | ⛔     | ⛔        | Create a Yubico OTP AEAD |
 | [Create Session]               | ✅     | ✅        | Initiate a new encrypted session with the HSM |
-| [Decrypt OAEP]                 | ⛔     | ⛔        | Decrypt data encrypted with RSA-OAEP |
+| [Decrypt OAEP]                 | ✅     | ⛔        | Decrypt data encrypted with RSA-OAEP |
 | [Decrypt OTP]                  | ⛔     | ⛔        | Decrypt a Yubico OTP, obtaining counters and timer info |
 | [Decrypt PKCS1]                | ⛔     | ⛔        | Decrypt data encrypted with RSA-PKCS#1v1.5 |
 | [Delete Object]                | ✅     | ✅        | Delete an object of the given ID and type |

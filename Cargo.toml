@@ -49,6 +49,7 @@ zeroize = { version = "1", features = ["zeroize_derive"] }
 ed25519-dalek = "1"
 once_cell = "1"
 p256 = { version = "0.9", features = ["ecdsa"] }
+rsa = "0.5"
 
 [features]
 default = ["http", "passwords", "setup"]
