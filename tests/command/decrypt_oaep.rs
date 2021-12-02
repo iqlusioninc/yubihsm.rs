@@ -1,5 +1,5 @@
 use crate::{generate_asymmetric_key, TEST_KEY_ID};
-use rand::rngs::OsRng;
+use rand_core;
 use rsa::{self, PublicKey};
 use sha2::{self, Digest};
 
@@ -29,7 +29,7 @@ fn rsa_decrypt_oaep_test() {
     let rsa_exponent = rsa::BigUint::parse_bytes(b"65537", 10).unwrap();
     let rsa_public_key = rsa::RsaPublicKey::new(rsa_modulus, rsa_exponent).unwrap();
 
-    let mut rng = OsRng;
+    let mut rng = rand_core::OsRng;
     let ciphertext = rsa_public_key
         .encrypt(
             &mut rng,

@@ -1021,7 +1021,6 @@ dependencies = [
  "p256",
  "p384",
  "pbkdf2",
- "rand 0.8.4",
  "rand_core 0.6.3",
  "rsa",
  "rusb",

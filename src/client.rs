@@ -48,7 +48,7 @@ use {
     crate::{
         algorithm::Algorithm,
         ecdh::{self, commands::*},
-        rsa::{self, pkcs1::commands::*, pss::commands::*},
+        rsa::{pkcs1::commands::*, pss::commands::*},
         ssh::{self, commands::*},
     },
     sha2::{Digest, Sha256},
