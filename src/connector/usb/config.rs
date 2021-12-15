@@ -3,9 +3,6 @@
 use crate::device::SerialNumber;
 use serde::{Deserialize, Serialize};
 
-/// Default timeouts for reading and writing (1 second)
-pub const DEFAULT_TIMEOUT_MILLIS: u64 = 1000;
-
 /// Configuration for connecting to the YubiHSM via USB
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[cfg_attr(docsrs, doc(cfg(feature = "usb")))]
@@ -17,11 +14,16 @@ pub struct UsbConfig {
     pub timeout_ms: u64,
 }
 
+impl UsbConfig {
+    /// Default timeout for USB communication (30 seconds)
+    pub const DEFAULT_TIMEOUT_MILLIS: u64 = 30_000;
+}
+
 impl Default for UsbConfig {
     fn default() -> UsbConfig {
         UsbConfig {
             serial: None,
-            timeout_ms: DEFAULT_TIMEOUT_MILLIS,
+            timeout_ms: Self::DEFAULT_TIMEOUT_MILLIS,
         }
     }
 }

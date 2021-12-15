@@ -1,15 +1,9 @@
 //! Elliptic Curve Digital Signature Algorithm (ECDSA) tests
 
 use ::ecdsa::{
-    elliptic_curve::{
-        consts::U1,
-        generic_array::ArrayLength,
-        sec1::{UncompressedPointSize, UntaggedPointSize},
-        weierstrass::{Curve, PointCompression},
-    },
+    elliptic_curve::{sec1, FieldSize, PointCompression, PrimeCurve},
     signature::Verifier,
 };
-use std::ops::Add;
 use yubihsm::{
     asymmetric::signature::Signer as _,
     ecdsa::{self, algorithm::CurveAlgorithm, NistP256},
@@ -36,9 +30,8 @@ const TEST_MESSAGE: &[u8] =
 /// Create the signer for this test
 fn create_signer<C>(key_id: object::Id) -> ecdsa::Signer<C>
 where
-    C: Curve + CurveAlgorithm + PointCompression,
-    UntaggedPointSize<C>: Add<U1> + ArrayLength<u8>,
-    UncompressedPointSize<C>: ArrayLength<u8>,
+    C: PrimeCurve + CurveAlgorithm + PointCompression,
+    FieldSize<C>: sec1::ModulusSize,
 {
     let client = crate::get_hsm_client();
     create_yubihsm_key(&client, key_id, C::asymmetric_algorithm());

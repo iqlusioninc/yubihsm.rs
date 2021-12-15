@@ -2,6 +2,7 @@
 //! of supported cryptographic primitives, already initialized with a private key
 
 use crate::{algorithm::Algorithm, asymmetric, authentication, hmac, opaque, wrap};
+use ecdsa::elliptic_curve::sec1::ToEncodedPoint;
 use ed25519_dalek as ed25519;
 use rand_core::{OsRng, RngCore};
 
@@ -38,11 +39,11 @@ impl Payload {
             Algorithm::Asymmetric(asymmetric_alg) => match asymmetric_alg {
                 asymmetric::Algorithm::EcP256 => {
                     assert_eq!(data.len(), 32);
-                    Payload::EcdsaNistP256(p256::SecretKey::from_bytes(data).unwrap())
+                    Payload::EcdsaNistP256(p256::SecretKey::from_be_bytes(data).unwrap())
                 }
                 asymmetric::Algorithm::EcK256 => {
                     assert_eq!(data.len(), 32);
-                    Payload::EcdsaSecp256k1(k256::SecretKey::from_bytes(data).unwrap())
+                    Payload::EcdsaSecp256k1(k256::SecretKey::from_be_bytes(data).unwrap())
                 }
                 asymmetric::Algorithm::Ed25519 => {
                     assert_eq!(data.len(), ed25519::SECRET_KEY_LENGTH);
@@ -133,14 +134,10 @@ impl Payload {
     pub fn public_key_bytes(&self) -> Option<Vec<u8>> {
         match self {
             Payload::EcdsaNistP256(secret_key) => {
-                p256::EncodedPoint::from_secret_key(secret_key, false)
-                    .to_untagged_bytes()
-                    .map(|b| b.to_vec())
+                Some(secret_key.public_key().to_encoded_point(false).as_bytes()[1..].into())
             }
             Payload::EcdsaSecp256k1(secret_key) => {
-                k256::EncodedPoint::from_secret_key(secret_key, false)
-                    .to_untagged_bytes()
-                    .map(|b| b.to_vec())
+                Some(secret_key.public_key().to_encoded_point(false).as_bytes()[1..].into())
             }
             Payload::Ed25519Key(secret_key) => {
                 Some(ed25519::PublicKey::from(secret_key).as_ref().into())
@@ -161,8 +158,8 @@ impl Payload {
     pub fn to_bytes(&self) -> Vec<u8> {
         match self {
             Payload::AuthenticationKey(k) => k.0.as_ref().into(),
-            Payload::EcdsaNistP256(k) => k.to_bytes().to_vec(),
-            Payload::EcdsaSecp256k1(k) => k.to_bytes().to_vec(),
+            Payload::EcdsaNistP256(k) => k.to_be_bytes().to_vec(),
+            Payload::EcdsaSecp256k1(k) => k.to_be_bytes().to_vec(),
             Payload::Ed25519Key(k) => k.as_ref().into(),
             Payload::HmacKey(_, data) => data.clone(),
             Payload::Opaque(_, data) => data.clone(),
