@@ -4,6 +4,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.40.0 (2021-12-15)
+### Added
+- Support for `decrypt_oaep` command ([#277])
+
+### Changed
+- Bump `rusb` to 0.9.0 ([#249])
+- Bump `pbkdf2` to 0.9.0 ([#244])
+- Upgrade to Rust 2021 edition; MSRV 1.56 ([#258])
+- Replace `chrono` with the `time` crate ([#271])
+- Replace `lazy_static` with `once_cell` ([#272])
+- Default USB timeout is now 30 seconds to accomodate RSA commands ([#274])
+- Bump `ed25519` dependency to v1.3 ([#274])
+- Bump `ecdsa` to v0.13 ([#289])
+- Bump `k256` to v0.10 ([#289])
+- Bump `p256` to v0.10 ([#289])
+- Bump `p384` to v0.9 ([#289])
+
+### Fixed
+- Potential session mutex re-entrancy bug ([#273])
+
+### Removed
+- `criterion` benchmarks ([#234])
+- `harp` dependency ([#259])
+- `anomaly` dependency ([#264])
+- Session auto-close in `Drop` handler ([#265])
+
+[#234]: https://github.com/iqlusioninc/yubihsm.rs/pull/234
+[#244]: https://github.com/iqlusioninc/yubihsm.rs/pull/244
+[#249]: https://github.com/iqlusioninc/yubihsm.rs/pull/249
+[#258]: https://github.com/iqlusioninc/yubihsm.rs/pull/258
+[#259]: https://github.com/iqlusioninc/yubihsm.rs/pull/259
+[#264]: https://github.com/iqlusioninc/yubihsm.rs/pull/264
+[#265]: https://github.com/iqlusioninc/yubihsm.rs/pull/265
+[#271]: https://github.com/iqlusioninc/yubihsm.rs/pull/271
+[#272]: https://github.com/iqlusioninc/yubihsm.rs/pull/272
+[#273]: https://github.com/iqlusioninc/yubihsm.rs/pull/273
+[#274]: https://github.com/iqlusioninc/yubihsm.rs/pull/274
+[#277]: https://github.com/iqlusioninc/yubihsm.rs/pull/277
+[#289]: https://github.com/iqlusioninc/yubihsm.rs/pull/289
+
 ## 0.39.0 (2021-06-09)
 ### Changed
 - Bump `rusb` to 0.8.0 ([#170])
@@ -190,194 +230,193 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.19.2 (2018-11-27)
 
-- `HttpConnector`: upgrade to `gaunt` v0.1.0 (#157)
-- Terminate sessions on encryption failures (#154)
+- `HttpConnector`: upgrade to `gaunt` v0.1.0
+- Terminate sessions on encryption failures
 
 ## 0.19.1 (2018-10-21)
 
-- `HttpConnector`: use `gaunt` for an HTTP client (#152)
-- session: Catch panics which occur in drop handler. (#151)
+- `HttpConnector`: use `gaunt` for an HTTP client
+- session: Catch panics which occur in drop handler
 
 ## 0.19.0 (2018-10-16)
 
-- USB error message improvements (#149)
-- Implement filter support for the List Objects command (#148)
-- Upgrade to zeroize 0.4 (#147)
-- Derive Clone and Debug on all connectors (#145)
-- Upgrade digest 0.8 (and all transitive dependencies) (#144)
+- USB error message improvements
+- Implement filter support for the List Objects command
+- Upgrade to zeroize 0.4
+- Derive Clone and Debug on all connectors
+- Upgrade digest 0.8 (and all transitive dependencies)
 
 ## 0.18.1 (2018-10-03)
 
-- `Cargo.toml`: Don't build the nightly feature on docs.rs (#140)
+- `Cargo.toml`: Don't build the nightly feature on docs.rs
 
 ## 0.18.0 (2018-10-03)
 
-- Use the zeroize crate (#138)
-- `Session`: add `messages_sent()` (#136)
-- API overhaul: eliminate adapter-related generics with trait objects (#131)
+- Use the zeroize crate
+- `Session`: add `messages_sent()`
+- API overhaul: eliminate adapter-related generics with trait objects
 
 ## 0.17.3 (2018-09-21)
 
-- `UsbDevices`: rename `serials()` to `serial_numbers()` (#129)
-- `serial_number.rs`: Manually impl `Serialize`, `Deserialize`, `Debug`, and
-  `Display` (#128)
+- `UsbDevices`: rename `serials()` to `serial_numbers()`
+- `serial_number.rs`: Manually impl `Serialize`, `Deserialize`, `Debug`, and `Display`
 
 ## 0.17.2 (2018-09-20)
 
-- Export UsbConfig from crate root (when available) (#126)
+- Export UsbConfig from crate root (when available)
 
 ## 0.17.1 (2018-09-19)
 
-- UsbDevices: add `len()`, `is_empty()`, `as_slice()`, and `into_iter()` (#124)
-- adapter/usb: Don't verbosely log every discovered YubiHSM2 (#123)
+- UsbDevices: add `len()`, `is_empty()`, `as_slice()`, and `into_iter()`
+- adapter/usb: Don't verbosely log every discovered YubiHSM2
 
 ## 0.17.0 (2018-09-19)
 
-- Cargo.toml: update dependencies (aes, subtle, uuid) (#121)
-- Make all names singular (#120)
-- Expose more information about USB devices (#119)
-- Add `serial_number()` method to `Session` and `Adapter` trait (#118)
+- Cargo.toml: update dependencies (aes, subtle, uuid)
+- Make all names singular
+- Expose more information about USB devices
+- Add `serial_number()` method to `Session` and `Adapter` trait
 
 ## 0.16.1 (2018-09-17)
 
-- Expand HSM error code support. (#116)
+- Expand HSM error code support
 
 ## 0.16.0 (2018-09-12)
 
-- Make 'http' a cargo feature (#112)
-- Rename `MockHSM` => `MockHsm`; export from crate root (#111)
-- Factor HSM error handling into `HsmErrorKind` (#110)
-- Refactor Algorithm and related types (#109)
-- Decode detailed HSM errors from responses (#107)
-- Implement Put Option commands (#106)
-- Implement Get Option commands (#101)
-- USB support. Rename `Connector` => `Adapter` (#97)
+- Make `http` a cargo feature
+- Rename `MockHSM` => `MockHsm`; export from crate root
+- Factor HSM error handling into `HsmErrorKind`
+- Refactor Algorithm and related types
+- Decode detailed HSM errors from responses
+- Implement Put Option commands
+- Implement Get Option commands
+- USB support. Rename `Connector` => `Adapter`
 
 ## 0.15.1 (2018-08-24)
 
-- `http_connector.rs`: Derive Clone on HttpConfig (#93)
+- `http_connector.rs`: Derive Clone on HttpConfig
 
 ## 0.15.0 (2018-08-19)
 
-- Add `yubihsm::sign_ecdsa_raw_digest()` (#91)
+- Add `yubihsm::sign_ecdsa_raw_digest()`
 
 ## 0.14.2 (2018-07-30)
 
-- AsymmetricAlgorithm: fix typo in `EC_K256` conversion (#90)
+- AsymmetricAlgorithm: fix typo in `EC_K256` conversion
 
 ## 0.14.1 (2018-07-29)
 
-- Fix builds with the "doc" feature (#89)
+- Fix builds with the "doc" feature
 
 ## 0.14.0 (2018-07-29)
 
-- Initial RSASSA-PKCS#1v1.5 and PSS support (#88)
-- Test SecureChannel MAC verification failure (fixes #14) (#87)
-- Initial reconnect support (#86)
-- Support debug output using the `log` crate (#84)
-- Handle session timeouts (#83)
-- Handle NUL (i.e. `\0`) byte in label before UTF-8 conversion (fixes #81) (#82)
-- `derive(Clone)` for `WrapMessage` (#80)
-- ObjectType json deserialization helper (#79)
+- Initial RSASSA-PKCS#1v1.5 and PSS support
+- Test SecureChannel MAC verification failure (fixes #14)
+- Initial reconnect support
+- Support debug output using the `log` crate
+- Handle session timeouts
+- Handle NUL (i.e. `\0`) byte in label before UTF-8 conversion
+- `derive(Clone)` for `WrapMessage`
+- ObjectType json deserialization helper
 
 ## 0.13.0 (2018-07-14)
 
-- Implement `set_log_index` command (#77)
-- Implement `generate_hmac_key`, `hmac`, and `verify_hmac` commands (#76)
-- Remove dependency on rand 0.4.x (#75)
-- Simplify and remove unnecessary response types (#74)
+- Implement `set_log_index` command
+- Implement `generate_hmac_key`, `hmac`, and `verify_hmac` commands
+- Remove dependency on rand 0.4.x
+- Simplify and remove unnecessary response types
 
 ## 0.12.0 (2018-07-14)
 
 This release includes significant refactoring and API changes, in addition
 to adding support for several commands.
 
-- Support multiple connections to MockHSM (#73)
-- `AuthKey` type (and MockHSM support for `put_auth_key`) (#69)
-- Implement `get_opaque` command (#67)
-- Implement `reset` command (#66)
-- Implement `get_pseudo_random` command (#65)
-- Factor `ObjectHandle` and `ObjectInfo` into `object` module (#64)
-- Implement `storage_status` command (#63)
-- Have `generate_*` and `put_*` commands return an `ObjectId` (#62)
-- Refactor `object` module into modules for each type (#61)
-- Implement wrapping: export, import, wrap, unwrap, generate wrap key (#60)
-- Implement `close_session` command (#56)
-- Implement `attest_asymmetric` command (#55)
-- Implement `put_*` commands (#53)
-- Factor all commands into their own individual modules (#51)
-- Implement `sign_ecdsa_sha2` command (#50)
-- Implement `get_logs` command (#49)
-- Implement `device_info` command (#48)
+- Support multiple connections to MockHSM
+- `AuthKey` type (and MockHSM support for `put_auth_key`)
+- Implement `get_opaque` command
+- Implement `reset` command
+- Implement `get_pseudo_random` command
+- Factor `ObjectHandle` and `ObjectInfo` into `object` module
+- Implement `storage_status` command
+- Have `generate_*` and `put_*` commands return an `ObjectId`
+- Refactor `object` module into modules for each type
+- Implement wrapping: export, import, wrap, unwrap, generate wrap key
+- Implement `close_session` command
+- Implement `attest_asymmetric` command
+- Implement `put_*` commands
+- Factor all commands into their own individual modules
+- Implement `sign_ecdsa_sha2` command
+- Implement `get_logs` command
+- Implement `device_info` command
 
 ## 0.11.2 (2018-07-04)
 
-- Use subtle crate for constant time equality (#47)
+- Use subtle crate for constant time equality
 
 ## 0.11.1 (2018-07-04)
 
-- Upgrade to rand 0.5 (#46)
+- Upgrade to rand 0.5
 
 ## 0.11.0 (2018-07-04)
 
-- Factor command methods from `Session` into `commands.rs` (#45)
-- Implement SignDataECDSA command (#44)
+- Factor command methods from `Session` into `commands.rs`
+- Implement SignDataECDSA command
 
 ## 0.10.1 (2018-07-02)
 
-- Add a `nightly` feature (#43)
+- Add a `nightly` feature
 
 ## 0.10.0 (2018-06-28)
 
-- Use the `aes` crate (#42)
-- Support Rust stable (1.27+) (#41)
+- Use the `aes` crate
+- Support Rust stable (1.27+)
 
 ## 0.9.0 (2018-05-19)
 
-- Error handling overhaul (#39)
-- Export HttpConfig from crate toplevel (#38)
+- Error handling overhaul
+- Export HttpConfig from crate toplevel
 
 ## 0.8.0 (2018-04-12)
 
-- Integrated HttpConnector (#36)
+- Integrated HttpConnector
 
 ## 0.7.3 (2018-04-05)
 
-- Mark Connector as Sync-safe (#34)
+- Mark Connector as Sync-safe
 
 ## 0.7.2 (2018-03-31)
 
-- Upgrade ed25519-dalek, sha2, and pbkdf2 crates (#33)
+- Upgrade ed25519-dalek, sha2, and pbkdf2 crates
 
 ## 0.7.1 (2018-03-27)
 
-- Improve DefaultConnector handling (#32)
+- Improve DefaultConnector handling
 
 ## 0.7.0 (2018-03-27)
 
-- Rename AbstractSession -> Session (by using default generic arg) (#31)
+- Rename AbstractSession -> Session (by using default generic arg)
 
 ## 0.6.0 (2018-03-20)
 
-- Make MockHSM (and therefore all Connectors) Send-safe (#30)
-- Expose connector status as an (Abstract)Session method (#29)
+- Make MockHSM (and therefore all Connectors) Send-safe
+- Expose connector status as an (Abstract)Session method
 
 ## 0.5.0 (2018-03-20)
 
-- Convert `MockHSM` into a `yubihsm::Connector` (#28)
+- Convert `MockHSM` into a `yubihsm::Connector`
 
 ## 0.4.0 (2018-03-20)
 
-- Refactor `Session` and `Connector` (#25)
+- Refactor `Session` and `Connector`
 
 ## 0.3.0 (2018-03-20)
 
-- Have `Session`s own `Connector`s (#24)
+- Have `Session`s own `Connector`s
 
 ## 0.2.0 (2018-03-12)
 
-- Ensure command data is smaller than the YubiHSM2's buffer (#22)
-- Implement Blink command (#20)
+- Ensure command data is smaller than the YubiHSM2's buffer
+- Implement Blink command
 
 ## 0.1.1 (2018-03-07)
 
