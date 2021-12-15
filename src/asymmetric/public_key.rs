@@ -2,13 +2,10 @@
 
 use crate::{asymmetric, ecdsa::algorithm::CurveAlgorithm, ed25519};
 use ::ecdsa::elliptic_curve::{
-    bigint::Encoding as _,
-    generic_array::{typenum::U1, ArrayLength, GenericArray},
-    sec1::{self, UncompressedPointSize, UntaggedPointSize},
-    weierstrass::{Curve, PointCompression},
+    bigint::Encoding as _, generic_array::GenericArray, sec1, FieldSize, PointCompression,
+    PrimeCurve,
 };
 use serde::{Deserialize, Serialize};
-use std::ops::Add;
 
 /// Response from `command::get_public_key`
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -51,9 +48,8 @@ impl PublicKey {
     /// Return the ECDSA public key of the given curve type if applicable
     pub fn ecdsa<C>(&self) -> Option<sec1::EncodedPoint<C>>
     where
-        C: Curve + CurveAlgorithm + PointCompression,
-        UntaggedPointSize<C>: Add<U1> + ArrayLength<u8>,
-        UncompressedPointSize<C>: ArrayLength<u8>,
+        C: PrimeCurve + CurveAlgorithm + PointCompression,
+        FieldSize<C>: sec1::ModulusSize,
     {
         if self.algorithm != C::asymmetric_algorithm() || self.bytes.len() != C::UInt::BYTE_SIZE * 2
         {
@@ -62,7 +58,7 @@ impl PublicKey {
 
         let mut bytes = GenericArray::default();
         bytes.copy_from_slice(&self.bytes);
-        let result = sec1::EncodedPoint::from_untagged_bytes(&bytes);
+        let result = sec1::EncodedPoint::<C>::from_untagged_bytes(&bytes);
 
         if C::COMPRESS_POINTS {
             Some(result.compress())

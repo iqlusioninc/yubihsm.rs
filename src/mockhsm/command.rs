@@ -1,6 +1,6 @@
 //! Commands supported by the `MockHsm`
 
-use super::{digest::MockDigest256, object::Payload, state::State, MOCK_SERIAL_NUMBER};
+use super::{object::Payload, state::State, MOCK_SERIAL_NUMBER};
 use crate::{
     algorithm::*,
     asymmetric::{self, commands::*, PublicKey},
@@ -25,8 +25,8 @@ use crate::{
     Capability,
 };
 use ::ecdsa::{
-    elliptic_curve::Field,
-    hazmat::{FromDigest, SignPrimitive},
+    elliptic_curve::{bigint::U256, generic_array::GenericArray, ops::Reduce, Field},
+    hazmat::SignPrimitive,
 };
 use ::hmac::{Hmac, Mac};
 use cmac::crypto_mac::NewMac;
@@ -624,21 +624,26 @@ fn sign_ecdsa(state: &State, cmd_data: &[u8]) -> response::Message {
         match &obj.payload {
             Payload::EcdsaNistP256(secret_key) => {
                 let k = p256::Scalar::random(&mut OsRng);
-                let z = p256::Scalar::from_digest(MockDigest256::from(&command));
+                let z =
+                    p256::Scalar::from_be_bytes_reduced(*GenericArray::from_slice(&command.digest));
                 let signature = secret_key
-                    .to_secret_scalar()
-                    .try_sign_prehashed(&k, &z)
-                    .expect("ECDSA failure!");
+                    .to_nonzero_scalar()
+                    .try_sign_prehashed(k, z)
+                    .expect("ECDSA failure!")
+                    .0;
 
                 SignEcdsaResponse(signature.to_der().as_ref().into()).serialize()
             }
             Payload::EcdsaSecp256k1(secret_key) => {
                 let k = k256::Scalar::random(&mut OsRng);
-                let z = k256::Scalar::from_digest(MockDigest256::from(&command));
+                let z = <k256::Scalar as Reduce<U256>>::from_be_bytes_reduced(
+                    *GenericArray::from_slice(&command.digest),
+                );
                 let signature = secret_key
-                    .to_secret_scalar()
-                    .try_sign_prehashed(&k, &z)
-                    .expect("ECDSA failure!");
+                    .to_nonzero_scalar()
+                    .try_sign_prehashed(k, z)
+                    .expect("ECDSA failure!")
+                    .0;
 
                 SignEcdsaResponse(signature.to_der().as_ref().into()).serialize()
             }

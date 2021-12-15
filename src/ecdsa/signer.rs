@@ -5,17 +5,11 @@
 use super::{algorithm::CurveAlgorithm, NistP256, NistP384};
 use crate::{object, Client};
 use ::ecdsa::{
-    elliptic_curve::{
-        consts::{U1, U32},
-        generic_array::ArrayLength,
-        sec1::{self, UncompressedPointSize, UntaggedPointSize},
-        weierstrass::{Curve, PointCompression},
-    },
+    elliptic_curve::{consts::U32, sec1, FieldSize, PointCompression, PrimeCurve},
     Signature,
 };
 use signature::digest::Digest;
 use signature::{DigestSigner, Error};
-use std::ops::Add;
 
 #[cfg(feature = "secp256k1")]
 use super::Secp256k1;
@@ -24,9 +18,8 @@ use super::Secp256k1;
 #[derive(signature::Signer)]
 pub struct Signer<C>
 where
-    C: Curve + CurveAlgorithm + PointCompression,
-    UntaggedPointSize<C>: Add<U1> + ArrayLength<u8>,
-    UncompressedPointSize<C>: ArrayLength<u8>,
+    C: PrimeCurve + CurveAlgorithm + PointCompression,
+    FieldSize<C>: sec1::ModulusSize,
 {
     /// YubiHSM client
     client: Client,
@@ -40,15 +33,14 @@ where
 
 impl<C> Signer<C>
 where
-    C: Curve + CurveAlgorithm + PointCompression,
-    UntaggedPointSize<C>: Add<U1> + ArrayLength<u8>,
-    UncompressedPointSize<C>: ArrayLength<u8>,
+    C: PrimeCurve + CurveAlgorithm + PointCompression,
+    FieldSize<C>: sec1::ModulusSize,
 {
     /// Create a new YubiHSM-backed ECDSA signer
     pub fn create(client: Client, signing_key_id: object::Id) -> Result<Self, Error> {
         let public_key = client
             .get_public_key(signing_key_id)?
-            .ecdsa()
+            .ecdsa::<C>()
             .ok_or_else(Error::new)?;
 
         Ok(Self {
@@ -74,9 +66,8 @@ where
 impl<C> From<&Signer<C>> for sec1::EncodedPoint<C>
 where
     Self: Clone,
-    C: Curve + CurveAlgorithm + PointCompression,
-    UntaggedPointSize<C>: Add<U1> + ArrayLength<u8>,
-    UncompressedPointSize<C>: ArrayLength<u8>,
+    C: PrimeCurve + CurveAlgorithm + PointCompression,
+    FieldSize<C>: sec1::ModulusSize,
 {
     fn from(signer: &Signer<C>) -> sec1::EncodedPoint<C> {
         signer.public_key().clone()
@@ -112,14 +103,13 @@ where
 {
     /// Compute a fixed-size secp256k1 ECDSA signature of the given digest
     fn try_sign_digest(&self, digest: D) -> Result<Signature<Secp256k1>, Error> {
-        let mut signature = self
+        let signature = self
             .sign_ecdsa_digest(digest)
             .and_then(|sig| Signature::from_der(&sig))?;
 
         // Low-S normalize per BIP 0062: Dealing with Malleability:
         // <https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki>
-        signature.normalize_s()?;
-        Ok(signature)
+        Ok(signature.normalize_s().unwrap_or(signature))
     }
 }
 
