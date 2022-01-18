@@ -298,9 +298,9 @@ dependencies = [
 
 [[package]]
 name = "elliptic-curve"
-version = "0.11.6"
+version = "0.11.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "decb3a27ea454a5f23f96eb182af0671c12694d64ecc33dada74edd1301f6cfc"
+checksum = "5fcbfdf46fd1157b49be0c2170bab2784ca19233b35c2dc772d60247b72f2071"
 dependencies = [
  "crypto-bigint 0.3.2",
  "der 0.5.1",
@@ -405,9 +405,9 @@ checksum = "b71991ff56294aa922b450139ee08b3bfc70982c6b2c7562771375cf73542dd4"
 
 [[package]]
 name = "k256"
-version = "0.10.1"
+version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7511aa19fa182a8a4885760c4e5675b17173b02ae86ec5d376d34f5278c874b9"
+checksum = "1cc5937366afd3b38071f400d1ce5bd8b1d40b5083cc14e6f8dbcc4032a7f5bb"
 dependencies = [
  "cfg-if",
  "ecdsa",
