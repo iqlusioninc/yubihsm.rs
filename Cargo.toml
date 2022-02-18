@@ -31,7 +31,7 @@ k256 = { version = "0.10", optional = true, features = ["ecdsa", "keccak256", "s
 log = "0.4"
 p256 = { version = "0.10", default-features = false, features = ["ecdsa-core"] }
 p384 = { version = "0.9", default-features = false, features = ["ecdsa"] }
-pbkdf2 = { version = "0.9", optional = true, default-features = false }
+pbkdf2 = { version = "0.10", optional = true, default-features = false }
 serde = { version = "1", features = ["serde_derive"] }
 serde_json = { version = "1", optional = true }
 rand_core = { version = "0.6", features = ["std"] }
