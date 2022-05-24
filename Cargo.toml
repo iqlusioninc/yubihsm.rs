@@ -42,7 +42,7 @@ subtle = "2"
 thiserror = "1"
 time = { version = "0.3", features = ["serde"] }
 tiny_http = { version = "0.9", optional = true }
-uuid = { version = "0.8", default-features = false }
+uuid = { version = "1", default-features = false }
 zeroize = { version = "1", features = ["zeroize_derive"] }
 
 [dev-dependencies]

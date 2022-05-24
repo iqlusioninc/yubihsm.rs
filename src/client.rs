@@ -150,7 +150,7 @@ impl Client {
     /// end-to-end latency.
     pub fn ping(&self) -> Result<Duration, Error> {
         let t = Instant::now();
-        let uuid = uuid::new_v4().to_hyphenated().to_string();
+        let uuid = uuid::new_v4().to_string();
         let response = self.echo(uuid.as_bytes())?;
 
         ensure!(
