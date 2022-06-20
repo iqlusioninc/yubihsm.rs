@@ -13,6 +13,8 @@ use signature::{DigestSigner, Error};
 
 #[cfg(feature = "secp256k1")]
 use super::Secp256k1;
+#[cfg(feature = "secp256k1")]
+use signature::digest::FixedOutput;
 
 /// ECDSA signature provider for yubihsm-client
 #[derive(signature::Signer)]
@@ -116,7 +118,7 @@ where
 #[cfg(feature = "secp256k1")]
 impl<D> DigestSigner<D, k256::ecdsa::recoverable::Signature> for Signer<Secp256k1>
 where
-    D: Digest<OutputSize = U32> + Clone + Default,
+    D: Digest<OutputSize = U32> + Clone + Default + FixedOutput,
 {
     /// Compute an Ethereum-style ECDSA/secp256k1 signature of the given digest
     fn try_sign_digest(&self, digest: D) -> Result<k256::ecdsa::recoverable::Signature, Error> {

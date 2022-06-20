@@ -1,9 +1,7 @@
 //! Mock `Digest` type for use with ECDSA signatures
 
 use crate::ecdsa::commands::SignEcdsaCommand;
-use digest::{
-    consts::U32, generic_array::GenericArray, BlockInput, FixedOutputDirty, Output, Reset, Update,
-};
+use digest::{consts::U32, generic_array::GenericArray, Output, OutputSizeUser, Reset, Update};
 
 /// Mock 256-bit digest
 #[derive(Clone, Default)]
@@ -20,12 +18,8 @@ impl From<&SignEcdsaCommand> for MockDigest256 {
     }
 }
 
-impl BlockInput for MockDigest256 {
-    type BlockSize = U32;
-}
-
 impl Update for MockDigest256 {
-    fn update(&mut self, _data: impl AsRef<[u8]>) {
+    fn update(&mut self, _: &[u8]) {
         unimplemented!("use explicit conversion from SignEcdsaCommand");
     }
 }
@@ -36,10 +30,6 @@ impl Reset for MockDigest256 {
     }
 }
 
-impl FixedOutputDirty for MockDigest256 {
+impl OutputSizeUser for MockDigest256 {
     type OutputSize = U32;
-
-    fn finalize_into_dirty(&mut self, output: &mut Output<Self>) {
-        *output = self.output.take().expect("never initialized!");
-    }
 }

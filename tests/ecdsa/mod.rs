@@ -84,6 +84,6 @@ fn ecdsa_secp256k1_sign_recoverable_test() {
     let signature: k256::ecdsa::recoverable::Signature = signer.sign(TEST_MESSAGE);
     assert!(verify_key.verify(TEST_MESSAGE, &signature).is_ok());
 
-    let recovered_verify_key = signature.recover_verify_key(TEST_MESSAGE).unwrap();
+    let recovered_verify_key = signature.recover_verifying_key(TEST_MESSAGE).unwrap();
     assert_eq!(verify_key, recovered_verify_key);
 }

@@ -29,7 +29,6 @@ use ::ecdsa::{
     hazmat::SignPrimitive,
 };
 use ::hmac::{Hmac, Mac};
-use cmac::crypto_mac::NewMac;
 use ed25519_dalek as ed25519;
 use rand_core::{OsRng, RngCore};
 use sha2::Sha256;
@@ -625,7 +624,8 @@ fn sign_ecdsa(state: &State, cmd_data: &[u8]) -> response::Message {
             Payload::EcdsaNistP256(secret_key) => {
                 let k = p256::Scalar::random(&mut OsRng);
                 let z =
-                    p256::Scalar::from_be_bytes_reduced(*GenericArray::from_slice(&command.digest));
+                    p256::Scalar::from_be_bytes_reduced(*GenericArray::from_slice(&command.digest))
+                        .to_bytes();
                 let signature = secret_key
                     .to_nonzero_scalar()
                     .try_sign_prehashed(k, z)
@@ -638,7 +638,8 @@ fn sign_ecdsa(state: &State, cmd_data: &[u8]) -> response::Message {
                 let k = k256::Scalar::random(&mut OsRng);
                 let z = <k256::Scalar as Reduce<U256>>::from_be_bytes_reduced(
                     *GenericArray::from_slice(&command.digest),
-                );
+                )
+                .to_bytes();
                 let signature = secret_key
                     .to_nonzero_scalar()
                     .try_sign_prehashed(k, z)
