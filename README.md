@@ -28,7 +28,7 @@ or endorsed by Yubico (although whoever runs their Twitter account
 
 ## Minimum Supported Rust Version
 
-This crate requires Rust **1.56** or newer.
+This crate requires Rust **1.57** or newer.
 
 ## Supported Commands
 
