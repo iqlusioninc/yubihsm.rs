@@ -21,7 +21,7 @@ aes = "0.7"
 bitflags = "1"
 block-modes = "0.8"
 ccm = { version = "0.4", optional = true, features = ["std"] }
-cmac = "0.6"
+cmac = "0.7"
 digest = { version = "0.10", optional = true, default-features = false }
 ecdsa = { version = "0.14", default-features = false }
 ed25519 = "1.3"
