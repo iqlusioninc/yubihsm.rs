@@ -11,11 +11,7 @@
 use super::MAX_MSG_SIZE;
 use crate::{
     command, connector,
-    session::{
-        self,
-        securechannel::{Mac, MAC_SIZE},
-        ErrorKind::ProtocolError,
-    },
+    session::{self, securechannel::Mac, ErrorKind::ProtocolError},
     uuid::{self, Uuid},
 };
 
@@ -134,7 +130,7 @@ impl Message {
 
                 let id = session::Id::from_u8(bytes.remove(0))?;
 
-                if bytes.len() < MAC_SIZE {
+                if bytes.len() < Mac::BYTE_SIZE {
                     fail!(
                         ProtocolError,
                         "expected MAC for {:?} but command data is too short: {}",
@@ -143,7 +139,7 @@ impl Message {
                     );
                 }
 
-                let mac_index = bytes.len() - MAC_SIZE;
+                let mac_index = bytes.len() - Mac::BYTE_SIZE;
 
                 (Some(id), Some(Mac::from_slice(&bytes.split_off(mac_index))))
             }
@@ -168,7 +164,7 @@ impl Message {
         }
 
         if self.mac.is_some() {
-            result += MAC_SIZE;
+            result += Mac::BYTE_SIZE;
         }
 
         result

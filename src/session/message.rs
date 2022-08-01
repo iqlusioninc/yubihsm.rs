@@ -9,7 +9,7 @@
 use uuid::Uuid;
 use super::{
     error::{session::Error, session::ErrorKind::ProtocolError},
-    securechannel::{Mac, MAC_SIZE},
+    securechannel::{Mac, Mac::BYTE_SIZE},
 };
 use crate::{command, response, session};
 #[cfg(feature = "mockhsm")]
@@ -131,7 +131,7 @@ impl command::Message {
 
                 let id = session::Id::new(bytes.remove(0))?;
 
-                if bytes.len() < MAC_SIZE {
+                if bytes.len() < Mac::BYTE_SIZE {
                     fail!(
                         ProtocolError,
                         "expected MAC for {:?} but command data is too short: {}",
@@ -140,7 +140,7 @@ impl command::Message {
                     );
                 }
 
-                let mac_index = bytes.len() - MAC_SIZE;
+                let mac_index = bytes.len() - Mac::BYTE_SIZE;
 
                 (Some(id), Some(Mac::from_slice(&bytes.split_off(mac_index))))
             }
@@ -165,7 +165,7 @@ impl command::Message {
         }
 
         if self.mac.is_some() {
-            result += MAC_SIZE;
+            result += Mac::BYTE_SIZE;
         }
 
         result
@@ -245,11 +245,11 @@ impl response::Message {
         };
 
         let mac = if has_rmac(code) {
-            if bytes.len() < MAC_SIZE {
+            if bytes.len() < Mac::BYTE_SIZE {
                 fail!(ProtocolError, "missing R-MAC for {:?}", code,);
             }
 
-            let mac_index = bytes.len() - MAC_SIZE;
+            let mac_index = bytes.len() - Mac::BYTE_SIZE;
             Some(Mac::from_slice(&bytes.split_off(mac_index)))
         } else {
             None
@@ -331,7 +331,7 @@ impl response::Message {
         }
 
         if self.mac.is_some() {
-            result += MAC_SIZE;
+            result += Mac::BYTE_SIZE;
         }
 
         result
