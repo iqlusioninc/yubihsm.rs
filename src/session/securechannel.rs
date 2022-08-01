@@ -28,7 +28,7 @@ pub(crate) use self::{
     challenge::{Challenge, CHALLENGE_SIZE},
     context::Context,
     cryptogram::{Cryptogram, CRYPTOGRAM_SIZE},
-    mac::{Mac, MAC_SIZE},
+    mac::Mac,
 };
 use super::commands::{CreateSessionCommand, CreateSessionResponse};
 use crate::{
@@ -40,13 +40,13 @@ use crate::{
     session::{self, ErrorKind},
 };
 use aes::{
-    cipher::{consts::U16, generic_array::GenericArray, BlockEncrypt, NewBlockCipher},
+    cipher::{
+        block_padding::Iso7816, consts::U16, generic_array::GenericArray, BlockDecryptMut,
+        BlockEncrypt, BlockEncryptMut, InnerIvInit, KeyInit,
+    },
     Aes128,
 };
-
-use block_modes::{block_padding::Iso7816, BlockMode, Cbc};
-use cmac::crypto_mac::NewMac;
-use cmac::{crypto_mac::Mac as CryptoMac, Cmac};
+use cmac::{digest::Mac as _, Cmac};
 use subtle::ConstantTimeEq;
 use zeroize::{Zeroize, Zeroizing};
 
@@ -67,7 +67,8 @@ pub const MAX_COMMANDS_PER_SESSION: u32 = 0x10_0000;
 const AES_BLOCK_SIZE: usize = 16;
 
 /// SCP03 uses AES-128 encryption in CBC mode with ISO 7816 padding
-type Aes128Cbc = Cbc<Aes128, Iso7816>;
+type Aes128CbcEnc = cbc::Encryptor<Aes128>;
+type Aes128CbcDec = cbc::Decryptor<Aes128>;
 
 /// SCP03 Secure Channel
 pub(crate) struct SecureChannel {
@@ -94,7 +95,7 @@ pub(crate) struct SecureChannel {
     rmac_key: [u8; KEY_SIZE],
 
     /// Chaining value to be included when computing MACs
-    mac_chaining_value: [u8; MAC_SIZE * 2],
+    mac_chaining_value: [u8; Mac::BYTE_SIZE * 2],
 }
 
 impl SecureChannel {
@@ -184,7 +185,7 @@ impl SecureChannel {
         let enc_key = derive_key(authentication_key.enc_key(), 0b100, &context);
         let mac_key = derive_key(authentication_key.mac_key(), 0b110, &context);
         let rmac_key = derive_key(authentication_key.mac_key(), 0b111, &context);
-        let mac_chaining_value = [0u8; MAC_SIZE * 2];
+        let mac_chaining_value = [0u8; Mac::BYTE_SIZE * 2];
 
         Self {
             id,
@@ -232,11 +233,11 @@ impl SecureChannel {
             );
         }
 
-        let mut mac = Cmac::<Aes128>::new_from_slice(self.mac_key.as_ref()).unwrap();
+        let mut mac = <Cmac<Aes128> as KeyInit>::new_from_slice(self.mac_key.as_ref()).unwrap();
         mac.update(&self.mac_chaining_value);
         mac.update(&[command_type.to_u8()]);
 
-        let length = (1 + command_data.len() + MAC_SIZE) as u16;
+        let length = (1 + command_data.len() + Mac::BYTE_SIZE) as u16;
         mac.update(&length.to_be_bytes());
         mac.update(&[self.id.to_u8()]);
         mac.update(command_data);
@@ -250,7 +251,7 @@ impl SecureChannel {
     /// Compute a message for authenticating the host to the card
     pub fn authenticate_session(&mut self) -> Result<command::Message, session::Error> {
         assert_eq!(self.security_level, SecurityLevel::None);
-        assert_eq!(self.mac_chaining_value, [0u8; MAC_SIZE * 2]);
+        assert_eq!(self.mac_chaining_value, [0u8; Mac::BYTE_SIZE * 2]);
 
         let host_cryptogram = self.host_cryptogram();
         self.command_with_mac(
@@ -299,8 +300,10 @@ impl SecureChannel {
 
         let cipher = Aes128::new_from_slice(&self.enc_key).unwrap();
         let icv = compute_icv(&cipher, self.counter);
-        let cbc_encryptor = Aes128Cbc::new(cipher, &icv);
-        let ciphertext = cbc_encryptor.encrypt(&mut message, pos).unwrap();
+        let cbc_encryptor = Aes128CbcEnc::inner_iv_init(cipher, &icv);
+        let ciphertext = cbc_encryptor
+            .encrypt_padded_mut::<Iso7816>(&mut message, pos)
+            .unwrap();
 
         self.command_with_mac(command::Code::SessionMessage, ciphertext)
     }
@@ -317,12 +320,11 @@ impl SecureChannel {
 
         self.verify_response_mac(&encrypted_response)?;
 
-        let cipher = Aes128::new_from_slice(&self.enc_key).unwrap();
-        let cbc_decryptor = Aes128Cbc::new(cipher, &icv);
+        let cbc_decryptor = Aes128CbcDec::inner_iv_init(cipher, &icv);
 
         let mut response_message = encrypted_response.data;
         let response_len = cbc_decryptor
-            .decrypt(&mut response_message)
+            .decrypt_padded_mut::<Iso7816>(&mut response_message)
             .map_err(|e| {
                 self.terminate();
                 format_err!(
@@ -362,7 +364,7 @@ impl SecureChannel {
             );
         }
 
-        let mut mac = Cmac::<Aes128>::new_from_slice(self.rmac_key.as_ref()).unwrap();
+        let mut mac = <Cmac<Aes128> as KeyInit>::new_from_slice(self.rmac_key.as_ref()).unwrap();
         mac.update(&self.mac_chaining_value);
         mac.update(&[response.code.to_u8()]);
 
@@ -393,7 +395,7 @@ impl SecureChannel {
         command: &command::Message,
     ) -> Result<response::Message, session::Error> {
         assert_eq!(self.security_level, SecurityLevel::None);
-        assert_eq!(self.mac_chaining_value, [0u8; MAC_SIZE * 2]);
+        assert_eq!(self.mac_chaining_value, [0u8; Mac::BYTE_SIZE * 2]);
 
         if command.data.len() != CRYPTOGRAM_SIZE {
             self.terminate();
@@ -445,11 +447,11 @@ impl SecureChannel {
         self.verify_command_mac(&encrypted_command)?;
 
         let cipher = Aes128::new_from_slice(&self.enc_key).unwrap();
-        let cbc_decryptor = Aes128Cbc::new(cipher, &icv);
+        let cbc_decryptor = Aes128CbcDec::inner_iv_init(cipher, &icv);
 
         let mut command_data = encrypted_command.data;
         let command_len = cbc_decryptor
-            .decrypt(&mut command_data)
+            .decrypt_padded_mut::<Iso7816>(&mut command_data)
             .map_err(|e| {
                 self.terminate();
                 format_err!(
@@ -477,7 +479,7 @@ impl SecureChannel {
             command.session_id
         );
 
-        let mut mac = Cmac::<Aes128>::new_from_slice(self.mac_key.as_ref()).unwrap();
+        let mut mac = <Cmac<Aes128> as KeyInit>::new_from_slice(self.mac_key.as_ref()).unwrap();
         mac.update(&self.mac_chaining_value);
         mac.update(&[command.command_type.to_u8()]);
 
@@ -519,9 +521,12 @@ impl SecureChannel {
 
         let cipher = Aes128::new_from_slice(&self.enc_key).unwrap();
         let icv = compute_icv(&cipher, self.counter);
-        let cbc_encryptor = Aes128Cbc::new(cipher, &icv);
+        let cbc_encryptor = Aes128CbcEnc::inner_iv_init(cipher, &icv);
 
-        let ct_len = cbc_encryptor.encrypt(&mut message, pos).unwrap().len();
+        let ct_len = cbc_encryptor
+            .encrypt_padded_mut::<Iso7816>(&mut message, pos)
+            .unwrap()
+            .len();
         message.truncate(ct_len);
 
         self.response_with_mac(
@@ -543,11 +548,11 @@ impl SecureChannel {
         assert_eq!(self.security_level, SecurityLevel::Authenticated);
         let body = response_data.into();
 
-        let mut mac = Cmac::<Aes128>::new_from_slice(self.rmac_key.as_ref()).unwrap();
+        let mut mac = <Cmac<Aes128> as KeyInit>::new_from_slice(self.rmac_key.as_ref()).unwrap();
         mac.update(&self.mac_chaining_value);
         mac.update(&[code.to_u8()]);
 
-        let length = (1 + body.len() + MAC_SIZE) as u16;
+        let length = (1 + body.len() + Mac::BYTE_SIZE) as u16;
         mac.update(&length.to_be_bytes());
         mac.update(&[self.id.to_u8()]);
         mac.update(&body);

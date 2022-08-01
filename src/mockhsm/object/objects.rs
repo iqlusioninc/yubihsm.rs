@@ -9,7 +9,7 @@ use crate::{
     wrap, Algorithm, Capability, Domain,
 };
 use aes::cipher::consts::{U13, U8};
-use ccm::aead::{AeadInPlace, NewAead};
+use ccm::aead::{AeadInPlace, KeyInit};
 use std::collections::{btree_map::Iter as MapIter, BTreeMap as Map};
 
 /// AES-CCM with a 128-bit key
@@ -29,7 +29,8 @@ pub(crate) enum AesCcmKey {
 }
 
 impl AesCcmKey {
-    /// Encrypt data in-place
+    /// Encrypt data in-place.
+    #[allow(clippy::ptr_arg)]
     pub fn encrypt_in_place(
         &self,
         nonce: &wrap::Nonce,
@@ -47,7 +48,8 @@ impl AesCcmKey {
         .map_err(|_| format_err!(ErrorKind::CryptoError, "error encrypting wrapped object!").into())
     }
 
-    /// Decrypt data in-place
+    /// Decrypt data in-place.
+    #[allow(clippy::ptr_arg)]
     pub fn decrypt_in_place(
         &self,
         nonce: &wrap::Nonce,

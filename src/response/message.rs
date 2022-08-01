@@ -6,11 +6,7 @@
 
 use crate::{
     command, connector, response,
-    session::{
-        self,
-        securechannel::{Mac, MAC_SIZE},
-        ErrorKind::ProtocolError,
-    },
+    session::{self, securechannel::Mac, ErrorKind::ProtocolError},
 };
 
 #[cfg(feature = "mockhsm")]
@@ -74,11 +70,11 @@ impl Message {
         };
 
         let mac = if has_rmac(code) {
-            if bytes.len() < MAC_SIZE {
+            if bytes.len() < Mac::BYTE_SIZE {
                 fail!(ProtocolError, "missing R-MAC for {:?}", code,);
             }
 
-            let mac_index = bytes.len() - MAC_SIZE;
+            let mac_index = bytes.len() - Mac::BYTE_SIZE;
             Some(Mac::from_slice(&bytes.split_off(mac_index)))
         } else {
             None
@@ -157,7 +153,7 @@ impl Message {
         }
 
         if self.mac.is_some() {
-            result += MAC_SIZE;
+            result += Mac::BYTE_SIZE;
         }
 
         result

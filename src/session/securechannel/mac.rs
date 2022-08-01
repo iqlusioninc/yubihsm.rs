@@ -7,27 +7,27 @@
 //! lower (~2^32 messages).
 
 use crate::session;
-use cmac::crypto_mac::generic_array::{typenum::U16, GenericArray};
+use cmac::digest::generic_array::{typenum::U16, GenericArray};
 use std::fmt;
 use subtle::{Choice, ConstantTimeEq};
 use zeroize::Zeroize;
 
-/// Size of the MAC in bytes: SCP03 truncates it to 8-bytes
-pub const MAC_SIZE: usize = 8;
-
 /// Message Authentication Codes used to verify messages
 #[derive(Zeroize)]
 #[zeroize(drop)]
-pub struct Mac([u8; MAC_SIZE]);
+pub struct Mac([u8; Self::BYTE_SIZE]);
 
 impl Mac {
+    /// Size of the MAC in bytes: SCP03 truncates it to 8-bytes
+    pub const BYTE_SIZE: usize = 8;
+
     /// Create a new MAC tag from a slice
     ///
     /// Panics if the slice is not 8-bytes
     pub fn from_slice(slice: &[u8]) -> Self {
         assert_eq!(slice.len(), 8, "MAC must be 8-bytes long");
 
-        let mut mac = [0u8; MAC_SIZE];
+        let mut mac = [0u8; Self::BYTE_SIZE];
         mac.copy_from_slice(slice);
         Mac(mac)
     }
@@ -65,6 +65,6 @@ impl fmt::Debug for Mac {
 
 impl<'a> From<&'a GenericArray<u8, U16>> for Mac {
     fn from(array: &'a GenericArray<u8, U16>) -> Self {
-        Self::from_slice(&array.as_slice()[..MAC_SIZE])
+        Self::from_slice(&array.as_slice()[..Self::BYTE_SIZE])
     }
 }
