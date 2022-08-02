@@ -38,8 +38,7 @@
 //! [yubihsm-connector]: https://developers.yubico.com/YubiHSM2/Component_Reference/yubihsm-connector/
 
 #![doc(
-    html_logo_url = "https://raw.githubusercontent.com/iqlusioninc/yubihsm.rs/main/img/logo.png",
-    html_root_url = "https://docs.rs/yubihsm/0.40.0"
+    html_logo_url = "https://raw.githubusercontent.com/iqlusioninc/yubihsm.rs/main/img/logo.png"
 )]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![forbid(unsafe_code)]

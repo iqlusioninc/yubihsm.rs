@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.41.0 (2022-08-02)
+### Changed
+- Bump `uuid` to v1.0 ([#321])
+- Bump asymmetric crypto dependencies; MSRV 1.57 ([#325])
+- Bump symmetric crate dependencies ([#337])
+  - `aes` v0.8
+  - `ccm` v0.5
+  - `cmac` v0.7
+  - Replace `block-modes` with `cbc` v0.1
+
+[#321]: https://github.com/iqlusioninc/yubihsm.rs/pull/321
+[#325]: https://github.com/iqlusioninc/yubihsm.rs/pull/325
+[#337]: https://github.com/iqlusioninc/yubihsm.rs/pull/337
+
 ## 0.40.0 (2021-12-15)
 ### Added
 - Support for `decrypt_oaep` command ([#277])
