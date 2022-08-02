@@ -1167,7 +1167,7 @@ checksum = "6598dd0bd3c7d51095ff6531a5b23e02acdc81804e30d8f07afb77b7215a140a"
 
 [[package]]
 name = "yubihsm"
-version = "0.41.0-pre"
+version = "0.41.0"
 dependencies = [
  "aes",
  "bitflags",
