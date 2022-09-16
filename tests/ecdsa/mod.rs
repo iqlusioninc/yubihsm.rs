@@ -1,7 +1,10 @@
 //! Elliptic Curve Digital Signature Algorithm (ECDSA) tests
 
 use ::ecdsa::{
-    elliptic_curve::{sec1, FieldSize, PointCompression, PrimeCurve},
+    elliptic_curve::{
+        sec1::{self, FromEncodedPoint, ToEncodedPoint},
+        AffinePoint, FieldSize, PointCompression, PrimeCurve, ProjectiveArithmetic,
+    },
     signature::Verifier,
 };
 use yubihsm::{
@@ -30,7 +33,8 @@ const TEST_MESSAGE: &[u8] =
 /// Create the signer for this test
 fn create_signer<C>(key_id: object::Id) -> ecdsa::Signer<C>
 where
-    C: PrimeCurve + CurveAlgorithm + PointCompression,
+    C: PrimeCurve + CurveAlgorithm + PointCompression + ProjectiveArithmetic,
+    AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
     FieldSize<C>: sec1::ModulusSize,
 {
     let client = crate::get_hsm_client();
