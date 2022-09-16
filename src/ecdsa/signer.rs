@@ -6,11 +6,14 @@ use super::{algorithm::CurveAlgorithm, NistP256, NistP384};
 use crate::{object, Client};
 use ecdsa::{
     elliptic_curve::{
-        consts::U32, generic_array::ArrayLength, sec1, FieldSize, PointCompression, PrimeCurve,
+        consts::U32,
+        generic_array::ArrayLength,
+        sec1::{self, FromEncodedPoint, ToEncodedPoint},
+        AffinePoint, FieldSize, PointCompression, PrimeCurve, ProjectiveArithmetic,
     },
-    Signature, SignatureSize,
+    Signature, SignatureSize, VerifyingKey,
 };
-use signature::{digest::Digest, hazmat::PrehashSigner, DigestSigner, Error};
+use signature::{digest::Digest, hazmat::PrehashSigner, DigestSigner, Error, Keypair};
 use std::ops::Add;
 
 #[cfg(feature = "secp256k1")]
@@ -22,22 +25,27 @@ use signature::digest::FixedOutput;
 #[derive(signature::Signer)]
 pub struct Signer<C>
 where
-    C: PrimeCurve + CurveAlgorithm + PointCompression,
+    C: PrimeCurve + CurveAlgorithm + PointCompression + ProjectiveArithmetic,
     FieldSize<C>: sec1::ModulusSize,
 {
-    /// YubiHSM client
+    /// YubiHSM client.
     client: Client,
 
-    /// ID of an ECDSA key to perform signatures with
+    /// ID of an ECDSA key to perform signatures with.
     signing_key_id: object::Id,
 
-    /// Public key associated with the private key in the YubiHSM
+    /// Verifying key which corresponds to this signer.
+    verifying_key: VerifyingKey<C>,
+
+    /// Public key associated with the private key in the YubiHSM.
+    // TODO(tarcieri): remove this in favor of `verifying_key` in the next breaking release
     public_key: sec1::EncodedPoint<C>,
 }
 
 impl<C> Signer<C>
 where
-    C: PrimeCurve + CurveAlgorithm + PointCompression,
+    C: PrimeCurve + CurveAlgorithm + PointCompression + ProjectiveArithmetic,
+    AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
     FieldSize<C>: sec1::ModulusSize,
 {
     /// Create a new YubiHSM-backed ECDSA signer
@@ -47,9 +55,12 @@ where
             .ecdsa::<C>()
             .ok_or_else(Error::new)?;
 
+        let verifying_key = VerifyingKey::<C>::from_encoded_point(&public_key)?;
+
         Ok(Self {
             client,
             signing_key_id,
+            verifying_key,
             public_key,
         })
     }
@@ -60,9 +71,40 @@ where
     }
 }
 
+impl<C> AsRef<VerifyingKey<C>> for Signer<C>
+where
+    C: PrimeCurve + CurveAlgorithm + PointCompression + ProjectiveArithmetic,
+    FieldSize<C>: sec1::ModulusSize,
+{
+    fn as_ref(&self) -> &VerifyingKey<C> {
+        &self.verifying_key
+    }
+}
+
+impl<C> From<&Signer<C>> for sec1::EncodedPoint<C>
+where
+    Self: Clone,
+    C: PrimeCurve + CurveAlgorithm + PointCompression + ProjectiveArithmetic,
+    AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+    FieldSize<C>: sec1::ModulusSize,
+{
+    fn from(signer: &Signer<C>) -> sec1::EncodedPoint<C> {
+        signer.public_key().clone()
+    }
+}
+
+impl<C> Keypair<Signature<C>> for Signer<C>
+where
+    C: PrimeCurve + CurveAlgorithm + PointCompression + ProjectiveArithmetic,
+    FieldSize<C>: sec1::ModulusSize,
+    SignatureSize<C>: ArrayLength<u8>,
+{
+    type VerifyingKey = VerifyingKey<C>;
+}
+
 impl<C> PrehashSigner<Signature<C>> for Signer<C>
 where
-    C: PrimeCurve + CurveAlgorithm + PointCompression,
+    C: PrimeCurve + CurveAlgorithm + PointCompression + ProjectiveArithmetic,
     FieldSize<C>: sec1::ModulusSize,
     SignatureSize<C>: ArrayLength<u8>,
     ecdsa::der::MaxSize<C>: ArrayLength<u8>,
@@ -73,16 +115,6 @@ where
             .sign_ecdsa_prehash_raw(self.signing_key_id, prehash)
             .map_err(Error::from_source)
             .and_then(|der| Signature::from_der(&der))
-    }
-}
-impl<C> From<&Signer<C>> for sec1::EncodedPoint<C>
-where
-    Self: Clone,
-    C: PrimeCurve + CurveAlgorithm + PointCompression,
-    FieldSize<C>: sec1::ModulusSize,
-{
-    fn from(signer: &Signer<C>) -> sec1::EncodedPoint<C> {
-        signer.public_key().clone()
     }
 }
 
