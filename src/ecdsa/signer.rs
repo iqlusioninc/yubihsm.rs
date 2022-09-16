@@ -4,12 +4,14 @@
 
 use super::{algorithm::CurveAlgorithm, NistP256, NistP384};
 use crate::{object, Client};
-use ::ecdsa::{
-    elliptic_curve::{consts::U32, sec1, FieldSize, PointCompression, PrimeCurve},
-    Signature,
+use ecdsa::{
+    elliptic_curve::{
+        consts::U32, generic_array::ArrayLength, sec1, FieldSize, PointCompression, PrimeCurve,
+    },
+    Signature, SignatureSize,
 };
-use signature::digest::Digest;
-use signature::{DigestSigner, Error};
+use signature::{digest::Digest, hazmat::PrehashSigner, DigestSigner, Error};
+use std::ops::Add;
 
 #[cfg(feature = "secp256k1")]
 use super::Secp256k1;
@@ -52,19 +54,27 @@ where
         })
     }
 
-    /// Create an ECDSA signature from the provided digest
-    fn sign_ecdsa_digest<D: Digest>(&self, digest: D) -> Result<Vec<u8>, Error> {
-        self.client
-            .sign_ecdsa_prehash_raw(self.signing_key_id, digest.finalize().as_slice())
-            .map_err(Error::from_source)
-    }
-
     /// Get the public key for the YubiHSM-backed private key.
     pub fn public_key(&self) -> &sec1::EncodedPoint<C> {
         &self.public_key
     }
 }
 
+impl<C> PrehashSigner<Signature<C>> for Signer<C>
+where
+    C: PrimeCurve + CurveAlgorithm + PointCompression,
+    FieldSize<C>: sec1::ModulusSize,
+    SignatureSize<C>: ArrayLength<u8>,
+    ecdsa::der::MaxSize<C>: ArrayLength<u8>,
+    <FieldSize<C> as Add>::Output: Add<ecdsa::der::MaxOverhead> + ArrayLength<u8>,
+{
+    fn sign_prehash(&self, prehash: &[u8]) -> Result<Signature<C>, Error> {
+        self.client
+            .sign_ecdsa_prehash_raw(self.signing_key_id, prehash)
+            .map_err(Error::from_source)
+            .and_then(|der| Signature::from_der(&der))
+    }
+}
 impl<C> From<&Signer<C>> for sec1::EncodedPoint<C>
 where
     Self: Clone,
@@ -82,8 +92,7 @@ where
 {
     /// Compute a fixed-sized P-256 ECDSA signature of the given digest
     fn try_sign_digest(&self, digest: D) -> Result<Signature<NistP256>, Error> {
-        let sig = self.sign_ecdsa_digest(digest)?;
-        Signature::from_der(&sig)
+        self.sign_prehash(&digest.finalize())
     }
 }
 
@@ -93,8 +102,7 @@ where
 {
     /// Compute a fixed-sized P-384 ECDSA signature of the given digest
     fn try_sign_digest(&self, digest: D) -> Result<Signature<NistP384>, Error> {
-        let sig = self.sign_ecdsa_digest(digest)?;
-        Signature::from_der(&sig)
+        self.sign_prehash(&digest.finalize())
     }
 }
 
@@ -105,9 +113,7 @@ where
 {
     /// Compute a fixed-size secp256k1 ECDSA signature of the given digest
     fn try_sign_digest(&self, digest: D) -> Result<Signature<Secp256k1>, Error> {
-        let signature = self
-            .sign_ecdsa_digest(digest)
-            .and_then(|sig| Signature::from_der(&sig))?;
+        let signature = self.sign_prehash(&digest.finalize())?;
 
         // Low-S normalize per BIP 0062: Dealing with Malleability:
         // <https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki>
