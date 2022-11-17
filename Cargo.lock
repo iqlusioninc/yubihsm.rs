@@ -149,7 +149,7 @@ checksum = "606383658416244b8dc4b36f864ec1f86cb922b95c41a908fd07aeb01cad06fa"
 dependencies = [
  "cipher",
  "dbl",
- "digest 0.10.5",
+ "digest 0.10.6",
 ]
 
 [[package]]
@@ -269,9 +269,9 @@ dependencies = [
 
 [[package]]
 name = "digest"
-version = "0.10.5"
+version = "0.10.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "adfbc57365a37acbd2ebf2b64d7e69bb766e2fea813521ed536f5d0520dcf86c"
+checksum = "8168378f4e5023e7218c89c891c0fd8ecdb5e5e4f18cb78f38cf245dd021e76f"
 dependencies = [
  "block-buffer 0.10.3",
  "crypto-common",
@@ -322,7 +322,7 @@ dependencies = [
  "base16ct",
  "crypto-bigint 0.4.8",
  "der 0.6.0",
- "digest 0.10.5",
+ "digest 0.10.6",
  "ff",
  "generic-array",
  "group",
@@ -401,7 +401,7 @@ version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6c49c37c09c17a53d937dfbb742eb3a961d65a994e6bcdcf37e7399d0cc8ab5e"
 dependencies = [
- "digest 0.10.5",
+ "digest 0.10.6",
 ]
 
 [[package]]
@@ -597,7 +597,7 @@ version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "83a0692ec44e4cf1ef28ca317f14f8f07da2d95ec3fa01f86e4467b725e60917"
 dependencies = [
- "digest 0.10.5",
+ "digest 0.10.6",
 ]
 
 [[package]]
@@ -765,7 +765,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4cf22754c49613d2b3b119f0e5d46e34a2c628a937e3024b8762de4e7d8c710b"
 dependencies = [
  "byteorder",
- "digest 0.10.5",
+ "digest 0.10.6",
  "num-bigint-dig",
  "num-integer",
  "num-iter",
@@ -860,7 +860,7 @@ checksum = "82e6b795fe2e3b1e845bafcb27aa35405c4d47cdfc92af5fc8d3002f76cebdc0"
 dependencies = [
  "cfg-if",
  "cpufeatures",
- "digest 0.10.5",
+ "digest 0.10.6",
 ]
 
 [[package]]
@@ -869,7 +869,7 @@ version = "0.10.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2904bea16a1ae962b483322a1c7b81d976029203aea1f461e51cd7705db7ba9"
 dependencies = [
- "digest 0.10.5",
+ "digest 0.10.6",
  "keccak",
 ]
 
@@ -879,7 +879,7 @@ version = "1.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "deb766570a2825fa972bceff0d195727876a9cdf2460ab2e52d455dc2de47fd9"
 dependencies = [
- "digest 0.10.5",
+ "digest 0.10.6",
  "rand_core 0.6.4",
  "signature_derive",
 ]
@@ -1164,7 +1164,7 @@ dependencies = [
  "cbc",
  "ccm",
  "cmac",
- "digest 0.10.5",
+ "digest 0.10.6",
  "ecdsa",
  "ed25519",
  "ed25519-dalek",
