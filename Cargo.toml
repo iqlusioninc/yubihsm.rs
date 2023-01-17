@@ -29,7 +29,7 @@ ed25519-dalek = { version = "1", optional = true }
 hmac = { version = "0.12", optional = true }
 k256 = { version = "0.11", optional = true, features = ["ecdsa", "keccak256", "sha256"] }
 log = "0.4"
-p256 = { version = "0.11", default-features = false, features = ["ecdsa"] }
+p256 = { version = "0.12", default-features = false, features = ["ecdsa"] }
 p384 = { version = "0.11", default-features = false, features = ["ecdsa"] }
 pbkdf2 = { version = "0.11", optional = true, default-features = false }
 serde = { version = "1", features = ["serde_derive"] }
@@ -48,7 +48,7 @@ zeroize = { version = "1", features = ["zeroize_derive"] }
 [dev-dependencies]
 ed25519-dalek = "1"
 once_cell = "1"
-p256 = { version = "0.11", features = ["ecdsa"] }
+p256 = { version = "0.12", features = ["ecdsa"] }
 rsa = "0.6"
 
 [features]
