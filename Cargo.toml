@@ -30,7 +30,7 @@ hmac = { version = "0.12", optional = true }
 k256 = { version = "0.11", optional = true, features = ["ecdsa", "keccak256", "sha256"] }
 log = "0.4"
 p256 = { version = "0.11", default-features = false, features = ["ecdsa"] }
-p384 = { version = "0.11", default-features = false, features = ["ecdsa"] }
+p384 = { version = "0.12", default-features = false, features = ["ecdsa"] }
 pbkdf2 = { version = "0.11", optional = true, default-features = false }
 serde = { version = "1", features = ["serde_derive"] }
 serde_json = { version = "1", optional = true }
