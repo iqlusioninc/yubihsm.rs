@@ -31,7 +31,7 @@ fn test_vectors() {
             .sign_ed25519(TEST_KEY_ID, vector.msg)
             .unwrap_or_else(|err| panic!("error performing Ed25519 signature: {}", err));
 
-        assert_eq!(signature.as_ref(), vector.sig);
+        assert_eq!(vector.sig, &signature.to_bytes());
     }
 }
 
@@ -57,7 +57,7 @@ fn generated_key_test() {
         .unwrap_or_else(|err| panic!("error performing Ed25519 signature: {}", err));
 
     assert!(
-        ed25519_dalek::PublicKey::from_bytes(public_key.ed25519().unwrap().as_bytes())
+        ed25519_dalek::VerifyingKey::try_from(public_key.ed25519().unwrap().as_ref())
             .unwrap()
             .verify(TEST_MESSAGE, &signature)
             .is_ok()

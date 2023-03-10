@@ -19,7 +19,7 @@ pub(crate) enum Payload {
     EcdsaSecp256k1(k256::SecretKey),
 
     /// Ed25519 signing key
-    Ed25519Key(ed25519::SecretKey),
+    Ed25519Key(ed25519::SigningKey),
 
     /// HMAC key
     HmacKey(hmac::Algorithm, Vec<u8>),
@@ -39,15 +39,15 @@ impl Payload {
             Algorithm::Asymmetric(asymmetric_alg) => match asymmetric_alg {
                 asymmetric::Algorithm::EcP256 => {
                     assert_eq!(data.len(), 32);
-                    Payload::EcdsaNistP256(p256::SecretKey::from_be_bytes(data).unwrap())
+                    Payload::EcdsaNistP256(p256::SecretKey::from_slice(data).unwrap())
                 }
                 asymmetric::Algorithm::EcK256 => {
                     assert_eq!(data.len(), 32);
-                    Payload::EcdsaSecp256k1(k256::SecretKey::from_be_bytes(data).unwrap())
+                    Payload::EcdsaSecp256k1(k256::SecretKey::from_slice(data).unwrap())
                 }
                 asymmetric::Algorithm::Ed25519 => {
                     assert_eq!(data.len(), ed25519::SECRET_KEY_LENGTH);
-                    Payload::Ed25519Key(ed25519::SecretKey::from_bytes(data).unwrap())
+                    Payload::Ed25519Key(ed25519::SigningKey::try_from(data).unwrap())
                 }
                 _ => panic!(
                     "MockHsm doesn't support this asymmetric algorithm: {:?}",
@@ -79,11 +79,7 @@ impl Payload {
                     Payload::EcdsaSecp256k1(k256::SecretKey::random(&mut OsRng))
                 }
                 asymmetric::Algorithm::Ed25519 => {
-                    let mut sk = [0u8; 32];
-                    OsRng.fill_bytes(&mut sk);
-                    Payload::Ed25519Key(
-                        ed25519::SecretKey::from_bytes(&sk).expect("Ed25519 keygen failure"),
-                    )
+                    Payload::Ed25519Key(ed25519::SigningKey::generate(&mut OsRng))
                 }
                 _ => panic!(
                     "MockHsm doesn't support this asymmetric algorithm: {:?}",
@@ -139,9 +135,7 @@ impl Payload {
             Payload::EcdsaSecp256k1(secret_key) => {
                 Some(secret_key.public_key().to_encoded_point(false).as_bytes()[1..].into())
             }
-            Payload::Ed25519Key(secret_key) => {
-                Some(ed25519::PublicKey::from(secret_key).as_ref().into())
-            }
+            Payload::Ed25519Key(signing_key) => Some(signing_key.verifying_key().to_bytes().into()),
             _ => None,
         }
     }
@@ -158,9 +152,9 @@ impl Payload {
     pub fn to_bytes(&self) -> Vec<u8> {
         match self {
             Payload::AuthenticationKey(k) => k.0.as_ref().into(),
-            Payload::EcdsaNistP256(k) => k.to_be_bytes().to_vec(),
-            Payload::EcdsaSecp256k1(k) => k.to_be_bytes().to_vec(),
-            Payload::Ed25519Key(k) => k.as_ref().into(),
+            Payload::EcdsaNistP256(k) => k.to_bytes().to_vec(),
+            Payload::EcdsaSecp256k1(k) => k.to_bytes().to_vec(),
+            Payload::Ed25519Key(k) => k.verifying_key().to_bytes().into(),
             Payload::HmacKey(_, data) => data.clone(),
             Payload::Opaque(_, data) => data.clone(),
             Payload::WrapKey(_, data) => data.clone(),

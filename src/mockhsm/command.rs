@@ -29,9 +29,9 @@ use ::ecdsa::{
     hazmat::SignPrimitive,
 };
 use ::hmac::{Hmac, Mac};
-use ed25519_dalek as ed25519;
 use rand_core::{OsRng, RngCore};
 use sha2::Sha256;
+use signature::Signer;
 use std::{io::Cursor, str::FromStr};
 use subtle::ConstantTimeEq;
 
@@ -623,12 +623,11 @@ fn sign_ecdsa(state: &State, cmd_data: &[u8]) -> response::Message {
         match &obj.payload {
             Payload::EcdsaNistP256(secret_key) => {
                 let k = p256::Scalar::random(&mut OsRng);
-                let z =
-                    p256::Scalar::from_be_bytes_reduced(*GenericArray::from_slice(&command.digest))
-                        .to_bytes();
+                let z = p256::Scalar::reduce_bytes(GenericArray::from_slice(&command.digest))
+                    .to_bytes();
                 let signature = secret_key
                     .to_nonzero_scalar()
-                    .try_sign_prehashed(k, z)
+                    .try_sign_prehashed(k, &z)
                     .expect("ECDSA failure!")
                     .0;
 
@@ -636,13 +635,13 @@ fn sign_ecdsa(state: &State, cmd_data: &[u8]) -> response::Message {
             }
             Payload::EcdsaSecp256k1(secret_key) => {
                 let k = k256::Scalar::random(&mut OsRng);
-                let z = <k256::Scalar as Reduce<U256>>::from_be_bytes_reduced(
-                    *GenericArray::from_slice(&command.digest),
-                )
+                let z = <k256::Scalar as Reduce<U256>>::reduce_bytes(GenericArray::from_slice(
+                    &command.digest,
+                ))
                 .to_bytes();
                 let signature = secret_key
                     .to_nonzero_scalar()
-                    .try_sign_prehashed(k, z)
+                    .try_sign_prehashed(k, &z)
                     .expect("ECDSA failure!")
                     .0;
 
@@ -668,11 +667,9 @@ fn sign_eddsa(state: &State, cmd_data: &[u8]) -> response::Message {
         .objects
         .get(command.key_id, object::Type::AsymmetricKey)
     {
-        if let Payload::Ed25519Key(secret_key) = &obj.payload {
-            let expanded_secret_key = ed25519::ExpandedSecretKey::from(secret_key);
-            let public_key = ed25519::PublicKey::from(secret_key);
-            let signature_bytes = expanded_secret_key.sign(command.data.as_ref(), &public_key);
-            SignEddsaResponse(signature_bytes.as_ref().into()).serialize()
+        if let Payload::Ed25519Key(signing_key) = &obj.payload {
+            let signature = signing_key.sign(command.data.as_ref());
+            SignEddsaResponse(signature.to_bytes().into()).serialize()
         } else {
             debug!("not an Ed25519 key: {:?}", obj.algorithm());
             device::ErrorKind::InvalidCommand.into()
