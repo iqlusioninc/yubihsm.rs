@@ -19,31 +19,33 @@ rust-version = "1.57"
 [dependencies]
 aes = "0.8"
 bitflags = "1"
-ccm = { version = "0.5", optional = true, features = ["std"] }
 cmac = "0.7"
 cbc = "0.1"
-digest = { version = "0.10", optional = true, default-features = false }
 ecdsa = { version = "0.14", default-features = false }
 ed25519 = "1.3"
-ed25519-dalek = { version = "1", optional = true }
-hmac = { version = "0.12", optional = true }
-k256 = { version = "0.11", optional = true, features = ["ecdsa", "keccak256", "sha256"] }
 log = "0.4"
 p256 = { version = "0.11", default-features = false, features = ["ecdsa"] }
 p384 = { version = "0.11", default-features = false, features = ["ecdsa"] }
-pbkdf2 = { version = "0.11", optional = true, default-features = false }
 serde = { version = "1", features = ["serde_derive"] }
-serde_json = { version = "1", optional = true }
 rand_core = { version = "0.6", features = ["std"] }
-rusb = { version = "0.9", optional = true }
-sha2 = { version = "0.10", optional = true }
 signature = { version = "1.6.3", features = ["derive-preview", "hazmat-preview"] }
 subtle = "2"
 thiserror = "1"
 time = { version = "0.3", features = ["serde"] }
-tiny_http = { version = "0.12", optional = true }
 uuid = { version = "1", default-features = false }
 zeroize = { version = "1", features = ["zeroize_derive"] }
+
+# optional dependencies
+ccm = { version = "0.5", optional = true, features = ["std"] }
+digest = { version = "0.10", optional = true, default-features = false }
+ed25519-dalek = { version = "1", optional = true }
+hmac = { version = "0.12", optional = true }
+k256 = { version = "0.11", optional = true, features = ["ecdsa", "keccak256", "sha256"] }
+pbkdf2 = { version = "0.11", optional = true, default-features = false }
+serde_json = { version = "1", optional = true }
+rusb = { version = "0.9", optional = true }
+sha2 = { version = "0.10", optional = true }
+tiny_http = { version = "0.12", optional = true }
 
 [dev-dependencies]
 ed25519-dalek = "1"
