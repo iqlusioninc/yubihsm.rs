@@ -21,7 +21,7 @@ aes = "0.8"
 bitflags = "1"
 cmac = "0.7"
 cbc = "0.1"
-ecdsa = { version = "0.14", default-features = false }
+ecdsa = { version = "0.15", default-features = false }
 ed25519 = "1.3"
 log = "0.4"
 p256 = { version = "0.11", default-features = false, features = ["ecdsa"] }
