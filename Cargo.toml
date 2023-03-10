@@ -24,7 +24,7 @@ cbc = "0.1"
 ecdsa = { version = "0.14", default-features = false }
 ed25519 = "1.3"
 log = "0.4"
-p256 = { version = "0.11", default-features = false, features = ["ecdsa"] }
+p256 = { version = "0.13", default-features = false, features = ["ecdsa"] }
 p384 = { version = "0.11", default-features = false, features = ["ecdsa"] }
 serde = { version = "1", features = ["serde_derive"] }
 rand_core = { version = "0.6", features = ["std"] }
@@ -50,7 +50,7 @@ tiny_http = { version = "0.12", optional = true }
 [dev-dependencies]
 ed25519-dalek = "1"
 once_cell = "1"
-p256 = { version = "0.11", features = ["ecdsa"] }
+p256 = { version = "0.13", features = ["ecdsa"] }
 rsa = "0.6"
 
 [features]
