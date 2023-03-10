@@ -41,7 +41,7 @@ digest = { version = "0.10", optional = true, default-features = false }
 ed25519-dalek = { version = "1", optional = true }
 hmac = { version = "0.12", optional = true }
 k256 = { version = "0.11", optional = true, features = ["ecdsa", "keccak256", "sha256"] }
-pbkdf2 = { version = "0.11", optional = true, default-features = false }
+pbkdf2 = { version = "0.12", optional = true, default-features = false }
 serde_json = { version = "1", optional = true }
 rusb = { version = "0.9", optional = true }
 sha2 = { version = "0.10", optional = true }
