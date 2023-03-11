@@ -2,8 +2,9 @@
 
 use ::ecdsa::{
     elliptic_curve::{
+        point::PointCompression,
         sec1::{self, FromEncodedPoint, ToEncodedPoint},
-        AffinePoint, FieldSize, PointCompression, PrimeCurve, ProjectiveArithmetic,
+        AffinePoint, CurveArithmetic, FieldBytesSize, PrimeCurve,
     },
     signature::Verifier,
 };
@@ -33,9 +34,9 @@ const TEST_MESSAGE: &[u8] =
 /// Create the signer for this test
 fn create_signer<C>(key_id: object::Id) -> ecdsa::Signer<C>
 where
-    C: PrimeCurve + CurveAlgorithm + PointCompression + ProjectiveArithmetic,
+    C: CurveAlgorithm + CurveArithmetic + PointCompression + PrimeCurve,
     AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
-    FieldSize<C>: sec1::ModulusSize,
+    FieldBytesSize<C>: sec1::ModulusSize,
 {
     let client = crate::get_hsm_client();
     create_yubihsm_key(&client, key_id, C::asymmetric_algorithm());
@@ -77,17 +78,4 @@ fn ecdsa_secp256k1_sign_test() {
 
     let signature: ecdsa::Signature<Secp256k1> = signer.sign(TEST_MESSAGE);
     assert!(verify_key.verify(TEST_MESSAGE, &signature).is_ok());
-}
-
-#[cfg(feature = "secp256k1")]
-#[test]
-fn ecdsa_secp256k1_sign_recoverable_test() {
-    let signer = create_signer::<Secp256k1>(203);
-    let verify_key = k256::ecdsa::VerifyingKey::from_encoded_point(&signer.public_key()).unwrap();
-
-    let signature: k256::ecdsa::recoverable::Signature = signer.sign(TEST_MESSAGE);
-    assert!(verify_key.verify(TEST_MESSAGE, &signature).is_ok());
-
-    let recovered_verify_key = signature.recover_verifying_key(TEST_MESSAGE).unwrap();
-    assert_eq!(verify_key, recovered_verify_key);
 }

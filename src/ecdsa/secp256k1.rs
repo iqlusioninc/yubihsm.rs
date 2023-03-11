@@ -9,13 +9,10 @@
 //!
 //! It's primarily notable for usage in Bitcoin and other cryptocurrencies.
 
-pub use k256::{ecdsa::recoverable, Secp256k1};
+pub use k256::Secp256k1;
 
 /// ECDSA/secp256k1 signature (fixed-size)
 pub type Signature = super::Signature<Secp256k1>;
-
-/// ECDSA/secp256k1 signature with public key recovery support (ala Ethereum)
-pub type RecoverableSignature = k256::ecdsa::recoverable::Signature;
 
 /// ECDSA/secp256k1 signer
 pub type Signer = super::Signer<Secp256k1>;

@@ -1031,7 +1031,7 @@ impl Client {
         let mut hasher = Sha256::default();
 
         let length = data.len() as u16;
-        hasher.update(&length.to_be_bytes());
+        hasher.update(length.to_be_bytes());
         hasher.update(data);
         let digest = hasher.finalize();
 

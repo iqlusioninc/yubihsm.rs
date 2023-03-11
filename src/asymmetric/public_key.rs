@@ -2,7 +2,7 @@
 
 use crate::{asymmetric, ecdsa::algorithm::CurveAlgorithm, ed25519};
 use ::ecdsa::elliptic_curve::{
-    bigint::Encoding as _, generic_array::GenericArray, sec1, FieldSize, PointCompression,
+    bigint::Integer, generic_array::GenericArray, point::PointCompression, sec1, FieldBytesSize,
     PrimeCurve,
 };
 use serde::{Deserialize, Serialize};
@@ -49,10 +49,9 @@ impl PublicKey {
     pub fn ecdsa<C>(&self) -> Option<sec1::EncodedPoint<C>>
     where
         C: PrimeCurve + CurveAlgorithm + PointCompression,
-        FieldSize<C>: sec1::ModulusSize,
+        FieldBytesSize<C>: sec1::ModulusSize,
     {
-        if self.algorithm != C::asymmetric_algorithm() || self.bytes.len() != C::UInt::BYTE_SIZE * 2
-        {
+        if self.algorithm != C::asymmetric_algorithm() || self.bytes.len() != C::Uint::BYTES * 2 {
             return None;
         }
 

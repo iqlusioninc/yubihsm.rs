@@ -3,10 +3,11 @@
 use crate::algorithm;
 
 /// Valid algorithms for auth keys
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, Eq, PartialEq)]
 #[repr(u8)]
 pub enum Algorithm {
     /// YubiHSM AES PSK authentication
+    #[default]
     YubicoAes = 0x26,
 }
 
@@ -33,12 +34,6 @@ impl Algorithm {
         match self {
             Algorithm::YubicoAes => 32,
         }
-    }
-}
-
-impl Default for Algorithm {
-    fn default() -> Self {
-        Algorithm::YubicoAes
     }
 }
 

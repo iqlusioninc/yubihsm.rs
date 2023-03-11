@@ -1,6 +1,6 @@
 //! Ed25519 tests
 
-use ed25519_dalek::{PublicKey, Verifier};
+use ed25519_dalek::{Verifier, VerifyingKey};
 use yubihsm::{asymmetric::signature::Signer as _, ed25519, Client};
 
 /// Key ID to use for test key
@@ -46,6 +46,6 @@ fn ed25519_sign_test() {
     let signer = ed25519::Signer::create(client.clone(), TEST_SIGNING_KEY_ID).unwrap();
     let signature = signer.sign(TEST_MESSAGE);
 
-    let verifier = PublicKey::from_bytes(signer.public_key().as_bytes()).unwrap();
+    let verifier = VerifyingKey::from_bytes(signer.public_key().as_bytes()).unwrap();
     assert!(verifier.verify(TEST_MESSAGE, &signature).is_ok());
 }

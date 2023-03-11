@@ -5,11 +5,8 @@ use rand_core::{OsRng, RngCore};
 use std::fmt::{self, Debug};
 use zeroize::Zeroize;
 
-#[cfg(feature = "hmac")]
-use hmac::Hmac;
-
 #[cfg(feature = "pbkdf2")]
-use pbkdf2::pbkdf2;
+use pbkdf2::pbkdf2_hmac;
 
 #[cfg(feature = "sha2")]
 use sha2::Sha256;
@@ -50,7 +47,7 @@ impl Key {
     #[cfg_attr(docsrs, doc(cfg(feature = "passwords")))]
     pub fn derive_from_password(password: &[u8]) -> Self {
         let mut kdf_output = [0u8; SIZE];
-        pbkdf2::<Hmac<Sha256>>(password, PBKDF2_SALT, PBKDF2_ITERATIONS, &mut kdf_output);
+        pbkdf2_hmac::<Sha256>(password, PBKDF2_SALT, PBKDF2_ITERATIONS, &mut kdf_output);
         Self::new(kdf_output)
     }
 

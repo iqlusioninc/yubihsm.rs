@@ -2,7 +2,6 @@ use crate::{generate_asymmetric_key, TEST_KEY_ID};
 use rand_core;
 use rsa::{self, PublicKey};
 use sha2::{self, Digest};
-
 use yubihsm::{asymmetric, Capability};
 
 /// Test RSA OAEP decryption
@@ -31,11 +30,7 @@ fn rsa_decrypt_oaep_test() {
 
     let mut rng = rand_core::OsRng;
     let ciphertext = rsa_public_key
-        .encrypt(
-            &mut rng,
-            rsa::PaddingScheme::new_oaep::<sha2::Sha256>(),
-            plaintext,
-        )
+        .encrypt(&mut rng, rsa::Oaep::new::<sha2::Sha256>(), plaintext)
         .expect("Failed to encrypt");
 
     let mut hasher = sha2::Sha256::new();
