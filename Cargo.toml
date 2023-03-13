@@ -18,7 +18,7 @@ rust-version = "1.65"
 
 [dependencies]
 aes = "0.8"
-bitflags = "1"
+bitflags = "2"
 cmac = "0.7"
 cbc = "0.1"
 ecdsa = { version = "0.16", default-features = false }
