@@ -36,6 +36,7 @@ bitflags! {
     /// basis. For more information, see the Yubico documentation:
     ///
     /// <https://developers.yubico.com/YubiHSM2/Concepts/Domain.html>
+    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
     pub struct Domain: u16 {
         const DOM1 = 0x0001;
         const DOM2 = 0x0002;
