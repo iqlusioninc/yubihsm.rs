@@ -97,6 +97,7 @@ impl<'de> Deserialize<'de> for AuditOption {
 pub(crate) enum AuditTag {
     Force = 0x01,
     Command = 0x03,
+    Fips = 0x05,
 }
 
 impl AuditTag {
@@ -105,6 +106,7 @@ impl AuditTag {
         Ok(match byte {
             0x01 => AuditTag::Force,
             0x03 => AuditTag::Command,
+            0x05 => AuditTag::Fips,
             _ => fail!(ErrorKind::TagInvalid, "invalid audit tag value: {}", byte),
         })
     }
@@ -129,7 +131,7 @@ impl<'de> Deserialize<'de> for AuditTag {
             type Value = AuditTag;
 
             fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-                formatter.write_str("an unsigned byte with values 0x01 or 0x03")
+                formatter.write_str("an unsigned byte with values 0x01, 0x03, or 0x05")
             }
 
             fn visit_u8<E: de::Error>(self, value: u8) -> Result<AuditTag, E> {

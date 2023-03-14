@@ -360,6 +360,7 @@ fn get_option(state: &State, cmd_data: &[u8]) -> response::Message {
     let results = match command.tag {
         AuditTag::Command => state.command_audit_options.serialize(),
         AuditTag::Force => vec![state.force_audit.to_u8()],
+        AuditTag::Fips => vec![state.fips.to_u8()],
     };
 
     GetOptionResponse(results).serialize()
@@ -571,6 +572,10 @@ fn put_option(state: &mut State, cmd_data: &[u8]) -> response::Message {
             state
                 .command_audit_options
                 .put(audit_cmd.command_type(), audit_cmd.audit_option());
+        }
+        AuditTag::Fips => {
+            assert_eq!(length, 1);
+            state.fips = AuditOption::from_u8(value[0]).unwrap()
         }
     }
 
