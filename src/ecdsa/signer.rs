@@ -12,13 +12,13 @@ use ecdsa::{
         sec1::{self, FromEncodedPoint, ToEncodedPoint},
         AffinePoint, CurveArithmetic, FieldBytesSize, PrimeCurve,
     },
-    RecoveryId, Signature, SignatureSize, VerifyingKey,
+    Signature, SignatureSize, VerifyingKey,
 };
 use signature::{digest::Digest, hazmat::PrehashSigner, DigestSigner, Error, KeypairRef};
 use std::ops::Add;
 
 #[cfg(feature = "secp256k1")]
-use super::Secp256k1;
+use super::{secp256k1::RecoveryId, Secp256k1};
 
 /// ECDSA signature provider for yubihsm-client
 #[derive(signature::Signer)]
