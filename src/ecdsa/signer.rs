@@ -12,7 +12,7 @@ use ecdsa::{
         sec1::{self, FromEncodedPoint, ToEncodedPoint},
         AffinePoint, CurveArithmetic, FieldBytesSize, PrimeCurve,
     },
-    Signature, SignatureSize, VerifyingKey,
+    RecoveryId, Signature, SignatureSize, VerifyingKey,
 };
 use signature::{digest::Digest, hazmat::PrehashSigner, DigestSigner, Error, KeypairRef};
 use std::ops::Add;
@@ -70,6 +70,22 @@ where
     }
 }
 
+impl<C> Signer<C>
+where
+    C: CurveAlgorithm + CurveArithmetic + PointCompression + PrimeCurve,
+    FieldBytesSize<C>: sec1::ModulusSize,
+    SignatureSize<C>: ArrayLength<u8>,
+    ecdsa::der::MaxSize<C>: ArrayLength<u8>,
+    <FieldBytesSize<C> as Add>::Output: Add<ecdsa::der::MaxOverhead> + ArrayLength<u8>,
+{
+    fn sign_prehash_ecdsa(&self, prehash: &[u8]) -> Result<Signature<C>, Error> {
+        self.client
+            .sign_ecdsa_prehash_raw(self.signing_key_id, prehash)
+            .map_err(Error::from_source)
+            .and_then(|der| Signature::from_der(&der))
+    }
+}
+
 impl<C> AsRef<VerifyingKey<C>> for Signer<C>
 where
     C: CurveAlgorithm + CurveArithmetic + PointCompression + PrimeCurve,
@@ -101,19 +117,10 @@ where
     type VerifyingKey = VerifyingKey<C>;
 }
 
-impl<C> PrehashSigner<Signature<C>> for Signer<C>
-where
-    C: CurveAlgorithm + CurveArithmetic + PointCompression + PrimeCurve,
-    FieldBytesSize<C>: sec1::ModulusSize,
-    SignatureSize<C>: ArrayLength<u8>,
-    ecdsa::der::MaxSize<C>: ArrayLength<u8>,
-    <FieldBytesSize<C> as Add>::Output: Add<ecdsa::der::MaxOverhead> + ArrayLength<u8>,
-{
-    fn sign_prehash(&self, prehash: &[u8]) -> Result<Signature<C>, Error> {
-        self.client
-            .sign_ecdsa_prehash_raw(self.signing_key_id, prehash)
-            .map_err(Error::from_source)
-            .and_then(|der| Signature::from_der(&der))
+impl PrehashSigner<Signature<NistP256>> for Signer<NistP256> {
+    /// Compute a fixed-size P-256 ECDSA signature of a digest output.
+    fn sign_prehash(&self, prehash: &[u8]) -> Result<Signature<NistP256>, Error> {
+        self.sign_prehash_ecdsa(prehash)
     }
 }
 
@@ -124,6 +131,13 @@ where
     /// Compute a fixed-sized P-256 ECDSA signature of the given digest
     fn try_sign_digest(&self, digest: D) -> Result<Signature<NistP256>, Error> {
         self.sign_prehash(&digest.finalize())
+    }
+}
+
+impl PrehashSigner<Signature<NistP384>> for Signer<NistP384> {
+    /// Compute a fixed-size P-384 ECDSA signature of a digest output.
+    fn sign_prehash(&self, prehash: &[u8]) -> Result<Signature<NistP384>, Error> {
+        self.sign_prehash_ecdsa(prehash)
     }
 }
 
@@ -138,16 +152,46 @@ where
 }
 
 #[cfg(feature = "secp256k1")]
+impl PrehashSigner<Signature<Secp256k1>> for Signer<Secp256k1> {
+    fn sign_prehash(&self, prehash: &[u8]) -> Result<Signature<Secp256k1>, Error> {
+        let signature = self.sign_prehash_ecdsa(prehash)?;
+        // Low-S normalize per BIP 0062: Dealing with Malleability:
+        // <https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki>
+        Ok(signature.normalize_s().unwrap_or(signature))
+    }
+}
+
+#[cfg(feature = "secp256k1")]
+impl PrehashSigner<(Signature<Secp256k1>, RecoveryId)> for Signer<Secp256k1> {
+    /// Compute a fixed-size secp256k1 ECDSA signature of a digest output along with the recovery
+    /// ID.
+    fn sign_prehash(&self, prehash: &[u8]) -> Result<(Signature<Secp256k1>, RecoveryId), Error> {
+        let signature = self.sign_prehash(prehash)?;
+        let recovery_id =
+            RecoveryId::trial_recovery_from_prehash(&self.verifying_key, prehash, &signature)?;
+        Ok((signature, recovery_id))
+    }
+}
+
+#[cfg(feature = "secp256k1")]
 impl<D> DigestSigner<D, Signature<Secp256k1>> for Signer<Secp256k1>
 where
     D: Digest<OutputSize = U32> + Default,
 {
     /// Compute a fixed-size secp256k1 ECDSA signature of the given digest
     fn try_sign_digest(&self, digest: D) -> Result<Signature<Secp256k1>, Error> {
-        let signature = self.sign_prehash(&digest.finalize())?;
+        self.sign_prehash(&digest.finalize())
+    }
+}
 
-        // Low-S normalize per BIP 0062: Dealing with Malleability:
-        // <https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki>
-        Ok(signature.normalize_s().unwrap_or(signature))
+#[cfg(feature = "secp256k1")]
+impl<D> DigestSigner<D, (Signature<Secp256k1>, RecoveryId)> for Signer<Secp256k1>
+where
+    D: Digest<OutputSize = U32> + Default,
+{
+    /// Compute a fixed-size secp256k1 ECDSA signature of the given digest along with the recovery
+    /// ID.
+    fn try_sign_digest(&self, digest: D) -> Result<(Signature<Secp256k1>, RecoveryId), Error> {
+        self.sign_prehash(&digest.finalize())
     }
 }

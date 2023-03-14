@@ -14,5 +14,8 @@ pub use k256::Secp256k1;
 /// ECDSA/secp256k1 signature (fixed-size)
 pub type Signature = super::Signature<Secp256k1>;
 
+/// ECDSA/secp256k1 signature recovery id (ala Ethereum)
+pub type RecoveryId = ecdsa::RecoveryId;
+
 /// ECDSA/secp256k1 signer
 pub type Signer = super::Signer<Secp256k1>;
