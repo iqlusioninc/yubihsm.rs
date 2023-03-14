@@ -6,7 +6,10 @@ use ::ecdsa::{
         sec1::{self, FromEncodedPoint, ToEncodedPoint},
         AffinePoint, CurveArithmetic, FieldBytesSize, PrimeCurve,
     },
-    signature::Verifier,
+    signature::{
+        digest::Digest,
+        Verifier, {DigestSigner, DigestVerifier},
+    },
 };
 use yubihsm::{
     asymmetric::signature::Signer as _,
@@ -78,4 +81,29 @@ fn ecdsa_secp256k1_sign_test() {
 
     let signature: ecdsa::Signature<Secp256k1> = signer.sign(TEST_MESSAGE);
     assert!(verify_key.verify(TEST_MESSAGE, &signature).is_ok());
+}
+
+#[cfg(feature = "secp256k1")]
+#[test]
+fn ecdsa_secp256k1_sign_recover_test() {
+    use k256::{ecdsa::VerifyingKey, PublicKey};
+
+    let signer = create_signer::<Secp256k1>(203);
+    let verify_key = VerifyingKey::from_encoded_point(&signer.public_key()).unwrap();
+
+    let digest = sha2::Sha256::new_with_prefix(TEST_MESSAGE);
+
+    let (signature, recovery_id) = signer.try_sign_digest(digest.clone()).unwrap();
+
+    assert!(verify_key.verify(TEST_MESSAGE, &signature).is_ok());
+
+    let recovered_key =
+        VerifyingKey::recover_from_digest(digest.clone(), &signature, recovery_id).unwrap();
+    recovered_key
+        .verify_digest(digest.clone(), &signature)
+        .unwrap();
+
+    let recovered_pk = PublicKey::from(recovered_key);
+    let signer_pk = PublicKey::from_encoded_point(signer.public_key()).unwrap();
+    assert_eq!(&recovered_pk, &signer_pk);
 }
