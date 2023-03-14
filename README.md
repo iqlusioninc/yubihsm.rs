@@ -148,7 +148,7 @@ See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT) for details.
 
 [//]: # (badges)
 
-[crate-image]: https://img.shields.io/crates/v/yubihsm.svg
+[crate-image]: https://buildstats.info/crate/yubihsm
 [crate-link]: https://crates.io/crates/yubihsm
 [docs-image]: https://docs.rs/yubihsm/badge.svg
 [docs-link]: https://docs.rs/yubihsm/
