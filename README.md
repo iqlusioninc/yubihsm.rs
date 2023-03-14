@@ -153,7 +153,7 @@ See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT) for details.
 [docs-image]: https://docs.rs/yubihsm/badge.svg
 [docs-link]: https://docs.rs/yubihsm/
 [license-image]: https://img.shields.io/badge/license-Apache2.0/MIT-blue.svg
-[rustc-image]: https://img.shields.io/badge/rustc-1.56+-blue.svg
+[rustc-image]: https://img.shields.io/badge/rustc-1.65+-blue.svg
 [build-image]: https://github.com/iqlusioninc/yubihsm.rs/workflows/CI/badge.svg?branch=main&event=push
 [build-link]: https://github.com/iqlusioninc/yubihsm.rs/actions?query=workflow:CI
 [deps-image]: https://deps.rs/repo/github/iqlusioninc/yubihsm.rs/status.svg

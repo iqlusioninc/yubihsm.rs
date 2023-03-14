@@ -1,4 +1,12 @@
 #![doc = include_str!("../README.md")]
+#![doc(
+    html_logo_url = "https://raw.githubusercontent.com/iqlusioninc/yubihsm.rs/main/img/logo.png"
+)]
+#![cfg_attr(docsrs, feature(doc_cfg))]
+#![forbid(unsafe_code)]
+#![warn(missing_docs, rust_2018_idioms, unused_qualifications)]
+// TODO(tarcieri): address these clippy nits
+#![allow(clippy::from_over_into, clippy::unnecessary_wraps)]
 
 //! # Getting Started
 //!
@@ -36,15 +44,6 @@
 //! [yubihsm::Client]: https://docs.rs/yubihsm/latest/yubihsm/client/struct.Client.html
 //! [commands]: https://developers.yubico.com/YubiHSM2/Commands/
 //! [yubihsm-connector]: https://developers.yubico.com/YubiHSM2/Component_Reference/yubihsm-connector/
-
-#![doc(
-    html_logo_url = "https://raw.githubusercontent.com/iqlusioninc/yubihsm.rs/main/img/logo.png"
-)]
-#![cfg_attr(docsrs, feature(doc_cfg))]
-#![forbid(unsafe_code)]
-#![warn(missing_docs, rust_2018_idioms, unused_qualifications)]
-// TODO(tarcieri): address these clippy nits
-#![allow(clippy::from_over_into, clippy::unnecessary_wraps)]
 
 #[macro_use]
 extern crate log;
