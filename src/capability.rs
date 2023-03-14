@@ -14,6 +14,7 @@ bitflags! {
     /// Object attributes specifying which operations are allowed to be performed
     ///
     /// <https://developers.yubico.com/YubiHSM2/Concepts/Capability.html>
+    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
     pub struct Capability: u64 {
         /// `derive-ecdh`: perform ECDH operation
         const DERIVE_ECDH = 0x800;
