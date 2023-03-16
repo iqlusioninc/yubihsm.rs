@@ -3,7 +3,10 @@
 pub(crate) mod commands;
 mod error;
 
-pub use self::error::{Error, ErrorKind};
+pub use self::{
+    commands::{LogDigest, LogEntries, LogEntry},
+    error::{Error, ErrorKind},
+};
 
 use crate::command;
 use serde::{de, ser, Deserialize, Serialize};

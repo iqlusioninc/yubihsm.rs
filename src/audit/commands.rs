@@ -5,4 +5,5 @@ mod get_option;
 mod set_log_index;
 mod set_option;
 
+pub use self::get_log_entries::{LogDigest, LogEntries, LogEntry};
 pub(crate) use self::{get_log_entries::*, get_option::*, set_log_index::*, set_option::*};
