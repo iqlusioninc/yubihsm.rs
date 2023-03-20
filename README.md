@@ -1,6 +1,9 @@
 <img src="https://raw.githubusercontent.com/iqlusioninc/yubihsm.rs/main/img/logo.png" width="150" height="110">
 
-# yubihsm.rs [![crate][crate-image]][crate-link] [![Docs][docs-image]][docs-link] [![Build Status][build-image]][build-link] [![Dependency Status][deps-image]][deps-link] ![Apache2/MIT licensed][license-image] ![MSRV][rustc-image]
+# yubihsm.rs
+
+[![crate][crate-image]][crate-link] [![Docs][docs-image]][docs-link] [![Build Status][build-image]][build-link] [![Dependency Status][deps-image]][deps-link] ![Apache2/MIT licensed][license-image] ![MSRV][rustc-image]
+
 Pure Rust client for [YubiHSM 2] devices from [Yubico].
 
 [Documentation][docs-link]
