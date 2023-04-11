@@ -485,9 +485,9 @@ checksum = "b7e5500299e16ebb147ae15a00a942af264cf3688f47923b8fc2cd5858f23ad3"
 
 [[package]]
 name = "p256"
-version = "0.13.0"
+version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7270da3e5caa82afd3deb054cc237905853813aea3859544bc082c3fe55b8d47"
+checksum = "dc7304b8213f8597952b2f4c3d7f09947d46bb677801df8f287ffd2c4e26f9da"
 dependencies = [
  "ecdsa",
  "elliptic-curve",
