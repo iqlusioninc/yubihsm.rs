@@ -17,6 +17,7 @@ pub use self::{
     error::{Error, ErrorKind},
     guard::Guard,
     id::Id,
+    securechannel::{Challenge, Context, SessionKeys},
     timeout::Timeout,
 };
 
@@ -30,12 +31,107 @@ use crate::{
 };
 use std::time::{Duration, Instant};
 
+#[cfg(feature = "yubihsm-auth")]
+use crate::object;
+
 /// Timeout fuzz factor: to avoid races/skew with the YubiHSM's clock,
 /// we consider sessions to be timed out slightly earlier than the actual
 /// timeout. This should (hopefully) ensure we always time out first,
 /// and therefore generate appropriate timeout-related errors rather
 /// than opaque "lost connection to HSM"-style errors.
 const TIMEOUT_FUZZ_FACTOR: Duration = Duration::from_secs(1);
+
+/// Session created on the device for which we do not
+/// have credentials for yet.
+///
+/// This is used for YubiHSM Auth scheme support.
+#[cfg(feature = "yubihsm-auth")]
+pub struct PendingSession {
+    ///// HSM Public key
+    //card_public_key: PublicKey,
+    /// Connector which communicates with the HSM (HTTP or USB)
+    connector: Connector,
+
+    /// Session creation timestamp
+    created_at: Instant,
+
+    /// Timestamp when this session was last active
+    last_active: Instant,
+
+    /// Inactivity timeout for this session
+    timeout: Timeout,
+
+    /// Challenge generate by the HSM.
+    hsm_challenge: Challenge,
+
+    /// ID for this session
+    id: Id,
+
+    context: Context,
+}
+
+#[cfg(feature = "yubihsm-auth")]
+impl PendingSession {
+    /// Creates a new session with the device.
+    pub fn new(
+        connector: Connector,
+        timeout: Timeout,
+        authentication_key_id: object::Id,
+        host_challenge: Challenge,
+    ) -> Result<Self, Error> {
+        let (id, session_response) =
+            SecureChannel::create(&connector, authentication_key_id, host_challenge)?;
+
+        let hsm_challenge = session_response.card_challenge;
+        let context = Context::from_challenges(host_challenge, hsm_challenge);
+
+        let created_at = Instant::now();
+        let last_active = Instant::now();
+
+        Ok(PendingSession {
+            id,
+            connector,
+            created_at,
+            last_active,
+            timeout,
+            context,
+            hsm_challenge,
+        })
+    }
+
+    /// Create the session with the provided session keys
+    pub fn realize(self, session_keys: SessionKeys) -> Result<Session, Error> {
+        let secure_channel = Some(SecureChannel::with_session_keys(
+            self.id,
+            self.context,
+            session_keys,
+        ));
+
+        let mut session = Session {
+            id: self.id,
+            secure_channel,
+            connector: self.connector,
+            created_at: self.created_at,
+            last_active: self.last_active,
+            timeout: self.timeout,
+        };
+
+        let response = session.start_authenticate()?;
+        session.finish_authenticate_session(&response)?;
+
+        Ok(session)
+    }
+
+    /// Return the challenge emitted by the HSM when opening the session
+    pub fn get_challenge(&self) -> Challenge {
+        self.hsm_challenge
+    }
+
+    /// Return the id of the session
+    pub fn id(&self) -> Id {
+        self.id
+    }
+}
 
 /// Authenticated and encrypted (SCP03) `Session` with the HSM. A `Session` is
 /// needed to perform any command.
@@ -247,13 +343,9 @@ impl Session {
             credentials.authentication_key_id
         );
 
-        let command = self.secure_channel()?.authenticate_session()?;
-        let response = self.send_message(command)?;
+        let response = self.start_authenticate()?;
 
-        if let Err(e) = self
-            .secure_channel()?
-            .finish_authenticate_session(&response)
-        {
+        if let Err(e) = self.finish_authenticate_session(&response) {
             session_error!(
                 self,
                 "failed={:?} key={} err={:?}",
@@ -269,10 +361,26 @@ impl Session {
         Ok(())
     }
 
+    /// Send the message to the card to start authentication
+    fn start_authenticate(&mut self) -> Result<response::Message, Error> {
+        let command = self.secure_channel()?.authenticate_session()?;
+        self.send_message(command)
+    }
+
+    /// Read authenticate session message from the card
+    fn finish_authenticate_session(&mut self, response: &response::Message) -> Result<(), Error> {
+        self.secure_channel()?.finish_authenticate_session(response)
+    }
+
     /// Get the underlying channel or return an error
     fn secure_channel(&mut self) -> Result<&mut SecureChannel, Error> {
         self.secure_channel
             .as_mut()
             .ok_or_else(|| format_err!(ErrorKind::ClosedError, "session is already closed").into())
+    }
+
+    /// Get the underlying connector used by this session
+    pub(crate) fn connector(&self) -> Connector {
+        self.connector.clone()
     }
 }

@@ -3,6 +3,9 @@
 use rand_core::{OsRng, RngCore};
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "yubihsm-auth")]
+use crate::session::error::{Error, ErrorKind};
+
 /// Size of a challenge message
 pub const CHALLENGE_SIZE: usize = 8;
 
@@ -34,5 +37,42 @@ impl Challenge {
     #[cfg_attr(clippy, allow(clippy::trivially_copy_pass_by_ref))]
     pub fn as_slice(&self) -> &[u8] {
         &self.0
+    }
+
+    /// Creates `Challenge` from a `yubikey::hsmauth::Challenge`.
+    ///
+    /// `YubiKey` firmware 5.4.3 will generate an empty challenge, this will
+    /// generate one from RNG if we're provided an empty challenge
+    // Note(baloo): because of the side-effect described above, this is not
+    // made a regular From<yubikey::hsmauth::Challenge>.
+    #[cfg(feature = "yubihsm-auth")]
+    pub fn from_yubikey_challenge(yc: yubikey::hsmauth::Challenge) -> Self {
+        if yc.is_empty() {
+            Self::new()
+        } else {
+            let mut challenge = [0u8; CHALLENGE_SIZE];
+            challenge.copy_from_slice(yc.as_slice());
+            Challenge(challenge)
+        }
+    }
+}
+
+#[cfg(feature = "yubihsm-auth")]
+impl TryFrom<Challenge> for yubikey::hsmauth::Challenge {
+    type Error = Error;
+
+    fn try_from(c: Challenge) -> Result<Self, Error> {
+        let mut challenge = yubikey::hsmauth::Challenge::default();
+        challenge
+            .copy_from_slice(c.as_slice())
+            .map_err(|e| Error::from(ErrorKind::ProtocolError.context(e)))?;
+
+        Ok(challenge)
+    }
+}
+
+impl Default for Challenge {
+    fn default() -> Self {
+        Self::new()
     }
 }
