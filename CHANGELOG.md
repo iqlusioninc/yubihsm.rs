@@ -4,6 +4,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.42.0 (2023-04-27)
+### Added
+- Impl `signature::hazmat::PrehashSigner` for ECDSA signer ([#362])
+- Impl `signature::Keypair` trait for ECDSA signer ([#364])
+- Implement recoverable signatures for ECDSA/secp256k1 ([#408])
+
+### Changed
+- Bump tiny_http to 0.12 ([#372])
+- Bump asymmetric crypto dependencies; MSRV 1.65 ([#406])
+  - `ecdsa` v0.16
+  - `ed25519` v2
+  - `ed25519-dalek` v2.0.0-pre.0
+  - `k256` v0.13
+  - `p256` v0.13
+  - `p384` v0.13
+  - `pbkdf2` v0.12
+  - `rsa` v0.9 ([#437])
+  - `signature` v2
+- Bump `bitflags` dependency to v2.0 ([#409])
+
+[#362]: https://github.com/iqlusioninc/yubihsm.rs/pull/362
+[#364]: https://github.com/iqlusioninc/yubihsm.rs/pull/364
+[#372]: https://github.com/iqlusioninc/yubihsm.rs/pull/372
+[#406]: https://github.com/iqlusioninc/yubihsm.rs/pull/406
+[#408]: https://github.com/iqlusioninc/yubihsm.rs/pull/408
+[#409]: https://github.com/iqlusioninc/yubihsm.rs/pull/409
+[#437]: https://github.com/iqlusioninc/yubihsm.rs/pull/437
+
 ## 0.41.0 (2022-08-02)
 ### Changed
 - Bump `uuid` to v1.0 ([#321])
