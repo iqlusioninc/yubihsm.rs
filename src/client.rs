@@ -246,7 +246,6 @@ impl Client {
     ///
     /// <https://developers.yubico.com/YubiHSM2/Commands/Derive_Ecdh.html>
     #[cfg(feature = "untested")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "untested")))]
     pub fn derive_ecdh(
         &self,
         key_id: object::Id,
@@ -992,7 +991,6 @@ impl Client {
     ///
     /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Pkcs1.html>
     #[cfg(feature = "untested")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "untested")))]
     pub fn sign_rsa_pkcs1v15_sha256(
         &self,
         key_id: object::Id,
@@ -1015,7 +1013,6 @@ impl Client {
     ///
     /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Pss.html>
     #[cfg(feature = "untested")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "untested")))]
     pub fn sign_rsa_pss_sha256(
         &self,
         key_id: object::Id,
@@ -1054,7 +1051,6 @@ impl Client {
     ///
     /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Ssh_Certificate.html>
     #[cfg(feature = "untested")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "untested")))]
     pub fn sign_ssh_certificate<A>(
         &self,
         key_id: object::Id,
