@@ -53,6 +53,7 @@ serde_json = { version = "1", optional = true }
 rusb = { version = "0.9.4", optional = true }
 tiny_http = { version = "0.12", optional = true }
 x509-cert = { version = "0.3.0-rc.1", features = ["builder", "hazmat"], optional = true }
+yubikey = { version = "0.8.0", optional = true }
 
 [dev-dependencies]
 ed25519-dalek = "=3.0.0-pre.2"
@@ -84,6 +85,7 @@ secp256k1 = ["k256"]
 setup = ["passwords", "serde_json", "uuid/serde"]
 untested = []
 usb = ["rusb"]
+yubihsm-auth = ["yubikey"]
 
 [package.metadata.docs.rs]
 all-features = true
@@ -92,3 +94,6 @@ rustdoc-args = ["--cfg", "docsrs"]
 [[example]]
 name = "connector_http_server"
 required-features = ["http-server", "usb"]
+
+[patch.crates-io]
+yubikey = { git = "https://github.com/baloo/yubikey.rs", branch = "baloo/yubihsm-auth"}
