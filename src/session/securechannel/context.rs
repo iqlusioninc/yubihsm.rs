@@ -22,3 +22,10 @@ impl Context {
         &self.0
     }
 }
+
+#[cfg(feature = "yubihsm-auth")]
+impl From<Context> for yubikey::hsmauth::Context {
+    fn from(context: Context) -> Self {
+        Self::from_buf(context.0)
+    }
+}
