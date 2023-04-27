@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 
 /// Configuration for connecting to the YubiHSM via USB
 #[derive(Clone, Debug, Deserialize, Serialize)]
-#[cfg_attr(docsrs, doc(cfg(feature = "usb")))]
 pub struct UsbConfig {
     /// Serial number of the YubiHSM to connect to
     pub serial: Option<SerialNumber>,

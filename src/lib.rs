@@ -2,7 +2,7 @@
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/iqlusioninc/yubihsm.rs/main/img/logo.png"
 )]
-#![cfg_attr(docsrs, feature(doc_cfg))]
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![forbid(unsafe_code)]
 #![warn(missing_docs, rust_2018_idioms, unused_qualifications)]
 // TODO(tarcieri): address these clippy nits
@@ -79,7 +79,6 @@ pub mod response;
 pub mod rsa;
 pub mod session;
 #[cfg(feature = "setup")]
-#[cfg_attr(docsrs, doc(cfg(feature = "setup")))]
 pub mod setup;
 pub mod ssh;
 pub mod template;

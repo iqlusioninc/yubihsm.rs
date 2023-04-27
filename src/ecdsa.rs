@@ -5,7 +5,6 @@ pub mod nistp256;
 pub mod nistp384;
 
 #[cfg(feature = "secp256k1")]
-#[cfg_attr(docsrs, doc(cfg(feature = "secp256k1")))]
 pub mod secp256k1;
 
 pub(crate) mod commands;
@@ -15,5 +14,4 @@ pub use self::{algorithm::Algorithm, nistp256::NistP256, nistp384::NistP384, sig
 pub use ::ecdsa::{der, elliptic_curve::sec1, signature, Signature};
 
 #[cfg(feature = "secp256k1")]
-#[cfg_attr(docsrs, doc(cfg(feature = "secp256k1")))]
 pub use self::secp256k1::Secp256k1;
