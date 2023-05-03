@@ -6,10 +6,7 @@ use ::ecdsa::{
         sec1::{self, FromEncodedPoint, ToEncodedPoint},
         AffinePoint, CurveArithmetic, FieldBytesSize, PrimeCurve,
     },
-    signature::{
-        digest::Digest,
-        Verifier, {DigestSigner, DigestVerifier},
-    },
+    signature::Verifier,
 };
 use yubihsm::{
     asymmetric::signature::Signer as _,
@@ -18,7 +15,10 @@ use yubihsm::{
 };
 
 #[cfg(feature = "secp256k1")]
-use yubihsm::ecdsa::Secp256k1;
+use {
+    ::ecdsa::signature::{digest::Digest, DigestSigner, DigestVerifier},
+    yubihsm::ecdsa::Secp256k1,
+};
 
 /// Domain IDs for test key
 const TEST_SIGNING_KEY_DOMAINS: yubihsm::Domain = yubihsm::Domain::DOM1;

@@ -1,6 +1,5 @@
 use crate::{generate_asymmetric_key, TEST_KEY_ID};
 use rand_core;
-use rsa::{self, PublicKey};
 use sha2::{self, Digest};
 use yubihsm::{asymmetric, Capability};
 
