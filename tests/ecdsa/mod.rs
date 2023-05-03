@@ -15,7 +15,10 @@ use yubihsm::{
 };
 
 #[cfg(feature = "secp256k1")]
-use yubihsm::ecdsa::Secp256k1;
+use {
+    ::ecdsa::signature::{digest::Digest, DigestSigner, DigestVerifier},
+    yubihsm::ecdsa::Secp256k1,
+};
 
 /// Domain IDs for test key
 const TEST_SIGNING_KEY_DOMAINS: yubihsm::Domain = yubihsm::Domain::DOM1;
