@@ -6,10 +6,7 @@ use ::ecdsa::{
         sec1::{self, FromEncodedPoint, ToEncodedPoint},
         AffinePoint, CurveArithmetic, FieldBytesSize, PrimeCurve,
     },
-    signature::{
-        digest::Digest,
-        Verifier, {DigestSigner, DigestVerifier},
-    },
+    signature::Verifier,
 };
 use yubihsm::{
     asymmetric::signature::Signer as _,
