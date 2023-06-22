@@ -63,6 +63,7 @@ pub enum Code {
     BlinkDevice = 0x6b,
     ChangeAuthenticationKey = 0x6c,
     Error = 0x7f,
+    InitialLogEntry = 0xff,
 }
 
 impl Code {
@@ -124,6 +125,7 @@ impl Code {
             0x6b => Code::BlinkDevice,
             0x6c => Code::ChangeAuthenticationKey,
             0x7f => Code::Error,
+            0xff => Code::InitialLogEntry,
             _ => fail!(ErrorKind::CodeInvalid, "invalid command type: {}", byte),
         })
     }

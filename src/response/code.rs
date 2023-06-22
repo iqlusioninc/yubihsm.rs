@@ -104,6 +104,11 @@ pub enum Code {
 impl Code {
     /// Convert an unsigned byte into a Code (if valid)
     pub fn from_u8(byte: u8) -> Result<Self, Error> {
+        // InitialLogEntry is a special case: it is not offset by 0x80
+        if byte == command::Code::InitialLogEntry.to_u8() {
+            return Ok(Code::Success(command::Code::InitialLogEntry));
+        }
+
         let code = i16::from(byte).checked_sub(0x80).unwrap() as i8;
 
         Ok(match code {
@@ -147,6 +152,10 @@ impl Code {
 
     /// Convert a Code back into its original byte form
     pub fn to_u8(self) -> u8 {
+        // InitialLogEntry is a special case: it is not offset by 0x80
+        if self == Code::Success(command::Code::InitialLogEntry) {
+            return command::Code::InitialLogEntry.to_u8();
+        }
         let code: i8 = match self {
             Code::Success(cmd_type) => cmd_type as i8,
             Code::MemoryError => -1,

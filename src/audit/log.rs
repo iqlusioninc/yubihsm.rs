@@ -79,3 +79,57 @@ impl Debug for LogDigest {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::serialization::{deserialize, serialize};
+    use std::{error, result};
+
+    type Result<T> = result::Result<T, Box<dyn error::Error>>;
+
+    #[rustfmt::skip]
+    const INITIAL_LOG_ENTRY_BUF: [u8; 32] = [
+        0, 1, // item
+        255, // cmd
+        255, 255, // length
+        255, 255, // session key
+        255, 255, // target key
+        255, 255, // second key
+        255, // result
+        255, 255, 255, 255, // tick
+        // half digest
+        255, 255, 255, 255, 255, 255, 255, 255,
+        255, 255, 255, 255, 255, 255, 255, 255,
+    ];
+
+    const INITIAL_LOG_ENTRY: LogEntry = LogEntry {
+        item: 1u16,
+        cmd: command::Code::InitialLogEntry,
+        length: u16::MAX,
+        session_key: object::Id::MAX,
+        target_key: object::Id::MAX,
+        second_key: object::Id::MAX,
+        result: response::Code::Success(command::Code::InitialLogEntry),
+        tick: u32::MAX,
+        #[rustfmt::skip]
+        digest: LogDigest([
+            255, 255, 255, 255, 255, 255, 255, 255,
+            255, 255, 255, 255, 255, 255, 255, 255,
+        ]),
+    };
+
+    #[test]
+    fn initial_log_entry_deserialize() -> Result<()> {
+        let result: LogEntry = deserialize(&INITIAL_LOG_ENTRY_BUF)?;
+        assert_eq!(result, INITIAL_LOG_ENTRY);
+        Ok(())
+    }
+
+    #[test]
+    fn initial_log_entry_serialize() -> Result<()> {
+        let result = serialize(&INITIAL_LOG_ENTRY)?;
+        assert_eq!(result, INITIAL_LOG_ENTRY_BUF);
+        Ok(())
+    }
+}
