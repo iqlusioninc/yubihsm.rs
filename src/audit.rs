@@ -5,6 +5,9 @@ mod error;
 
 pub use self::error::{Error, ErrorKind};
 
+mod log;
+pub use self::log::{LogEntries, LogEntry};
+
 use crate::command;
 use serde::{de, ser, Deserialize, Serialize};
 use std::fmt;
