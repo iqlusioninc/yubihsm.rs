@@ -39,7 +39,7 @@ impl Response for LogEntries {
 }
 
 /// Entry in the log response
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct LogEntry {
     /// Entry number
     pub item: u16,
@@ -73,7 +73,7 @@ pub struct LogEntry {
 pub const LOG_DIGEST_SIZE: usize = 16;
 
 /// Truncated SHA-256 digest of a log entry and the previous log digest
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, PartialEq, Eq)]
 pub struct LogDigest(pub [u8; LOG_DIGEST_SIZE]);
 
 impl AsRef<[u8]> for LogDigest {
@@ -90,5 +90,38 @@ impl Debug for LogDigest {
             write!(f, "{}", if i == LOG_DIGEST_SIZE - 1 { ")" } else { ":" })?;
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::serialization::deserialize;
+
+    static SAMPLE_ENTRY: &[u8] = &[
+        0, 1, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 237, 217, 180,
+        224, 195, 140, 79, 126, 197, 15, 5, 112, 145, 241, 47, 206,
+    ];
+
+    #[test]
+    fn test_get_log_entry() {
+        let entry: LogEntry = deserialize(SAMPLE_ENTRY).expect("Parse log entry");
+        assert_eq!(
+            entry,
+            LogEntry {
+                item: 1,
+                cmd: command::Code::HsmInitialization,
+                length: 65535,
+                session_key: 65535,
+                target_key: 65535,
+                second_key: 65535,
+                result: response::Code::Success(command::Code::Error),
+                tick: 4294967295,
+                digest: LogDigest([
+                    0xed, 0xd9, 0xb4, 0xe0, 0xc3, 0x8c, 0x4f, 0x7e, 0xc5, 0x0f, 0x05, 0x70, 0x91,
+                    0xf1, 0x2f, 0xce
+                ])
+            }
+        )
     }
 }
