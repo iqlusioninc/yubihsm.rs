@@ -61,6 +61,18 @@ impl Reader {
     fn fill_buffer(&mut self, readable: &mut dyn Read) -> Result<usize, Error> {
         let nbytes = readable.read(self.buffer.as_mut())?;
         self.pos += nbytes;
+
+        // See: https://doc.rust-lang.org/src/std/io/mod.rs.html#571
+        // On Linux, read method will call the recv syscall for a TcpStream,
+        // where returning zero indicates the connection was shut down correctly
+        if nbytes == 0 {
+            fail!(
+                ResponseError,
+                "read {} bytes, the remote connection was likely shutdown",
+                nbytes
+            );
+        }
+
         Ok(nbytes)
     }
 
