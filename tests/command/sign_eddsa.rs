@@ -22,14 +22,14 @@ fn test_vectors() {
 
         let pubkey_response = client
             .get_public_key(TEST_KEY_ID)
-            .unwrap_or_else(|err| panic!("error getting public key: {}", err));
+            .unwrap_or_else(|err| panic!("error getting public key: {err}"));
 
         assert_eq!(pubkey_response.algorithm, asymmetric::Algorithm::Ed25519);
         assert_eq!(pubkey_response.bytes, vector.pk);
 
         let signature = client
             .sign_ed25519(TEST_KEY_ID, vector.msg)
-            .unwrap_or_else(|err| panic!("error performing Ed25519 signature: {}", err));
+            .unwrap_or_else(|err| panic!("error performing Ed25519 signature: {err}"));
 
         assert_eq!(vector.sig, &signature.to_bytes());
     }
@@ -48,13 +48,13 @@ fn generated_key_test() {
 
     let public_key = client
         .get_public_key(TEST_KEY_ID)
-        .unwrap_or_else(|err| panic!("error getting public key: {}", err));
+        .unwrap_or_else(|err| panic!("error getting public key: {err}"));
 
     assert_eq!(public_key.algorithm, asymmetric::Algorithm::Ed25519);
 
     let signature = client
         .sign_ed25519(TEST_KEY_ID, TEST_MESSAGE)
-        .unwrap_or_else(|err| panic!("error performing Ed25519 signature: {}", err));
+        .unwrap_or_else(|err| panic!("error performing Ed25519 signature: {err}"));
 
     assert!(
         ed25519_dalek::VerifyingKey::try_from(public_key.ed25519().unwrap().as_ref())

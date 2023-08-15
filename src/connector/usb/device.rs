@@ -113,7 +113,7 @@ impl Devices {
             let t = timeout.duration();
             let manufacturer = handle.read_manufacturer_string(language, &desc, t)?;
             let product = handle.read_product_string(language, &desc, t)?;
-            let product_name = format!("{} {}", manufacturer, product);
+            let product_name = format!("{manufacturer} {product}");
             let serial_number: SerialNumber = handle
                 .read_serial_number_string(language, &desc, t)?
                 .parse()

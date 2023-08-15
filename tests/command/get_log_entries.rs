@@ -6,5 +6,5 @@ fn get_audit_logs_test() {
     // TODO: test audit logging functionality
     client
         .get_log_entries()
-        .unwrap_or_else(|err| panic!("error getting logs: {}", err));
+        .unwrap_or_else(|err| panic!("error getting logs: {err}"));
 }

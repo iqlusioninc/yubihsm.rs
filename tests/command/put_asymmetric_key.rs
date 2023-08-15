@@ -15,7 +15,7 @@ fn ed25519_key_test() {
 
     let object_info = client
         .get_object_info(TEST_KEY_ID, object::Type::AsymmetricKey)
-        .unwrap_or_else(|err| panic!("error getting object info: {}", err));
+        .unwrap_or_else(|err| panic!("error getting object info: {err}"));
 
     assert_eq!(object_info.capabilities, capabilities);
     assert_eq!(object_info.object_id, TEST_KEY_ID);

@@ -79,7 +79,7 @@ impl fmt::Display for ErrorKind {
             ErrorKind::ResponseError => "error reading response",
         };
 
-        write!(f, "{}", description)
+        write!(f, "{description}")
     }
 }
 

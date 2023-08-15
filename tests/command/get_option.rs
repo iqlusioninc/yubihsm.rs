@@ -5,7 +5,7 @@ fn command_audit_options_test() {
 
     let results = client
         .get_commands_audit_options()
-        .unwrap_or_else(|err| panic!("error getting force option: {}", err));
+        .unwrap_or_else(|err| panic!("error getting force option: {err}"));
 
     assert!(results.len() > 1);
 }
@@ -17,5 +17,5 @@ fn force_audit_option_test() {
 
     client
         .get_force_audit_option()
-        .unwrap_or_else(|err| panic!("error getting force option: {}", err));
+        .unwrap_or_else(|err| panic!("error getting force option: {err}"));
 }

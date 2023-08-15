@@ -41,7 +41,7 @@ pub struct Connection {
 impl Connection {
     /// Create a new connection to an HTTP server
     pub fn open(addr: &str, port: u16, opts: &ConnectionOptions) -> Result<Self, Error> {
-        let host = format!("{}:{}", addr, port);
+        let host = format!("{addr}:{port}");
 
         let socketaddr = &host.to_socket_addrs()?.next().ok_or_else(|| {
             err!(
@@ -71,9 +71,9 @@ impl Connection {
         let path = into_path.into();
         let mut headers = String::new();
 
-        writeln!(headers, "POST {} {}\r", path, HTTP_VERSION)?;
+        writeln!(headers, "POST {path} {HTTP_VERSION}\r")?;
         writeln!(headers, "Host: {}\r", self.host)?;
-        writeln!(headers, "User-Agent: {}\r", USER_AGENT)?;
+        writeln!(headers, "User-Agent: {USER_AGENT}\r")?;
         writeln!(headers, "Content-Length: {}\r", body.0.len())?;
         writeln!(headers, "\r")?;
 

@@ -61,10 +61,7 @@ impl State {
                 .objects
                 .get(authentication_key_id, object::Type::AuthenticationKey)
                 .unwrap_or_else(|| {
-                    panic!(
-                        "MockHsm has no authentication::Key in slot {:?}",
-                        authentication_key_id
-                    )
+                    panic!("MockHsm has no authentication::Key in slot {authentication_key_id:?}")
                 });
 
             SecureChannel::new(

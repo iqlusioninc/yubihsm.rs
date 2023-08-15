@@ -5,7 +5,7 @@ fn device_info_test() {
 
     let device_info = client
         .device_info()
-        .unwrap_or_else(|err| panic!("error getting device info: {}", err));
+        .unwrap_or_else(|err| panic!("error getting device info: {err}"));
 
     // This should always be 2. The minor and patch versions will vary
     // depending on the specific YubiHSM 2 model.

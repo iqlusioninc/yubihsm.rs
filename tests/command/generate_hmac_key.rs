@@ -19,13 +19,13 @@ fn hmac_key_test() {
             capabilities,
             algorithm,
         )
-        .unwrap_or_else(|err| panic!("error generating wrap key: {}", err));
+        .unwrap_or_else(|err| panic!("error generating wrap key: {err}"));
 
     assert_eq!(key_id, TEST_KEY_ID);
 
     let object_info = client
         .get_object_info(TEST_KEY_ID, object::Type::HmacKey)
-        .unwrap_or_else(|err| panic!("error getting object info: {}", err));
+        .unwrap_or_else(|err| panic!("error getting object info: {err}"));
 
     assert_eq!(object_info.capabilities, capabilities);
     assert_eq!(object_info.object_id, TEST_KEY_ID);

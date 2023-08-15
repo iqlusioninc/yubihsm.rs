@@ -270,7 +270,7 @@ impl Display for Capability {
             _ => return Err(fmt::Error), // we don't support displaying this capability yet
         };
 
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }
 
