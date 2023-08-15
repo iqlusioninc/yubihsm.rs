@@ -9,11 +9,11 @@ fn command_audit_options_test() {
     for audit_option in &[AuditOption::On, AuditOption::Off] {
         client
             .set_command_audit_option(command_type, *audit_option)
-            .unwrap_or_else(|err| panic!("error setting {:?} audit option: {}", command_type, err));
+            .unwrap_or_else(|err| panic!("error setting {command_type:?} audit option: {err}"));
 
         let hsm_option = client
             .get_command_audit_option(command_type)
-            .unwrap_or_else(|err| panic!("error getting {:?} audit option: {}", command_type, err));
+            .unwrap_or_else(|err| panic!("error getting {command_type:?} audit option: {err}"));
 
         assert_eq!(hsm_option, *audit_option);
     }
@@ -30,22 +30,22 @@ fn force_audit_option_test() {
     // will prevent the tests from completing
     let audit_logs = client
         .get_log_entries()
-        .unwrap_or_else(|err| panic!("error getting audit logs: {}", err));
+        .unwrap_or_else(|err| panic!("error getting audit logs: {err}"));
 
     if let Some(last_entry) = audit_logs.entries.last() {
         client
             .set_log_index(last_entry.item)
-            .unwrap_or_else(|err| panic!("error setting audit log position: {}", err));
+            .unwrap_or_else(|err| panic!("error setting audit log position: {err}"));
     }
 
     for audit_option in &[AuditOption::On, AuditOption::Off] {
         client
             .set_force_audit_option(*audit_option)
-            .unwrap_or_else(|err| panic!("error setting force option: {}", err));
+            .unwrap_or_else(|err| panic!("error setting force option: {err}"));
 
         let hsm_option = client
             .get_force_audit_option()
-            .unwrap_or_else(|err| panic!("error getting force option: {}", err));
+            .unwrap_or_else(|err| panic!("error getting force option: {err}"));
 
         assert_eq!(hsm_option, *audit_option);
     }

@@ -102,23 +102,23 @@ pub fn create_mockhsm_connector() -> Connector {
 
 /// Delete the key in the test key slot (if it exists, otherwise do nothing)
 pub fn clear_test_key_slot(client: &Client, object_type: object::Type) {
-    println!("clearing test key slot: {:?} {}", object_type, TEST_KEY_ID);
+    println!("clearing test key slot: {object_type:?} {TEST_KEY_ID}");
 
     // Delete the key in TEST_KEY_ID slot it exists (we use it for testing)
     if let Err(e) = client.delete_object(TEST_KEY_ID, object_type) {
         // Ignore errors for nonexistent objects. We're here to make sure the
         // slot is clear, so it's irrelevant if there was no obj to begin with
         if e.device_error() != Some(device::ErrorKind::ObjectNotFound) {
-            panic!("error clearing test key: {}", e);
+            panic!("error clearing test key: {e}");
         }
     }
 
     // Ensure the object does not exist
     match client.get_object_info(TEST_KEY_ID, object_type) {
-        Ok(obj) => panic!("expected test key to be deleted! {:?}", obj),
+        Ok(obj) => panic!("expected test key to be deleted! {obj:?}"),
         Err(e) => {
             if e.device_error() != Some(device::ErrorKind::ObjectNotFound) {
-                panic!("error ensuring test key slot is clear: {}", e);
+                panic!("error ensuring test key slot is clear: {e}");
             }
         }
     }
@@ -140,7 +140,7 @@ pub fn generate_asymmetric_key(
         algorithm,
     ) {
         Ok(key_id) => assert_eq!(key_id, TEST_KEY_ID),
-        Err(e) => panic!("error generating asymmetric key: {}", e),
+        Err(e) => panic!("error generating asymmetric key: {e}"),
     }
 }
 
@@ -162,7 +162,7 @@ pub fn put_asymmetric_key<T: Into<Vec<u8>>>(
             algorithm,
             data,
         )
-        .unwrap_or_else(|err| panic!("error putting asymmetric key: {}", err));
+        .unwrap_or_else(|err| panic!("error putting asymmetric key: {err}"));
 
     assert_eq!(key_id, TEST_KEY_ID);
 }

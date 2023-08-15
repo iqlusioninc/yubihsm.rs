@@ -13,8 +13,7 @@ pub fn derive(mac_key: &[u8], derivation_constant: u8, context: &Context, output
     let output_len = output.len();
     assert!(
         output_len <= 16,
-        "up to 16-bytes of data supported ({} requested)",
-        output_len
+        "up to 16-bytes of data supported ({output_len} requested)"
     );
 
     let mut derivation_data = [0u8; 32];

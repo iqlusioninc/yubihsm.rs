@@ -86,7 +86,7 @@ impl Debug for LogDigest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "LogDigest(")?;
         for (i, byte) in self.0.iter().enumerate() {
-            write!(f, "{:02x}", byte)?;
+            write!(f, "{byte:02x}")?;
             write!(f, "{}", if i == LOG_DIGEST_SIZE - 1 { ")" } else { ":" })?;
         }
         Ok(())

@@ -49,17 +49,16 @@ impl Payload {
                     assert_eq!(data.len(), ed25519::SECRET_KEY_LENGTH);
                     Payload::Ed25519Key(ed25519::SigningKey::try_from(data).unwrap())
                 }
-                _ => panic!(
-                    "MockHsm doesn't support this asymmetric algorithm: {:?}",
-                    asymmetric_alg
-                ),
+                _ => {
+                    panic!("MockHsm doesn't support this asymmetric algorithm: {asymmetric_alg:?}")
+                }
             },
             Algorithm::Hmac(alg) => Payload::HmacKey(alg, data.into()),
             Algorithm::Opaque(alg) => Payload::Opaque(alg, data.into()),
             Algorithm::Authentication(_) => {
                 Payload::AuthenticationKey(authentication::Key::from_slice(data).unwrap())
             }
-            _ => panic!("MockHsm does not support putting {:?} objects", algorithm),
+            _ => panic!("MockHsm does not support putting {algorithm:?} objects"),
         }
     }
 
@@ -81,20 +80,16 @@ impl Payload {
                 asymmetric::Algorithm::Ed25519 => {
                     Payload::Ed25519Key(ed25519::SigningKey::generate(&mut OsRng))
                 }
-                _ => panic!(
-                    "MockHsm doesn't support this asymmetric algorithm: {:?}",
-                    asymmetric_alg
-                ),
+                _ => {
+                    panic!("MockHsm doesn't support this asymmetric algorithm: {asymmetric_alg:?}")
+                }
             },
             Algorithm::Hmac(hmac_alg) => {
                 let mut bytes = vec![0u8; hmac_alg.key_len()];
                 OsRng.fill_bytes(&mut bytes);
                 Payload::HmacKey(hmac_alg, bytes)
             }
-            _ => panic!(
-                "MockHsm does not support generating {:?} objects",
-                algorithm
-            ),
+            _ => panic!("MockHsm does not support generating {algorithm:?} objects"),
         }
     }
 
