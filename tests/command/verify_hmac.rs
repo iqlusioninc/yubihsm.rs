@@ -23,13 +23,13 @@ fn hmac_test_vectors() {
                 algorithm,
                 vector.key,
             )
-            .unwrap_or_else(|err| panic!("error putting HMAC key: {}", err));
+            .unwrap_or_else(|err| panic!("error putting HMAC key: {err}"));
 
         assert_eq!(key_id, TEST_KEY_ID);
 
         let tag = client
             .sign_hmac(TEST_KEY_ID, vector.msg)
-            .unwrap_or_else(|err| panic!("error computing HMAC of data: {}", err));
+            .unwrap_or_else(|err| panic!("error computing HMAC of data: {err}"));
 
         assert_eq!(tag.as_ref(), vector.tag);
 

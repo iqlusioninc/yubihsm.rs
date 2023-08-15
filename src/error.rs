@@ -97,7 +97,7 @@ where
         write!(f, "{}", &self.kind)?;
 
         if let Some(ref source) = self.source {
-            write!(f, ": {}", source)?;
+            write!(f, ": {source}")?;
         }
 
         Ok(())

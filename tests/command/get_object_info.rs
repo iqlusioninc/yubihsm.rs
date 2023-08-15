@@ -14,7 +14,7 @@ fn default_authkey_test() {
             DEFAULT_AUTHENTICATION_KEY_ID,
             object::Type::AuthenticationKey,
         )
-        .unwrap_or_else(|err| panic!("error getting object info: {}", err));
+        .unwrap_or_else(|err| panic!("error getting object info: {err}"));
 
     assert_eq!(object_info.capabilities, Capability::all());
     assert_eq!(object_info.object_id, DEFAULT_AUTHENTICATION_KEY_ID);

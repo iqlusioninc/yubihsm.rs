@@ -41,7 +41,7 @@ pub(crate) fn create_session(
     cmd_message: &Message,
 ) -> Result<Vec<u8>, connector::Error> {
     let cmd: CreateSessionCommand = deserialize(cmd_message.data.as_ref())
-        .unwrap_or_else(|e| panic!("error parsing CreateSession command data: {:?}", e));
+        .unwrap_or_else(|e| panic!("error parsing CreateSession command data: {e:?}"));
 
     let session = state.create_session(cmd.authentication_key_id, cmd.host_challenge);
 
@@ -119,7 +119,7 @@ pub(crate) fn session_message(
         Code::SignEddsa => sign_eddsa(state, &command.data),
         Code::GetStorageInfo => get_storage_info(),
         Code::VerifyHmac => verify_hmac(state, &command.data),
-        unsupported => panic!("unsupported command type: {:?}", unsupported),
+        unsupported => panic!("unsupported command type: {unsupported:?}"),
     };
 
     Ok(state
@@ -140,8 +140,8 @@ fn close_session(state: &mut State, session_id: session::Id) -> Result<Vec<u8>, 
 
 /// Delete an object
 fn delete_object(state: &mut State, cmd_data: &[u8]) -> response::Message {
-    let command: DeleteObjectCommand = deserialize(cmd_data)
-        .unwrap_or_else(|e| panic!("error parsing Code::DeleteObject: {:?}", e));
+    let command: DeleteObjectCommand =
+        deserialize(cmd_data).unwrap_or_else(|e| panic!("error parsing Code::DeleteObject: {e:?}"));
 
     if state
         .objects
@@ -230,7 +230,7 @@ fn export_wrapped(state: &mut State, cmd_data: &[u8]) -> response::Message {
         object_type,
         object_id,
     } = deserialize(cmd_data)
-        .unwrap_or_else(|e| panic!("error parsing Code::ExportWrapped: {:?}", e));
+        .unwrap_or_else(|e| panic!("error parsing Code::ExportWrapped: {e:?}"));
 
     let nonce = wrap::Nonce::generate();
 
@@ -249,7 +249,7 @@ fn export_wrapped(state: &mut State, cmd_data: &[u8]) -> response::Message {
 /// Generate a new random asymmetric key
 fn gen_asymmetric_key(state: &mut State, cmd_data: &[u8]) -> response::Message {
     let GenAsymmetricKeyCommand(command) = deserialize(cmd_data)
-        .unwrap_or_else(|e| panic!("error parsing Code::GenAsymmetricKey: {:?}", e));
+        .unwrap_or_else(|e| panic!("error parsing Code::GenAsymmetricKey: {e:?}"));
 
     state.objects.generate(
         command.key_id,
@@ -270,7 +270,7 @@ fn gen_asymmetric_key(state: &mut State, cmd_data: &[u8]) -> response::Message {
 /// Generate a new random HMAC key
 fn gen_hmac_key(state: &mut State, cmd_data: &[u8]) -> response::Message {
     let GenHmacKeyCommand(command) =
-        deserialize(cmd_data).unwrap_or_else(|e| panic!("error parsing Code::GenHMACKey: {:?}", e));
+        deserialize(cmd_data).unwrap_or_else(|e| panic!("error parsing Code::GenHMACKey: {e:?}"));
 
     state.objects.generate(
         command.key_id,
@@ -293,7 +293,7 @@ fn gen_wrap_key(state: &mut State, cmd_data: &[u8]) -> response::Message {
     let GenWrapKeyCommand {
         params,
         delegated_capabilities,
-    } = deserialize(cmd_data).unwrap_or_else(|e| panic!("error parsing Code::GenWrapKey: {:?}", e));
+    } = deserialize(cmd_data).unwrap_or_else(|e| panic!("error parsing Code::GenWrapKey: {e:?}"));
 
     state.objects.generate(
         params.key_id,
@@ -326,7 +326,7 @@ fn get_log_entries() -> response::Message {
 /// Get detailed info about a specific object
 fn get_object_info(state: &State, cmd_data: &[u8]) -> response::Message {
     let command: GetObjectInfoCommand = deserialize(cmd_data)
-        .unwrap_or_else(|e| panic!("error parsing Code::GetObjectInfo: {:?}", e));
+        .unwrap_or_else(|e| panic!("error parsing Code::GetObjectInfo: {e:?}"));
 
     if let Some(obj) = state
         .objects
@@ -342,7 +342,7 @@ fn get_object_info(state: &State, cmd_data: &[u8]) -> response::Message {
 /// Get an opaque object (X.509 certificate or other data) stored in the HSM
 fn get_opaque(state: &State, cmd_data: &[u8]) -> response::Message {
     let command: GetOpaqueCommand = deserialize(cmd_data)
-        .unwrap_or_else(|e| panic!("error parsing Code::GetOpaqueObject: {:?}", e));
+        .unwrap_or_else(|e| panic!("error parsing Code::GetOpaqueObject: {e:?}"));
 
     if let Some(obj) = state.objects.get(command.object_id, object::Type::Opaque) {
         GetOpaqueResponse(obj.payload.to_bytes()).serialize()
@@ -355,7 +355,7 @@ fn get_opaque(state: &State, cmd_data: &[u8]) -> response::Message {
 /// Get an auditing option
 fn get_option(state: &State, cmd_data: &[u8]) -> response::Message {
     let command: GetOptionCommand = deserialize(cmd_data)
-        .unwrap_or_else(|e| panic!("error parsing Code::GetOpaqueObject: {:?}", e));
+        .unwrap_or_else(|e| panic!("error parsing Code::GetOpaqueObject: {e:?}"));
 
     let results = match command.tag {
         AuditTag::Command => state.command_audit_options.serialize(),
@@ -369,7 +369,7 @@ fn get_option(state: &State, cmd_data: &[u8]) -> response::Message {
 /// Get bytes of random data
 fn get_pseudo_random(_state: &State, cmd_data: &[u8]) -> response::Message {
     let command: GetPseudoRandomCommand = deserialize(cmd_data)
-        .unwrap_or_else(|e| panic!("error parsing Code::GetPseudoRandom: {:?}", e));
+        .unwrap_or_else(|e| panic!("error parsing Code::GetPseudoRandom: {e:?}"));
 
     let mut bytes = vec![0u8; command.bytes as usize];
     OsRng.fill_bytes(&mut bytes);
@@ -380,7 +380,7 @@ fn get_pseudo_random(_state: &State, cmd_data: &[u8]) -> response::Message {
 /// Get the public key associated with a key in the HSM
 fn get_public_key(state: &State, cmd_data: &[u8]) -> response::Message {
     let command: GetPublicKeyCommand =
-        deserialize(cmd_data).unwrap_or_else(|e| panic!("error parsing Code::GetPubKey: {:?}", e));
+        deserialize(cmd_data).unwrap_or_else(|e| panic!("error parsing Code::GetPubKey: {e:?}"));
 
     if let Some(obj) = state
         .objects
@@ -418,7 +418,7 @@ fn import_wrapped(state: &mut State, cmd_data: &[u8]) -> response::Message {
         nonce,
         ciphertext,
     } = deserialize(cmd_data)
-        .unwrap_or_else(|e| panic!("error parsing Code::ImportWrapped: {:?}", e));
+        .unwrap_or_else(|e| panic!("error parsing Code::ImportWrapped: {e:?}"));
 
     match state.objects.unwrap_obj(wrap_key_id, &nonce, ciphertext) {
         Ok(obj) => ImportWrappedResponse {
@@ -435,8 +435,8 @@ fn import_wrapped(state: &mut State, cmd_data: &[u8]) -> response::Message {
 
 /// List all objects presently accessible to a session
 fn list_objects(state: &State, cmd_data: &[u8]) -> response::Message {
-    let command: ListObjectsCommand = deserialize(cmd_data)
-        .unwrap_or_else(|e| panic!("error parsing Code::ListObjects: {:?}", e));
+    let command: ListObjectsCommand =
+        deserialize(cmd_data).unwrap_or_else(|e| panic!("error parsing Code::ListObjects: {e:?}"));
 
     let len = command.0.len() as u64;
     let mut cursor = Cursor::new(command.0);
@@ -474,7 +474,7 @@ fn list_objects(state: &State, cmd_data: &[u8]) -> response::Message {
 /// Put an existing asymmetric key into the HSM
 fn put_asymmetric_key(state: &mut State, cmd_data: &[u8]) -> response::Message {
     let PutAsymmetricKeyCommand { params, data } = deserialize(cmd_data)
-        .unwrap_or_else(|e| panic!("error parsing Code::PutAsymmetricKey: {:?}", e));
+        .unwrap_or_else(|e| panic!("error parsing Code::PutAsymmetricKey: {e:?}"));
 
     state.objects.put(
         params.id,
@@ -497,7 +497,7 @@ fn put_authentication_key(state: &mut State, cmd_data: &[u8]) -> response::Messa
         delegated_capabilities,
         authentication_key,
     } = deserialize(cmd_data)
-        .unwrap_or_else(|e| panic!("error parsing Code::PutAuthenticationKey: {:?}", e));
+        .unwrap_or_else(|e| panic!("error parsing Code::PutAuthenticationKey: {e:?}"));
 
     state.objects.put(
         params.id,
@@ -516,7 +516,7 @@ fn put_authentication_key(state: &mut State, cmd_data: &[u8]) -> response::Messa
 /// Put a new HMAC key into the HSM
 fn put_hmac_key(state: &mut State, cmd_data: &[u8]) -> response::Message {
     let PutHmacKeyCommand { params, hmac_key } =
-        deserialize(cmd_data).unwrap_or_else(|e| panic!("error parsing Code::PutHMACKey: {:?}", e));
+        deserialize(cmd_data).unwrap_or_else(|e| panic!("error parsing Code::PutHMACKey: {e:?}"));
 
     state.objects.put(
         params.id,
@@ -535,7 +535,7 @@ fn put_hmac_key(state: &mut State, cmd_data: &[u8]) -> response::Message {
 /// Put an opaque object (X.509 cert or other data) into the HSM
 fn put_opaque(state: &mut State, cmd_data: &[u8]) -> response::Message {
     let PutOpaqueCommand { params, data } = deserialize(cmd_data)
-        .unwrap_or_else(|e| panic!("error parsing Code::PutOpaqueObject: {:?}", e));
+        .unwrap_or_else(|e| panic!("error parsing Code::PutOpaqueObject: {e:?}"));
 
     state.objects.put(
         params.id,
@@ -557,7 +557,7 @@ fn put_opaque(state: &mut State, cmd_data: &[u8]) -> response::Message {
 /// Change an HSM auditing setting
 fn put_option(state: &mut State, cmd_data: &[u8]) -> response::Message {
     let SetOptionCommand { tag, length, value } =
-        deserialize(cmd_data).unwrap_or_else(|e| panic!("error parsing Code::PutOption: {:?}", e));
+        deserialize(cmd_data).unwrap_or_else(|e| panic!("error parsing Code::PutOption: {e:?}"));
 
     match tag {
         AuditTag::Force => {
@@ -566,8 +566,8 @@ fn put_option(state: &mut State, cmd_data: &[u8]) -> response::Message {
         }
         AuditTag::Command => {
             assert_eq!(length, 2);
-            let audit_cmd: AuditCommand = deserialize(&value)
-                .unwrap_or_else(|e| panic!("error parsing AuditCommand: {:?}", e));
+            let audit_cmd: AuditCommand =
+                deserialize(&value).unwrap_or_else(|e| panic!("error parsing AuditCommand: {e:?}"));
 
             state
                 .command_audit_options
@@ -588,7 +588,7 @@ fn put_wrap_key(state: &mut State, cmd_data: &[u8]) -> response::Message {
         params,
         delegated_capabilities,
         data,
-    } = deserialize(cmd_data).unwrap_or_else(|e| panic!("error parsing Code::PutWrapKey: {:?}", e));
+    } = deserialize(cmd_data).unwrap_or_else(|e| panic!("error parsing Code::PutWrapKey: {e:?}"));
 
     state.objects.put(
         params.id,
@@ -619,7 +619,7 @@ fn reset_device(state: &mut State, session_id: session::Id) -> Vec<u8> {
 /// Sign a message using the ECDSA signature algorithm
 fn sign_ecdsa(state: &State, cmd_data: &[u8]) -> response::Message {
     let command: SignEcdsaCommand =
-        deserialize(cmd_data).unwrap_or_else(|e| panic!("error parsing Code::SignEcdsa: {:?}", e));
+        deserialize(cmd_data).unwrap_or_else(|e| panic!("error parsing Code::SignEcdsa: {e:?}"));
 
     if let Some(obj) = state
         .objects
@@ -666,7 +666,7 @@ fn sign_ecdsa(state: &State, cmd_data: &[u8]) -> response::Message {
 /// Sign a message using the Ed25519 signature algorithm
 fn sign_eddsa(state: &State, cmd_data: &[u8]) -> response::Message {
     let command: SignEddsaCommand =
-        deserialize(cmd_data).unwrap_or_else(|e| panic!("error parsing Code::SignEdDSA: {:?}", e));
+        deserialize(cmd_data).unwrap_or_else(|e| panic!("error parsing Code::SignEdDSA: {e:?}"));
 
     if let Some(obj) = state
         .objects
@@ -688,7 +688,7 @@ fn sign_eddsa(state: &State, cmd_data: &[u8]) -> response::Message {
 /// Compute the HMAC tag for the given data
 fn sign_hmac(state: &State, cmd_data: &[u8]) -> response::Message {
     let command: SignHmacCommand =
-        deserialize(cmd_data).unwrap_or_else(|e| panic!("error parsing Code::HMACData: {:?}", e));
+        deserialize(cmd_data).unwrap_or_else(|e| panic!("error parsing Code::HMACData: {e:?}"));
 
     if let Some(obj) = state.objects.get(command.key_id, object::Type::HmacKey) {
         if let Payload::HmacKey(alg, ref key) = obj.payload {
@@ -710,7 +710,7 @@ fn sign_hmac(state: &State, cmd_data: &[u8]) -> response::Message {
 /// Verify the HMAC tag for the given data
 fn verify_hmac(state: &State, cmd_data: &[u8]) -> response::Message {
     let command: VerifyHmacCommand =
-        deserialize(cmd_data).unwrap_or_else(|e| panic!("error parsing Code::HMACData: {:?}", e));
+        deserialize(cmd_data).unwrap_or_else(|e| panic!("error parsing Code::HMACData: {e:?}"));
 
     if let Some(obj) = state.objects.get(command.key_id, object::Type::HmacKey) {
         if let Payload::HmacKey(alg, ref key) = obj.payload {

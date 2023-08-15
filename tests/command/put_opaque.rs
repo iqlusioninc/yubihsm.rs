@@ -18,13 +18,13 @@ fn opaque_object_test() {
             opaque::Algorithm::Data,
             TEST_MESSAGE,
         )
-        .unwrap_or_else(|err| panic!("error putting opaque object: {}", err));
+        .unwrap_or_else(|err| panic!("error putting opaque object: {err}"));
 
     assert_eq!(object_id, TEST_KEY_ID);
 
     let opaque_data = client
         .get_opaque(TEST_KEY_ID)
-        .unwrap_or_else(|err| panic!("error getting opaque object: {}", err));
+        .unwrap_or_else(|err| panic!("error getting opaque object: {err}"));
 
     assert_eq!(opaque_data, TEST_MESSAGE);
 }

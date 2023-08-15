@@ -25,7 +25,7 @@ fn wrap_key_test() {
             algorithm,
             AESCCM_TEST_VECTORS[0].key,
         )
-        .unwrap_or_else(|err| panic!("error generating wrap key: {}", err));
+        .unwrap_or_else(|err| panic!("error generating wrap key: {err}"));
 
     assert_eq!(key_id, TEST_KEY_ID);
 
@@ -44,11 +44,11 @@ fn wrap_key_test() {
             exported_key_capabilities,
             exported_key_algorithm,
         )
-        .unwrap_or_else(|err| panic!("error generating asymmetric key: {}", err));
+        .unwrap_or_else(|err| panic!("error generating asymmetric key: {err}"));
 
     let wrap_data = client
         .export_wrapped(TEST_KEY_ID, exported_key_type, TEST_EXPORTED_KEY_ID)
-        .unwrap_or_else(|err| panic!("error exporting key: {}", err));
+        .unwrap_or_else(|err| panic!("error exporting key: {err}"));
 
     // Delete the object from the HSM prior to re-importing it
     assert!(client
@@ -58,14 +58,14 @@ fn wrap_key_test() {
     // Re-import the wrapped key back into the HSM
     let import_response = client
         .import_wrapped(TEST_KEY_ID, wrap_data)
-        .unwrap_or_else(|err| panic!("error importing key: {}", err));
+        .unwrap_or_else(|err| panic!("error importing key: {err}"));
 
     assert_eq!(import_response.object_type, exported_key_type);
     assert_eq!(import_response.object_id, TEST_EXPORTED_KEY_ID);
 
     let imported_key_info = client
         .get_object_info(TEST_EXPORTED_KEY_ID, exported_key_type)
-        .unwrap_or_else(|err| panic!("error getting object info: {}", err));
+        .unwrap_or_else(|err| panic!("error getting object info: {err}"));
 
     assert_eq!(imported_key_info.capabilities, exported_key_capabilities);
     assert_eq!(imported_key_info.object_id, TEST_EXPORTED_KEY_ID);
