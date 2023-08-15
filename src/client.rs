@@ -443,6 +443,25 @@ impl Client {
             .map_err(|e| format_err!(ErrorKind::ProtocolError, e).into())
     }
 
+    /// Get the FIPS operation global option
+    ///
+    /// <https://developers.yubico.com/YubiHSM2/Commands/Get_Option.html>
+    pub fn get_fips_option(&self) -> Result<AuditOption, Error> {
+        let response = self.send_command(GetOptionCommand {
+            tag: AuditTag::Fips,
+        })?;
+
+        ensure!(
+            response.0.len() == 1,
+            ErrorKind::ProtocolError,
+            "expected 1-byte response, got {}",
+            response.0.len()
+        );
+
+        AuditOption::from_u8(response.0[0])
+            .map_err(|e| format_err!(ErrorKind::ProtocolError, e).into())
+    }
+
     /// Get some number of bytes of pseudo random data generated on the device.
     ///
     /// <https://developers.yubico.com/YubiHSM2/Commands/Get_Pseudo_Random.html>
@@ -893,6 +912,22 @@ impl Client {
     pub fn set_force_audit_option(&self, option: AuditOption) -> Result<(), Error> {
         self.send_command(SetOptionCommand {
             tag: AuditTag::Force,
+            length: 1,
+            value: vec![option.to_u8()],
+        })?;
+
+        Ok(())
+    }
+
+    /// Put the FIPS global option: when enabled, it disables algorithms that are
+    /// not allowed by FIPS 140.
+    ///
+    /// Options are `Off`, or `On`
+    ///
+    /// <https://developers.yubico.com/YubiHSM2/Commands/Put_Option.html>
+    pub fn set_fips_option(&self, option: AuditOption) -> Result<(), Error> {
+        self.send_command(SetOptionCommand {
+            tag: AuditTag::Fips,
             length: 1,
             value: vec![option.to_u8()],
         })?;

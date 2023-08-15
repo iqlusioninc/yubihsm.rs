@@ -22,6 +22,9 @@ pub(crate) struct State {
     /// via the `SetLogIndex` command.
     pub(super) force_audit: AuditOption,
 
+    /// Fips mode
+    pub(super) fips: AuditOption,
+
     /// Active sessions with the MockHsm
     sessions: BTreeMap<session::Id, HsmSession>,
 
@@ -35,6 +38,7 @@ impl State {
         Self {
             command_audit_options: CommandAuditOptions::default(),
             force_audit: AuditOption::Off,
+            fips: AuditOption::Off,
             sessions: BTreeMap::new(),
             objects: Objects::default(),
         }
