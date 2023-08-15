@@ -154,12 +154,12 @@ See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT) for details.
 [crate-link]: https://crates.io/crates/yubihsm
 [docs-image]: https://docs.rs/yubihsm/badge.svg
 [docs-link]: https://docs.rs/yubihsm/
-[build-image]: https://github.com/iqlusioninc/yubihsm.rs/workflows/CI/badge.svg?branch=main&event=push
-[build-link]: https://github.com/iqlusioninc/yubihsm.rs/actions?query=workflow:CI
+[build-image]: https://github.com/iqlusioninc/yubihsm.rs/actions/workflows/ci.yml/badge.svg
+[build-link]: https://github.com/iqlusioninc/yubihsm.rs/actions/workflows/ci.yml
 [deps-image]: https://deps.rs/repo/github/iqlusioninc/yubihsm.rs/status.svg
 [deps-link]: https://deps.rs/repo/github/iqlusioninc/yubihsm.rs
 [license-image]: https://img.shields.io/badge/license-Apache2.0/MIT-blue.svg
-[rustc-image]: https://img.shields.io/badge/rustc-1.65+-blue.svg
+[rustc-image]: https://img.shields.io/badge/rustc-1.67+-blue.svg
 
 [//]: # (general links)
 
