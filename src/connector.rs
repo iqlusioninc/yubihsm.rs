@@ -17,8 +17,8 @@
 #[macro_use]
 mod error;
 
-mod connectable;
-mod connection;
+pub mod connectable;
+pub mod connection;
 #[cfg(feature = "http")]
 pub mod http;
 mod message;
@@ -28,7 +28,7 @@ pub mod usb;
 pub use self::connection::Connection;
 pub use self::error::*;
 
-pub(crate) use self::{connectable::Connectable, message::Message};
+pub use self::{connectable::Connectable, message::Message};
 use std::sync::{Arc, Mutex};
 use uuid::Uuid;
 
