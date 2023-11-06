@@ -30,7 +30,7 @@ impl Command for SignPssCommand {
 
 /// RSASSA-PSS signatures (ASN.1 DER encoded)
 #[derive(Serialize, Deserialize, Debug)]
-pub struct SignPssResponse(rsa::pss::Signature);
+pub struct SignPssResponse(pub(crate) rsa::pss::Signature);
 
 impl Response for SignPssResponse {
     const COMMAND_CODE: command::Code = command::Code::SignPss;

@@ -1,7 +1,8 @@
 //! RSA-related algorithms
 
-use super::{oaep, pkcs1, pss};
+use super::{mgf, oaep, pkcs1, pss};
 use crate::algorithm;
+use digest::{const_oid::AssociatedOid, Digest};
 
 /// RSA algorithms (signing and encryption)
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -60,4 +61,26 @@ impl From<pss::Algorithm> for Algorithm {
     fn from(alg: pss::Algorithm) -> Algorithm {
         Algorithm::Pss(alg)
     }
+}
+
+/// [`SignatureAlgorithm`] marks the digest algorithm support for RSA signature (PSS or PKCS#1v1.5).
+pub trait SignatureAlgorithm: Digest + AssociatedOid {
+    /// Mask Generation Function to use when talking to the YubiHSM.
+    const MGF_ALGORITHM: mgf::Algorithm;
+}
+
+impl SignatureAlgorithm for sha1::Sha1 {
+    const MGF_ALGORITHM: mgf::Algorithm = mgf::Algorithm::Sha1;
+}
+
+impl SignatureAlgorithm for sha2::Sha256 {
+    const MGF_ALGORITHM: mgf::Algorithm = mgf::Algorithm::Sha256;
+}
+
+impl SignatureAlgorithm for sha2::Sha384 {
+    const MGF_ALGORITHM: mgf::Algorithm = mgf::Algorithm::Sha384;
+}
+
+impl SignatureAlgorithm for sha2::Sha512 {
+    const MGF_ALGORITHM: mgf::Algorithm = mgf::Algorithm::Sha512;
 }
