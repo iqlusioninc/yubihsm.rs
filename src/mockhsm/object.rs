@@ -6,7 +6,7 @@ mod objects;
 mod payload;
 
 pub(crate) use self::{objects::Objects, payload::Payload};
-use crate::{object, Algorithm};
+use crate::{object, wrap, Algorithm};
 use serde::{Deserialize, Serialize};
 
 /// Label for the default auth key
@@ -34,14 +34,16 @@ impl Object {
 /// A serialized object which can be exported/imported
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct WrappedObject {
-    pub object_info: object::Info,
+    pub alg_id: Algorithm,
+    pub object_info: wrap::Info,
     pub data: Vec<u8>,
 }
 
 impl<'a> From<&'a Object> for WrappedObject {
     fn from(obj: &'a Object) -> Self {
         Self {
-            object_info: obj.object_info.clone(),
+            alg_id: Algorithm::Wrap(wrap::Algorithm::Aes128Ccm),
+            object_info: obj.object_info.clone().into(),
             data: obj.payload.to_bytes(),
         }
     }
