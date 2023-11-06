@@ -28,13 +28,14 @@ use crate::{
     object::{self, commands::*, generate},
     opaque::{self, commands::*},
     otp::{self, commands::*},
-    rsa::{self, oaep::commands::*},
+    rsa::{self, oaep::commands::*, pkcs1::commands::*, pss::commands::*, SignatureAlgorithm},
     serialization::{deserialize, serialize},
     session::{self, Session},
     template::{commands::*, Template},
     uuid,
     wrap::{self, commands::*},
 };
+use sha2::Sha256;
 use std::{
     sync::{Arc, Mutex},
     time::{Duration, Instant},
@@ -44,14 +45,10 @@ use std::{
 use std::{thread, time::SystemTime};
 
 #[cfg(feature = "untested")]
-use {
-    crate::{
-        algorithm::Algorithm,
-        ecdh::{self, commands::*},
-        rsa::{pkcs1::commands::*, pss::commands::*},
-        ssh::{self, commands::*},
-    },
-    sha2::{Digest, Sha256},
+use crate::{
+    algorithm::Algorithm,
+    ecdh::{self, commands::*},
+    ssh::{self, commands::*},
 };
 
 #[cfg(any(doc, docsrs))]
@@ -1019,14 +1016,8 @@ impl Client {
 
     /// Compute an RSASSA-PKCS#1v1.5 signature of the SHA-256 hash of the given data.
     ///
-    /// **WARNING**: This functionality has not been tested and has not yet been
-    /// confirmed to actually work! USE AT YOUR OWN RISK!
-    ///
-    /// You will need to enable the `untested` cargo feature to use it.
-    ///
     /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Pkcs1.html>
-    #[cfg(feature = "untested")]
-    pub fn sign_rsa_pkcs1v15_sha256(
+    pub(crate) fn sign_rsa_pkcs1v15<S: SignatureAlgorithm>(
         &self,
         key_id: object::Id,
         data: &[u8],
@@ -1034,47 +1025,60 @@ impl Client {
         Ok(self
             .send_command(SignPkcs1Command {
                 key_id,
-                digest: Sha256::digest(data).as_slice().into(),
+                digest: S::digest(data).as_slice().into(),
             })?
             .into())
     }
 
+    /// Compute an RSASSA-PKCS#1v1.5 signature of the SHA-256 hash of the given data.
+    ///
+    /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Pkcs1.html>
+    pub fn sign_rsa_pkcs1v15_sha256(
+        &self,
+        key_id: object::Id,
+        data: &[u8],
+    ) -> Result<rsa::pkcs1::Signature, Error> {
+        self.sign_rsa_pkcs1v15::<Sha256>(key_id, data)
+    }
+
     /// Compute an RSASSA-PSS signature of the SHA-256 hash of the given data with the given key ID.
     ///
-    /// **WARNING**: This functionality has not been tested and has not yet been
-    /// confirmed to actually work! USE AT YOUR OWN RISK!
-    ///
-    /// You will need to enable the `untested` cargo feature to use it.
-    ///
     /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Pss.html>
-    #[cfg(feature = "untested")]
-    pub fn sign_rsa_pss_sha256(
+    pub(crate) fn sign_rsa_pss<S: SignatureAlgorithm>(
         &self,
         key_id: object::Id,
         data: &[u8],
     ) -> Result<rsa::pss::Signature, Error> {
         ensure!(
-            data.len() > rsa::pss::MAX_MESSAGE_SIZE,
+            data.len() < rsa::pss::MAX_MESSAGE_SIZE,
             ErrorKind::ProtocolError,
             "message too large to be signed (max: {})",
             rsa::pss::MAX_MESSAGE_SIZE
         );
 
-        let mut hasher = Sha256::default();
-
-        let length = data.len() as u16;
-        hasher.update(length.to_be_bytes());
+        let mut hasher = S::new();
         hasher.update(data);
         let digest = hasher.finalize();
 
         Ok(self
             .send_command(SignPssCommand {
                 key_id,
-                mgf1_hash_alg: rsa::mgf::Algorithm::Sha256,
+                mgf1_hash_alg: S::MGF_ALGORITHM,
                 salt_len: digest.as_slice().len() as u16,
                 digest: digest.as_slice().into(),
             })?
             .into())
+    }
+
+    /// Compute an RSASSA-PSS signature of the SHA-256 hash of the given data with the given key ID.
+    ///
+    /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Pss.html>
+    pub fn sign_rsa_pss_sha256(
+        &self,
+        key_id: object::Id,
+        data: &[u8],
+    ) -> Result<rsa::pss::Signature, Error> {
+        self.sign_rsa_pss::<Sha256>(key_id, data)
     }
 
     /// Sign an SSH certificate using the given template.

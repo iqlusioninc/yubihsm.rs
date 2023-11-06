@@ -1,6 +1,7 @@
 //! RSASSA-PKCS#1v1.5 signatures
 
 use serde::{Deserialize, Serialize};
+use signature::SignatureEncoding;
 
 /// RSASSA-PKCS#1v1.5 signatures (ASN.1 DER encoded)
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -33,5 +34,11 @@ impl AsRef<[u8]> for Signature {
 impl Into<Vec<u8>> for Signature {
     fn into(self) -> Vec<u8> {
         self.0
+    }
+}
+
+impl From<&::rsa::pkcs1v15::Signature> for Signature {
+    fn from(s: &::rsa::pkcs1v15::Signature) -> Self {
+        Self(<::rsa::pkcs1v15::Signature as SignatureEncoding>::to_vec(s))
     }
 }

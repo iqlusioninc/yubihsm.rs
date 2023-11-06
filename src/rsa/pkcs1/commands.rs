@@ -24,7 +24,7 @@ impl Command for SignPkcs1Command {
 
 /// RSASSA-PKCS#1v1.5 signatures (ASN.1 DER encoded)
 #[derive(Serialize, Deserialize, Debug)]
-pub struct SignPkcs1Response(rsa::pkcs1::Signature);
+pub struct SignPkcs1Response(pub(crate) rsa::pkcs1::Signature);
 
 impl Response for SignPkcs1Response {
     const COMMAND_CODE: command::Code = command::Code::SignPkcs1;

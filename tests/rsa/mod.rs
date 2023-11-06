@@ -5,7 +5,21 @@ use crate::{
     TEST_KEY_LABEL,
 };
 use ::rsa::{pkcs8::DecodePrivateKey, traits::PrivateKeyParts, RsaPrivateKey};
-use yubihsm::{object, wrap, Capability};
+use signature::{Keypair, Verifier};
+use spki::SubjectPublicKeyInfoOwned;
+use std::{str::FromStr, time::Duration};
+use x509_cert::{
+    builder::{Builder, CertificateBuilder, Profile},
+    name::Name,
+    serial_number::SerialNumber,
+    time::Validity,
+};
+use yubihsm::{
+    asymmetric::signature::Signer as _,
+    object,
+    rsa::{pkcs1, pss, SignatureAlgorithm},
+    wrap, Capability, Client,
+};
 
 /// Domain IDs for test key
 const TEST_SIGNING_KEY_DOMAINS: yubihsm::Domain = yubihsm::Domain::DOM1;
@@ -94,4 +108,168 @@ fn rsa_import_wrapped_key() {
     let public = public.rsa().expect("rsa public key expected");
 
     assert_eq!(public, key.as_ref().clone());
+}
+
+/// Example message to sign
+const TEST_MESSAGE: &[u8] =
+    b"RSA (Rivest-Shamir-Adleman) is a public-key cryptosystem, one of the oldest, \
+      that is widely used for secure data transmission.";
+
+fn create_pss_signer<S>(key_id: object::Id) -> pss::Signer<S>
+where
+    S: SignatureAlgorithm,
+{
+    let client = crate::get_hsm_client();
+    create_yubihsm_key(&client, key_id, yubihsm::asymmetric::Algorithm::Rsa2048);
+    pss::Signer::create(client.clone(), key_id).unwrap()
+}
+
+fn create_pkcs_signer<S>(key_id: object::Id) -> pkcs1::Signer<S>
+where
+    S: SignatureAlgorithm,
+{
+    let client = crate::get_hsm_client();
+    create_yubihsm_key(&client, key_id, yubihsm::asymmetric::Algorithm::Rsa2048);
+    pkcs1::Signer::create(client.clone(), key_id).unwrap()
+}
+
+/// Create the key on the YubiHSM to use for this test
+// TODO(baloo): this is a duplicate from ecdsa tests
+fn create_yubihsm_key(client: &Client, key_id: object::Id, alg: yubihsm::asymmetric::Algorithm) {
+    // Delete the key in TEST_KEY_ID slot it exists
+    // Ignore errors since the object may not exist yet
+    let _ = client.delete_object(key_id, yubihsm::object::Type::AsymmetricKey);
+
+    // Create a new key for testing
+    let _key = client
+        .generate_asymmetric_key(
+            key_id,
+            TEST_SIGNING_KEY_LABEL.into(),
+            TEST_SIGNING_KEY_DOMAINS,
+            yubihsm::Capability::SIGN_PSS
+                | yubihsm::Capability::SIGN_PKCS
+                | Capability::EXPORTABLE_UNDER_WRAP,
+            alg,
+        )
+        .unwrap();
+}
+
+#[test]
+fn rsa_pss_sha256_sign_test() {
+    let signer = create_pss_signer::<sha2::Sha256>(221);
+    let verifying_key = signer.verifying_key();
+    let verifying_key_from_public =
+        ::rsa::pss::VerifyingKey::<sha2::Sha256>::new(signer.public_key());
+
+    let signature = signer.sign(TEST_MESSAGE);
+
+    assert!(verifying_key.verify(TEST_MESSAGE, &signature).is_ok());
+    assert!(verifying_key_from_public
+        .verify(TEST_MESSAGE, &signature)
+        .is_ok());
+}
+
+#[test]
+fn rsa_pkcs1_sha256_sign_test() {
+    let signer = create_pkcs_signer::<sha2::Sha256>(222);
+    let verifying_key = signer.verifying_key();
+    let verifying_key_from_public =
+        ::rsa::pkcs1v15::VerifyingKey::<sha2::Sha256>::new(signer.public_key());
+
+    let signature = signer.sign(TEST_MESSAGE);
+
+    assert!(verifying_key.verify(TEST_MESSAGE, &signature).is_ok());
+    assert!(verifying_key_from_public
+        .verify(TEST_MESSAGE, &signature)
+        .is_ok());
+}
+
+#[test]
+fn rsa_pss_sha1_ca() {
+    let signer = create_pss_signer::<sha1::Sha1>(223);
+
+    let serial_number = SerialNumber::from(42u32);
+    let validity = Validity::from_now(Duration::new(5, 0)).unwrap();
+    let profile = Profile::Root;
+    let subject =
+        Name::from_str("CN=World domination corporation,O=World domination Inc,C=US").unwrap();
+    let pub_key = SubjectPublicKeyInfoOwned::from_key(signer.verifying_key()).unwrap();
+
+    let builder =
+        CertificateBuilder::new(profile, serial_number, validity, subject, pub_key, &signer)
+            .expect("Create certificate");
+
+    builder.build().unwrap();
+}
+
+#[test]
+fn rsa_pss_sha256_ca() {
+    let signer = create_pss_signer::<sha2::Sha256>(224);
+
+    let serial_number = SerialNumber::from(42u32);
+    let validity = Validity::from_now(Duration::new(5, 0)).unwrap();
+    let profile = Profile::Root;
+    let subject =
+        Name::from_str("CN=World domination corporation,O=World domination Inc,C=US").unwrap();
+    let pub_key = SubjectPublicKeyInfoOwned::from_key(signer.verifying_key()).unwrap();
+
+    let builder =
+        CertificateBuilder::new(profile, serial_number, validity, subject, pub_key, &signer)
+            .expect("Create certificate");
+
+    builder.build().unwrap();
+}
+
+#[test]
+fn rsa_pkcs1_sha256_ca() {
+    let signer = create_pkcs_signer::<sha2::Sha256>(225);
+
+    let serial_number = SerialNumber::from(42u32);
+    let validity = Validity::from_now(Duration::new(5, 0)).unwrap();
+    let profile = Profile::Root;
+    let subject =
+        Name::from_str("CN=World domination corporation,O=World domination Inc,C=US").unwrap();
+    let pub_key = SubjectPublicKeyInfoOwned::from_key(signer.verifying_key()).unwrap();
+
+    let builder =
+        CertificateBuilder::new(profile, serial_number, validity, subject, pub_key, &signer)
+            .expect("Create certificate");
+
+    builder.build().unwrap();
+}
+
+#[test]
+fn rsa_raw_pkcs1_sha256_sign_test() {
+    let client = crate::get_hsm_client();
+    create_yubihsm_key(&client, 226, yubihsm::asymmetric::Algorithm::Rsa2048);
+
+    let signature = client
+        .sign_rsa_pkcs1v15_sha256(226, TEST_MESSAGE)
+        .expect("sign message");
+    let public_key = client.get_public_key(226).unwrap().rsa().unwrap();
+    let verifying_key = ::rsa::pkcs1v15::VerifyingKey::<sha2::Sha256>::new(public_key);
+    assert!(verifying_key
+        .verify(
+            TEST_MESSAGE,
+            &::rsa::pkcs1v15::Signature::try_from(signature.as_slice()).unwrap()
+        )
+        .is_ok());
+}
+
+#[test]
+fn rsa_raw_pss_sha256_sign_test() {
+    let client = crate::get_hsm_client();
+    create_yubihsm_key(&client, 227, yubihsm::asymmetric::Algorithm::Rsa2048);
+
+    let signature = client
+        .sign_rsa_pss_sha256(227, TEST_MESSAGE)
+        .expect("sign message");
+    let public_key = client.get_public_key(227).unwrap().rsa().unwrap();
+    let verifying_key = ::rsa::pss::VerifyingKey::<sha2::Sha256>::new(public_key);
+    assert!(verifying_key
+        .verify(
+            TEST_MESSAGE,
+            &::rsa::pss::Signature::try_from(signature.as_slice()).unwrap()
+        )
+        .is_ok());
 }
