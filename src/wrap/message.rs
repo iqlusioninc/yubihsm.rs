@@ -17,8 +17,7 @@ use ecdsa::{
     },
     PrimeCurve,
 };
-use num_bigint::traits::ModInverse;
-use num_traits::{cast::FromPrimitive, identities::One};
+use num_traits::cast::FromPrimitive;
 use rsa::{BigUint, RsaPrivateKey};
 use serde::{Deserialize, Serialize};
 
@@ -141,19 +140,15 @@ impl Plaintext {
 
         let p = BigUint::from_bytes_be(reader.read(component_size)?);
         let q = BigUint::from_bytes_be(reader.read(component_size)?);
-        let dp = BigUint::from_bytes_be(reader.read(component_size)?);
-        let dq = BigUint::from_bytes_be(reader.read(component_size)?);
+        let _dp = BigUint::from_bytes_be(reader.read(component_size)?);
+        let _dq = BigUint::from_bytes_be(reader.read(component_size)?);
         let _qinv = BigUint::from_bytes_be(reader.read(component_size)?);
-        let n = BigUint::from_bytes_be(reader.read(modulus_size)?);
+        let _n = BigUint::from_bytes_be(reader.read(modulus_size)?);
         const EXP: u64 = 65537;
         let e = BigUint::from_u64(EXP).expect("invalid static exponent");
 
-        let d = e
-            .clone()
-            .mod_inverse((dp - BigUint::one()) * (dq - BigUint::one()))?
-            .to_biguint()?;
+        let private_key = RsaPrivateKey::from_p_q(p, q, e).ok()?;
 
-        let private_key = RsaPrivateKey::from_components(n, e, d, vec![p, q]).ok()?;
         Some(private_key)
     }
 }
