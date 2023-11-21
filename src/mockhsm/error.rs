@@ -20,10 +20,6 @@ pub enum ErrorKind {
     /// Object does not exist
     #[error("object not found")]
     ObjectNotFound,
-
-    /// Unsupported algorithm
-    #[error("unsupported algorithm")]
-    UnsupportedAlgorithm,
 }
 
 impl ErrorKind {

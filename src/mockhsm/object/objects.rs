@@ -8,24 +8,30 @@ use crate::{
     serialization::{deserialize, serialize},
     wrap, Algorithm, Capability, Domain,
 };
-use aes::cipher::consts::{U13, U8};
+use aes::cipher::consts::{U13, U16};
 use ccm::aead::{AeadInPlace, KeyInit};
 use std::collections::{btree_map::Iter as MapIter, BTreeMap as Map};
 
 /// AES-CCM with a 128-bit key
-pub(crate) type Aes128Ccm = ccm::Ccm<aes::Aes128, U8, U13>;
+pub(crate) type Aes128Ccm = ccm::Ccm<aes::Aes128, U16, U13>;
+
+/// AES-CCM with a 192-bit key
+pub(crate) type Aes192Ccm = ccm::Ccm<aes::Aes192, U16, U13>;
 
 /// AES-CCM with a 256-bit key
-pub(crate) type Aes256Ccm = ccm::Ccm<aes::Aes256, U8, U13>;
+pub(crate) type Aes256Ccm = ccm::Ccm<aes::Aes256, U16, U13>;
 
 /// AES-CCM key
 #[allow(clippy::large_enum_variant)]
 pub(crate) enum AesCcmKey {
     /// AES-CCM with a 128-bit key
-    Aes128Ccm(Aes128Ccm),
+    Aes128(Aes128Ccm),
+
+    /// AES-CCM with a 192-bit key
+    Aes192(Aes192Ccm),
 
     /// AES-CCM with a 256-bit key
-    Aes256Ccm(Aes256Ccm),
+    Aes256(Aes256Ccm),
 }
 
 impl AesCcmKey {
@@ -38,10 +44,13 @@ impl AesCcmKey {
         buffer: &mut Vec<u8>,
     ) -> Result<(), Error> {
         match self {
-            AesCcmKey::Aes128Ccm(ccm) => {
+            AesCcmKey::Aes128(ccm) => {
                 ccm.encrypt_in_place(&nonce.0.into(), associated_data, buffer)
             }
-            AesCcmKey::Aes256Ccm(ccm) => {
+            AesCcmKey::Aes192(ccm) => {
+                ccm.encrypt_in_place(&nonce.0.into(), associated_data, buffer)
+            }
+            AesCcmKey::Aes256(ccm) => {
                 ccm.encrypt_in_place(&nonce.0.into(), associated_data, buffer)
             }
         }
@@ -57,14 +66,25 @@ impl AesCcmKey {
         buffer: &mut Vec<u8>,
     ) -> Result<(), Error> {
         match self {
-            AesCcmKey::Aes128Ccm(ccm) => {
+            AesCcmKey::Aes128(ccm) => {
                 ccm.decrypt_in_place(&nonce.0.into(), associated_data, buffer)
             }
-            AesCcmKey::Aes256Ccm(ccm) => {
+            AesCcmKey::Aes192(ccm) => {
+                ccm.decrypt_in_place(&nonce.0.into(), associated_data, buffer)
+            }
+            AesCcmKey::Aes256(ccm) => {
                 ccm.decrypt_in_place(&nonce.0.into(), associated_data, buffer)
             }
         }
         .map_err(|_| format_err!(ErrorKind::CryptoError, "error decrypting wrapped object!").into())
+    }
+
+    fn algorithm(&self) -> Algorithm {
+        match self {
+            AesCcmKey::Aes128(_) => Algorithm::Wrap(wrap::Algorithm::Aes128Ccm),
+            AesCcmKey::Aes192(_) => Algorithm::Wrap(wrap::Algorithm::Aes192Ccm),
+            AesCcmKey::Aes256(_) => Algorithm::Wrap(wrap::Algorithm::Aes256Ccm),
+        }
     }
 }
 
@@ -235,7 +255,8 @@ impl Objects {
         }
 
         let mut wrapped_object = serialize(&WrappedObject {
-            object_info,
+            alg_id: wrap_key.algorithm(),
+            object_info: object_info.into(),
             data: object_to_wrap.payload.to_bytes(),
         })
         .unwrap();
@@ -271,7 +292,7 @@ impl Objects {
         );
 
         let object = Object {
-            object_info: unwrapped_object.object_info,
+            object_info: unwrapped_object.object_info.into(),
             payload,
         };
 
@@ -297,17 +318,15 @@ impl Objects {
         };
 
         match wrap_key.algorithm().wrap().unwrap() {
-            wrap::Algorithm::Aes128Ccm => Ok(AesCcmKey::Aes128Ccm(
+            wrap::Algorithm::Aes128Ccm => Ok(AesCcmKey::Aes128(
                 Aes128Ccm::new_from_slice(&wrap_key.payload.to_bytes()).unwrap(),
             )),
-            wrap::Algorithm::Aes256Ccm => Ok(AesCcmKey::Aes256Ccm(
+            wrap::Algorithm::Aes192Ccm => Ok(AesCcmKey::Aes192(
+                Aes192Ccm::new_from_slice(&wrap_key.payload.to_bytes()).unwrap(),
+            )),
+            wrap::Algorithm::Aes256Ccm => Ok(AesCcmKey::Aes256(
                 Aes256Ccm::new_from_slice(&wrap_key.payload.to_bytes()).unwrap(),
             )),
-            unsupported => fail!(
-                ErrorKind::UnsupportedAlgorithm,
-                "unsupported wrap key algorithm: {:?}",
-                unsupported
-            ),
         }
     }
 }
