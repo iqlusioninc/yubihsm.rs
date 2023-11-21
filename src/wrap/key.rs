@@ -7,9 +7,82 @@
 // TODO(tarcieri): use this for `yubihsm::client::put_wrap_key` in general?
 
 use crate::{client, device, object, wrap, Capability, Client, Domain};
+use aes::{Aes128, Aes192, Aes256};
+use ccm::{
+    consts::{U0, U13, U16},
+    AeadCore, AeadInPlace, Ccm, KeyInit,
+};
 use rand_core::{OsRng, RngCore};
 use std::fmt::{self, Debug};
 use zeroize::{Zeroize, Zeroizing};
+
+pub(super) type Aes128Ccm = Ccm<Aes128, U16, U13>;
+pub(super) type Aes192Ccm = Ccm<Aes192, U16, U13>;
+pub(super) type Aes256Ccm = Ccm<Aes256, U16, U13>;
+
+pub(super) enum AesCcm {
+    Aes128(Aes128Ccm),
+    Aes192(Aes192Ccm),
+    Aes256(Aes256Ccm),
+}
+
+impl AesCcm {
+    fn from_bytes(bytes: &[u8]) -> Self {
+        match bytes.len() {
+            16 => Self::Aes128(Aes128Ccm::new_from_slice(bytes).unwrap()),
+            24 => Self::Aes192(Aes192Ccm::new_from_slice(bytes).unwrap()),
+            32 => Self::Aes256(Aes256Ccm::new_from_slice(bytes).unwrap()),
+            len => panic!("unexpected length for aesccm {len}"),
+        }
+    }
+}
+
+impl From<&Key> for AesCcm {
+    fn from(key: &Key) -> Self {
+        Self::from_bytes(&key.data)
+    }
+}
+
+impl AeadCore for AesCcm {
+    type NonceSize = U13;
+    type TagSize = U16;
+    type CiphertextOverhead = U0;
+}
+
+impl AeadInPlace for AesCcm {
+    fn encrypt_in_place_detached(
+        &self,
+        nonce: &ccm::Nonce<Self::NonceSize>,
+        associated_data: &[u8],
+        buffer: &mut [u8],
+    ) -> Result<ccm::Tag<Self::TagSize>, ccm::Error> {
+        match self {
+            Self::Aes128(inner) => inner.encrypt_in_place_detached(nonce, associated_data, buffer),
+            Self::Aes192(inner) => inner.encrypt_in_place_detached(nonce, associated_data, buffer),
+            Self::Aes256(inner) => inner.encrypt_in_place_detached(nonce, associated_data, buffer),
+        }
+    }
+
+    fn decrypt_in_place_detached(
+        &self,
+        nonce: &ccm::Nonce<Self::NonceSize>,
+        associated_data: &[u8],
+        buffer: &mut [u8],
+        tag: &ccm::Tag<Self::TagSize>,
+    ) -> Result<(), ccm::Error> {
+        match self {
+            Self::Aes128(inner) => {
+                inner.decrypt_in_place_detached(nonce, associated_data, buffer, tag)
+            }
+            Self::Aes192(inner) => {
+                inner.decrypt_in_place_detached(nonce, associated_data, buffer, tag)
+            }
+            Self::Aes256(inner) => {
+                inner.decrypt_in_place_detached(nonce, associated_data, buffer, tag)
+            }
+        }
+    }
+}
 
 /// Wrap key to import into the device
 #[derive(Clone)]

@@ -21,6 +21,7 @@ dependencies = [
  "cfg-if",
  "cipher",
  "cpufeatures",
+ "zeroize",
 ]
 
 [[package]]
@@ -940,6 +941,8 @@ dependencies = [
  "hmac",
  "k256",
  "log",
+ "num-bigint-dig",
+ "num-traits",
  "once_cell",
  "p256",
  "p384",

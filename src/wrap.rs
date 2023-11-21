@@ -4,6 +4,7 @@
 mod algorithm;
 pub(crate) mod commands;
 mod error;
+mod info;
 mod key;
 mod message;
 mod nonce;
@@ -11,6 +12,7 @@ mod nonce;
 pub use self::{
     algorithm::Algorithm,
     error::{Error, ErrorKind},
+    info::Info,
     key::Key,
     message::Message,
     nonce::Nonce,
