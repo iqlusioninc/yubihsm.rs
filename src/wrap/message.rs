@@ -5,8 +5,9 @@ use super::{Algorithm, Error, ErrorKind};
 use crate::{
     algorithm, asymmetric,
     ecdsa::algorithm::CurveAlgorithm,
+    object,
     serialization::{deserialize, serialize},
-    wrap,
+    wrap, Capability, Domain,
 };
 use aes::cipher::Unsigned;
 use ccm::aead::Aead;
@@ -18,7 +19,10 @@ use ecdsa::{
     PrimeCurve,
 };
 use num_traits::cast::FromPrimitive;
-use rsa::{BigUint, RsaPrivateKey};
+use rsa::{
+    traits::{PrivateKeyParts, PublicKeyParts},
+    BigUint, RsaPrivateKey,
+};
 use serde::{Deserialize, Serialize};
 
 /// Wrap wessage (encrypted HSM object or arbitrary data) encrypted under a wrap key
@@ -93,15 +97,29 @@ impl Message {
     }
 }
 
+/// Plaintext message to be encrypted under a wrap key
 #[derive(Serialize, Deserialize)]
 pub struct Plaintext {
-    pub alg_id: Algorithm,
+    /// Algorithm used for wrapping this message
+    pub algorithm: Algorithm,
+    /// Information about the object being wrapped
     pub object_info: wrap::Info,
+    /// Payload of the plaintext
     pub data: Vec<u8>,
 }
 
 impl Plaintext {
+    /// Wrapped the plaintext under a wrapping key
     pub fn encrypt(&self, key: &super::Key) -> Result<Message, Error> {
+        if self.algorithm.key_len() != key.key_len() {
+            fail!(
+                ErrorKind::AlgorithmMismatch,
+                "Expected wrapping key with length {expected} but got {len}",
+                expected = self.algorithm.key_len(),
+                len = key.key_len()
+            );
+        }
+
         let cipher: super::key::AesCcm = key.into();
         let nonce = Nonce::generate();
         let wire = serialize(&self).unwrap();
@@ -110,6 +128,7 @@ impl Plaintext {
         Ok(Message { nonce, ciphertext })
     }
 
+    /// Return the ecdsa key of this [`Plaintext`] if it was an EC key.
     pub fn ecdsa<C>(&self) -> Option<SecretKey<C>>
     where
         C: PrimeCurve + CurveAlgorithm + ValidatePublicKey,
@@ -128,6 +147,7 @@ impl Plaintext {
         }
     }
 
+    /// Return the rsa key of this [`Plaintext`] if it was an RSA key.
     pub fn rsa(&self) -> Option<RsaPrivateKey> {
         let (component_size, modulus_size) = match self.object_info.algorithm {
             algorithm::Algorithm::Asymmetric(asymmetric::Algorithm::Rsa2048) => (128, 256),
@@ -150,6 +170,69 @@ impl Plaintext {
         let private_key = RsaPrivateKey::from_p_q(p, q, e).ok()?;
 
         Some(private_key)
+    }
+
+    /// Build a [`Plaintext`] from an [`RsaPrivateKey`].
+    pub fn from_rsa(
+        algorithm: Algorithm,
+        object_id: object::Id,
+        capabilities: Capability,
+        domains: Domain,
+        label: object::Label,
+        mut key: RsaPrivateKey,
+    ) -> Result<Self, Error> {
+        let mut object_info = wrap::Info {
+            capabilities,
+            object_id,
+            length: 0,
+            domains,
+            object_type: object::Type::AsymmetricKey,
+            algorithm: algorithm::Algorithm::Asymmetric(asymmetric::Algorithm::Rsa2048),
+            sequence: 0,
+            origin: object::Origin::Imported,
+            label,
+        };
+
+        object_info.algorithm = match key.size() {
+            256 => algorithm::Algorithm::Asymmetric(asymmetric::Algorithm::Rsa2048),
+            384 => algorithm::Algorithm::Asymmetric(asymmetric::Algorithm::Rsa3072),
+            512 => algorithm::Algorithm::Asymmetric(asymmetric::Algorithm::Rsa4096),
+            other => fail!(
+                ErrorKind::UnsupportedKeySize,
+                "RSA key size {} is not supported",
+                other
+            ),
+        };
+
+        // Make sure we have qinv, dp and dq
+        key.precompute()
+            .map_err(|_| format_err!(ErrorKind::RsaPrecomputeFailed, "Rsa precompute failed"))?;
+
+        let primes = key.primes();
+        if primes.len() != 2 {
+            fail!(ErrorKind::InvalidPrimes, "multi-primes is not supported");
+        }
+
+        let p = &primes[0];
+        let q = &primes[1];
+
+        let mut data = Vec::new();
+        data.extend_from_slice(&p.to_bytes_be());
+        data.extend_from_slice(&q.to_bytes_be());
+        // Unwrap here is okay, we have ownership of the key and we already precomputed the values.
+        data.extend_from_slice(&key.dp().unwrap().to_bytes_be());
+        data.extend_from_slice(&key.dq().unwrap().to_bytes_be());
+        // TODO: the second unwrap for int -> uint conversion is unfortunate.
+        data.extend_from_slice(&key.qinv().unwrap().to_biguint().unwrap().to_bytes_be());
+        data.extend_from_slice(&key.n().to_bytes_be());
+
+        object_info.length = data.len() as u16;
+
+        Ok(Self {
+            algorithm,
+            object_info,
+            data,
+        })
     }
 }
 

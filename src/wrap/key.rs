@@ -168,6 +168,11 @@ impl Key {
 
         Ok(())
     }
+
+    /// Return the length of the key
+    pub fn key_len(&self) -> usize {
+        self.data.len()
+    }
 }
 
 impl Debug for Key {
