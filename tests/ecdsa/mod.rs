@@ -1,12 +1,21 @@
 //! Elliptic Curve Digital Signature Algorithm (ECDSA) tests
 
 use ::ecdsa::{
+    der,
     elliptic_curve::{
         point::PointCompression,
         sec1::{self, FromEncodedPoint, ToEncodedPoint},
         AffinePoint, CurveArithmetic, FieldBytesSize, PrimeCurve,
     },
-    signature::Verifier,
+    signature::{Keypair, Verifier},
+};
+use spki::SubjectPublicKeyInfoOwned;
+use std::{str::FromStr, time::Duration};
+use x509_cert::{
+    builder::{Builder, CertificateBuilder, Profile},
+    name::Name,
+    serial_number::SerialNumber,
+    time::Validity,
 };
 use yubihsm::{
     asymmetric::signature::Signer as _,
@@ -69,7 +78,7 @@ fn ecdsa_nistp256_sign_test() {
     let signer = create_signer::<NistP256>(201);
     let verify_key = p256::ecdsa::VerifyingKey::from_encoded_point(signer.public_key()).unwrap();
 
-    let signature = signer.sign(TEST_MESSAGE);
+    let signature: ecdsa::Signature<NistP256> = signer.sign(TEST_MESSAGE);
     assert!(verify_key.verify(TEST_MESSAGE, &signature).is_ok());
 }
 
@@ -104,4 +113,22 @@ fn ecdsa_secp256k1_sign_recover_test() {
     let recovered_pk = PublicKey::from(recovered_key);
     let signer_pk = PublicKey::from_encoded_point(signer.public_key()).unwrap();
     assert_eq!(&recovered_pk, &signer_pk);
+}
+
+#[test]
+fn ecdsa_nistp256_ca() {
+    let signer = create_signer::<NistP256>(204);
+
+    let serial_number = SerialNumber::from(42u32);
+    let validity = Validity::from_now(Duration::new(5, 0)).unwrap();
+    let profile = Profile::Root;
+    let subject =
+        Name::from_str("CN=World domination corporation,O=World domination Inc,C=US").unwrap();
+    let pub_key = SubjectPublicKeyInfoOwned::from_key(signer.verifying_key()).unwrap();
+
+    let builder =
+        CertificateBuilder::new(profile, serial_number, validity, subject, pub_key, &signer)
+            .expect("Create certificate");
+
+    builder.build::<der::Signature<NistP256>>().unwrap();
 }

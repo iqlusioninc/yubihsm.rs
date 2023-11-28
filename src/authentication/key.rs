@@ -8,7 +8,7 @@ use zeroize::Zeroize;
 #[cfg(feature = "pbkdf2")]
 use pbkdf2::pbkdf2_hmac;
 
-#[cfg(feature = "sha2")]
+#[cfg(feature = "passwords")]
 use sha2::Sha256;
 
 /// Auth keys are 2 * AES-128 keys
