@@ -54,7 +54,7 @@ use {
     sha2::{Digest, Sha256},
 };
 
-#[cfg(docsrs)]
+#[cfg(any(doc, docsrs))]
 use crate::ecdsa;
 
 /// YubiHSM client: main API in this crate for accessing functions of the
