@@ -89,6 +89,14 @@ impl Algorithm {
             Algorithm::EcBp512 => 64,
         }
     }
+
+    /// Returns true if the algorithm is RSA
+    pub fn is_rsa(self) -> bool {
+        matches!(
+            self,
+            Algorithm::Rsa2048 | Algorithm::Rsa3072 | Algorithm::Rsa4096
+        )
+    }
 }
 
 impl_algorithm_serializers!(Algorithm);
