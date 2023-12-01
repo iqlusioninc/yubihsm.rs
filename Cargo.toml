@@ -25,13 +25,12 @@ ccm = { version = "0.5", features = ["std"] }
 ecdsa = { version = "0.16", default-features = false }
 ed25519 = "2"
 log = "0.4"
-num-bigint = { version = "0.8.2", features = ["i128", "prime", "zeroize"], default-features = false, package = "num-bigint-dig" }
 num-traits = "0.2"
 p256 = { version = "0.13", default-features = false, features = ["ecdsa"] }
 p384 = { version = "0.13", default-features = false, features = ["ecdsa"] }
 serde = { version = "1", features = ["serde_derive"] }
 rand_core = { version = "0.6", features = ["std"] }
-rsa = "0.9"
+rsa = "0.9.5"
 signature = { version = "2", features = ["derive"] }
 subtle = "2"
 thiserror = "1"
