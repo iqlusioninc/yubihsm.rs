@@ -5,6 +5,8 @@ use ::ecdsa::elliptic_curve::{
     bigint::Integer, generic_array::GenericArray, point::PointCompression, sec1, FieldBytesSize,
     PrimeCurve,
 };
+use num_traits::FromPrimitive;
+use rsa::{BigUint, RsaPublicKey};
 use serde::{Deserialize, Serialize};
 
 /// Response from `command::get_public_key`
@@ -73,6 +75,20 @@ impl PublicKey {
         } else {
             None
         }
+    }
+
+    /// Return the RSA public key
+    pub fn rsa(&self) -> Option<RsaPublicKey> {
+        if !self.algorithm.is_rsa() {
+            return None;
+        }
+
+        const EXP: u64 = 65537;
+
+        let modulus = BigUint::from_bytes_be(&self.bytes);
+        let exp = BigUint::from_u64(EXP).expect("invalid static exponent");
+
+        RsaPublicKey::new(modulus, exp).ok()
     }
 }
 
