@@ -13,6 +13,9 @@ mod ecdsa;
 /// Ed25519 tests
 mod ed25519;
 
+/// Rsa tests
+mod rsa;
+
 /// Cryptographic test vectors taken from standards documents
 mod test_vectors;
 
