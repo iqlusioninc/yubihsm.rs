@@ -281,10 +281,24 @@ impl Objects {
 
         let unwrapped_object: WrappedObject = deserialize(&wrapped_data).unwrap();
 
-        let payload = Payload::new(
-            unwrapped_object.object_info.algorithm,
-            &unwrapped_object.data,
-        );
+        let payload = match unwrapped_object.object_info.algorithm {
+            Algorithm::Asymmetric(alg) if alg.is_rsa() => Payload::new(
+                unwrapped_object.object_info.algorithm,
+                // RSA encoding will include:
+                //  - p
+                //  - q
+                //  - dp    -\
+                //  - dq     +- internal state
+                //  - qinv  -/
+                //
+                //  We can rebuild the key from the primes and we'll just discard the internal state here
+                &unwrapped_object.data[..alg.key_len()],
+            ),
+            _ => Payload::new(
+                unwrapped_object.object_info.algorithm,
+                &unwrapped_object.data,
+            ),
+        };
 
         let object_key = Handle::new(
             unwrapped_object.object_info.object_id,

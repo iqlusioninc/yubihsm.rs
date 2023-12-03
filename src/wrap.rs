@@ -14,6 +14,6 @@ pub use self::{
     error::{Error, ErrorKind},
     info::Info,
     key::Key,
-    message::Message,
+    message::{Message, Plaintext},
     nonce::Nonce,
 };

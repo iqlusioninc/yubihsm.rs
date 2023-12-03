@@ -12,6 +12,22 @@ pub enum ErrorKind {
     /// Wrap message is an invalid length
     #[error("invalid message length")]
     LengthInvalid,
+
+    /// RSA key did not have 2 primes - multi-primes are not supported
+    #[error("RSA key did not have 2 primes")]
+    InvalidPrimes,
+
+    /// RSA precomputation failed
+    #[error("RSA precomputation failed")]
+    RsaPrecomputeFailed,
+
+    /// Unsupported key size
+    #[error("unsupported key size")]
+    UnsupportedKeySize,
+
+    /// Wrapping key algorithm mismatch
+    #[error("Wrap key algorithm mismatch")]
+    AlgorithmMismatch,
 }
 
 impl ErrorKind {
