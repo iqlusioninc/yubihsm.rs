@@ -1,5 +1,4 @@
 [advisories]
 ignore = [
-    "RUSTSEC-2020-0071",
-    "RUSTSEC-2020-0159",
+    "RUSTSEC-2023-0071", # rsa: Marvin Attack: potential key recovery
 ]
