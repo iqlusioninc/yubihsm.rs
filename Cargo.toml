@@ -30,7 +30,7 @@ p256 = { version = "0.13", default-features = false, features = ["ecdsa"] }
 p384 = { version = "0.13", default-features = false, features = ["ecdsa"] }
 serde = { version = "1", features = ["serde_derive"] }
 rand_core = { version = "0.6", features = ["std"] }
-rsa = "0.9.5"
+rsa = "0.9.6"
 signature = { version = "2", features = ["derive"] }
 subtle = "2"
 thiserror = "1"
