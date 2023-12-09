@@ -5,6 +5,7 @@
 use super::{algorithm::CurveAlgorithm, NistP256, NistP384};
 use crate::{object, Client};
 use ecdsa::{
+    der,
     elliptic_curve::{
         consts::U32,
         generic_array::ArrayLength,
@@ -12,9 +13,13 @@ use ecdsa::{
         sec1::{self, FromEncodedPoint, ToEncodedPoint},
         AffinePoint, CurveArithmetic, FieldBytesSize, PrimeCurve,
     },
+    hazmat::DigestPrimitive,
     Signature, SignatureSize, VerifyingKey,
 };
 use signature::{digest::Digest, hazmat::PrehashSigner, DigestSigner, Error, KeypairRef};
+use spki::{
+    der::AnyRef, AlgorithmIdentifier, AssociatedAlgorithmIdentifier, SignatureAlgorithmIdentifier,
+};
 use std::ops::Add;
 
 #[cfg(feature = "secp256k1")]
@@ -194,4 +199,31 @@ where
     fn try_sign_digest(&self, digest: D) -> Result<(Signature<Secp256k1>, RecoveryId), Error> {
         self.sign_prehash(&digest.finalize())
     }
+}
+
+impl<C> DigestSigner<C::Digest, der::Signature<C>> for Signer<C>
+where
+    C: CurveAlgorithm + CurveArithmetic + PointCompression + PrimeCurve + DigestPrimitive,
+    AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+    FieldBytesSize<C>: sec1::ModulusSize,
+    ecdsa::der::MaxSize<C>: ArrayLength<u8>,
+    <FieldBytesSize<C> as Add>::Output: Add<ecdsa::der::MaxOverhead> + ArrayLength<u8>,
+    Self: DigestSigner<C::Digest, Signature<C>>,
+{
+    fn try_sign_digest(&self, digest: C::Digest) -> Result<der::Signature<C>, Error> {
+        DigestSigner::<C::Digest, Signature<C>>::try_sign_digest(self, digest).map(Into::into)
+    }
+}
+
+impl<C> SignatureAlgorithmIdentifier for Signer<C>
+where
+    C: CurveAlgorithm + CurveArithmetic + PointCompression + PrimeCurve,
+    AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+    FieldBytesSize<C>: sec1::ModulusSize,
+    Signature<C>: AssociatedAlgorithmIdentifier<Params = AnyRef<'static>>,
+{
+    type Params = <VerifyingKey<C> as SignatureAlgorithmIdentifier>::Params;
+
+    const SIGNATURE_ALGORITHM_IDENTIFIER: AlgorithmIdentifier<Self::Params> =
+        <VerifyingKey<C> as SignatureAlgorithmIdentifier>::SIGNATURE_ALGORITHM_IDENTIFIER;
 }

@@ -22,7 +22,7 @@ bitflags = "2"
 cmac = "0.7"
 cbc = "0.1"
 ccm = { version = "0.5", features = ["std"] }
-ecdsa = { version = "0.16", default-features = false }
+ecdsa = { version = "0.16", default-features = false, features = ["pkcs8"] }
 ed25519 = "2"
 log = "0.4"
 num-traits = "0.2"
@@ -32,6 +32,8 @@ serde = { version = "1", features = ["serde_derive"] }
 rand_core = { version = "0.6", features = ["std"] }
 rsa = "0.9.6"
 signature = { version = "2", features = ["derive"] }
+sha2 = { version = "0.10", features = ["oid"] }
+spki = { version = "0.7.3", default-features = false }
 subtle = "2"
 thiserror = "1"
 time = { version = "0.3", features = ["serde"] }
@@ -46,23 +48,23 @@ k256 = { version = "0.13", optional = true, features = ["ecdsa", "sha256"] }
 pbkdf2 = { version = "0.12", optional = true, default-features = false, features = ["hmac"] }
 serde_json = { version = "1", optional = true }
 rusb = { version = "0.9", optional = true }
-sha2 = { version = "0.10", optional = true }
 tiny_http = { version = "0.12", optional = true }
 
 [dev-dependencies]
 ed25519-dalek = "2"
 once_cell = "1"
 p256 = { version = "0.13", features = ["ecdsa"] }
+x509-cert = { version = "0.2.4", features = ["builder"] }
 
 [features]
 default = ["http", "passwords", "setup"]
 http-server = ["tiny_http"]
 http = []
 mockhsm = ["digest", "ecdsa/arithmetic", "ed25519-dalek", "p256/ecdsa", "secp256k1"]
-passwords = ["hmac", "pbkdf2", "sha2"]
+passwords = ["hmac", "pbkdf2"]
 secp256k1 = ["k256"]
 setup = ["passwords", "serde_json", "uuid/serde"]
-untested = ["sha2"]
+untested = []
 usb = ["rusb"]
 
 [package.metadata.docs.rs]
