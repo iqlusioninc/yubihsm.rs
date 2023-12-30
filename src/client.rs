@@ -43,6 +43,9 @@ use std::{
 #[cfg(feature = "passwords")]
 use std::{thread, time::SystemTime};
 
+#[cfg(feature = "yubihsm-auth")]
+use crate::session::PendingSession;
+
 #[cfg(feature = "untested")]
 use {
     crate::{
@@ -104,6 +107,20 @@ impl Client {
         };
 
         Ok(client)
+    }
+
+    /// Open session with YubiHSM Auth scheme
+    #[cfg(feature = "yubihsm-auth")]
+    pub fn yubihsm_auth(
+        connector: Connector,
+        authentication_key_id: object::Id,
+        host_challenge: session::securechannel::Challenge,
+    ) -> Result<PendingSession, Error> {
+        let timeout = session::Timeout::default();
+
+        let session =
+            PendingSession::new(connector, timeout, authentication_key_id, host_challenge)?;
+        Ok(session)
     }
 
     /// Borrow this client's YubiHSM connector (which is `Clone`able)
@@ -1163,5 +1180,17 @@ impl Client {
                 plaintext,
             })?
             .0)
+    }
+}
+
+impl From<Session> for Client {
+    fn from(session: Session) -> Self {
+        let connector = session.connector();
+        let session = Arc::new(Mutex::new(Some(session)));
+        Self {
+            connector,
+            session,
+            credentials: None,
+        }
     }
 }
