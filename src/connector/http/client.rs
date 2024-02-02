@@ -9,7 +9,7 @@ pub mod path;
 pub mod request;
 pub mod response;
 
-pub use self::{connection::*, error::*, path::*};
+pub use self::{connection::*, error::*};
 
 /// HTTP version.
 pub const HTTP_VERSION: &str = "HTTP/1.1";
