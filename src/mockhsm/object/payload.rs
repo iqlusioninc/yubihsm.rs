@@ -80,6 +80,13 @@ impl Payload {
 
     /// Generate a new key with the given algorithm
     pub fn generate(algorithm: Algorithm) -> Self {
+        fn gen_rsa(len: usize) -> Payload {
+            let private_key =
+                rsa::RsaPrivateKey::new(&mut OsRng, len).expect("failed to generate a key");
+
+            Payload::RsaKey(private_key)
+        }
+
         match algorithm {
             Algorithm::Wrap(wrap_alg) => {
                 let mut bytes = vec![0u8; wrap_alg.key_len()];
@@ -96,6 +103,9 @@ impl Payload {
                 asymmetric::Algorithm::Ed25519 => {
                     Payload::Ed25519Key(ed25519::SigningKey::generate(&mut OsRng))
                 }
+                asymmetric::Algorithm::Rsa2048 => gen_rsa(2048),
+                asymmetric::Algorithm::Rsa3072 => gen_rsa(3072),
+                asymmetric::Algorithm::Rsa4096 => gen_rsa(4096),
                 _ => {
                     panic!("MockHsm doesn't support this asymmetric algorithm: {asymmetric_alg:?}")
                 }

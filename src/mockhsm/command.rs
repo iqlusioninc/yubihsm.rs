@@ -17,7 +17,7 @@ use crate::{
     opaque::{self, commands::*},
     otp,
     response::{self, Response},
-    rsa,
+    rsa::{self, pkcs1::commands::*, pss::commands::*},
     serialization::deserialize,
     session::{self, commands::*},
     template,
@@ -29,9 +29,18 @@ use ::ecdsa::{
     hazmat::SignPrimitive,
 };
 use ::hmac::{Hmac, Mac};
+use ::rsa::{pkcs1v15, pss, RsaPrivateKey};
+use digest::{
+    const_oid::AssociatedOid, crypto_common::OutputSizeUser, typenum::Unsigned, Digest,
+    FixedOutputReset,
+};
 use rand_core::{OsRng, RngCore};
-use sha2::Sha256;
-use signature::Signer;
+use sha1::Sha1;
+use sha2::{Sha256, Sha384, Sha512};
+use signature::{
+    hazmat::{PrehashSigner, RandomizedPrehashSigner},
+    Signer,
+};
 use std::{io::Cursor, str::FromStr};
 use subtle::ConstantTimeEq;
 
@@ -119,6 +128,8 @@ pub(crate) fn session_message(
         Code::SignEddsa => sign_eddsa(state, &command.data),
         Code::GetStorageInfo => get_storage_info(),
         Code::VerifyHmac => verify_hmac(state, &command.data),
+        Code::SignPss => sign_pss(state, &command.data),
+        Code::SignPkcs1 => sign_pkcs1v15(state, &command.data),
         unsupported => panic!("unsupported command type: {unsupported:?}"),
     };
 
@@ -699,6 +710,104 @@ fn sign_hmac(state: &State, cmd_data: &[u8]) -> response::Message {
             SignHmacResponse(hmac::Tag(tag.into_bytes().as_slice().into())).serialize()
         } else {
             debug!("not an HMAC key: {:?}", obj.algorithm());
+            device::ErrorKind::InvalidCommand.into()
+        }
+    } else {
+        debug!("no such object ID: {:?}", command.key_id);
+        device::ErrorKind::ObjectNotFound.into()
+    }
+}
+
+/// Sign a message using the RSASSA-PSS signature algorithm
+fn sign_pss(state: &State, cmd_data: &[u8]) -> response::Message {
+    #[inline]
+    fn sign_pss_digest<D: Digest + FixedOutputReset>(
+        private_key: &RsaPrivateKey,
+        msg: &[u8],
+    ) -> pss::Signature {
+        let signing_key = pss::SigningKey::<D>::new(private_key.clone());
+        signing_key
+            .sign_prehash_with_rng(&mut OsRng, msg)
+            .expect("unable to sign with prehash, wrong payload length?")
+    }
+
+    let command: SignPssCommand =
+        deserialize(cmd_data).unwrap_or_else(|e| panic!("error parsing Code::SignPss: {e:?}"));
+
+    if let Some(obj) = state
+        .objects
+        .get(command.key_id, object::Type::AsymmetricKey)
+    {
+        if let Payload::RsaKey(private_key) = &obj.payload {
+            let signature = match command.mgf1_hash_alg {
+                rsa::mgf::Algorithm::Sha1 => {
+                    sign_pss_digest::<Sha1>(private_key, command.digest.as_ref())
+                }
+                rsa::mgf::Algorithm::Sha256 => {
+                    sign_pss_digest::<Sha256>(private_key, command.digest.as_ref())
+                }
+                rsa::mgf::Algorithm::Sha384 => {
+                    sign_pss_digest::<Sha384>(private_key, command.digest.as_ref())
+                }
+                rsa::mgf::Algorithm::Sha512 => {
+                    sign_pss_digest::<Sha512>(private_key, command.digest.as_ref())
+                }
+            };
+
+            SignPssResponse((&signature).into()).serialize()
+        } else {
+            debug!("not an Rsa key: {:?}", obj.algorithm());
+            device::ErrorKind::InvalidCommand.into()
+        }
+    } else {
+        debug!("no such object ID: {:?}", command.key_id);
+        device::ErrorKind::ObjectNotFound.into()
+    }
+}
+
+/// Sign a message using the RSASSA-PKCS1-v1_5 signature algorithm
+fn sign_pkcs1v15(state: &State, cmd_data: &[u8]) -> response::Message {
+    #[inline]
+    fn sign_pkcs1v15_prehash<D: Digest + AssociatedOid>(
+        private_key: &RsaPrivateKey,
+        prehash: &[u8],
+    ) -> pkcs1v15::Signature {
+        let signing_key = pkcs1v15::SigningKey::<D>::new(private_key.clone());
+        signing_key
+            .sign_prehash(prehash)
+            .expect("unable to sign with prehash, wrong payload length?")
+    }
+
+    let command: SignPkcs1Command =
+        deserialize(cmd_data).unwrap_or_else(|e| panic!("error parsing Code::SignPss: {e:?}"));
+
+    if let Some(obj) = state
+        .objects
+        .get(command.key_id, object::Type::AsymmetricKey)
+    {
+        if let Payload::RsaKey(private_key) = &obj.payload {
+            let signature = match command.digest.len() {
+                len if len == <Sha1 as OutputSizeUser>::OutputSize::USIZE => {
+                    sign_pkcs1v15_prehash::<Sha1>(private_key, command.digest.as_ref())
+                }
+                len if len == <Sha256 as OutputSizeUser>::OutputSize::USIZE => {
+                    sign_pkcs1v15_prehash::<Sha256>(private_key, command.digest.as_ref())
+                }
+                len if len == <Sha384 as OutputSizeUser>::OutputSize::USIZE => {
+                    sign_pkcs1v15_prehash::<Sha384>(private_key, command.digest.as_ref())
+                }
+                len if len == <Sha512 as OutputSizeUser>::OutputSize::USIZE => {
+                    sign_pkcs1v15_prehash::<Sha512>(private_key, command.digest.as_ref())
+                }
+                len => {
+                    debug!("invalid digest length: {}", len);
+                    return device::ErrorKind::InvalidCommand.into();
+                }
+            };
+
+            SignPkcs1Response((&signature).into()).serialize()
+        } else {
+            debug!("not an Rsa key: {:?}", obj.algorithm());
             device::ErrorKind::InvalidCommand.into()
         }
     } else {
