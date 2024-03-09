@@ -18,7 +18,7 @@ use crate::{
     },
     uuid,
 };
-use std::{io, process, time::Instant};
+use std::{fmt::Write, io, process, time::Instant};
 use tiny_http as http;
 
 /// `yubihsm-connector` compatible HTTP server
@@ -107,11 +107,10 @@ impl Server {
             ("port", &self.port.to_string()),
         ];
 
-        let body = status
-            .iter()
-            .map(|(k, v)| [*k, *v].join("\n"))
-            .collect::<Vec<_>>()
-            .join("\n");
+        let body = status.iter().fold(String::new(), |mut body, (k, v)| {
+            let _ = writeln!(body, "{k}={v}");
+            body
+        });
 
         Ok(http::Response::from_string(body))
     }
