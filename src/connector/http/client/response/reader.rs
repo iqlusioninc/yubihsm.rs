@@ -4,7 +4,7 @@
 
 use super::Body;
 use crate::connector::http::client::Error;
-use std::{io::Read, str, vec::Vec};
+use std::{io::Read, str};
 
 const TRANSFER_ENCODING_HEADER: &str = "Transfer-Encoding: ";
 const HEADER_DELIMITER: &[u8] = b"\r\n\r\n";

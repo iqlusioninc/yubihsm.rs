@@ -1,6 +1,5 @@
 use crate::{generate_asymmetric_key, TEST_KEY_ID};
-use rand_core;
-use sha2::{self, Digest};
+use sha2::Digest;
 use yubihsm::{asymmetric, Capability};
 
 /// Test RSA OAEP decryption

@@ -628,7 +628,6 @@ fn compute_icv(cipher: &Aes128, counter: u32) -> GenericArray<u8, U16> {
 #[cfg(all(test, feature = "mockhsm"))]
 mod tests {
     use super::*;
-    use crate::authentication;
 
     const PASSWORD: &[u8] = b"password";
     const HOST_CHALLENGE: &[u8] = &[0u8; 8];
