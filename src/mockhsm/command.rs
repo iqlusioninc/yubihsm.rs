@@ -117,6 +117,7 @@ pub(crate) fn session_message(
         Code::SetLogIndex => SetLogIndexResponse {}.serialize(),
         Code::SignEcdsa => sign_ecdsa(state, &command.data),
         Code::SignEddsa => sign_eddsa(state, &command.data),
+        Code::SignPss => sign_rsa_pss(state, &command.data),
         Code::GetStorageInfo => get_storage_info(),
         Code::VerifyHmac => verify_hmac(state, &command.data),
         unsupported => panic!("unsupported command type: {unsupported:?}"),
@@ -683,6 +684,45 @@ fn sign_eddsa(state: &State, cmd_data: &[u8]) -> response::Message {
         debug!("no such object ID: {:?}", command.key_id);
         device::ErrorKind::ObjectNotFound.into()
     }
+}
+
+/// Sign a message using the RSA PSS signature algorithm
+#[cfg(feature = "untested")]
+fn sign_rsa_pss(state: &State, cmd_data: &[u8]) -> response::Message {
+    use crate::rsa::pss::{commands::*, Signature};
+    use ::rsa::pss::SigningKey;
+    use ::signature::{hazmat::RandomizedPrehashSigner, SignatureEncoding};
+
+    let command: SignPssCommand =
+        deserialize(cmd_data).unwrap_or_else(|e| panic!("error parsing Code::SignRSA: {e:?}"));
+
+    if let Some(obj) = state
+        .objects
+        .get(command.key_id, object::Type::AsymmetricKey)
+    {
+        if let Payload::RsaKey(signing_key) = &obj.payload {
+            let signing_key = SigningKey::<Sha256>::new_with_salt_len(
+                signing_key.clone(),
+                command.salt_len.into(),
+            );
+            let signature = signing_key
+                .sign_prehash_with_rng(&mut OsRng, command.digest.as_ref())
+                .expect("RSA PSS signature failed")
+                .to_vec();
+            SignPssResponse(Signature(signature)).serialize()
+        } else {
+            debug!("not an RSA key: {:?}", obj.algorithm());
+            device::ErrorKind::InvalidCommand.into()
+        }
+    } else {
+        debug!("no such object ID: {:?}", command.key_id);
+        device::ErrorKind::ObjectNotFound.into()
+    }
+}
+
+#[cfg(not(feature = "untested"))]
+fn sign_rsa_pss(_: &State, _: &[u8]) -> response::Message {
+    unimplemented!("RSASSA-PSS support disabled (use --features untested)")
 }
 
 /// Compute the HMAC tag for the given data
