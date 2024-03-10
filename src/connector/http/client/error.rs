@@ -3,10 +3,7 @@
 #![allow(unused_macros)]
 
 use std::{fmt, num::ParseIntError, str::Utf8Error};
-use std::{
-    io,
-    string::{FromUtf8Error, String, ToString},
-};
+use std::{io, string::FromUtf8Error};
 
 /// Error type
 #[derive(Debug)]
