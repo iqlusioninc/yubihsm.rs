@@ -185,7 +185,7 @@ impl From<asymmetric::Algorithm> for Algorithm {
 
 impl From<authentication::Algorithm> for Algorithm {
     fn from(alg: authentication::Algorithm) -> Algorithm {
-        crate::Algorithm::Authentication(alg)
+        Algorithm::Authentication(alg)
     }
 }
 
