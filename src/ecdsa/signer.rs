@@ -80,8 +80,8 @@ where
     C: CurveAlgorithm + CurveArithmetic + PointCompression + PrimeCurve,
     FieldBytesSize<C>: sec1::ModulusSize,
     SignatureSize<C>: ArrayLength<u8>,
-    ecdsa::der::MaxSize<C>: ArrayLength<u8>,
-    <FieldBytesSize<C> as Add>::Output: Add<ecdsa::der::MaxOverhead> + ArrayLength<u8>,
+    der::MaxSize<C>: ArrayLength<u8>,
+    <FieldBytesSize<C> as Add>::Output: Add<der::MaxOverhead> + ArrayLength<u8>,
 {
     fn sign_prehash_ecdsa(&self, prehash: &[u8]) -> Result<Signature<C>, Error> {
         self.client
@@ -206,8 +206,8 @@ where
     C: CurveAlgorithm + CurveArithmetic + PointCompression + PrimeCurve + DigestPrimitive,
     AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
     FieldBytesSize<C>: sec1::ModulusSize,
-    ecdsa::der::MaxSize<C>: ArrayLength<u8>,
-    <FieldBytesSize<C> as Add>::Output: Add<ecdsa::der::MaxOverhead> + ArrayLength<u8>,
+    der::MaxSize<C>: ArrayLength<u8>,
+    <FieldBytesSize<C> as Add>::Output: Add<der::MaxOverhead> + ArrayLength<u8>,
     Self: DigestSigner<C::Digest, Signature<C>>,
 {
     fn try_sign_digest(&self, digest: C::Digest) -> Result<der::Signature<C>, Error> {
