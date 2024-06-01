@@ -182,9 +182,7 @@ impl SecureChannel {
         card_challenge: Challenge,
     ) -> Self {
         let context = Context::from_challenges(host_challenge, card_challenge);
-        let enc_key = derive_key(authentication_key.enc_key(), 0b100, &context);
-        let mac_key = derive_key(authentication_key.mac_key(), 0b110, &context);
-        let rmac_key = derive_key(authentication_key.mac_key(), 0b111, &context);
+        let session_keys = context.derive_keys(authentication_key);
         let mac_chaining_value = [0u8; Mac::BYTE_SIZE * 2];
 
         Self {
@@ -192,9 +190,9 @@ impl SecureChannel {
             counter: 0,
             security_level: SecurityLevel::None,
             context,
-            enc_key,
-            mac_key,
-            rmac_key,
+            enc_key: session_keys.enc_key,
+            mac_key: session_keys.mac_key,
+            rmac_key: session_keys.rmac_key,
             mac_chaining_value,
         }
     }
