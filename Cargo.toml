@@ -49,6 +49,7 @@ pbkdf2 = { version = "0.12", optional = true, default-features = false, features
 serde_json = { version = "1", optional = true }
 rusb = { version = "0.9", optional = true }
 tiny_http = { version = "0.12", optional = true }
+yubikey = { git = "https://github.com/baloo/yubikey.rs", branch = "baloo/yubihsm-auth", optional = true }
 
 [dev-dependencies]
 ed25519-dalek = "2"
@@ -66,6 +67,7 @@ secp256k1 = ["k256"]
 setup = ["passwords", "serde_json", "uuid/serde"]
 untested = []
 usb = ["rusb"]
+yubihsm-auth = ["yubikey"]
 
 [package.metadata.docs.rs]
 all-features = true
