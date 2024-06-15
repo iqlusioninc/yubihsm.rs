@@ -4,6 +4,7 @@ use super::{object::Payload, state::State, MOCK_SERIAL_NUMBER};
 use crate::{
     algorithm::*,
     asymmetric::{self, commands::*, PublicKey},
+    attestation::{self, commands::*},
     audit::{commands::*, AuditCommand, AuditOption, AuditTag},
     authentication::{self, commands::*},
     command::{Code, Message},
@@ -42,8 +43,17 @@ use signature::{
     hazmat::{PrehashSigner, RandomizedPrehashSigner},
     Signer,
 };
+use spki::{der::Encode, SubjectPublicKeyInfoOwned, SubjectPublicKeyInfoRef};
 use std::{io::Cursor, str::FromStr};
 use subtle::ConstantTimeEq;
+use x509_cert::{
+    builder::{self, profile, Builder, CertificateBuilder},
+    ext::{AsExtension, Extension},
+    name::Name,
+    serial_number,
+    time::Validity,
+    TbsCertificate,
+};
 
 /// Create a new HSM session
 pub(crate) fn create_session(
@@ -132,6 +142,7 @@ pub(crate) fn session_message(
         Code::SignPss => sign_pss(state, &command.data),
         Code::SignPkcs1 => sign_pkcs1v15(state, &command.data),
         Code::DecryptOaep => decrypt_oaep(state, &command.data),
+        Code::SignAttestationCertificate => sign_attestation_certificate(state, &command.data),
         unsupported => panic!("unsupported command type: {unsupported:?}"),
     };
 
@@ -957,6 +968,157 @@ fn decrypt_oaep(state: &State, cmd_data: &[u8]) -> response::Message {
             debug!("not an Rsa key: {:?}", obj.algorithm());
             device::ErrorKind::InvalidCommand.into()
         }
+    } else {
+        debug!("no such object ID: {:?}", command.key_id);
+        device::ErrorKind::ObjectNotFound.into()
+    }
+}
+
+struct AttestationProfile {
+    device: device::Info,
+    target: object::Info,
+}
+
+impl profile::BuilderProfile for AttestationProfile {
+    fn get_issuer(&self, subject: &Name) -> Name {
+        subject.clone()
+    }
+    fn get_subject(&self) -> Name {
+        Name::from_str(&format!(
+            "CN=YubiHSM Attestation id:0x{:04x}",
+            self.target.object_id
+        ))
+        .unwrap()
+    }
+
+    #[allow(clippy::vec_init_then_push)] // clippy suggestion is incorrect as we reference the
+                                         // extension in the call to `to_extension`.
+    fn build_extensions(
+        &self,
+        _spk: SubjectPublicKeyInfoRef<'_>,
+        _issuer_spk: SubjectPublicKeyInfoRef<'_>,
+        tbs: &TbsCertificate,
+    ) -> builder::Result<Vec<Extension>> {
+        let mut extensions = vec![];
+
+        extensions.push(
+            attestation::FirmwareVersion::try_from(&self.device)
+                .unwrap()
+                .to_extension(tbs.subject(), &extensions)?,
+        );
+        extensions.push(
+            attestation::Serial::from(&self.device).to_extension(tbs.subject(), &extensions)?,
+        );
+        extensions.push(
+            attestation::Origin::try_from(self.target.origin)
+                .unwrap()
+                .to_extension(tbs.subject(), &extensions)?,
+        );
+        extensions.push(
+            attestation::Domain::try_from(self.target.domains)
+                .unwrap()
+                .to_extension(tbs.subject(), &extensions)?,
+        );
+        extensions.push(
+            attestation::Capability::try_from(self.target.capabilities)
+                .unwrap()
+                .to_extension(tbs.subject(), &extensions)?,
+        );
+        extensions.push(
+            attestation::ObjectId {
+                id: self.target.object_id,
+            }
+            .to_extension(tbs.subject(), &extensions)?,
+        );
+        extensions.push(
+            attestation::Label::try_from(&self.target.label)
+                .unwrap()
+                .to_extension(tbs.subject(), &extensions)?,
+        );
+
+        Ok(extensions)
+    }
+}
+
+fn sign_attestation_certificate(state: &State, cmd_data: &[u8]) -> response::Message {
+    let command: SignAttestationCertificateCommand = deserialize(cmd_data)
+        .unwrap_or_else(|e| panic!("error parsing Code::SignAttestationCertificateCommand: {e:?}"));
+
+    if let Some(target) = state
+        .objects
+        .get(command.key_id, object::Type::AsymmetricKey)
+    {
+        let mut rng = rand::rng();
+        let serial_number = serial_number::SerialNumber::generate(&mut rng);
+        let validity = Validity::infinity().unwrap();
+        let pub_key = match &target.payload {
+            Payload::RsaKey(private_key) => {
+                SubjectPublicKeyInfoOwned::from_key(&private_key.to_public_key()).unwrap()
+            }
+            Payload::EcdsaNistP256(secret_key) => {
+                SubjectPublicKeyInfoOwned::from_key(&secret_key.public_key()).unwrap()
+            }
+            Payload::EcdsaNistP384(secret_key) => {
+                SubjectPublicKeyInfoOwned::from_key(&secret_key.public_key()).unwrap()
+            }
+            Payload::EcdsaNistP521(secret_key) => {
+                SubjectPublicKeyInfoOwned::from_key(&secret_key.public_key()).unwrap()
+            }
+            _ => todo!(),
+        };
+
+        let profile = AttestationProfile {
+            device: device::Info {
+                major_version: 2,
+                minor_version: 2,
+                build_version: 0,
+                serial_number: SerialNumber::from_str("0000000042").unwrap(),
+                log_store_capacity: 0,
+                log_store_used: 0,
+                algorithms: vec![],
+            },
+
+            target: target.object_info.clone(),
+        };
+        let builder = CertificateBuilder::new(profile, serial_number, validity, pub_key)
+            .expect("Create certificate builder");
+
+        let cert = match state
+            .objects
+            .get(command.attestation_key_id, object::Type::AsymmetricKey)
+            .map(|k| &k.payload)
+        {
+            None => todo!("object not found"),
+            Some(Payload::RsaKey(private_key)) => {
+                // https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-core-concepts.html#attestation
+                // Signer is SHA256-PKCS#1v1.5
+                let signer = pkcs1v15::SigningKey::<Sha256>::new(private_key.clone());
+                builder.build(&signer).unwrap()
+            }
+            Some(Payload::EcdsaNistP256(secret_key)) => {
+                let signer = p256::ecdsa::SigningKey::from(secret_key);
+                builder
+                    .build::<_, p256::ecdsa::DerSignature>(&signer)
+                    .unwrap()
+            }
+            Some(Payload::EcdsaNistP384(secret_key)) => {
+                let signer = p384::ecdsa::SigningKey::from(secret_key);
+                builder
+                    .build::<_, p384::ecdsa::DerSignature>(&signer)
+                    .unwrap()
+            }
+            Some(Payload::EcdsaNistP521(secret_key)) => {
+                let signer = p521::ecdsa::SigningKey::from(secret_key);
+                builder
+                    .build::<_, p521::ecdsa::DerSignature>(&signer)
+                    .unwrap()
+            }
+            _ => todo!(),
+        };
+
+        let certificate = attestation::Certificate(cert.to_der().unwrap());
+
+        certificate.serialize()
     } else {
         debug!("no such object ID: {:?}", command.key_id);
         device::ErrorKind::ObjectNotFound.into()

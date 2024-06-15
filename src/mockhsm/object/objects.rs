@@ -2,15 +2,34 @@
 
 use super::{Object, Payload, WrappedObject, DEFAULT_AUTHENTICATION_KEY_LABEL};
 use crate::{
+    asymmetric,
+    attestation::DEFAULT_ATTESTATION_KEY_ID,
     authentication::{self, DEFAULT_AUTHENTICATION_KEY_ID},
     mockhsm::{Error, ErrorKind},
     object::{Handle, Id, Info, Label, Origin, Type},
+    opaque,
     serialization::{deserialize, serialize},
     wrap, Algorithm, Capability, Domain,
 };
 use aes::cipher::consts::{U13, U16};
 use ccm::aead::{AeadInOut, KeyInit};
-use std::collections::{btree_map::Iter as MapIter, BTreeMap as Map};
+use der::{
+    asn1::{GeneralizedTime, UtcTime},
+    DateTime, Encode,
+};
+use spki::{SubjectPublicKeyInfoOwned, SubjectPublicKeyInfoRef};
+use std::{
+    collections::{btree_map::Iter as MapIter, BTreeMap as Map},
+    str::FromStr,
+};
+use x509_cert::{
+    builder::{self, profile::BuilderProfile, Builder, CertificateBuilder},
+    ext::Extension,
+    name::Name,
+    serial_number,
+    time::{Time, Validity},
+    Certificate, TbsCertificate,
+};
 
 /// AES-CCM with a 128-bit key
 pub(crate) type Aes128Ccm = ccm::Ccm<aes::Aes128, U16, U13>;
@@ -95,6 +114,7 @@ pub(crate) struct Objects(Map<Handle, Object>);
 impl Default for Objects {
     fn default() -> Self {
         let mut objects = Map::new();
+        let mut rng = rand::rng();
 
         // Insert default authentication key
         let authentication_key_handle =
@@ -120,6 +140,60 @@ impl Default for Objects {
             Object {
                 object_info: authentication_key_info,
                 payload: authentication_key_payload,
+            },
+        );
+
+        // Key used for attestation by default
+        let Ok(attestation_key) = p256::SecretKey::try_from_rng(&mut rng);
+        let attestation_cert = Self::generate_self_signed_cert(&attestation_key);
+
+        let attestation_key_info = Info {
+            object_id: DEFAULT_ATTESTATION_KEY_ID,
+            object_type: Type::AsymmetricKey,
+            algorithm: Algorithm::Asymmetric(asymmetric::Algorithm::EcP256),
+            capabilities: Capability::SIGN_ATTESTATION_CERTIFICATE,
+            delegated_capabilities: Capability::empty(),
+            domains: Domain::all(),
+            length: 0,
+            sequence: 0,
+            origin: Origin::Generated,
+            label: "MOCKHSM ATTESTATION KEY".into(),
+        };
+        let attestation_cert_info = Info {
+            object_id: DEFAULT_ATTESTATION_KEY_ID,
+            object_type: Type::Opaque,
+            algorithm: Algorithm::Opaque(opaque::Algorithm::X509Certificate),
+            capabilities: Capability::GET_OPAQUE,
+            delegated_capabilities: Capability::empty(),
+            domains: Domain::all(),
+            length: 0,
+            sequence: 0,
+            origin: Origin::Generated,
+            label: "MOCKHSM ATTESTATION CERT".into(),
+        };
+
+        let attestation_cert_payload = Payload::Opaque(
+            opaque::Algorithm::X509Certificate,
+            attestation_cert.to_der().unwrap(),
+        );
+        let attestation_key_payload = Payload::EcdsaNistP256(attestation_key);
+
+        let attestation_key_handle = Handle::new(DEFAULT_ATTESTATION_KEY_ID, Type::AsymmetricKey);
+        let attestation_cert_handle = Handle::new(DEFAULT_ATTESTATION_KEY_ID, Type::Opaque);
+
+        let _ = objects.insert(
+            attestation_key_handle,
+            Object {
+                object_info: attestation_key_info,
+                payload: attestation_key_payload,
+            },
+        );
+
+        let _ = objects.insert(
+            attestation_cert_handle,
+            Object {
+                object_info: attestation_cert_info,
+                payload: attestation_cert_payload,
             },
         );
 
@@ -342,6 +416,47 @@ impl Objects {
                 Aes256Ccm::new_from_slice(&wrap_key.payload.to_bytes()).unwrap(),
             )),
         }
+    }
+
+    fn generate_self_signed_cert(secret_key: &p256::SecretKey) -> Certificate {
+        struct SelfSigned;
+        impl BuilderProfile for SelfSigned {
+            fn get_issuer(&self, subject: &Name) -> Name {
+                subject.clone()
+            }
+            fn get_subject(&self) -> Name {
+                Name::from_str("CN=MockHSM Attestation").unwrap()
+            }
+            fn build_extensions(
+                &self,
+                _spk: SubjectPublicKeyInfoRef<'_>,
+                _issuer_spk: SubjectPublicKeyInfoRef<'_>,
+                _tbs: &TbsCertificate,
+            ) -> builder::Result<Vec<Extension>> {
+                Ok(vec![])
+            }
+        }
+
+        let mut rng = rand::rng();
+        let serial_number = serial_number::SerialNumber::generate(&mut rng);
+        let validity = Validity::new(
+            // Yubico's Cert uses UTCTime for the not_before and GeneralizedTime for the not_after
+            // (scheduled for 2071)
+            Time::UtcTime(
+                UtcTime::from_date_time(DateTime::new(2017, 1, 1, 0, 0, 0).unwrap()).unwrap(),
+            ),
+            Time::GeneralTime(GeneralizedTime::from_date_time(
+                DateTime::new(2071, 10, 5, 0, 0, 0).unwrap(),
+            )),
+        );
+        let pub_key = SubjectPublicKeyInfoOwned::from_key(&secret_key.public_key()).unwrap();
+
+        let builder = CertificateBuilder::new(SelfSigned, serial_number, validity, pub_key)
+            .expect("Create certificate builder");
+        let signer = p256::ecdsa::SigningKey::from(secret_key);
+        builder
+            .build::<_, p256::ecdsa::DerSignature>(&signer)
+            .unwrap()
     }
 }
 

@@ -12,7 +12,7 @@ const NUM_DIGITS: usize = 10;
 
 /// YubiHSM serial numbers
 #[derive(Copy, Clone, Debug, Deserialize, Eq, Hash, PartialEq, PartialOrd, Ord, Serialize)]
-pub struct Number(u32);
+pub struct Number(pub(crate) u32);
 
 impl Display for Number {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
