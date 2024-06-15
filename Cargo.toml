@@ -22,6 +22,7 @@ bitflags = "2"
 cmac = "=0.8.0-pre.2"
 cbc = "=0.2.0-pre.2"
 ccm = { version = "0.5", features = ["std"] }
+der = { version = "0.8.0-pre.0" }
 digest = { version = "=0.11.0-pre.9", default-features = false }
 ecdsa = { version = "=0.17.0-pre.9", default-features = false, features = ["pkcs8"] }
 ed25519 = "=2.3.0-pre.0"
@@ -41,6 +42,7 @@ subtle = "2"
 thiserror = "1"
 time = { version = "0.3", features = ["serde"] }
 uuid = { version = "1", default-features = false }
+x509-cert = { version = "=0.3.0-pre.0", features = ["builder"] }
 zeroize = { version = "1.8", features = ["zeroize_derive"] }
 
 # optional dependencies
@@ -66,7 +68,7 @@ x509-cert = { version = "=0.3.0-pre.0", features = ["builder"] }
 default = ["http", "passwords", "setup"]
 http-server = ["tiny_http"]
 http = []
-mockhsm = ["ecdsa/arithmetic", "ed25519-dalek", "p256/ecdsa", "p384/pkcs8", "secp256k1"]
+mockhsm = ["ecdsa/arithmetic", "ed25519-dalek", "p256/ecdsa", "p256/pkcs8", "p384/pkcs8", "p521/pkcs8", "rsa/sha2", "secp256k1", "x509-cert/hazmat"]
 passwords = ["hmac", "pbkdf2"]
 secp256k1 = ["k256"]
 setup = ["passwords", "serde_json", "uuid/serde"]
