@@ -1024,6 +1024,7 @@ dependencies = [
  "rusb",
  "serde",
  "serde_json",
+ "sha1",
  "sha2",
  "signature",
  "spki",
