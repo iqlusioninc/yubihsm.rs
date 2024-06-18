@@ -1,7 +1,6 @@
 //! Integration tests for YubiHSM 2 commands
 
 pub mod blink_device;
-#[cfg(not(feature = "mockhsm"))]
 pub mod decrypt_oaep;
 pub mod delete_object;
 pub mod device_info;
