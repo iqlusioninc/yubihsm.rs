@@ -2,7 +2,11 @@
 //! of supported cryptographic primitives, already initialized with a private key
 
 use crate::{algorithm::Algorithm, asymmetric, authentication, hmac, opaque, wrap};
-use ecdsa::elliptic_curve::sec1::ToEncodedPoint;
+use digest::{typenum::Unsigned, OutputSizeUser};
+use ecdsa::{
+    elliptic_curve::{sec1::ToEncodedPoint, FieldBytesSize},
+    hazmat::DigestPrimitive,
+};
 use ed25519_dalek as ed25519;
 use num_traits::cast::FromPrimitive;
 use rand_core::{OsRng, RngCore};
@@ -19,6 +23,12 @@ pub(crate) enum Payload {
 
     /// ECDSA/secp256k1 signing key,
     EcdsaSecp256k1(k256::SecretKey),
+
+    /// ECDSA/P-384 signing key
+    EcdsaNistP384(p384::SecretKey),
+
+    /// ECDSA/P-521 signing key
+    EcdsaNistP521(p521::SecretKey),
 
     /// Ed25519 signing key
     Ed25519Key(ed25519::SigningKey),
@@ -50,6 +60,15 @@ impl Payload {
                     assert_eq!(data.len(), 32);
                     Payload::EcdsaSecp256k1(k256::SecretKey::from_slice(data).unwrap())
                 }
+                asymmetric::Algorithm::EcP384 => {
+                    assert_eq!(data.len(), FieldBytesSize::<p384::NistP384>::USIZE);
+                    Payload::EcdsaNistP384(p384::SecretKey::from_slice(data).unwrap())
+                }
+                asymmetric::Algorithm::EcP521 => {
+                    assert_eq!(data.len(), FieldBytesSize::<p521::NistP521>::USIZE);
+                    Payload::EcdsaNistP521(p521::SecretKey::from_slice(data).unwrap())
+                }
+
                 asymmetric::Algorithm::Ed25519 => {
                     assert_eq!(data.len(), ed25519::SECRET_KEY_LENGTH);
                     Payload::Ed25519Key(ed25519::SigningKey::try_from(data).unwrap())
@@ -100,6 +119,13 @@ impl Payload {
                 asymmetric::Algorithm::EcK256 => {
                     Payload::EcdsaSecp256k1(k256::SecretKey::random(&mut OsRng))
                 }
+                asymmetric::Algorithm::EcP384 => {
+                    Payload::EcdsaNistP384(p384::SecretKey::random(&mut OsRng))
+                }
+                asymmetric::Algorithm::EcP521 => {
+                    Payload::EcdsaNistP521(p521::SecretKey::random(&mut OsRng))
+                }
+
                 asymmetric::Algorithm::Ed25519 => {
                     Payload::Ed25519Key(ed25519::SigningKey::generate(&mut OsRng))
                 }
@@ -127,6 +153,8 @@ impl Payload {
             }
             Payload::EcdsaNistP256(_) => Algorithm::Asymmetric(asymmetric::Algorithm::EcP256),
             Payload::EcdsaSecp256k1(_) => Algorithm::Asymmetric(asymmetric::Algorithm::EcK256),
+            Payload::EcdsaNistP384(_) => Algorithm::Asymmetric(asymmetric::Algorithm::EcP384),
+            Payload::EcdsaNistP521(_) => Algorithm::Asymmetric(asymmetric::Algorithm::EcP521),
             Payload::Ed25519Key(_) => Algorithm::Asymmetric(asymmetric::Algorithm::Ed25519),
             Payload::RsaKey(ref k) => match k.size() {
                 256 => Algorithm::Asymmetric(asymmetric::Algorithm::Rsa2048),
@@ -144,7 +172,15 @@ impl Payload {
     pub fn len(&self) -> u16 {
         let l = match self {
             Payload::AuthenticationKey(_) => authentication::key::SIZE,
-            Payload::EcdsaNistP256(_) | Payload::EcdsaSecp256k1(_) => 32,
+            Payload::EcdsaNistP256(_) | Payload::EcdsaSecp256k1(_) => {
+                <<p256::NistP256 as DigestPrimitive>::Digest as OutputSizeUser>::OutputSize::USIZE
+            }
+            Payload::EcdsaNistP384(_) => {
+                <<p384::NistP384 as DigestPrimitive>::Digest as OutputSizeUser>::OutputSize::USIZE
+            }
+            Payload::EcdsaNistP521(_) => {
+                <<p521::NistP521 as DigestPrimitive>::Digest as OutputSizeUser>::OutputSize::USIZE
+            }
             Payload::Ed25519Key(_) => ed25519::SECRET_KEY_LENGTH,
             Payload::RsaKey(k) => k.size(),
             Payload::HmacKey(_, ref data) => data.len(),
@@ -163,6 +199,13 @@ impl Payload {
             Payload::EcdsaSecp256k1(secret_key) => {
                 Some(secret_key.public_key().to_encoded_point(false).as_bytes()[1..].into())
             }
+            Payload::EcdsaNistP384(secret_key) => {
+                Some(secret_key.public_key().to_encoded_point(false).as_bytes()[1..].into())
+            }
+            Payload::EcdsaNistP521(secret_key) => {
+                Some(secret_key.public_key().to_encoded_point(false).as_bytes()[1..].into())
+            }
+
             Payload::Ed25519Key(signing_key) => Some(signing_key.verifying_key().to_bytes().into()),
             Payload::RsaKey(private_key) => Some(private_key.n().to_bytes_be()),
             _ => None,
@@ -183,6 +226,8 @@ impl Payload {
             Payload::AuthenticationKey(k) => k.0.to_vec(),
             Payload::EcdsaNistP256(k) => k.to_bytes().to_vec(),
             Payload::EcdsaSecp256k1(k) => k.to_bytes().to_vec(),
+            Payload::EcdsaNistP384(k) => k.to_bytes().to_vec(),
+            Payload::EcdsaNistP521(k) => k.to_bytes().to_vec(),
             Payload::Ed25519Key(k) => k.verifying_key().to_bytes().into(),
             Payload::RsaKey(k) => {
                 use rsa::traits::PrivateKeyParts;

@@ -58,6 +58,8 @@ hex-literal = "0.4"
 once_cell = "1"
 rsa = { version = "=0.10.0-pre.3", features = ["sha1", "sha2"] }
 p256 = { version = "=0.14.0-pre.2", features = ["ecdsa"] }
+p384 = { version = "=0.14.0-pre.2", features = ["ecdsa"] }
+p521 = { version = "=0.14.0-pre.2", features = ["ecdsa"] }
 x509-cert = { version = "=0.3.0-pre.0", features = ["builder"] }
 
 [features]
