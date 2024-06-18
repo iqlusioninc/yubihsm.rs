@@ -1,6 +1,6 @@
 //! ECDSA algorithms (i.e. hash functions)
 
-use super::{NistP256, NistP384};
+use super::{NistP256, NistP384, NistP521};
 use crate::{algorithm, asymmetric};
 
 #[cfg(feature = "secp256k1")]
@@ -62,6 +62,12 @@ impl CurveAlgorithm for NistP256 {
 impl CurveAlgorithm for NistP384 {
     fn asymmetric_algorithm() -> asymmetric::Algorithm {
         asymmetric::Algorithm::EcP384
+    }
+}
+
+impl CurveAlgorithm for NistP521 {
+    fn asymmetric_algorithm() -> asymmetric::Algorithm {
+        asymmetric::Algorithm::EcP521
     }
 }
 

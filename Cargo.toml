@@ -29,6 +29,7 @@ log = "0.4"
 num-traits = "0.2"
 p256 = { version = "=0.14.0-pre.2", default-features = false, features = ["ecdsa"] }
 p384 = { version = "=0.14.0-pre.2", default-features = false, features = ["ecdsa"] }
+p521 = { version = "=0.14.0-pre.2", default-features = false, features = ["ecdsa"] }
 serde = { version = "1", features = ["serde_derive"] }
 rand_core = { version = "0.6", features = ["std"] }
 rsa = "=0.10.0-pre.3"

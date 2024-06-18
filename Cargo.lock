@@ -558,6 +558,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "p521"
+version = "0.14.0-pre.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "957df9b5e6a7542f6430ec5187a4cb66d8498946c38b23fd14562bce6e32e6de"
+dependencies = [
+ "base16ct",
+ "ecdsa",
+ "elliptic-curve",
+ "primefield",
+ "primeorder",
+ "sha2",
+]
+
+[[package]]
 name = "pbkdf2"
 version = "0.13.0-pre.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -614,6 +628,12 @@ name = "ppv-lite86"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5b40af805b3121feab8a3c29f04d8ad262fa8e0561883e7653e024ae4479e6de"
+
+[[package]]
+name = "primefield"
+version = "0.14.0-pre.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d3f2ce0fa9cccdaf216230d151ce51a15298aef50ad76081a830128ecbc6428a"
 
 [[package]]
 name = "primeorder"
@@ -1014,6 +1034,7 @@ dependencies = [
  "once_cell",
  "p256",
  "p384",
+ "p521",
  "pbkdf2",
  "rand_core",
  "rsa",
