@@ -20,7 +20,7 @@ use x509_cert::{
 };
 use yubihsm::{
     asymmetric::signature::Signer as _,
-    ecdsa::{self, algorithm::CurveAlgorithm, NistP256},
+    ecdsa::{self, algorithm::CurveAlgorithm, NistP256, NistP384},
     object, Client,
 };
 
@@ -132,5 +132,24 @@ fn ecdsa_nistp256_ca() {
 
     builder
         .build::<_, der::Signature<NistP256>>(&signer)
+        .unwrap();
+}
+
+#[test]
+fn ecdsa_nistp384_ca() {
+    let signer = create_signer::<NistP384>(205);
+
+    let serial_number = SerialNumber::from(42u32);
+    let validity = Validity::from_now(Duration::new(5, 0)).unwrap();
+    let subject =
+        Name::from_str("CN=World domination corporation,O=World domination Inc,C=US").unwrap();
+    let pub_key = SubjectPublicKeyInfoOwned::from_key(&signer.verifying_key()).unwrap();
+    let profile = cabf::Root::new(false, subject).unwrap();
+
+    let builder = CertificateBuilder::new(profile, serial_number, validity, pub_key)
+        .expect("Create certificate");
+
+    builder
+        .build::<_, der::Signature<NistP384>>(&signer)
         .unwrap();
 }

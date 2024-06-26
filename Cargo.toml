@@ -66,7 +66,7 @@ x509-cert = { version = "=0.3.0-pre.0", features = ["builder"] }
 default = ["http", "passwords", "setup"]
 http-server = ["tiny_http"]
 http = []
-mockhsm = ["ecdsa/arithmetic", "ed25519-dalek", "p256/ecdsa", "secp256k1"]
+mockhsm = ["ecdsa/arithmetic", "ed25519-dalek", "p256/ecdsa", "p384/pkcs8", "secp256k1"]
 passwords = ["hmac", "pbkdf2"]
 secp256k1 = ["k256"]
 setup = ["passwords", "serde_json", "uuid/serde"]
