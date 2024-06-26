@@ -14,9 +14,6 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        platform:
-          - ubuntu-latest
-          - macos-latest
         toolchain:
           - stable
           - 1.67.0 # MSRV
@@ -35,9 +32,6 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        platform:
-          - ubuntu-latest
-          - macos-latest
         toolchain:
           - stable
           - 1.67.0 # MSRV
