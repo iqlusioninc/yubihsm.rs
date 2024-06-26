@@ -74,6 +74,10 @@ jobs:
         with:
           path: target
           key: ${{ runner.os }}-rust-${{ matrix.toolchain }}-cargo-build-target-${{ hashFiles('Cargo.lock') }}
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.toolchain }}
+          override: true
       - run: cargo test --features=mockhsm,secp256k1,untested
 
   rustfmt:
