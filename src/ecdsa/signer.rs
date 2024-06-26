@@ -7,7 +7,7 @@ use crate::{object, Client};
 use ecdsa::{
     der,
     elliptic_curve::{
-        consts::U32,
+        consts::{U32, U48},
         generic_array::ArrayLength,
         point::PointCompression,
         sec1::{self, FromEncodedPoint, ToEncodedPoint},
@@ -148,7 +148,7 @@ impl PrehashSigner<Signature<NistP384>> for Signer<NistP384> {
 
 impl<D> DigestSigner<D, Signature<NistP384>> for Signer<NistP384>
 where
-    D: Digest<OutputSize = U32> + Default,
+    D: Digest<OutputSize = U48> + Default,
 {
     /// Compute a fixed-sized P-384 ECDSA signature of the given digest
     fn try_sign_digest(&self, digest: D) -> Result<Signature<NistP384>, Error> {
