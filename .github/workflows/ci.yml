@@ -14,33 +14,14 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        platform:
-          - ubuntu-latest
-          - macos-latest
         toolchain:
           - stable
           - 1.67.0 # MSRV
     steps:
       - uses: actions/checkout@v1
-      - name: cache .cargo/registry
-        uses: actions/cache@v1
-        with:
-          path: ~/.cargo/registry
-          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('Cargo.lock') }}
-      - name: cache .cargo/git
-        uses: actions/cache@v1
-        with:
-          path: ~/.cargo/git
-          key: ${{ runner.os }}-cargo-index-${{ hashFiles('Cargo.lock') }}
-      - name: cache target
-        uses: actions/cache@v1
-        with:
-          path: target
-          key: ${{ runner.os }}-rust-${{ matrix.toolchain }}-cargo-build-target-${{ hashFiles('Cargo.lock') }}
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.toolchain }}
-          override: true
       - run: cargo build --release
       - run: cargo build --release --no-default-features
       - run: cargo build --release --no-default-features --features=passwords
@@ -51,29 +32,14 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        platform:
-          - ubuntu-latest
-          - macos-latest
         toolchain:
           - stable
           - 1.67.0 # MSRV
     steps:
       - uses: actions/checkout@v1
-      - name: cache .cargo/registry
-        uses: actions/cache@v1
+      - uses: dtolnay/rust-toolchain@master
         with:
-          path: ~/.cargo/registry
-          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('Cargo.lock') }}
-      - name: cache .cargo/git
-        uses: actions/cache@v1
-        with:
-          path: ~/.cargo/git
-          key: ${{ runner.os }}-cargo-index-${{ hashFiles('Cargo.lock') }}
-      - name: cache target
-        uses: actions/cache@v1
-        with:
-          path: target
-          key: ${{ runner.os }}-rust-${{ matrix.toolchain }}-cargo-build-target-${{ hashFiles('Cargo.lock') }}
+          toolchain: ${{ matrix.toolchain }}
       - run: cargo test --features=mockhsm,secp256k1,untested
 
   rustfmt:
@@ -81,12 +47,10 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v1
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@master
         with:
-          profile: minimal
           toolchain: stable
           components: rustfmt
-          override: true
       - name: Run cargo fmt
         uses: actions-rs/cargo@v1
         with:
@@ -97,12 +61,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@master
         with:
-          profile: minimal
           toolchain: 1.71.0 # pinned to prevent CI breakages
           components: clippy
-          override: true
       - uses: actions-rs/cargo@v1
         with:
           command: clippy

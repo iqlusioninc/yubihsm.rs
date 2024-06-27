@@ -14,6 +14,7 @@ pub use self::ed25519::ED25519_TEST_VECTORS;
 pub use self::hmac::HMAC_SHA256_TEST_VECTORS;
 
 /// Authenticated encryption test vector (presently specialized for AES-CCM)
+#[allow(dead_code)]
 pub struct EncryptionTestVector {
     /// Encryption key
     pub key: &'static [u8],
