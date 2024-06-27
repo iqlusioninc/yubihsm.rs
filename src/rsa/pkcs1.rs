@@ -4,11 +4,10 @@
 //! non-RSA algorithms like Ed25519 or ECDSA, or RSA-PSS if RSA is required.
 
 mod algorithm;
-#[cfg(feature = "untested")]
 pub(crate) mod commands;
-#[cfg(feature = "untested")]
 mod signature;
+mod signer;
 
 pub use self::algorithm::Algorithm;
-#[cfg(feature = "untested")]
 pub use self::signature::Signature;
+pub use self::signer::Signer;
