@@ -1,6 +1,6 @@
 [package]
 name = "yubihsm"
-version = "0.42.1"
+version = "0.43.0-pre"
 description = """
 Pure Rust client for YubiHSM2 devices with support for HTTP and
 USB-based access to the device. Supports most HSM functionality
@@ -14,7 +14,7 @@ readme = "README.md"
 categories = ["cryptography", "hardware-support"]
 keywords = ["ecdsa", "ed25519", "hmac", "hsm", "yubikey"]
 edition = "2021"
-rust-version = "1.67"
+rust-version = "1.70"
 
 [dependencies]
 aes = { version = "0.8", features = ["zeroize"] }
