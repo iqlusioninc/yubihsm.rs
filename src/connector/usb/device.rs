@@ -86,7 +86,7 @@ impl Devices {
 
             usb_debug!(device, "found YubiHSM device");
 
-            let mut handle = device
+            let handle = device
                 .open()
                 .map_err(|e| usb_err!(device, "error opening device: {}", e))?;
 
