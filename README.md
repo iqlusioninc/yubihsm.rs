@@ -30,7 +30,7 @@ or endorsed by Yubico (although whoever runs their Twitter account
 
 ## Minimum Supported Rust Version
 
-This crate requires Rust **1.57** or newer.
+This crate requires Rust **1.70** or newer.
 
 ## Supported Commands
 
@@ -159,7 +159,7 @@ See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT) for details.
 [deps-image]: https://deps.rs/repo/github/iqlusioninc/yubihsm.rs/status.svg
 [deps-link]: https://deps.rs/repo/github/iqlusioninc/yubihsm.rs
 [license-image]: https://img.shields.io/badge/license-Apache2.0/MIT-blue.svg
-[rustc-image]: https://img.shields.io/badge/rustc-1.67+-blue.svg
+[rustc-image]: https://img.shields.io/badge/rustc-1.70+-blue.svg
 
 [//]: # (general links)
 
