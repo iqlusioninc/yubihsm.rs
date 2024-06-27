@@ -48,7 +48,7 @@ hmac = { version = "0.12", optional = true }
 k256 = { version = "0.13", optional = true, features = ["ecdsa", "sha256"] }
 pbkdf2 = { version = "0.12", optional = true, default-features = false, features = ["hmac"] }
 serde_json = { version = "1", optional = true }
-rusb = { version = "0.9", optional = true }
+rusb = { version = "0.9.4", optional = true }
 tiny_http = { version = "0.12", optional = true }
 
 [dev-dependencies]
