@@ -147,6 +147,42 @@ impl Plaintext {
         }
     }
 
+    /// Build a [`Plaintext`] from an [`RsaPrivateKey`].
+    pub fn from_ecdsa<C>(
+        algorithm: Algorithm,
+        object_id: object::Id,
+        capabilities: Capability,
+        domains: Domain,
+        label: object::Label,
+        key: SecretKey<C>,
+    ) -> Result<Self, Error>
+    where
+        C: PrimeCurve + CurveAlgorithm,
+        FieldBytesSize<C>: ModulusSize + Unsigned,
+    {
+        let asym_algorithm = C::asymmetric_algorithm();
+
+        let object_info = wrap::Info {
+            capabilities,
+            object_id,
+            length: 0,
+            domains,
+            object_type: object::Type::AsymmetricKey,
+            algorithm: algorithm::Algorithm::Asymmetric(asym_algorithm),
+            sequence: 0,
+            origin: object::Origin::Imported,
+            label,
+        };
+
+        let data = key.to_bytes().as_slice().to_vec();
+
+        Ok(Self {
+            algorithm,
+            object_info,
+            data,
+        })
+    }
+
     /// Return the rsa key of this [`Plaintext`] if it was an RSA key.
     pub fn rsa(&self) -> Option<RsaPrivateKey> {
         let (component_size, modulus_size) = match self.object_info.algorithm {
@@ -187,7 +223,10 @@ impl Plaintext {
             length: 0,
             domains,
             object_type: object::Type::AsymmetricKey,
-            algorithm: algorithm::Algorithm::Asymmetric(asymmetric::Algorithm::Rsa2048),
+            algorithm: algorithm::Algorithm::Asymmetric(
+                // This is rewritten a couple lines below
+                asymmetric::Algorithm::Rsa2048,
+            ),
             sequence: 0,
             origin: object::Origin::Imported,
             label,
