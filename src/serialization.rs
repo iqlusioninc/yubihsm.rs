@@ -25,7 +25,12 @@ macro_rules! impl_array_serializers {
     ($ty:ident, $size:expr) => {
         impl ::serde::Serialize for $ty {
             fn serialize<S: ::serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-                self.0.serialize(serializer)
+                use ::serde::ser::SerializeSeq;
+                let mut seq = serializer.serialize_seq(Some(self.0.len()))?;
+                for element in self.0.iter() {
+                    seq.serialize_element(element)?;
+                }
+                seq.end()
             }
         }
 
