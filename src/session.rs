@@ -225,6 +225,7 @@ impl Session {
                 return Err(e.into());
             }
         };
+        self.last_active = Instant::now();
 
         if response.is_err() {
             session_error!(self, "uuid={} error={:?}", &uuid, response.code);
