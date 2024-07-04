@@ -3,11 +3,7 @@
 //! For more information, see:
 //! <https://developers.yubico.com/YubiHSM2/Commands/Set_Option.html>
 
-use crate::{
-    audit::*,
-    command::{self, Command},
-    response::Response,
-};
+use crate::{audit::*, command::Command, response::Response};
 use serde::{Deserialize, Serialize};
 
 /// Request parameters for `command::put_option`
