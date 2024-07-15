@@ -2,8 +2,9 @@
 
 use crate::{asymmetric, ecdsa::algorithm::CurveAlgorithm, ed25519};
 use ::ecdsa::elliptic_curve::{
-    bigint::Integer, generic_array::GenericArray, point::PointCompression, sec1, FieldBytesSize,
-    PrimeCurve,
+    generic_array::{typenum::Unsigned, GenericArray},
+    point::PointCompression,
+    sec1, FieldBytesSize, PrimeCurve,
 };
 use num_traits::FromPrimitive;
 use rsa::{BigUint, RsaPublicKey};
@@ -53,7 +54,9 @@ impl PublicKey {
         C: PrimeCurve + CurveAlgorithm + PointCompression,
         FieldBytesSize<C>: sec1::ModulusSize,
     {
-        if self.algorithm != C::asymmetric_algorithm() || self.bytes.len() != C::Uint::BYTES * 2 {
+        if self.algorithm != C::asymmetric_algorithm()
+            || self.bytes.len() != FieldBytesSize::<C>::USIZE * 2
+        {
             return None;
         }
 
