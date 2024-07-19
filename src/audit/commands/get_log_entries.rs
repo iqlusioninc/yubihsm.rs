@@ -70,6 +70,17 @@ pub struct LogEntry {
     pub digest: LogDigest,
 }
 
+impl LogEntry {
+    /// The payload used to rebuild the hash of the log entry.
+    pub fn digest_payload(&self) -> Result<Box<[u8]>, serialization::Error> {
+        let mut out = serialize(self)?;
+
+        // Strip out the digest
+        out.resize(out.len() - LOG_DIGEST_SIZE, 0);
+        Ok(out.into_boxed_slice())
+    }
+}
+
 /// Size of a truncated digest in the log
 pub const LOG_DIGEST_SIZE: usize = 16;
 
