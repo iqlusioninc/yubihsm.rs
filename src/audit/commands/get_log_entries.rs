@@ -6,8 +6,9 @@ use crate::{
     command::{self, Command},
     object,
     response::{self, Response},
+    serialization::{self, serialize},
 };
-use serde::{Deserialize, Serialize};
+use serde::{ser, Deserialize, Serialize};
 use std::fmt::{self, Debug};
 
 /// Request parameters for `command::get_log_entries`
@@ -60,7 +61,7 @@ pub struct LogEntry {
     pub second_key: object::Id,
 
     /// Result of the operation
-    pub result: response::Code,
+    pub result: AuditResponseCode,
 
     /// Tick count of the HSM's internal clock
     pub tick: u32,
@@ -93,10 +94,30 @@ impl Debug for LogDigest {
     }
 }
 
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Deserialize)]
+pub struct AuditResponseCode(pub response::Code);
+
+impl Serialize for AuditResponseCode {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: ser::Serializer,
+    {
+        let value = match self.0.to_u8() {
+            v @ 0x80.. => v,
+            //
+            v @ 0x76.. => v,
+            soft_err => 0x75 - soft_err,
+        };
+
+        serializer.serialize_u8(value)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::serialization::deserialize;
+    use hex_literal::hex;
 
     static SAMPLE_ENTRY: &[u8] = &[
         0, 1, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 237, 217, 180,
@@ -115,13 +136,39 @@ mod tests {
                 session_key: 65535,
                 target_key: 65535,
                 second_key: 65535,
-                result: response::Code::Success(command::Code::Error),
+                result: AuditResponseCode(response::Code::Success(command::Code::Error)),
                 tick: 4294967295,
                 digest: LogDigest([
                     0xed, 0xd9, 0xb4, 0xe0, 0xc3, 0x8c, 0x4f, 0x7e, 0xc5, 0x0f, 0x05, 0x70, 0x91,
                     0xf1, 0x2f, 0xce
                 ])
             }
-        )
+        );
+
+        // Erroneous GetObjectInfo
+        let payload = hex!("""
+                00084e00030001000fffff0b00001578
+                b59b4d9ce1aa4f618abcddb0d6f787c2
+            """);
+        let entry: LogEntry = deserialize(&payload).expect("Parse log entry");
+        assert_eq!(
+            entry,
+            LogEntry {
+                item: 8,
+                cmd: command::Code::GetObjectInfo,
+                length: 3,
+                session_key: 1,
+                target_key: 15,
+                second_key: 65535,
+                result: AuditResponseCode(response::Code::DeviceObjectNotFound),
+                tick: 5496,
+                digest: LogDigest(hex!("b59b4d9ce1aa4f618abcddb0d6f787c2"))
+            }
+        );
+
+        assert_eq!(
+            serialize(&entry).expect("serialize the entry back"),
+            &payload
+        );
     }
 }
