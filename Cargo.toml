@@ -53,6 +53,7 @@ serde_json = { version = "1", optional = true }
 rusb = { version = "0.9.4", optional = true }
 tiny_http = { version = "0.12", optional = true }
 x509-cert = { version = "0.3.0-rc.1", features = ["builder", "hazmat"], optional = true }
+ureq = { version = "3.1.4", optional = true, default-features = false, features = ["gzip"] }
 
 [dev-dependencies]
 ed25519-dalek = "=3.0.0-pre.2"
@@ -67,7 +68,10 @@ x509-cert = { version = "0.3.0-rc.2", features = ["builder"] }
 [features]
 default = ["http", "passwords", "setup"]
 http-server = ["tiny_http"]
-http = []
+http = ["ureq"]
+native-tls = ["ureq/native-tls", "_tls"]
+native-tls-vendored = ["native-tls", "ureq/vendored"]
+rustls = ["ureq/rustls", "_tls"]
 mockhsm = [
   "ecdsa/algorithm",
   "ed25519-dalek",
@@ -84,6 +88,8 @@ secp256k1 = ["k256"]
 setup = ["passwords", "serde_json", "uuid/serde"]
 untested = []
 usb = ["rusb"]
+
+_tls = []
 
 [package.metadata.docs.rs]
 all-features = true
