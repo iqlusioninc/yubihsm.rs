@@ -4,9 +4,6 @@ use crate::error::{BoxError, Context};
 use std::{fmt, io, num::ParseIntError, str::Utf8Error};
 use thiserror::Error;
 
-#[cfg(feature = "http")]
-use super::http;
-
 /// `yubihsm-connector` related errors
 pub type Error = crate::Error<ErrorKind>;
 
@@ -67,15 +64,13 @@ impl From<io::Error> for Error {
 }
 
 #[cfg(feature = "http")]
-impl From<http::client::Error> for Error {
-    fn from(err: http::client::Error) -> Error {
+impl From<ureq::Error> for Error {
+    fn from(err: ureq::Error) -> Error {
         let kind = match err.kind() {
-            http::client::ErrorKind::AddrInvalid => ErrorKind::AddrInvalid,
-            http::client::ErrorKind::IoError => ErrorKind::IoError,
-            http::client::ErrorKind::ParseError | http::client::ErrorKind::ResponseError => {
-                ErrorKind::ResponseError
-            }
-            http::client::ErrorKind::RequestError => ErrorKind::RequestError,
+            ureq::ErrorKind::Dns => ErrorKind::AddrInvalid,
+            ureq::ErrorKind::Io => ErrorKind::IoError,
+            ureq::ErrorKind::HTTP => ErrorKind::ResponseError,
+            _ => ErrorKind::RequestError,
         };
 
         kind.context(err).into()
@@ -91,7 +86,7 @@ impl From<rusb::Error> for Error {
             rusb::Error::Pipe => format_err!(ErrorKind::UsbError, "lost connection to USB device"),
             _ => format_err!(ErrorKind::UsbError, "{}", err),
         }
-        .into()
+            .into()
     }
 }
 

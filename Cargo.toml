@@ -50,6 +50,11 @@ pbkdf2 = { version = "0.12", optional = true, default-features = false, features
 serde_json = { version = "1", optional = true }
 rusb = { version = "0.9.4", optional = true }
 tiny_http = { version = "0.12", optional = true }
+ureq = { version = "2.10.1", optional = true, default-features = false, features = ["gzip"] }
+native-tls = { version = "0", optional = true }
+rustls = { version = "0", default-features = false, features = ["ring", "logging", "std", "tls12"], optional = true }
+rustls-pemfile = { version = "2.1.3", optional = true }
+rustls-platform-verifier = { version = "0.3.4", optional = true }
 
 [dev-dependencies]
 ed25519-dalek = "2"
@@ -61,13 +66,18 @@ x509-cert = { version = "0.2.5", features = ["builder"] }
 [features]
 default = ["http", "passwords", "setup"]
 http-server = ["tiny_http"]
-http = []
+http = ["ureq"]
+native-tls = ["ureq/native-tls", "dep:native-tls", "_tls"]
+native-tls-vendored = ["native-tls", "native-tls/vendored"]
+rustls = ["ureq/tls", "dep:rustls", "dep:rustls-pemfile", "dep:rustls-platform-verifier", "_tls"]
 mockhsm = ["ecdsa/arithmetic", "ed25519-dalek", "p256/ecdsa", "secp256k1"]
 passwords = ["hmac", "pbkdf2"]
 secp256k1 = ["k256"]
 setup = ["passwords", "serde_json", "uuid/serde"]
 untested = []
 usb = ["rusb"]
+
+_tls = []
 
 [package.metadata.docs.rs]
 all-features = true
