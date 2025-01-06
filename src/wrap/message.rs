@@ -149,10 +149,10 @@ impl Plaintext {
 
     /// Return the rsa key of this [`Plaintext`] if it was an RSA key.
     pub fn rsa(&self) -> Option<RsaPrivateKey> {
-        let (component_size, modulus_size) = match self.object_info.algorithm {
-            algorithm::Algorithm::Asymmetric(asymmetric::Algorithm::Rsa2048) => (128, 256),
-            algorithm::Algorithm::Asymmetric(asymmetric::Algorithm::Rsa3072) => (192, 384),
-            algorithm::Algorithm::Asymmetric(asymmetric::Algorithm::Rsa4096) => (256, 512),
+        let component_size = match self.object_info.algorithm {
+            algorithm::Algorithm::Asymmetric(asymmetric::Algorithm::Rsa2048) => 128,
+            algorithm::Algorithm::Asymmetric(asymmetric::Algorithm::Rsa3072) => 192,
+            algorithm::Algorithm::Asymmetric(asymmetric::Algorithm::Rsa4096) => 256,
             _ => return None,
         };
 
@@ -163,7 +163,6 @@ impl Plaintext {
         let _dp = BigUint::from_bytes_be(reader.read(component_size)?);
         let _dq = BigUint::from_bytes_be(reader.read(component_size)?);
         let _qinv = BigUint::from_bytes_be(reader.read(component_size)?);
-        let _n = BigUint::from_bytes_be(reader.read(modulus_size)?);
         const EXP: u64 = 65537;
         let e = BigUint::from_u64(EXP).expect("invalid static exponent");
 
