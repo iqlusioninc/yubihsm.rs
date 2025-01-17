@@ -1,6 +1,7 @@
 //! Error types
 
 use std::{
+    backtrace::Backtrace,
     fmt::{self, Debug, Display},
     ops::Deref,
 };
@@ -59,7 +60,6 @@ where
     source: Option<BoxError>,
 
     /// Backtrace where error occurred
-    #[cfg(feature = "backtrace")]
     backtrace: Option<Backtrace>,
 }
 
@@ -72,8 +72,7 @@ where
         Context {
             kind,
             source,
-            #[cfg(feature = "backtrace")]
-            backtrace: Some(Backtrace::new()),
+            backtrace: Some(Backtrace::capture()),
         }
     }
 
@@ -83,7 +82,6 @@ where
     }
 
     /// Get the backtrace associated with this error (if available)
-    #[cfg(feature = "backtrace")]
     pub fn backtrace(&self) -> Option<&Backtrace> {
         self.backtrace.as_ref()
     }
