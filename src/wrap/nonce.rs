@@ -35,7 +35,7 @@ impl From<[u8; SIZE]> for Nonce {
     }
 }
 
-impl<'a> From<&'a [u8]> for Nonce {
+impl From<&[u8]> for Nonce {
     fn from(bytes: &[u8]) -> Nonce {
         assert_eq!(
             bytes.len(),
