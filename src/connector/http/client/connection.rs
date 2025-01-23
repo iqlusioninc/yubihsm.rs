@@ -5,10 +5,8 @@ use std::{
     io::Write,
     net::{TcpStream, ToSocketAddrs},
     ops::DerefMut,
-    string::String,
     sync::Mutex,
     time::Duration,
-    vec::Vec,
 };
 
 use super::{error::Error, path::PathBuf, request, response, HTTP_VERSION, USER_AGENT};
