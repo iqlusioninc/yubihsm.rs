@@ -15,7 +15,7 @@ impl<R: Read> Deserializer<R> {
     }
 }
 
-impl<'de, 'a, R: Read> serde::Deserializer<'de> for &'a mut Deserializer<R> {
+impl<'de, R: Read> serde::Deserializer<'de> for &mut Deserializer<R> {
     type Error = Error;
 
     #[inline]
@@ -184,7 +184,7 @@ impl<'de, 'a, R: Read> serde::Deserializer<'de> for &'a mut Deserializer<R> {
             len: usize,
         }
 
-        impl<'de, 'a, 'b: 'a, R: Read> SeqAccess<'de> for Access<'a, R> {
+        impl<'de, R: Read> SeqAccess<'de> for Access<'_, R> {
             type Error = Error;
 
             fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>, Error>
@@ -227,7 +227,7 @@ impl<'de, 'a, R: Read> serde::Deserializer<'de> for &'a mut Deserializer<R> {
             deserializer: &'a mut Deserializer<R>,
         }
 
-        impl<'de, 'a, 'b: 'a, R: Read> SeqAccess<'de> for Access<'a, R> {
+        impl<'de, R: Read> SeqAccess<'de> for Access<'_, R> {
             type Error = Error;
 
             fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>, Error>
@@ -309,7 +309,7 @@ impl<'de, 'a, R: Read> serde::Deserializer<'de> for &'a mut Deserializer<R> {
     }
 }
 
-impl<'de, 'a, R: Read> serde::de::VariantAccess<'de> for &'a mut Deserializer<R> {
+impl<'de, R: Read> serde::de::VariantAccess<'de> for &mut Deserializer<R> {
     type Error = Error;
 
     fn unit_variant(self) -> Result<(), Error> {

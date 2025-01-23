@@ -32,7 +32,7 @@ impl Display for PathBuf {
     }
 }
 
-impl<'a> From<&'a str> for PathBuf {
+impl From<&str> for PathBuf {
     fn from(path: &str) -> Self {
         Self::from_str(path).unwrap()
     }
