@@ -35,7 +35,7 @@ impl Command for DecryptOaepCommand {
 
 /// RSA OAEP decrypted data
 #[derive(Serialize, Deserialize, Debug)]
-pub struct DecryptOaepResponse(rsa::oaep::DecryptedData);
+pub struct DecryptOaepResponse(pub(crate) rsa::oaep::DecryptedData);
 
 impl Response for DecryptOaepResponse {
     const COMMAND_CODE: command::Code = command::Code::DecryptOaep;

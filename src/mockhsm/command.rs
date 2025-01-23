@@ -17,7 +17,12 @@ use crate::{
     opaque::{self, commands::*},
     otp,
     response::{self, Response},
-    rsa::{self, pkcs1::commands::*, pss::commands::*},
+    rsa::{
+        self, mgf,
+        oaep::{commands::*, DecryptedData},
+        pkcs1::commands::*,
+        pss::commands::*,
+    },
     serialization::deserialize,
     session::{self, commands::*},
     template,
@@ -29,10 +34,10 @@ use ::ecdsa::{
     hazmat::SignPrimitive,
 };
 use ::hmac::{Hmac, Mac};
-use ::rsa::{pkcs1v15, pss, RsaPrivateKey};
+use ::rsa::{oaep::Oaep, pkcs1v15, pss, traits::PaddingScheme, RsaPrivateKey};
 use digest::{
     const_oid::AssociatedOid, crypto_common::OutputSizeUser, typenum::Unsigned, Digest,
-    FixedOutputReset,
+    FixedOutput, FixedOutputReset, Output, Reset,
 };
 use rand_core::{OsRng, RngCore};
 use sha1::Sha1;
@@ -130,6 +135,7 @@ pub(crate) fn session_message(
         Code::VerifyHmac => verify_hmac(state, &command.data),
         Code::SignPss => sign_pss(state, &command.data),
         Code::SignPkcs1 => sign_pkcs1v15(state, &command.data),
+        Code::DecryptOaep => decrypt_oaep(state, &command.data),
         unsupported => panic!("unsupported command type: {unsupported:?}"),
     };
 
@@ -207,10 +213,10 @@ fn device_info() -> response::Message {
             Algorithm::Wrap(wrap::Algorithm::Aes128Ccm),
             Algorithm::Opaque(opaque::Algorithm::Data),
             Algorithm::Opaque(opaque::Algorithm::X509Certificate),
-            Algorithm::Mgf(rsa::mgf::Algorithm::Sha1),
-            Algorithm::Mgf(rsa::mgf::Algorithm::Sha256),
-            Algorithm::Mgf(rsa::mgf::Algorithm::Sha384),
-            Algorithm::Mgf(rsa::mgf::Algorithm::Sha512),
+            Algorithm::Mgf(mgf::Algorithm::Sha1),
+            Algorithm::Mgf(mgf::Algorithm::Sha256),
+            Algorithm::Mgf(mgf::Algorithm::Sha384),
+            Algorithm::Mgf(mgf::Algorithm::Sha512),
             Algorithm::Template(template::Algorithm::Ssh),
             Algorithm::YubicoOtp(otp::Algorithm::Aes128),
             Algorithm::Authentication(authentication::Algorithm::YubicoAes),
@@ -740,16 +746,16 @@ fn sign_pss(state: &State, cmd_data: &[u8]) -> response::Message {
     {
         if let Payload::RsaKey(private_key) = &obj.payload {
             let signature = match command.mgf1_hash_alg {
-                rsa::mgf::Algorithm::Sha1 => {
+                mgf::Algorithm::Sha1 => {
                     sign_pss_digest::<Sha1>(private_key, command.digest.as_ref())
                 }
-                rsa::mgf::Algorithm::Sha256 => {
+                mgf::Algorithm::Sha256 => {
                     sign_pss_digest::<Sha256>(private_key, command.digest.as_ref())
                 }
-                rsa::mgf::Algorithm::Sha384 => {
+                mgf::Algorithm::Sha384 => {
                     sign_pss_digest::<Sha384>(private_key, command.digest.as_ref())
                 }
-                rsa::mgf::Algorithm::Sha512 => {
+                mgf::Algorithm::Sha512 => {
                     sign_pss_digest::<Sha512>(private_key, command.digest.as_ref())
                 }
             };
@@ -836,6 +842,110 @@ fn verify_hmac(state: &State, cmd_data: &[u8]) -> response::Message {
             VerifyHmacResponse(is_ok).serialize()
         } else {
             debug!("not an HMAC key: {:?}", obj.algorithm());
+            device::ErrorKind::InvalidCommand.into()
+        }
+    } else {
+        debug!("no such object ID: {:?}", command.key_id);
+        device::ErrorKind::ObjectNotFound.into()
+    }
+}
+
+/// [`PrecomputedHashDigest`] provides a backend for storing a fixed hash.
+///
+/// When an OAEP decrypt command is sent by the client, it will carry the hash of the label (and
+/// not the label itself).
+/// Sadly [`::rsa::oaep::Oaep`] implementation for decrypt does not accept that but expects an object
+/// implementing [`Digest`]. If you don't provide a label, it will feed an empty slice to the
+/// digest and use its output.
+///
+/// [`PrecomputedHashDigest`] provides a compatible implementation, but will ignore whatever
+/// it's fed, and only reply with the pre-hashed content instead.
+///
+/// # Panics
+///
+/// Trying to reset the fixed hash will trigger a panic, and should be treated as a
+/// bug.
+#[derive(Clone)]
+struct PrecomputedHashDigest<D: OutputSizeUser> {
+    fixed: GenericArray<u8, D::OutputSize>,
+}
+
+impl<D: OutputSizeUser> OutputSizeUser for PrecomputedHashDigest<D> {
+    type OutputSize = D::OutputSize;
+    fn output_size() -> usize {
+        D::output_size()
+    }
+}
+
+impl<D: OutputSizeUser> FixedOutput for PrecomputedHashDigest<D> {
+    fn finalize_into(self, out: &mut Output<Self>) {
+        out.clone_from_slice(self.fixed.as_slice())
+    }
+}
+
+impl<D: OutputSizeUser> digest::Update for PrecomputedHashDigest<D> {
+    fn update(&mut self, _data: &[u8]) {}
+}
+
+impl<D: OutputSizeUser> Reset for PrecomputedHashDigest<D> {
+    fn reset(&mut self) {
+        unimplemented!("Tried to update PrecomputedHashDigest, this is unexpected")
+    }
+}
+
+impl<D: OutputSizeUser> FixedOutputReset for PrecomputedHashDigest<D> {
+    fn finalize_into_reset(&mut self, out: &mut Output<Self>) {
+        out.clone_from_slice(self.fixed.as_slice())
+    }
+}
+
+fn decrypt_oaep(state: &State, cmd_data: &[u8]) -> response::Message {
+    let command: DecryptOaepCommand = deserialize(cmd_data)
+        .unwrap_or_else(|e| panic!("error parsing Code::DecryptOaepCommand: {e:?}"));
+
+    if let Some(obj) = state
+        .objects
+        .get(command.key_id, object::Type::AsymmetricKey)
+    {
+        if let Payload::RsaKey(private_key) = &obj.payload {
+            macro_rules! decrypt_oaep {
+                ($hash:ty) => {{
+                    let oaep = Oaep {
+                        digest: Box::new(PrecomputedHashDigest::<$hash> {
+                            fixed: GenericArray::clone_from_slice(command.label_hash.as_slice()),
+                        }),
+                        mgf_digest: Box::new(<$hash>::new()),
+                        label: None,
+                    };
+                    oaep.decrypt(Some(&mut OsRng), private_key, &command.data)
+                }};
+            }
+
+            let plaintext = match command.mgf1_hash_alg {
+                mgf::Algorithm::Sha1 => {
+                    decrypt_oaep!(Sha1)
+                }
+                mgf::Algorithm::Sha256 => {
+                    decrypt_oaep!(Sha256)
+                }
+                mgf::Algorithm::Sha384 => {
+                    decrypt_oaep!(Sha384)
+                }
+                mgf::Algorithm::Sha512 => {
+                    decrypt_oaep!(Sha512)
+                }
+            };
+
+            let plaintext = if let Ok(plaintext) = plaintext {
+                plaintext
+            } else {
+                debug!("decrypt failed");
+                return device::ErrorKind::InvalidData.into();
+            };
+
+            DecryptOaepResponse(DecryptedData(plaintext)).serialize()
+        } else {
+            debug!("not an Rsa key: {:?}", obj.algorithm());
             device::ErrorKind::InvalidCommand.into()
         }
     } else {
