@@ -209,6 +209,8 @@ impl Payload {
                 if let Some(qinv) = k.qinv() {
                     out.extend_from_slice(&qinv.to_bytes_be().1)
                 }
+                // n
+                out.extend_from_slice(&k.n().to_bytes_be());
 
                 out
             }

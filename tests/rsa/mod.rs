@@ -59,7 +59,7 @@ fn rsa_put_asymmetric_key() {
 }
 
 #[test]
-fn rsa_import_wrapped_key() {
+fn rsa_import_export_wrapped_key() {
     let key = RsaPrivateKey::from_pkcs8_der(RSA_2048_PRIV_DER).unwrap();
     let algorithm = wrap::Algorithm::Aes128Ccm;
     let capabilities = Capability::EXPORT_WRAPPED | Capability::IMPORT_WRAPPED;
@@ -69,7 +69,7 @@ fn rsa_import_wrapped_key() {
     let plaintext = wrap::Plaintext::from_rsa(
         algorithm,
         asymmetric_key_id,
-        Capability::empty(),
+        Capability::EXPORTABLE_UNDER_WRAP | Capability::SIGN_PKCS,
         TEST_DOMAINS,
         TEST_KEY_LABEL.into(),
         key.clone(),
@@ -99,7 +99,7 @@ fn rsa_import_wrapped_key() {
 
     let handle = client
         .import_wrapped(TEST_KEY_ID, message)
-        .expect("impot asymmetric key");
+        .expect("import asymmetric key");
 
     assert_eq!(handle.object_id, asymmetric_key_id);
     let public = client
@@ -108,6 +108,25 @@ fn rsa_import_wrapped_key() {
     let public = public.rsa().expect("rsa public key expected");
 
     assert_eq!(public, key.as_ref().clone());
+
+    let message = client
+        .export_wrapped(TEST_KEY_ID, object::Type::AsymmetricKey, handle.object_id)
+        .expect("export asymmetric key");
+
+    let plaintext = message
+        .decrypt(&wrap_key)
+        .expect("failed to decrypt the wrapped key");
+
+    let exported_key = plaintext.rsa().expect("read back RSA key from HSM");
+
+    assert_eq!(public, exported_key.as_ref().clone());
+    // can't just check key against exported_key as the private exponent gets rebuilt, we'll check
+    // the primes instead.
+    assert_eq!(
+        exported_key.primes(),
+        key.primes(),
+        "RSA after import/export roundtrip mismatch: primes"
+    );
 }
 
 /// Example message to sign
