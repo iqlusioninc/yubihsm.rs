@@ -54,7 +54,7 @@ impl<'de> Deserialize<'de> for Origin {
     {
         struct OriginVisitor;
 
-        impl<'de> de::Visitor<'de> for OriginVisitor {
+        impl de::Visitor<'_> for OriginVisitor {
             type Value = Origin;
 
             fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {

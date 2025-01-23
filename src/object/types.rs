@@ -91,7 +91,7 @@ impl<'de> Deserialize<'de> for Type {
     fn deserialize<D: de::Deserializer<'de>>(deserializer: D) -> Result<Type, D::Error> {
         struct TypeVisitor;
 
-        impl<'de> de::Visitor<'de> for TypeVisitor {
+        impl de::Visitor<'_> for TypeVisitor {
             type Value = Type;
 
             fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {

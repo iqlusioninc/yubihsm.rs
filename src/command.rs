@@ -30,7 +30,7 @@ pub(crate) trait Command: Serialize + DeserializeOwned + Sized {
     const COMMAND_CODE: Code = Self::ResponseType::COMMAND_CODE;
 }
 
-impl<'c, C: Command> From<&'c C> for Message {
+impl<C: Command> From<&C> for Message {
     fn from(command: &C) -> Message {
         Self::create(C::COMMAND_CODE, serialize(command).unwrap()).unwrap()
     }
