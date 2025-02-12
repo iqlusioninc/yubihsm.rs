@@ -2,7 +2,7 @@
 //!
 //! To enable secp256k1 support, build with the `secp256k1` cargo feature enabled.
 
-use super::{algorithm::CurveAlgorithm, NistP256, NistP384};
+use super::{algorithm::CurveAlgorithm, NistP256, NistP384, NistP521};
 use crate::{object, Client};
 use ecdsa::{
     der,
@@ -146,6 +146,7 @@ macro_rules! impl_signer {
 
 impl_signer!(NistP256);
 impl_signer!(NistP384);
+impl_signer!(NistP521);
 
 #[cfg(feature = "secp256k1")]
 impl PrehashSigner<Signature<Secp256k1>> for Signer<Secp256k1> {

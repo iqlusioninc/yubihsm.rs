@@ -655,6 +655,23 @@ fn sign_ecdsa(state: &State, cmd_data: &[u8]) -> response::Message {
 
                 SignEcdsaResponse(signature.to_der().as_ref().into()).serialize()
             }
+
+            Payload::EcdsaNistP384(secret_key) => {
+                let signing_key = p384::ecdsa::SigningKey::from(secret_key);
+                let signature: p384::ecdsa::Signature = signing_key
+                    .sign_prehash(&command.digest)
+                    .expect("ECDSA failure!");
+
+                SignEcdsaResponse(signature.to_der().as_ref().into()).serialize()
+            }
+            Payload::EcdsaNistP521(secret_key) => {
+                let signing_key = p521::ecdsa::SigningKey::from(secret_key);
+                let signature: p521::ecdsa::Signature = signing_key
+                    .sign_prehash(&command.digest)
+                    .expect("ECDSA failure!");
+
+                SignEcdsaResponse(signature.to_der().as_ref().into()).serialize()
+            }
             _ => {
                 debug!("not an ECDSA key: {:?}", obj.algorithm());
                 device::ErrorKind::InvalidCommand.into()
