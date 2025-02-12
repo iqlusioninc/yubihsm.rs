@@ -7,7 +7,7 @@
 //! lower (~2^32 messages).
 
 use crate::session;
-use cmac::digest::generic_array::{typenum::U16, GenericArray};
+use cmac::digest::array::{typenum::U16, Array};
 use std::fmt;
 use subtle::{Choice, ConstantTimeEq};
 use zeroize::Zeroize;
@@ -37,7 +37,7 @@ impl Mac {
         &self.0
     }
 
-    /// Verify a 16-byte GenericArray against this MAC tag
+    /// Verify a 16-byte Array against this MAC tag
     pub fn verify<M>(&self, other: M) -> Result<(), session::Error>
     where
         M: Into<Mac>,
@@ -52,7 +52,7 @@ impl Mac {
 
 impl ConstantTimeEq for Mac {
     fn ct_eq(&self, other: &Self) -> Choice {
-        self.0.as_ref().ct_eq(other.0.as_ref())
+        self.0.ct_eq(&other.0)
     }
 }
 
@@ -63,8 +63,8 @@ impl fmt::Debug for Mac {
     }
 }
 
-impl<'a> From<&'a GenericArray<u8, U16>> for Mac {
-    fn from(array: &'a GenericArray<u8, U16>) -> Self {
+impl<'a> From<&'a Array<u8, U16>> for Mac {
+    fn from(array: &'a Array<u8, U16>) -> Self {
         Self::from_slice(&array.as_slice()[..Self::BYTE_SIZE])
     }
 }

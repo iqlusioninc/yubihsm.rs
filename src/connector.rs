@@ -91,10 +91,9 @@ impl Connector {
             .as_ref()
             .unwrap()
             .send_message(uuid, msg)
-            .map_err(|e| {
+            .inspect_err(|_| {
                 // In the event of an error, mark this connection as invalid
                 *connection = None;
-                e
             })
     }
 }

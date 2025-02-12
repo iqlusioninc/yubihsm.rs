@@ -152,10 +152,9 @@ impl Session {
         let encrypted_cmd = self
             .secure_channel()?
             .encrypt_command(plaintext_cmd)
-            .map_err(|e| {
+            .inspect_err(|_| {
                 // Abort the session in the event of any cryptographic errors
                 self.abort();
-                e
             })?;
 
         let uuid = encrypted_cmd.uuid;
@@ -172,10 +171,9 @@ impl Session {
         let response = self
             .secure_channel()?
             .decrypt_response(encrypted_response)
-            .map_err(|e| {
+            .inspect_err(|_| {
                 // Abort the session in the event of any cryptographic errors
                 self.abort();
-                e
             })?;
 
         if response.is_err() {

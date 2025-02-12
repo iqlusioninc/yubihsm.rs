@@ -97,7 +97,7 @@ impl<'a> From<&'a str> for Label {
 
 impl PartialEq for Label {
     fn eq(&self, other: &Self) -> bool {
-        self.0.as_ref() == other.0.as_ref()
+        self.0[..] == other.0[..]
     }
 }
 

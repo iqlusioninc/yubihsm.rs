@@ -41,8 +41,8 @@ use crate::{
 };
 use aes::{
     cipher::{
-        block_padding::Iso7816, consts::U16, generic_array::GenericArray, BlockDecryptMut,
-        BlockEncrypt, BlockEncryptMut, InnerIvInit, KeyInit,
+        array::Array, block_padding::Iso7816, consts::U16, BlockCipherEncrypt, BlockModeDecrypt,
+        BlockModeEncrypt, InnerIvInit, KeyInit,
     },
     Aes128,
 };
@@ -302,7 +302,7 @@ impl SecureChannel {
         let icv = compute_icv(&cipher, self.counter);
         let cbc_encryptor = Aes128CbcEnc::inner_iv_init(cipher, &icv);
         let ciphertext = cbc_encryptor
-            .encrypt_padded_mut::<Iso7816>(&mut message, pos)
+            .encrypt_padded::<Iso7816>(&mut message, pos)
             .unwrap();
 
         self.command_with_mac(command::Code::SessionMessage, ciphertext)
@@ -324,7 +324,7 @@ impl SecureChannel {
 
         let mut response_message = encrypted_response.data;
         let response_len = cbc_decryptor
-            .decrypt_padded_mut::<Iso7816>(&mut response_message)
+            .decrypt_padded::<Iso7816>(&mut response_message)
             .map_err(|e| {
                 self.terminate();
                 format_err!(
@@ -451,7 +451,7 @@ impl SecureChannel {
 
         let mut command_data = encrypted_command.data;
         let command_len = cbc_decryptor
-            .decrypt_padded_mut::<Iso7816>(&mut command_data)
+            .decrypt_padded::<Iso7816>(&mut command_data)
             .map_err(|e| {
                 self.terminate();
                 format_err!(
@@ -524,7 +524,7 @@ impl SecureChannel {
         let cbc_encryptor = Aes128CbcEnc::inner_iv_init(cipher, &icv);
 
         let ct_len = cbc_encryptor
-            .encrypt_padded_mut::<Iso7816>(&mut message, pos)
+            .encrypt_padded::<Iso7816>(&mut message, pos)
             .unwrap()
             .len();
         message.truncate(ct_len);
@@ -617,9 +617,9 @@ fn derive_key(parent_key: &[u8], derivation_constant: u8, context: &Context) -> 
 }
 
 /// Compute an "Initial Chaining Vector" (ICV) from a counter
-fn compute_icv(cipher: &Aes128, counter: u32) -> GenericArray<u8, U16> {
+fn compute_icv(cipher: &Aes128, counter: u32) -> Array<u8, U16> {
     // "Initial Chaining Vector" - CBC IVs generated from encrypting a counter
-    let mut icv = GenericArray::clone_from_slice(&[0u8; AES_BLOCK_SIZE]);
+    let mut icv = Array([0u8; AES_BLOCK_SIZE]);
     icv.as_mut_slice()[12..].copy_from_slice(&counter.to_be_bytes());
     cipher.encrypt_block(&mut icv);
     icv

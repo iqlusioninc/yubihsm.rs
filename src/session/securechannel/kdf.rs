@@ -5,6 +5,7 @@
 use super::{Context, KEY_SIZE};
 use aes::Aes128;
 use cmac::{Cmac, Mac};
+use digest::KeyInit;
 
 /// Derive a slice of output data using SCP03's KDF
 pub fn derive(mac_key: &[u8], derivation_constant: u8, context: &Context, output: &mut [u8]) {
