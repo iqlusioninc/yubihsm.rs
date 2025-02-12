@@ -9,7 +9,7 @@ use crate::{
     serialization::{deserialize, serialize},
     wrap, Capability, Domain,
 };
-use aes::cipher::Unsigned;
+use aes::cipher::typenum::Unsigned;
 use ccm::aead::Aead;
 use ecdsa::{
     elliptic_curve::{

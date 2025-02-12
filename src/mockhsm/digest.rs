@@ -1,7 +1,7 @@
 //! Mock `Digest` type for use with ECDSA signatures
 
 use crate::ecdsa::commands::SignEcdsaCommand;
-use digest::{consts::U32, generic_array::GenericArray, Output, OutputSizeUser, Reset, Update};
+use digest::{array::Array, consts::U32, Output, OutputSizeUser, Reset, Update};
 
 /// Mock 256-bit digest
 #[derive(Clone, Default)]
@@ -13,7 +13,7 @@ impl From<&SignEcdsaCommand> for MockDigest256 {
     fn from(cmd: &SignEcdsaCommand) -> MockDigest256 {
         assert_eq!(cmd.digest.len(), 32);
         Self {
-            output: Some(GenericArray::clone_from_slice(&cmd.digest[..])),
+            output: Some(Array::try_from(&cmd.digest[..]).expect("digest size violation")),
         }
     }
 }

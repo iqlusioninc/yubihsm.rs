@@ -7,13 +7,13 @@ use crate::{object, Client};
 use ecdsa::{
     der,
     elliptic_curve::{
-        generic_array::ArrayLength,
+        array::ArraySize,
         point::PointCompression,
         sec1::{self, FromEncodedPoint, ToEncodedPoint},
-        AffinePoint, CurveArithmetic, FieldBytesSize, PrimeCurve,
+        AffinePoint, CurveArithmetic, FieldBytesSize,
     },
     hazmat::DigestPrimitive,
-    Signature, SignatureSize, VerifyingKey,
+    EcdsaCurve, Signature, VerifyingKey,
 };
 use signature::{digest::Digest, hazmat::PrehashSigner, DigestSigner, Error, KeypairRef};
 use spki::{
@@ -28,7 +28,7 @@ use super::{secp256k1::RecoveryId, Secp256k1};
 #[derive(signature::Signer)]
 pub struct Signer<C>
 where
-    C: CurveAlgorithm + CurveArithmetic + PointCompression + PrimeCurve,
+    C: EcdsaCurve + CurveArithmetic,
     FieldBytesSize<C>: sec1::ModulusSize,
 {
     /// YubiHSM client.
@@ -47,9 +47,10 @@ where
 
 impl<C> Signer<C>
 where
-    C: CurveAlgorithm + CurveArithmetic + PointCompression + PrimeCurve,
+    C: EcdsaCurve + CurveArithmetic,
     AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
     FieldBytesSize<C>: sec1::ModulusSize,
+    C: CurveAlgorithm + PointCompression,
 {
     /// Create a new YubiHSM-backed ECDSA signer
     pub fn create(client: Client, signing_key_id: object::Id) -> Result<Self, Error> {
@@ -76,11 +77,10 @@ where
 
 impl<C> Signer<C>
 where
-    C: CurveAlgorithm + CurveArithmetic + PointCompression + PrimeCurve,
+    C: EcdsaCurve + CurveArithmetic,
     FieldBytesSize<C>: sec1::ModulusSize,
-    SignatureSize<C>: ArrayLength<u8>,
-    der::MaxSize<C>: ArrayLength<u8>,
-    <FieldBytesSize<C> as Add>::Output: Add<der::MaxOverhead> + ArrayLength<u8>,
+    der::MaxSize<C>: ArraySize,
+    <FieldBytesSize<C> as Add>::Output: Add<der::MaxOverhead> + ArraySize,
 {
     fn sign_prehash_ecdsa(&self, prehash: &[u8]) -> Result<Signature<C>, Error> {
         self.client
@@ -92,7 +92,7 @@ where
 
 impl<C> AsRef<VerifyingKey<C>> for Signer<C>
 where
-    C: CurveAlgorithm + CurveArithmetic + PointCompression + PrimeCurve,
+    C: EcdsaCurve + CurveArithmetic,
     FieldBytesSize<C>: sec1::ModulusSize,
 {
     fn as_ref(&self) -> &VerifyingKey<C> {
@@ -103,9 +103,10 @@ where
 impl<C> From<&Signer<C>> for sec1::EncodedPoint<C>
 where
     Self: Clone,
-    C: CurveAlgorithm + CurveArithmetic + PointCompression + PrimeCurve,
+    C: EcdsaCurve + CurveArithmetic,
     AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
     FieldBytesSize<C>: sec1::ModulusSize,
+    C: CurveAlgorithm + PointCompression,
 {
     fn from(signer: &Signer<C>) -> sec1::EncodedPoint<C> {
         signer.public_key().clone()
@@ -114,9 +115,8 @@ where
 
 impl<C> KeypairRef for Signer<C>
 where
-    C: CurveAlgorithm + CurveArithmetic + PointCompression + PrimeCurve,
+    C: EcdsaCurve + CurveArithmetic,
     FieldBytesSize<C>: sec1::ModulusSize,
-    SignatureSize<C>: ArrayLength<u8>,
 {
     type VerifyingKey = VerifyingKey<C>;
 }
@@ -153,7 +153,7 @@ impl PrehashSigner<Signature<Secp256k1>> for Signer<Secp256k1> {
         let signature = self.sign_prehash_ecdsa(prehash)?;
         // Low-S normalize per BIP 0062: Dealing with Malleability:
         // <https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki>
-        Ok(signature.normalize_s().unwrap_or(signature))
+        Ok(signature.normalize_s())
     }
 }
 
@@ -198,11 +198,12 @@ impl DigestSigner<<Secp256k1 as DigestPrimitive>::Digest, (Signature<Secp256k1>,
 
 impl<C> DigestSigner<C::Digest, der::Signature<C>> for Signer<C>
 where
-    C: CurveAlgorithm + CurveArithmetic + PointCompression + PrimeCurve + DigestPrimitive,
+    C: EcdsaCurve + CurveArithmetic,
+    C: DigestPrimitive,
     AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
     FieldBytesSize<C>: sec1::ModulusSize,
-    der::MaxSize<C>: ArrayLength<u8>,
-    <FieldBytesSize<C> as Add>::Output: Add<der::MaxOverhead> + ArrayLength<u8>,
+    der::MaxSize<C>: ArraySize,
+    <FieldBytesSize<C> as Add>::Output: Add<der::MaxOverhead> + ArraySize,
     Self: DigestSigner<C::Digest, Signature<C>>,
 {
     fn try_sign_digest(&self, digest: C::Digest) -> Result<der::Signature<C>, Error> {
@@ -212,7 +213,7 @@ where
 
 impl<C> SignatureAlgorithmIdentifier for Signer<C>
 where
-    C: CurveAlgorithm + CurveArithmetic + PointCompression + PrimeCurve,
+    C: EcdsaCurve + CurveArithmetic,
     AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
     FieldBytesSize<C>: sec1::ModulusSize,
     Signature<C>: AssociatedAlgorithmIdentifier<Params = AnyRef<'static>>,

@@ -180,7 +180,7 @@ impl Payload {
     /// Serialize this payload as a byte vector
     pub fn to_bytes(&self) -> Vec<u8> {
         match self {
-            Payload::AuthenticationKey(k) => k.0.as_ref().into(),
+            Payload::AuthenticationKey(k) => k.0.to_vec(),
             Payload::EcdsaNistP256(k) => k.to_bytes().to_vec(),
             Payload::EcdsaSecp256k1(k) => k.to_bytes().to_vec(),
             Payload::Ed25519Key(k) => k.verifying_key().to_bytes().into(),
