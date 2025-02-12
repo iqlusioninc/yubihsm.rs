@@ -73,7 +73,7 @@ impl<'de> Deserialize<'de> for AuditOption {
     fn deserialize<D: de::Deserializer<'de>>(deserializer: D) -> Result<AuditOption, D::Error> {
         struct AuditOptionVisitor;
 
-        impl<'de> de::Visitor<'de> for AuditOptionVisitor {
+        impl de::Visitor<'_> for AuditOptionVisitor {
             type Value = AuditOption;
 
             fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -130,7 +130,7 @@ impl<'de> Deserialize<'de> for AuditTag {
     fn deserialize<D: de::Deserializer<'de>>(deserializer: D) -> Result<AuditTag, D::Error> {
         struct AuditTagVisitor;
 
-        impl<'de> de::Visitor<'de> for AuditTagVisitor {
+        impl de::Visitor<'_> for AuditTagVisitor {
             type Value = AuditTag;
 
             fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {

@@ -88,7 +88,7 @@ impl<'de> Deserialize<'de> for Domain {
     {
         struct DomainVisitor;
 
-        impl<'de> de::Visitor<'de> for DomainVisitor {
+        impl de::Visitor<'_> for DomainVisitor {
             type Value = Domain;
 
             fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {

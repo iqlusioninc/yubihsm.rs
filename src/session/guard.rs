@@ -18,7 +18,7 @@ impl<'mutex> Guard<'mutex> {
     }
 }
 
-impl<'mutex> Deref for Guard<'mutex> {
+impl Deref for Guard<'_> {
     type Target = Session;
 
     fn deref(&self) -> &Session {
@@ -26,7 +26,7 @@ impl<'mutex> Deref for Guard<'mutex> {
     }
 }
 
-impl<'mutex> DerefMut for Guard<'mutex> {
+impl DerefMut for Guard<'_> {
     fn deref_mut(&mut self) -> &mut Session {
         self.0.deref_mut().as_mut().unwrap()
     }
