@@ -38,7 +38,7 @@ sha1 = { version = "=0.11.0-pre.4", features = ["oid"] }
 sha2 = { version = "=0.11.0-pre.4", features = ["oid"] }
 spki = { version = "=0.8.0-rc.0", default-features = false }
 subtle = "2"
-thiserror = "1"
+thiserror = "2"
 time = { version = "0.3", features = ["serde"] }
 uuid = { version = "1", default-features = false }
 zeroize = { version = "1.8", features = ["zeroize_derive"] }
