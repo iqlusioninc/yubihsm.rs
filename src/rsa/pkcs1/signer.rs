@@ -1,4 +1,5 @@
 use crate::{object, rsa::SignatureAlgorithm, Client};
+use digest::Output;
 use rsa::{
     pkcs1v15::{RsaSignatureAssociatedOid, Signature, VerifyingKey},
     RsaPublicKey,
@@ -84,4 +85,30 @@ where
 
     const SIGNATURE_ALGORITHM_IDENTIFIER: AlgorithmIdentifier<Self::Params> =
         <VerifyingKey<S> as SignatureAlgorithmIdentifier>::SIGNATURE_ALGORITHM_IDENTIFIER;
+}
+
+impl<S> signature::hazmat::PrehashSigner<Signature> for Signer<S>
+where
+    S: SignatureAlgorithm,
+{
+    fn sign_prehash(&self, prehash: &[u8]) -> Result<Signature, Error> {
+        let buf = Output::<S>::try_from(prehash).map_err(|_| Error::new())?;
+
+        self.client
+            .sign_rsa_pkcs1v15_prehash::<S>(self.signing_key_id, buf)?
+            .as_slice()
+            .try_into()
+    }
+}
+
+impl<S> signature::DigestSigner<S, Signature> for Signer<S>
+where
+    S: SignatureAlgorithm,
+{
+    fn try_sign_digest(&self, digest: S) -> Result<Signature, Error> {
+        self.client
+            .sign_rsa_pkcs1v15_prehash::<S>(self.signing_key_id, digest.finalize())?
+            .as_slice()
+            .try_into()
+    }
 }
