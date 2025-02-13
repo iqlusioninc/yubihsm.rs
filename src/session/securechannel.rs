@@ -24,9 +24,9 @@ mod cryptogram;
 mod kdf;
 mod mac;
 
+pub use self::{challenge::Challenge, context::Context};
 pub(crate) use self::{
-    challenge::{Challenge, CHALLENGE_SIZE},
-    context::Context,
+    challenge::CHALLENGE_SIZE,
     cryptogram::{Cryptogram, CRYPTOGRAM_SIZE},
     mac::Mac,
 };
@@ -35,7 +35,7 @@ use crate::{
     authentication::{self, Credentials},
     command,
     connector::Connector,
-    device, response,
+    device, object, response,
     serialization::deserialize,
     session::{self, ErrorKind},
 };
@@ -47,6 +47,7 @@ use aes::{
     Aes128,
 };
 use cmac::{digest::Mac as _, Cmac};
+use serde::{Deserialize, Serialize};
 use subtle::ConstantTimeEq;
 use zeroize::{Zeroize, Zeroizing};
 
@@ -70,6 +71,42 @@ const AES_BLOCK_SIZE: usize = 16;
 type Aes128CbcEnc = cbc::Encryptor<Aes128>;
 type Aes128CbcDec = cbc::Decryptor<Aes128>;
 
+/// SCP03 AES Session Keys
+#[derive(Serialize, Deserialize)]
+pub struct SessionKeys {
+    /// Session encryption key (S-ENC)
+    pub enc_key: [u8; KEY_SIZE],
+
+    /// Session Command MAC key (S-MAC)
+    pub mac_key: [u8; KEY_SIZE],
+
+    /// Session Respose MAC key (S-RMAC)
+    pub rmac_key: [u8; KEY_SIZE],
+}
+
+impl Zeroize for SessionKeys {
+    fn zeroize(&mut self) {
+        self.enc_key.zeroize();
+        self.mac_key.zeroize();
+        self.rmac_key.zeroize();
+    }
+}
+
+#[cfg(feature = "yubihsm-auth")]
+impl From<yubikey::hsmauth::SessionKeys> for SessionKeys {
+    fn from(keys: yubikey::hsmauth::SessionKeys) -> Self {
+        let enc_key = *keys.enc_key;
+        let mac_key = *keys.mac_key;
+        let rmac_key = *keys.rmac_key;
+
+        Self {
+            enc_key,
+            mac_key,
+            rmac_key,
+        }
+    }
+}
+
 /// SCP03 Secure Channel
 pub(crate) struct SecureChannel {
     /// ID of this channel (a.k.a. session ID)
@@ -85,14 +122,8 @@ pub(crate) struct SecureChannel {
     /// Context (card + host challenges)
     context: Context,
 
-    /// Session encryption key (S-ENC)
-    enc_key: [u8; KEY_SIZE],
-
-    /// Session Command MAC key (S-MAC)
-    mac_key: [u8; KEY_SIZE],
-
-    /// Session Respose MAC key (S-RMAC)
-    rmac_key: [u8; KEY_SIZE],
+    /// Session keys
+    session_keys: SessionKeys,
 
     /// Chaining value to be included when computing MACs
     mac_chaining_value: [u8; Mac::BYTE_SIZE * 2],
@@ -107,45 +138,8 @@ impl SecureChannel {
     ) -> Result<Self, session::Error> {
         let host_challenge = Challenge::new();
 
-        let command_message = command::Message::from(&CreateSessionCommand {
-            authentication_key_id: credentials.authentication_key_id,
-            host_challenge,
-        });
-
-        let uuid = command_message.uuid;
-        let response_body = connector.send_message(uuid, command_message.into())?;
-        let response_message = response::Message::parse(response_body)?;
-
-        if response_message.is_err() {
-            match device::ErrorKind::from_response_message(&response_message) {
-                Some(device::ErrorKind::ObjectNotFound) => fail!(
-                    ErrorKind::AuthenticationError,
-                    "auth key not found: 0x{:04x}",
-                    credentials.authentication_key_id
-                ),
-                Some(kind) => return Err(kind.into()),
-                None => fail!(
-                    ErrorKind::ResponseError,
-                    "HSM error: {:?}",
-                    response_message.code
-                ),
-            }
-        }
-
-        if response_message.command().unwrap() != command::Code::CreateSession {
-            fail!(
-                ErrorKind::ProtocolError,
-                "command type mismatch: expected {:?}, got {:?}",
-                command::Code::CreateSession,
-                response_message.command().unwrap()
-            );
-        }
-
-        let id = response_message
-            .session_id
-            .ok_or_else(|| format_err!(ErrorKind::CreateFailed, "no session ID in response"))?;
-
-        let session_response: CreateSessionResponse = deserialize(response_message.data.as_ref())?;
+        let (id, session_response) =
+            Self::create(connector, credentials.authentication_key_id, host_challenge)?;
 
         // Derive session keys from the combination of host and card challenges.
         // If either of them are incorrect (indicating a key mismatch) it will
@@ -185,6 +179,20 @@ impl SecureChannel {
         let enc_key = derive_key(authentication_key.enc_key(), 0b100, &context);
         let mac_key = derive_key(authentication_key.mac_key(), 0b110, &context);
         let rmac_key = derive_key(authentication_key.mac_key(), 0b111, &context);
+
+        let session_keys = SessionKeys {
+            enc_key,
+            mac_key,
+            rmac_key,
+        };
+        Self::with_session_keys(id, context, session_keys)
+    }
+
+    pub(crate) fn with_session_keys(
+        id: session::Id,
+        context: Context,
+        session_keys: SessionKeys,
+    ) -> Self {
         let mac_chaining_value = [0u8; Mac::BYTE_SIZE * 2];
 
         Self {
@@ -192,11 +200,60 @@ impl SecureChannel {
             counter: 0,
             security_level: SecurityLevel::None,
             context,
-            enc_key,
-            mac_key,
-            rmac_key,
+            session_keys,
             mac_chaining_value,
         }
+    }
+
+    /// Open a SecureChannel with the HSM. This will not complete authentication.
+    ///
+    /// This will return the session id as well as the card challenge.
+    pub(crate) fn create(
+        connector: &Connector,
+        authentication_key_id: object::Id,
+        host_challenge: Challenge,
+    ) -> Result<(session::Id, CreateSessionResponse), session::Error> {
+        let command_message = command::Message::from(&CreateSessionCommand {
+            authentication_key_id, //: credentials.authentication_key_id,
+            host_challenge,
+        });
+
+        let uuid = command_message.uuid;
+        let response_body = connector.send_message(uuid, command_message.into())?;
+        let response_message = response::Message::parse(response_body)?;
+
+        if response_message.is_err() {
+            match device::ErrorKind::from_response_message(&response_message) {
+                Some(device::ErrorKind::ObjectNotFound) => fail!(
+                    ErrorKind::AuthenticationError,
+                    "auth key not found: 0x{:04x}",
+                    authentication_key_id
+                ),
+                Some(kind) => return Err(kind.into()),
+                None => fail!(
+                    ErrorKind::ResponseError,
+                    "HSM error: {:?}",
+                    response_message.code
+                ),
+            }
+        }
+
+        if response_message.command().unwrap() != command::Code::CreateSession {
+            fail!(
+                ErrorKind::ProtocolError,
+                "command type mismatch: expected {:?}, got {:?}",
+                command::Code::CreateSession,
+                response_message.command().unwrap()
+            );
+        }
+
+        let id = response_message
+            .session_id
+            .ok_or_else(|| format_err!(ErrorKind::CreateFailed, "no session ID in response"))?;
+
+        let session_response: CreateSessionResponse = deserialize(response_message.data.as_ref())?;
+
+        Ok((id, session_response))
     }
 
     /// Get the channel (i.e. session) ID
@@ -207,14 +264,24 @@ impl SecureChannel {
     /// Calculate the card's cryptogram for this session
     pub fn card_cryptogram(&self) -> Cryptogram {
         let mut result_bytes = Zeroizing::new([0u8; CRYPTOGRAM_SIZE]);
-        kdf::derive(&self.mac_key, 0, &self.context, result_bytes.as_mut());
+        kdf::derive(
+            &self.session_keys.mac_key,
+            0,
+            &self.context,
+            result_bytes.as_mut(),
+        );
         Cryptogram::from_slice(result_bytes.as_ref())
     }
 
     /// Calculate the host's cryptogram for this session
     pub fn host_cryptogram(&self) -> Cryptogram {
         let mut result_bytes = Zeroizing::new([0u8; CRYPTOGRAM_SIZE]);
-        kdf::derive(&self.mac_key, 1, &self.context, result_bytes.as_mut());
+        kdf::derive(
+            &self.session_keys.mac_key,
+            1,
+            &self.context,
+            result_bytes.as_mut(),
+        );
         Cryptogram::from_slice(result_bytes.as_ref())
     }
 
@@ -233,7 +300,8 @@ impl SecureChannel {
             );
         }
 
-        let mut mac = <Cmac<Aes128> as KeyInit>::new_from_slice(self.mac_key.as_ref()).unwrap();
+        let mut mac =
+            <Cmac<Aes128> as KeyInit>::new_from_slice(self.session_keys.mac_key.as_ref()).unwrap();
         mac.update(&self.mac_chaining_value);
         mac.update(&[command_type.to_u8()]);
 
@@ -298,7 +366,7 @@ impl SecureChannel {
         // Provide space at the end of the vec for the padding
         message.extend_from_slice(&[0u8; AES_BLOCK_SIZE]);
 
-        let cipher = Aes128::new_from_slice(&self.enc_key).unwrap();
+        let cipher = Aes128::new_from_slice(&self.session_keys.enc_key).unwrap();
         let icv = compute_icv(&cipher, self.counter);
         let cbc_encryptor = Aes128CbcEnc::inner_iv_init(cipher, &icv);
         let ciphertext = cbc_encryptor
@@ -315,7 +383,7 @@ impl SecureChannel {
     ) -> Result<response::Message, session::Error> {
         assert_eq!(self.security_level, SecurityLevel::Authenticated);
 
-        let cipher = Aes128::new_from_slice(&self.enc_key).unwrap();
+        let cipher = Aes128::new_from_slice(&self.session_keys.enc_key).unwrap();
         let icv = compute_icv(&cipher, self.counter);
 
         self.verify_response_mac(&encrypted_response)?;
@@ -364,7 +432,8 @@ impl SecureChannel {
             );
         }
 
-        let mut mac = <Cmac<Aes128> as KeyInit>::new_from_slice(self.rmac_key.as_ref()).unwrap();
+        let mut mac =
+            <Cmac<Aes128> as KeyInit>::new_from_slice(self.session_keys.rmac_key.as_ref()).unwrap();
         mac.update(&self.mac_chaining_value);
         mac.update(&[response.code.to_u8()]);
 
@@ -441,12 +510,12 @@ impl SecureChannel {
     ) -> Result<command::Message, session::Error> {
         assert_eq!(self.security_level, SecurityLevel::Authenticated);
 
-        let cipher = Aes128::new_from_slice(&self.enc_key).unwrap();
+        let cipher = Aes128::new_from_slice(&self.session_keys.enc_key).unwrap();
         let icv = compute_icv(&cipher, self.counter);
 
         self.verify_command_mac(&encrypted_command)?;
 
-        let cipher = Aes128::new_from_slice(&self.enc_key).unwrap();
+        let cipher = Aes128::new_from_slice(&self.session_keys.enc_key).unwrap();
         let cbc_decryptor = Aes128CbcDec::inner_iv_init(cipher, &icv);
 
         let mut command_data = encrypted_command.data;
@@ -479,7 +548,8 @@ impl SecureChannel {
             command.session_id
         );
 
-        let mut mac = <Cmac<Aes128> as KeyInit>::new_from_slice(self.mac_key.as_ref()).unwrap();
+        let mut mac =
+            <Cmac<Aes128> as KeyInit>::new_from_slice(self.session_keys.mac_key.as_ref()).unwrap();
         mac.update(&self.mac_chaining_value);
         mac.update(&[command.command_type.to_u8()]);
 
@@ -519,7 +589,7 @@ impl SecureChannel {
         // Provide space at the end of the vec for the padding
         message.extend_from_slice(&[0u8; AES_BLOCK_SIZE]);
 
-        let cipher = Aes128::new_from_slice(&self.enc_key).unwrap();
+        let cipher = Aes128::new_from_slice(&self.session_keys.enc_key).unwrap();
         let icv = compute_icv(&cipher, self.counter);
         let cbc_encryptor = Aes128CbcEnc::inner_iv_init(cipher, &icv);
 
@@ -548,7 +618,8 @@ impl SecureChannel {
         assert_eq!(self.security_level, SecurityLevel::Authenticated);
         let body = response_data.into();
 
-        let mut mac = <Cmac<Aes128> as KeyInit>::new_from_slice(self.rmac_key.as_ref()).unwrap();
+        let mut mac =
+            <Cmac<Aes128> as KeyInit>::new_from_slice(self.session_keys.rmac_key.as_ref()).unwrap();
         mac.update(&self.mac_chaining_value);
         mac.update(&[code.to_u8()]);
 
@@ -584,9 +655,7 @@ impl SecureChannel {
     /// Terminate the session
     fn terminate(&mut self) {
         self.security_level = SecurityLevel::Terminated;
-        self.enc_key.zeroize();
-        self.mac_key.zeroize();
-        self.rmac_key.zeroize();
+        self.session_keys.zeroize();
     }
 }
 
