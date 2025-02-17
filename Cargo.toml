@@ -31,7 +31,7 @@ p256 = { version = "=0.14.0-pre.2", default-features = false, features = ["ecdsa
 p384 = { version = "=0.14.0-pre.2", default-features = false, features = ["ecdsa"] }
 p521 = { version = "=0.14.0-pre.2", default-features = false, features = ["ecdsa"] }
 serde = { version = "1", features = ["serde_derive"] }
-rand_core = { version = "0.6", features = ["std"] }
+rand_core = { version = "0.9", features = ["std"] }
 rsa = "=0.10.0-pre.3"
 signature = { version = "=2.3.0-pre.4", features = ["derive"] }
 sha1 = { version = "=0.11.0-pre.4", features = ["oid"] }
