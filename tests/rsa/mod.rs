@@ -36,8 +36,8 @@ fn rsa_put_asymmetric_key() {
     let primes = key.primes();
 
     let mut bytes = Vec::new();
-    bytes.extend_from_slice(&primes[0].to_bytes_be());
-    bytes.extend_from_slice(&primes[1].to_bytes_be());
+    bytes.extend_from_slice(&primes[0].to_be_bytes());
+    bytes.extend_from_slice(&primes[1].to_be_bytes());
 
     let client = crate::get_hsm_client();
     let _ = client.delete_object(223, object::Type::AsymmetricKey);

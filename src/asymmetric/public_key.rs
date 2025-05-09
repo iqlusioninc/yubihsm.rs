@@ -9,8 +9,7 @@ use ::ecdsa::{
     },
     EcdsaCurve,
 };
-use num_traits::FromPrimitive;
-use rsa::{BigUint, RsaPublicKey};
+use rsa::{BoxedUint, RsaPublicKey};
 use serde::{Deserialize, Serialize};
 
 /// Response from `command::get_public_key`
@@ -91,8 +90,10 @@ impl PublicKey {
 
         const EXP: u64 = 65537;
 
-        let modulus = BigUint::from_bytes_be(&self.bytes);
-        let exp = BigUint::from_u64(EXP).expect("invalid static exponent");
+        let modulus =
+            BoxedUint::from_be_slice(&self.bytes, u32::try_from(self.bytes.len() * 8).unwrap())
+                .unwrap();
+        let exp = BoxedUint::from(EXP);
 
         RsaPublicKey::new(modulus, exp).ok()
     }

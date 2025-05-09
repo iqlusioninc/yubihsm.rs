@@ -5,12 +5,11 @@ use crate::{algorithm::Algorithm, asymmetric, authentication, hmac, opaque, wrap
 use digest::{typenum::Unsigned, OutputSizeUser};
 use ecdsa::{
     elliptic_curve::{sec1::ToEncodedPoint, FieldBytesSize},
-    hazmat::DigestPrimitive,
+    hazmat::DigestAlgorithm,
 };
 use ed25519_dalek as ed25519;
-use num_traits::cast::FromPrimitive;
-use rand_core::{OsRng, RngCore};
-use rsa::{traits::PublicKeyParts, BigUint};
+use rand_core::{OsRng, TryRngCore};
+use rsa::{traits::PublicKeyParts, BoxedUint};
 
 /// Loaded instances of a cryptographic primitives in the MockHsm
 #[derive(Debug)]
@@ -77,9 +76,14 @@ impl Payload {
                 | asymmetric::Algorithm::Rsa3072
                 | asymmetric::Algorithm::Rsa4096 => {
                     assert_eq!(data.len(), asymmetric_alg.key_len());
-                    let exp = BigUint::from_u64(65537).expect("invalid static exponent");
-                    let p = BigUint::from_bytes_be(&data[..asymmetric_alg.key_len() / 2]);
-                    let q = BigUint::from_bytes_be(&data[asymmetric_alg.key_len() / 2..]);
+                    let exp = BoxedUint::from(65537u64);
+                    let precision = u32::try_from(asymmetric_alg.key_len() * 4).unwrap();
+                    let p =
+                        BoxedUint::from_be_slice(&data[..asymmetric_alg.key_len() / 2], precision)
+                            .unwrap();
+                    let q =
+                        BoxedUint::from_be_slice(&data[asymmetric_alg.key_len() / 2..], precision)
+                            .unwrap();
 
                     let key = rsa::RsaPrivateKey::from_p_q(p, q, exp).unwrap();
                     Payload::RsaKey(key)
@@ -100,8 +104,8 @@ impl Payload {
     /// Generate a new key with the given algorithm
     pub fn generate(algorithm: Algorithm) -> Self {
         fn gen_rsa(len: usize) -> Payload {
-            let private_key =
-                rsa::RsaPrivateKey::new(&mut OsRng, len).expect("failed to generate a key");
+            let private_key = rsa::RsaPrivateKey::new(&mut OsRng.unwrap_err(), len)
+                .expect("failed to generate a key");
 
             Payload::RsaKey(private_key)
         }
@@ -109,25 +113,25 @@ impl Payload {
         match algorithm {
             Algorithm::Wrap(wrap_alg) => {
                 let mut bytes = vec![0u8; wrap_alg.key_len()];
-                OsRng.fill_bytes(&mut bytes);
+                OsRng.try_fill_bytes(&mut bytes).unwrap();
                 Payload::WrapKey(wrap_alg, bytes)
             }
             Algorithm::Asymmetric(asymmetric_alg) => match asymmetric_alg {
                 asymmetric::Algorithm::EcP256 => {
-                    Payload::EcdsaNistP256(p256::SecretKey::random(&mut OsRng))
+                    Payload::EcdsaNistP256(p256::SecretKey::random(&mut OsRng.unwrap_err()))
                 }
                 asymmetric::Algorithm::EcK256 => {
-                    Payload::EcdsaSecp256k1(k256::SecretKey::random(&mut OsRng))
+                    Payload::EcdsaSecp256k1(k256::SecretKey::random(&mut OsRng.unwrap_err()))
                 }
                 asymmetric::Algorithm::EcP384 => {
-                    Payload::EcdsaNistP384(p384::SecretKey::random(&mut OsRng))
+                    Payload::EcdsaNistP384(p384::SecretKey::random(&mut OsRng.unwrap_err()))
                 }
                 asymmetric::Algorithm::EcP521 => {
-                    Payload::EcdsaNistP521(p521::SecretKey::random(&mut OsRng))
+                    Payload::EcdsaNistP521(p521::SecretKey::random(&mut OsRng.unwrap_err()))
                 }
 
                 asymmetric::Algorithm::Ed25519 => {
-                    Payload::Ed25519Key(ed25519::SigningKey::generate(&mut OsRng))
+                    Payload::Ed25519Key(ed25519::SigningKey::generate(&mut OsRng.unwrap_err()))
                 }
                 asymmetric::Algorithm::Rsa2048 => gen_rsa(2048),
                 asymmetric::Algorithm::Rsa3072 => gen_rsa(3072),
@@ -138,7 +142,7 @@ impl Payload {
             },
             Algorithm::Hmac(hmac_alg) => {
                 let mut bytes = vec![0u8; hmac_alg.key_len()];
-                OsRng.fill_bytes(&mut bytes);
+                OsRng.try_fill_bytes(&mut bytes).unwrap();
                 Payload::HmacKey(hmac_alg, bytes)
             }
             _ => panic!("MockHsm does not support generating {algorithm:?} objects"),
@@ -173,13 +177,13 @@ impl Payload {
         let l = match self {
             Payload::AuthenticationKey(_) => authentication::key::SIZE,
             Payload::EcdsaNistP256(_) | Payload::EcdsaSecp256k1(_) => {
-                <<p256::NistP256 as DigestPrimitive>::Digest as OutputSizeUser>::OutputSize::USIZE
+                <<p256::NistP256 as DigestAlgorithm>::Digest as OutputSizeUser>::OutputSize::USIZE
             }
             Payload::EcdsaNistP384(_) => {
-                <<p384::NistP384 as DigestPrimitive>::Digest as OutputSizeUser>::OutputSize::USIZE
+                <<p384::NistP384 as DigestAlgorithm>::Digest as OutputSizeUser>::OutputSize::USIZE
             }
             Payload::EcdsaNistP521(_) => {
-                <<p521::NistP521 as DigestPrimitive>::Digest as OutputSizeUser>::OutputSize::USIZE
+                <<p521::NistP521 as DigestAlgorithm>::Digest as OutputSizeUser>::OutputSize::USIZE
             }
             Payload::Ed25519Key(_) => ed25519::SECRET_KEY_LENGTH,
             Payload::RsaKey(k) => k.size(),
@@ -207,7 +211,7 @@ impl Payload {
             }
 
             Payload::Ed25519Key(signing_key) => Some(signing_key.verifying_key().to_bytes().into()),
-            Payload::RsaKey(private_key) => Some(private_key.n().to_bytes_be()),
+            Payload::RsaKey(private_key) => Some(private_key.n().to_be_bytes().to_vec()),
             _ => None,
         }
     }
@@ -236,26 +240,25 @@ impl Payload {
                 {
                     let primes = k.primes();
                     // p
-                    out.extend_from_slice(&primes[0].to_bytes_be());
+                    out.extend_from_slice(&primes[0].to_be_bytes());
                     // q
-                    out.extend_from_slice(&primes[1].to_bytes_be());
+                    out.extend_from_slice(&primes[1].to_be_bytes());
                 }
 
                 // dp
                 if let Some(dp) = k.dp() {
-                    out.extend_from_slice(&dp.to_bytes_be())
+                    out.extend_from_slice(&dp.to_be_bytes())
                 }
                 // dq
                 if let Some(dq) = k.dq() {
-                    out.extend_from_slice(&dq.to_bytes_be())
+                    out.extend_from_slice(&dq.to_be_bytes())
                 }
                 // qinv
-                // Note(baloo): The sign is just dropped here.
                 if let Some(qinv) = k.qinv() {
-                    out.extend_from_slice(&qinv.to_bytes_be().1)
+                    out.extend_from_slice(&qinv.retrieve().to_be_bytes())
                 }
                 // n
-                out.extend_from_slice(&k.n().to_bytes_be());
+                out.extend_from_slice(&k.n().to_be_bytes());
 
                 out
             }

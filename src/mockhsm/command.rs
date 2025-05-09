@@ -35,7 +35,7 @@ use digest::{
     array::Array, const_oid::AssociatedOid, crypto_common::OutputSizeUser, typenum::Unsigned,
     Digest, FixedOutput, FixedOutputReset, KeyInit, Output, Reset,
 };
-use rand_core::{OsRng, RngCore};
+use rand_core::{OsRng, TryRngCore};
 use sha1::Sha1;
 use sha2::{Sha256, Sha384, Sha512};
 use signature::{
@@ -385,7 +385,7 @@ fn get_pseudo_random(_state: &State, cmd_data: &[u8]) -> response::Message {
         .unwrap_or_else(|e| panic!("error parsing Code::GetPseudoRandom: {e:?}"));
 
     let mut bytes = vec![0u8; command.bytes as usize];
-    OsRng.fill_bytes(&mut bytes);
+    OsRng.try_fill_bytes(&mut bytes).unwrap();
 
     GetPseudoRandomResponse { bytes }.serialize()
 }

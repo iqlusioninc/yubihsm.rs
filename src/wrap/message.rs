@@ -18,10 +18,9 @@ use ecdsa::{
     },
     PrimeCurve,
 };
-use num_traits::cast::FromPrimitive;
 use rsa::{
     traits::{PrivateKeyParts, PublicKeyParts},
-    BigUint, RsaPrivateKey,
+    BoxedUint, RsaPrivateKey,
 };
 use serde::{Deserialize, Serialize};
 
@@ -191,17 +190,20 @@ impl Plaintext {
             algorithm::Algorithm::Asymmetric(asymmetric::Algorithm::Rsa4096) => (256, 512),
             _ => return None,
         };
+        let precision = u32::try_from(component_size * 8).expect("Invalid static component size");
+        let modulus_precision =
+            u32::try_from(modulus_size * 8).expect("Invalid static component size");
 
         let mut reader = SliceReader(&self.data);
 
-        let p = BigUint::from_bytes_be(reader.read(component_size)?);
-        let q = BigUint::from_bytes_be(reader.read(component_size)?);
-        let _dp = BigUint::from_bytes_be(reader.read(component_size)?);
-        let _dq = BigUint::from_bytes_be(reader.read(component_size)?);
-        let _qinv = BigUint::from_bytes_be(reader.read(component_size)?);
-        let _n = BigUint::from_bytes_be(reader.read(modulus_size)?);
+        let p = BoxedUint::from_be_slice(reader.read(component_size)?, precision).ok()?;
+        let q = BoxedUint::from_be_slice(reader.read(component_size)?, precision).ok()?;
+        let _dp = BoxedUint::from_be_slice(reader.read(component_size)?, precision).ok()?;
+        let _dq = BoxedUint::from_be_slice(reader.read(component_size)?, precision).ok()?;
+        let _qinv = BoxedUint::from_be_slice(reader.read(component_size)?, precision).ok()?;
+        let _n = BoxedUint::from_be_slice(reader.read(modulus_size)?, modulus_precision).ok()?;
         const EXP: u64 = 65537;
-        let e = BigUint::from_u64(EXP).expect("invalid static exponent");
+        let e = BoxedUint::from(EXP);
 
         let private_key = RsaPrivateKey::from_p_q(p, q, e).ok()?;
 
@@ -253,14 +255,14 @@ impl Plaintext {
         let q = &primes[1];
 
         let mut data = Vec::new();
-        data.extend_from_slice(&p.to_bytes_be());
-        data.extend_from_slice(&q.to_bytes_be());
+        data.extend_from_slice(&p.to_be_bytes());
+        data.extend_from_slice(&q.to_be_bytes());
         // Unwrap here is okay, we have ownership of the key and we already precomputed the values.
-        data.extend_from_slice(&key.dp().unwrap().to_bytes_be());
-        data.extend_from_slice(&key.dq().unwrap().to_bytes_be());
+        data.extend_from_slice(&key.dp().unwrap().to_be_bytes());
+        data.extend_from_slice(&key.dq().unwrap().to_be_bytes());
         // TODO: the second unwrap for int -> uint conversion is unfortunate.
-        data.extend_from_slice(&key.qinv().unwrap().to_biguint().unwrap().to_bytes_be());
-        data.extend_from_slice(&key.n().to_bytes_be());
+        data.extend_from_slice(&key.qinv().unwrap().retrieve().to_be_bytes());
+        data.extend_from_slice(&key.n().to_be_bytes());
 
         object_info.length = data.len() as u16;
 
