@@ -70,12 +70,12 @@ pub struct Client {
 
 impl Client {
     /// Open a connection via a [Connector] to a YubiHSM, returning a `yubihsm::Client`.
-    /// Valid `Connector` types are: [HttpConnector], [UsbConnector], and [MockHsm].
+    /// `Connector` may use [Http], [Usb], or [MockHsm].
     ///
     /// [Connector]: https://docs.rs/yubihsm/latest/yubihsm/connector/index.html
-    /// [HttpConnector]: https://docs.rs/yubihsm/latest/yubihsm/connector/http/struct.HttpConnector.html
-    /// [UsbConnector]: https://docs.rs/yubihsm/latest/yubihsm/connector/usb/struct.UsbConnector.html
-    /// [MockHsm]: https://docs.rs/yubihsm/latest/yubihsm/mockhsm/struct.MockHsm.html
+    /// [Http]: https://docs.rs/yubihsm/latest/yubihsm/connector/struct.Connector.html#method.http
+    /// [Usb]: https://docs.rs/yubihsm/latest/yubihsm/connector/struct.Connector.html#method.usb
+    /// [MockHsm]: https://docs.rs/yubihsm/latest/yubihsm/connector/struct.Connector.html#method.mockhsm
     pub fn open(
         connector: Connector,
         credentials: Credentials,

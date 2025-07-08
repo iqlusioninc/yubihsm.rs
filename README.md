@@ -178,7 +178,7 @@ See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT) for details.
 [Serde-based message parser]: https://github.com/iqlusioninc/yubihsm.rs/tree/main/src/serialization
 [commands]: https://github.com/iqlusioninc/yubihsm.rs/tree/main/src/command
 [integration test]:  https://github.com/iqlusioninc/yubihsm.rs/blob/main/tests/integration.rs
-[MockHSM]: https://docs.rs/yubihsm/latest/yubihsm/mockhsm/struct.MockHsm.html
+[MockHSM]: https://docs.rs/yubihsm/latest/yubihsm/connector/struct.Connector.html#method.mockhsm
 [YubiHSM2 SDK]: https://developers.yubico.com/YubiHSM2/Releases/
 [yubihsm-shell reset]: https://developers.yubico.com/YubiHSM2/Commands/Reset_Device.html
 
