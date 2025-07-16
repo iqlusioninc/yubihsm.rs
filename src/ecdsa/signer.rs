@@ -12,7 +12,7 @@ use ecdsa::{
         sec1::{self, FromEncodedPoint, ToEncodedPoint},
         AffinePoint, CurveArithmetic, FieldBytesSize,
     },
-    hazmat::DigestPrimitive,
+    hazmat::DigestAlgorithm,
     EcdsaCurve, Signature, VerifyingKey,
 };
 use signature::{digest::Digest, hazmat::PrehashSigner, DigestSigner, Error, KeypairRef};
@@ -25,7 +25,6 @@ use std::ops::Add;
 use super::{secp256k1::RecoveryId, Secp256k1};
 
 /// ECDSA signature provider for yubihsm-client
-#[derive(signature::Signer)]
 pub struct Signer<C>
 where
     C: EcdsaCurve + CurveArithmetic,
@@ -130,13 +129,13 @@ macro_rules! impl_signer {
             }
         }
 
-        impl DigestSigner<<$curve as DigestPrimitive>::Digest, Signature<$curve>>
+        impl DigestSigner<<$curve as DigestAlgorithm>::Digest, Signature<$curve>>
             for Signer<$curve>
         {
             /// Compute a fixed-sized ECDSA signature of the given digest
             fn try_sign_digest(
                 &self,
-                digest: <$curve as DigestPrimitive>::Digest,
+                digest: <$curve as DigestAlgorithm>::Digest,
             ) -> Result<Signature<$curve>, Error> {
                 self.sign_prehash(&digest.finalize())
             }
@@ -171,27 +170,27 @@ impl PrehashSigner<(Signature<Secp256k1>, RecoveryId)> for Signer<Secp256k1> {
 }
 
 #[cfg(feature = "secp256k1")]
-impl DigestSigner<<Secp256k1 as DigestPrimitive>::Digest, Signature<Secp256k1>>
+impl DigestSigner<<Secp256k1 as DigestAlgorithm>::Digest, Signature<Secp256k1>>
     for Signer<Secp256k1>
 {
     /// Compute a fixed-size secp256k1 ECDSA signature of the given digest
     fn try_sign_digest(
         &self,
-        digest: <Secp256k1 as DigestPrimitive>::Digest,
+        digest: <Secp256k1 as DigestAlgorithm>::Digest,
     ) -> Result<Signature<Secp256k1>, Error> {
         self.sign_prehash(&digest.finalize())
     }
 }
 
 #[cfg(feature = "secp256k1")]
-impl DigestSigner<<Secp256k1 as DigestPrimitive>::Digest, (Signature<Secp256k1>, RecoveryId)>
+impl DigestSigner<<Secp256k1 as DigestAlgorithm>::Digest, (Signature<Secp256k1>, RecoveryId)>
     for Signer<Secp256k1>
 {
     /// Compute a fixed-size secp256k1 ECDSA signature of the given digest along with the recovery
     /// ID.
     fn try_sign_digest(
         &self,
-        digest: <Secp256k1 as DigestPrimitive>::Digest,
+        digest: <Secp256k1 as DigestAlgorithm>::Digest,
     ) -> Result<(Signature<Secp256k1>, RecoveryId), Error> {
         self.sign_prehash(&digest.finalize())
     }
@@ -200,7 +199,7 @@ impl DigestSigner<<Secp256k1 as DigestPrimitive>::Digest, (Signature<Secp256k1>,
 impl<C> DigestSigner<C::Digest, der::Signature<C>> for Signer<C>
 where
     C: EcdsaCurve + CurveArithmetic,
-    C: DigestPrimitive,
+    C: DigestAlgorithm,
     AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
     FieldBytesSize<C>: sec1::ModulusSize,
     der::MaxSize<C>: ArraySize,
@@ -223,4 +222,16 @@ where
 
     const SIGNATURE_ALGORITHM_IDENTIFIER: AlgorithmIdentifier<Self::Params> =
         <VerifyingKey<C> as SignatureAlgorithmIdentifier>::SIGNATURE_ALGORITHM_IDENTIFIER;
+}
+
+impl<C, S> ::signature::Signer<S> for Signer<C>
+where
+    C: EcdsaCurve + CurveArithmetic,
+    FieldBytesSize<C>: sec1::ModulusSize,
+    S: signature::PrehashSignature,
+    Self: DigestSigner<S::Digest, S>,
+{
+    fn try_sign(&self, msg: &[u8]) -> signature::Result<S> {
+        self.try_sign_digest(S::Digest::new_with_prefix(msg))
+    }
 }

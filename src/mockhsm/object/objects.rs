@@ -9,7 +9,7 @@ use crate::{
     wrap, Algorithm, Capability, Domain,
 };
 use aes::cipher::consts::{U13, U16};
-use ccm::aead::{AeadInPlace, KeyInit};
+use ccm::aead::{AeadInOut, KeyInit};
 use std::collections::{btree_map::Iter as MapIter, BTreeMap as Map};
 
 /// AES-CCM with a 128-bit key

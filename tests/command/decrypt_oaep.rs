@@ -1,5 +1,5 @@
 use crate::{generate_asymmetric_key, TEST_KEY_ID};
-use rand_core;
+use rand_core::{OsRng, TryRngCore};
 use sha2::{self, Digest};
 use yubihsm::{asymmetric, Capability};
 
@@ -23,11 +23,13 @@ fn rsa_decrypt_oaep_test() {
 
     let plaintext = b"Secret message!";
 
-    let rsa_modulus = rsa::BigUint::from_bytes_be(raw_public_key.as_slice());
-    let rsa_exponent = rsa::BigUint::parse_bytes(b"65537", 10).unwrap();
+    let bytes = raw_public_key.as_slice();
+    let precision = u32::try_from(raw_public_key.as_slice().len() * 8).unwrap();
+    let rsa_modulus = rsa::BoxedUint::from_be_slice(bytes, precision).unwrap();
+    let rsa_exponent = rsa::BoxedUint::from(65537u32);
     let rsa_public_key = rsa::RsaPublicKey::new(rsa_modulus, rsa_exponent).unwrap();
 
-    let mut rng = rand_core::OsRng;
+    let mut rng = OsRng.unwrap_err();
     let ciphertext = rsa_public_key
         .encrypt(&mut rng, rsa::Oaep::new::<sha2::Sha256>(), plaintext)
         .expect("Failed to encrypt");

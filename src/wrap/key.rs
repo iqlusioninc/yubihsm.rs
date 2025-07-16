@@ -9,10 +9,11 @@
 use crate::{client, device, object, wrap, Capability, Client, Domain};
 use aes::{Aes128, Aes192, Aes256};
 use ccm::{
-    consts::{U0, U13, U16},
-    AeadCore, AeadInPlace, Ccm, KeyInit,
+    aead::{inout::InOutBuf, TagPosition},
+    consts::{U13, U16},
+    AeadCore, AeadInOut, Ccm, KeyInit,
 };
-use rand_core::{OsRng, RngCore};
+use rand_core::{OsRng, TryRngCore};
 use std::fmt::{self, Debug};
 use zeroize::{Zeroize, Zeroizing};
 
@@ -46,39 +47,39 @@ impl From<&Key> for AesCcm {
 impl AeadCore for AesCcm {
     type NonceSize = U13;
     type TagSize = U16;
-    type CiphertextOverhead = U0;
+    const TAG_POSITION: TagPosition = TagPosition::Postfix;
 }
 
-impl AeadInPlace for AesCcm {
-    fn encrypt_in_place_detached(
+impl AeadInOut for AesCcm {
+    fn encrypt_inout_detached(
         &self,
         nonce: &ccm::Nonce<Self::NonceSize>,
         associated_data: &[u8],
-        buffer: &mut [u8],
+        buffer: InOutBuf<'_, '_, u8>,
     ) -> Result<ccm::Tag<Self::TagSize>, ccm::Error> {
         match self {
-            Self::Aes128(inner) => inner.encrypt_in_place_detached(nonce, associated_data, buffer),
-            Self::Aes192(inner) => inner.encrypt_in_place_detached(nonce, associated_data, buffer),
-            Self::Aes256(inner) => inner.encrypt_in_place_detached(nonce, associated_data, buffer),
+            Self::Aes128(inner) => inner.encrypt_inout_detached(nonce, associated_data, buffer),
+            Self::Aes192(inner) => inner.encrypt_inout_detached(nonce, associated_data, buffer),
+            Self::Aes256(inner) => inner.encrypt_inout_detached(nonce, associated_data, buffer),
         }
     }
 
-    fn decrypt_in_place_detached(
+    fn decrypt_inout_detached(
         &self,
         nonce: &ccm::Nonce<Self::NonceSize>,
         associated_data: &[u8],
-        buffer: &mut [u8],
+        buffer: InOutBuf<'_, '_, u8>,
         tag: &ccm::Tag<Self::TagSize>,
     ) -> Result<(), ccm::Error> {
         match self {
             Self::Aes128(inner) => {
-                inner.decrypt_in_place_detached(nonce, associated_data, buffer, tag)
+                inner.decrypt_inout_detached(nonce, associated_data, buffer, tag)
             }
             Self::Aes192(inner) => {
-                inner.decrypt_in_place_detached(nonce, associated_data, buffer, tag)
+                inner.decrypt_inout_detached(nonce, associated_data, buffer, tag)
             }
             Self::Aes256(inner) => {
-                inner.decrypt_in_place_detached(nonce, associated_data, buffer, tag)
+                inner.decrypt_inout_detached(nonce, associated_data, buffer, tag)
             }
         }
     }
@@ -101,7 +102,7 @@ impl Key {
     /// Generate a random wrap key with the given key size.
     pub fn generate_random(key_id: object::Id, algorithm: wrap::Algorithm) -> Self {
         let mut bytes = Zeroizing::new(vec![0u8; algorithm.key_len()]);
-        OsRng.fill_bytes(&mut bytes);
+        OsRng.try_fill_bytes(&mut bytes).unwrap();
         Self::from_bytes(key_id, &bytes).unwrap()
     }
 
