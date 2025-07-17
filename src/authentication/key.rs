@@ -27,7 +27,7 @@ pub const PBKDF2_SALT: &[u8] = b"Yubico";
 pub const PBKDF2_ITERATIONS: u32 = 10_000;
 
 /// `YubiHSM 2` authentication keys (2 * AES-128 symmetric PSK) from which
-/// session keys are derived.c
+/// session keys are derived.
 #[derive(Clone)]
 pub struct Key(pub(crate) [u8; SIZE]);
 
