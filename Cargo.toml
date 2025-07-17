@@ -26,9 +26,9 @@ digest = { version = "0.11.0-rc.0", default-features = false }
 ecdsa = { version = "0.17.0-rc.0", default-features = false, features = ["pkcs8"] }
 ed25519 = "=3.0.0-pre.0"
 log = "0.4"
-p256 = { version = "=0.14.0-pre.9", default-features = false, features = ["ecdsa"] }
-p384 = { version = "=0.14.0-pre.9", default-features = false, features = ["ecdsa"] }
-p521 = { version = "=0.14.0-pre.9", default-features = false, features = ["ecdsa"] }
+p256 = { version = "=0.14.0-pre.9", default-features = false, features = ["ecdsa", "sha256"] }
+p384 = { version = "=0.14.0-pre.9", default-features = false, features = ["ecdsa", "sha384"] }
+p521 = { version = "=0.14.0-pre.9", default-features = false, features = ["ecdsa", "sha512"] }
 serde = { version = "1", features = ["serde_derive"] }
 rand_core = { version = "0.9", features = ["std"] }
 rsa = "0.10.0-rc.3"
