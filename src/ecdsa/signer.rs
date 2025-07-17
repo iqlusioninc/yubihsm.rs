@@ -226,12 +226,11 @@ where
 
 impl<C, S> ::signature::Signer<S> for Signer<C>
 where
-    C: EcdsaCurve + CurveArithmetic,
+    C: EcdsaCurve + CurveArithmetic + DigestAlgorithm,
     FieldBytesSize<C>: sec1::ModulusSize,
-    S: signature::PrehashSignature,
-    Self: DigestSigner<S::Digest, S>,
+    Self: DigestSigner<C::Digest, S>,
 {
     fn try_sign(&self, msg: &[u8]) -> signature::Result<S> {
-        self.try_sign_digest(S::Digest::new_with_prefix(msg))
+        self.try_sign_digest(C::Digest::new_with_prefix(msg))
     }
 }
