@@ -9,7 +9,6 @@ use std::sync::{Arc, Mutex};
 mod audit;
 mod command;
 mod connection;
-mod digest;
 mod error;
 mod object;
 mod session;
