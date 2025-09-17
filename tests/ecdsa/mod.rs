@@ -101,15 +101,30 @@ fn ecdsa_secp256k1_sign_recover_test() {
     let signer = create_signer::<Secp256k1>(203);
     let verify_key = VerifyingKey::from_encoded_point(signer.public_key()).unwrap();
 
-    let digest = sha2::Sha256::new_with_prefix(TEST_MESSAGE);
-
-    let (signature, recovery_id) = signer.try_sign_digest(digest.clone()).unwrap();
+    let (signature, recovery_id) = signer
+        .try_sign_digest(|d: &mut sha2::Sha256| {
+            d.update(TEST_MESSAGE);
+            Ok(())
+        })
+        .unwrap();
 
     assert!(verify_key.verify(TEST_MESSAGE, &signature).is_ok());
 
-    let recovered_key =
-        VerifyingKey::recover_from_digest(digest.clone(), &signature, recovery_id).unwrap();
-    recovered_key.verify_digest(digest, &signature).unwrap();
+    let recovered_key = VerifyingKey::recover_from_digest(
+        sha2::Sha256::new_with_prefix(TEST_MESSAGE),
+        &signature,
+        recovery_id,
+    )
+    .unwrap();
+    recovered_key
+        .verify_digest(
+            |d: &mut sha2::Sha256| {
+                d.update(TEST_MESSAGE);
+                Ok(())
+            },
+            &signature,
+        )
+        .unwrap();
 
     let recovered_pk = PublicKey::from(recovered_key);
     let signer_pk = PublicKey::from_encoded_point(signer.public_key()).unwrap();

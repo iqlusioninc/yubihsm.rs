@@ -133,10 +133,14 @@ macro_rules! impl_signer {
             for Signer<$curve>
         {
             /// Compute a fixed-sized ECDSA signature of the given digest
-            fn try_sign_digest(
+            fn try_sign_digest<
+                F: Fn(&mut <$curve as DigestAlgorithm>::Digest) -> Result<(), Error>,
+            >(
                 &self,
-                digest: <$curve as DigestAlgorithm>::Digest,
+                f: F,
             ) -> Result<Signature<$curve>, Error> {
+                let mut digest = <<$curve as DigestAlgorithm>::Digest>::new();
+                f(&mut digest)?;
                 self.sign_prehash(&digest.finalize())
             }
         }
@@ -174,10 +178,12 @@ impl DigestSigner<<Secp256k1 as DigestAlgorithm>::Digest, Signature<Secp256k1>>
     for Signer<Secp256k1>
 {
     /// Compute a fixed-size secp256k1 ECDSA signature of the given digest
-    fn try_sign_digest(
+    fn try_sign_digest<F: Fn(&mut <Secp256k1 as DigestAlgorithm>::Digest) -> Result<(), Error>>(
         &self,
-        digest: <Secp256k1 as DigestAlgorithm>::Digest,
+        f: F,
     ) -> Result<Signature<Secp256k1>, Error> {
+        let mut digest = <Secp256k1 as DigestAlgorithm>::Digest::new();
+        f(&mut digest)?;
         self.sign_prehash(&digest.finalize())
     }
 }
@@ -188,10 +194,12 @@ impl DigestSigner<<Secp256k1 as DigestAlgorithm>::Digest, (Signature<Secp256k1>,
 {
     /// Compute a fixed-size secp256k1 ECDSA signature of the given digest along with the recovery
     /// ID.
-    fn try_sign_digest(
+    fn try_sign_digest<F: Fn(&mut <Secp256k1 as DigestAlgorithm>::Digest) -> Result<(), Error>>(
         &self,
-        digest: <Secp256k1 as DigestAlgorithm>::Digest,
+        f: F,
     ) -> Result<(Signature<Secp256k1>, RecoveryId), Error> {
+        let mut digest = <Secp256k1 as DigestAlgorithm>::Digest::new();
+        f(&mut digest)?;
         self.sign_prehash(&digest.finalize())
     }
 }
@@ -206,8 +214,11 @@ where
     <FieldBytesSize<C> as Add>::Output: Add<der::MaxOverhead> + ArraySize,
     Self: DigestSigner<C::Digest, Signature<C>>,
 {
-    fn try_sign_digest(&self, digest: C::Digest) -> Result<der::Signature<C>, Error> {
-        DigestSigner::<C::Digest, Signature<C>>::try_sign_digest(self, digest).map(Into::into)
+    fn try_sign_digest<F: Fn(&mut C::Digest) -> Result<(), Error>>(
+        &self,
+        f: F,
+    ) -> Result<der::Signature<C>, Error> {
+        DigestSigner::<C::Digest, Signature<C>>::try_sign_digest(self, f).map(Into::into)
     }
 }
 
@@ -231,6 +242,9 @@ where
     Self: DigestSigner<C::Digest, S>,
 {
     fn try_sign(&self, msg: &[u8]) -> signature::Result<S> {
-        self.try_sign_digest(C::Digest::new_with_prefix(msg))
+        self.try_sign_digest(|digest: &mut C::Digest| {
+            digest.update(msg);
+            Ok(())
+        })
     }
 }
