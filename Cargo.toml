@@ -23,16 +23,16 @@ cmac = "0.8.0-rc.0"
 cbc = "0.2.0-rc.0"
 ccm = { version = "=0.6.0-pre" }
 digest = { version = "0.11.0-rc.0", default-features = false }
-ecdsa = { version = "0.17.0-rc.0", default-features = false, features = ["pkcs8"] }
-ed25519 = "=3.0.0-pre.0"
+ecdsa = { version = "0.17.0-rc.7", default-features = false, features = ["pkcs8"] }
+ed25519 = "3.0.0-rc.1"
 log = "0.4"
-p256 = { version = "=0.14.0-pre.9", default-features = false, features = ["ecdsa", "sha256"] }
-p384 = { version = "=0.14.0-pre.9", default-features = false, features = ["ecdsa", "sha384"] }
-p521 = { version = "=0.14.0-pre.9", default-features = false, features = ["ecdsa", "sha512"] }
+p256 = { version = "=0.14.0-pre.11", default-features = false, features = ["ecdsa", "sha256"] }
+p384 = { version = "=0.14.0-pre.11", default-features = false, features = ["ecdsa", "sha384"] }
+p521 = { version = "=0.14.0-pre.11", default-features = false, features = ["ecdsa", "sha512"] }
 serde = { version = "1", features = ["serde_derive"] }
 rand_core = { version = "0.9", features = ["std"] }
-rsa = "0.10.0-rc.3"
-signature = { version = "3.0.0-rc.0" }
+rsa = "0.10.0-rc.8"
+signature = { version = "3.0.0-rc.4" }
 sha1 = { version = "0.11.0-rc.0", features = ["oid"] }
 sha2 = { version = "0.11.0-rc.0", features = ["oid"] }
 spki = { version = "0.8.0-rc.0", default-features = false }
@@ -43,23 +43,23 @@ uuid = { version = "1", default-features = false }
 zeroize = { version = "1.8", features = ["zeroize_derive"] }
 
 # optional dependencies
-ed25519-dalek = { version = "=3.0.0-pre.0", optional = true, features = ["rand_core"] }
+ed25519-dalek = { version = "=3.0.0-pre.1", optional = true, features = ["rand_core"] }
 hmac = { version = "0.13.0-rc.0", optional = true }
-k256 = { version = "=0.14.0-pre.9", optional = true, features = ["ecdsa", "sha256"] }
+k256 = { version = "=0.14.0-pre.11", optional = true, features = ["ecdsa", "sha256"] }
 pbkdf2 = { version = "0.13.0-rc.0", optional = true, default-features = false, features = ["hmac"] }
 serde_json = { version = "1", optional = true }
 rusb = { version = "0.9.4", optional = true }
 tiny_http = { version = "0.12", optional = true }
 
 [dev-dependencies]
-ed25519-dalek = "=3.0.0-pre.0"
+ed25519-dalek = "=3.0.0-pre.1"
 hex-literal = "1"
 once_cell = "1"
-rsa = { version = "0.10.0-rc.3", features = ["sha1", "sha2"] }
-p256 = { version = "=0.14.0-pre.9", features = ["ecdsa"] }
-p384 = { version = "=0.14.0-pre.9", features = ["ecdsa"] }
-p521 = { version = "=0.14.0-pre.9", features = ["ecdsa"] }
-x509-cert = { version = "0.3.0-rc.1", features = ["builder"] }
+rsa = { version = "0.10.0-rc.8", features = ["sha1", "sha2"] }
+p256 = { version = "=0.14.0-pre.11", features = ["ecdsa"] }
+p384 = { version = "=0.14.0-pre.11", features = ["ecdsa"] }
+p521 = { version = "=0.14.0-pre.11", features = ["ecdsa"] }
+x509-cert = { version = "0.3.0-rc.2", features = ["builder"] }
 
 [features]
 default = ["http", "passwords", "setup"]
