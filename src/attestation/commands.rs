@@ -24,10 +24,6 @@ impl Command for SignAttestationCertificateCommand {
     type ResponseType = Certificate;
 }
 
-/// DER encoded X.509 attestation certificate
-#[derive(Serialize, Deserialize, Debug)]
-pub struct SignAttestationCertificateResponse(Certificate);
-
 impl Response for Certificate {
     const COMMAND_CODE: command::Code = command::Code::SignAttestationCertificate;
 }
