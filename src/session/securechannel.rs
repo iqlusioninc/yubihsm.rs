@@ -33,7 +33,7 @@ pub(crate) use self::{
 use super::commands::{CreateSessionCommand, CreateSessionResponse};
 use crate::{
     authentication::{self, Credentials},
-    command,
+    command::{self, Command},
     connector::Connector,
     device, response,
     serialization::deserialize,
@@ -107,10 +107,11 @@ impl SecureChannel {
     ) -> Result<Self, session::Error> {
         let host_challenge = Challenge::new();
 
-        let command_message = command::Message::from(&CreateSessionCommand {
+        let command_message = CreateSessionCommand {
             authentication_key_id: credentials.authentication_key_id,
             host_challenge,
-        });
+        }
+        .to_message()?;
 
         let uuid = command_message.uuid;
         let response_body = connector.send_message(uuid, command_message.into())?;

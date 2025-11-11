@@ -11,7 +11,7 @@ pub use self::{
 };
 
 pub(crate) use self::message::Message;
-use crate::{response::Response, serialization::serialize};
+use crate::{response::Response, serialization::serialize, session};
 use serde::{de::DeserializeOwned, ser::Serialize};
 
 /// Maximum size of a message sent to/from the YubiHSM
@@ -28,10 +28,8 @@ pub(crate) trait Command: Serialize + DeserializeOwned + Sized {
 
     /// Command ID for this command
     const COMMAND_CODE: Code = Self::ResponseType::COMMAND_CODE;
-}
 
-impl<C: Command> From<&C> for Message {
-    fn from(command: &C) -> Message {
-        Self::create(C::COMMAND_CODE, serialize(command).unwrap()).unwrap()
+    fn to_message(&self) -> Result<Message, session::Error> {
+        Message::create(Self::COMMAND_CODE, serialize(self)?)
     }
 }
