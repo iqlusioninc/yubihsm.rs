@@ -146,18 +146,18 @@ impl Session {
         &mut self,
         command: &C,
     ) -> Result<C::ResponseType, Error> {
-        let plaintext_cmd = command::Message::from(command);
-        let cmd_type = plaintext_cmd.command_type;
+        let plaintext_msg = command.to_message()?;
+        let cmd_type = plaintext_msg.command_type;
 
-        let encrypted_cmd = self
+        let encrypted_msg = self
             .secure_channel()?
-            .encrypt_command(plaintext_cmd)
+            .encrypt_command(plaintext_msg)
             .inspect_err(|_| {
                 // Abort the session in the event of any cryptographic errors
                 self.abort();
             })?;
 
-        let uuid = encrypted_cmd.uuid;
+        let uuid = encrypted_msg.uuid;
         session_debug!(
             self,
             "n={} uuid={} cmd={:?}",
@@ -166,7 +166,7 @@ impl Session {
             C::COMMAND_CODE
         );
 
-        let encrypted_response = self.send_message(encrypted_cmd)?;
+        let encrypted_response = self.send_message(encrypted_msg)?;
 
         let response = self
             .secure_channel()?
