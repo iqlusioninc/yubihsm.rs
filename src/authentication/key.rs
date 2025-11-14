@@ -1,7 +1,7 @@
 //! `YubiHSM 2` authentication keys (2 * AES-128 symmetric PSK) from which session keys are derived
 
 use super::{Error, ErrorKind};
-use rand_core::{OsRng, TryRngCore};
+use rand_core::RngCore;
 use std::fmt::{self, Debug};
 use zeroize::Zeroize;
 
@@ -32,10 +32,11 @@ pub const PBKDF2_ITERATIONS: u32 = 10_000;
 pub struct Key(pub(crate) [u8; SIZE]);
 
 impl Key {
-    /// Generate a random `Key` using `OsRng`.
+    /// Generate a random `Key` using an `Rng`.
     pub fn random() -> Self {
         let mut challenge = [0u8; SIZE];
-        OsRng.try_fill_bytes(&mut challenge).unwrap();
+        let mut rng = rand::rng();
+        rng.fill_bytes(&mut challenge);
         Key(challenge)
     }
 

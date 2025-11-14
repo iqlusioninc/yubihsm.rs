@@ -13,7 +13,7 @@ use ccm::{
     consts::{U13, U16},
     AeadCore, AeadInOut, Ccm, KeyInit,
 };
-use rand_core::{OsRng, TryRngCore};
+use rand_core::RngCore;
 use std::fmt::{self, Debug};
 use zeroize::{Zeroize, Zeroizing};
 
@@ -102,7 +102,8 @@ impl Key {
     /// Generate a random wrap key with the given key size.
     pub fn generate_random(key_id: object::Id, algorithm: wrap::Algorithm) -> Self {
         let mut bytes = Zeroizing::new(vec![0u8; algorithm.key_len()]);
-        OsRng.try_fill_bytes(&mut bytes).unwrap();
+        let mut rng = rand::rng();
+        rng.fill_bytes(&mut bytes);
         Self::from_bytes(key_id, &bytes).unwrap()
     }
 
