@@ -8,7 +8,7 @@ use ecdsa::{
     hazmat::DigestAlgorithm,
 };
 use ed25519_dalek as ed25519;
-use rand_core::{OsRng, TryRngCore};
+use rand_core::RngCore;
 use rsa::{traits::PublicKeyParts, BoxedUint};
 
 /// Loaded instances of a cryptographic primitives in the MockHsm
@@ -104,34 +104,39 @@ impl Payload {
     /// Generate a new key with the given algorithm
     pub fn generate(algorithm: Algorithm) -> Self {
         fn gen_rsa(len: usize) -> Payload {
-            let private_key = rsa::RsaPrivateKey::new(&mut OsRng.unwrap_err(), len)
-                .expect("failed to generate a key");
+            let private_key =
+                rsa::RsaPrivateKey::new(&mut rand::rng(), len).expect("failed to generate a key");
 
             Payload::RsaKey(private_key)
         }
+        let mut rng = rand::rng();
 
         match algorithm {
             Algorithm::Wrap(wrap_alg) => {
                 let mut bytes = vec![0u8; wrap_alg.key_len()];
-                OsRng.try_fill_bytes(&mut bytes).unwrap();
+                rng.fill_bytes(&mut bytes);
                 Payload::WrapKey(wrap_alg, bytes)
             }
             Algorithm::Asymmetric(asymmetric_alg) => match asymmetric_alg {
-                asymmetric::Algorithm::EcP256 => {
-                    Payload::EcdsaNistP256(p256::SecretKey::random(&mut OsRng.unwrap_err()))
-                }
-                asymmetric::Algorithm::EcK256 => {
-                    Payload::EcdsaSecp256k1(k256::SecretKey::random(&mut OsRng.unwrap_err()))
-                }
-                asymmetric::Algorithm::EcP384 => {
-                    Payload::EcdsaNistP384(p384::SecretKey::random(&mut OsRng.unwrap_err()))
-                }
-                asymmetric::Algorithm::EcP521 => {
-                    Payload::EcdsaNistP521(p521::SecretKey::random(&mut OsRng.unwrap_err()))
-                }
+                asymmetric::Algorithm::EcP256 => Payload::EcdsaNistP256({
+                    let Ok(key) = p256::SecretKey::try_from_rng(&mut rng);
+                    key
+                }),
+                asymmetric::Algorithm::EcK256 => Payload::EcdsaSecp256k1({
+                    let Ok(key) = k256::SecretKey::try_from_rng(&mut rng);
+                    key
+                }),
+                asymmetric::Algorithm::EcP384 => Payload::EcdsaNistP384({
+                    let Ok(key) = p384::SecretKey::try_from_rng(&mut rng);
+                    key
+                }),
+                asymmetric::Algorithm::EcP521 => Payload::EcdsaNistP521({
+                    let Ok(key) = p521::SecretKey::try_from_rng(&mut rng);
+                    key
+                }),
 
                 asymmetric::Algorithm::Ed25519 => {
-                    Payload::Ed25519Key(ed25519::SigningKey::generate(&mut OsRng.unwrap_err()))
+                    Payload::Ed25519Key(ed25519::SigningKey::generate(&mut rng))
                 }
                 asymmetric::Algorithm::Rsa2048 => gen_rsa(2048),
                 asymmetric::Algorithm::Rsa3072 => gen_rsa(3072),
@@ -142,7 +147,7 @@ impl Payload {
             },
             Algorithm::Hmac(hmac_alg) => {
                 let mut bytes = vec![0u8; hmac_alg.key_len()];
-                OsRng.try_fill_bytes(&mut bytes).unwrap();
+                rng.fill_bytes(&mut bytes);
                 Payload::HmacKey(hmac_alg, bytes)
             }
             _ => panic!("MockHsm does not support generating {algorithm:?} objects"),

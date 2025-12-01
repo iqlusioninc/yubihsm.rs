@@ -1,7 +1,7 @@
 //! Nonces used by the YubiHSM 2's AES-CCM encrypted `wrap::Message`
 
 use ccm::consts::U13;
-use rand_core::{OsRng, TryRngCore};
+use rand_core::RngCore;
 
 /// Number of bytes in a nonce used for "wrapping" (i.e AES-CCM encryption)
 pub const SIZE: usize = 13;
@@ -14,7 +14,8 @@ impl Nonce {
     /// Generate a random `wrap::Nonce`
     pub fn generate() -> Self {
         let mut bytes = [0u8; SIZE];
-        OsRng.try_fill_bytes(&mut bytes).unwrap();
+        let mut rng = rand::rng();
+        rng.fill_bytes(&mut bytes);
         Nonce(bytes)
     }
 

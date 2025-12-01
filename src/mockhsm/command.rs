@@ -33,9 +33,9 @@ use ::hmac::{Hmac, Mac};
 use ::rsa::{oaep::Oaep, pkcs1v15, pss, traits::PaddingScheme, RsaPrivateKey};
 use digest::{
     array::Array, const_oid::AssociatedOid, crypto_common::OutputSizeUser, typenum::Unsigned,
-    Digest, FixedOutput, FixedOutputReset, KeyInit, Output, Reset,
+    Digest, FixedOutput, FixedOutputReset, HashMarker, KeyInit, Output, Reset,
 };
-use rand_core::{OsRng, TryRngCore};
+use rand_core::RngCore;
 use sha1::Sha1;
 use sha2::{Sha256, Sha384, Sha512};
 use signature::{
@@ -385,7 +385,8 @@ fn get_pseudo_random(_state: &State, cmd_data: &[u8]) -> response::Message {
         .unwrap_or_else(|e| panic!("error parsing Code::GetPseudoRandom: {e:?}"));
 
     let mut bytes = vec![0u8; command.bytes as usize];
-    OsRng.try_fill_bytes(&mut bytes).unwrap();
+    let mut rng = rand::rng();
+    rng.fill_bytes(&mut bytes);
 
     GetPseudoRandomResponse { bytes }.serialize()
 }
@@ -735,8 +736,9 @@ fn sign_pss(state: &State, cmd_data: &[u8]) -> response::Message {
         msg: &[u8],
     ) -> pss::Signature {
         let signing_key = pss::SigningKey::<D>::new(private_key.clone());
+        let mut rng = rand::rng();
         signing_key
-            .sign_prehash_with_rng(&mut OsRng, msg)
+            .sign_prehash_with_rng(&mut rng, msg)
             .expect("unable to sign with prehash, wrong payload length?")
     }
 
@@ -868,7 +870,7 @@ fn verify_hmac(state: &State, cmd_data: &[u8]) -> response::Message {
 ///
 /// Trying to reset the fixed hash will trigger a panic, and should be treated as a
 /// bug.
-#[derive(Clone)]
+#[derive(Clone, Default)]
 struct PrecomputedHashDigest<D: OutputSizeUser> {
     fixed: Output<D>,
 }
@@ -902,7 +904,10 @@ impl<D: OutputSizeUser> FixedOutputReset for PrecomputedHashDigest<D> {
     }
 }
 
+impl<D: OutputSizeUser + HashMarker> HashMarker for PrecomputedHashDigest<D> {}
+
 fn decrypt_oaep(state: &State, cmd_data: &[u8]) -> response::Message {
+    let mut rng = rand::rng();
     let command: DecryptOaepCommand = deserialize(cmd_data)
         .unwrap_or_else(|e| panic!("error parsing Code::DecryptOaepCommand: {e:?}"));
 
@@ -914,14 +919,14 @@ fn decrypt_oaep(state: &State, cmd_data: &[u8]) -> response::Message {
             macro_rules! decrypt_oaep {
                 ($hash:ty) => {{
                     let oaep = Oaep {
-                        digest: Box::new(PrecomputedHashDigest::<$hash> {
+                        digest: PrecomputedHashDigest::<$hash> {
                             fixed: Array::try_from(command.label_hash.as_slice())
                                 .expect("hash size invariant violated"),
-                        }),
-                        mgf_digest: Box::new(<$hash>::new()),
+                        },
+                        mgf_digest: <$hash>::new(),
                         label: None,
                     };
-                    oaep.decrypt(Some(&mut OsRng), private_key, &command.data)
+                    oaep.decrypt(Some(&mut rng), private_key, &command.data)
                 }};
             }
 
