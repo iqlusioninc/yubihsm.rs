@@ -20,7 +20,6 @@ pub mod put_opaque;
 #[cfg(feature = "mockhsm")]
 pub mod reset_device;
 pub mod set_option;
-#[cfg(not(feature = "mockhsm"))]
 pub mod sign_attestation_certificate;
 #[cfg(not(feature = "mockhsm"))]
 pub mod sign_ecdsa;
