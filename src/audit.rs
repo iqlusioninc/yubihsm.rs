@@ -4,7 +4,7 @@ pub(crate) mod commands;
 mod error;
 
 pub use self::{
-    commands::{LogDigest, LogEntries, LogEntry},
+    commands::{verify_log_entries, LogDigest, LogEntries, LogEntry},
     error::{Error, ErrorKind},
 };
 
