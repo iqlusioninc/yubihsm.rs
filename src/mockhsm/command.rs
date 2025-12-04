@@ -133,7 +133,20 @@ pub(crate) fn session_message(
         Code::PutOpaqueObject => put_opaque(state, &command.data),
         Code::SetOption => put_option(state, &command.data),
         Code::PutWrapKey => put_wrap_key(state, &command.data),
-        Code::ResetDevice => return Ok(reset_device(state, session_id)),
+        Code::ResetDevice => {
+            if !state
+                .get_session(session_id)?
+                .auth_capabilities
+                .contains(Capability::RESET_DEVICE)
+            {
+                return Ok(response::Message::new(
+                    response::Code::DeviceInsufficientPermissions,
+                    vec![device::ErrorKind::InsufficientPermissions.to_u8()],
+                )
+                .into());
+            }
+            return Ok(reset_device(state, session_id));
+        }
         Code::SetLogIndex => SetLogIndexResponse {}.serialize(),
         Code::SignEcdsa => sign_ecdsa(state, &command.data),
         Code::SignEddsa => sign_eddsa(state, &command.data),

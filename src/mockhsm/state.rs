@@ -60,7 +60,7 @@ impl State {
             .map(|id| id.succ().expect("session count exceeded"))
             .unwrap_or_else(|| session::Id::from_u8(0).unwrap());
 
-        let channel = {
+        let (capabilities, channel) = {
             let authentication_key_obj = self
                 .objects
                 .get(authentication_key_id, object::Type::AuthenticationKey)
@@ -68,18 +68,21 @@ impl State {
                     panic!("MockHsm has no authentication::Key in slot {authentication_key_id:?}")
                 });
 
-            SecureChannel::new(
-                session_id,
-                authentication_key_obj
-                    .payload
-                    .authentication_key()
-                    .expect("auth key payload"),
-                host_challenge,
-                card_challenge,
+            (
+                authentication_key_obj.info().capabilities,
+                SecureChannel::new(
+                    session_id,
+                    authentication_key_obj
+                        .payload
+                        .authentication_key()
+                        .expect("auth key payload"),
+                    host_challenge,
+                    card_challenge,
+                ),
             )
         };
 
-        let session = HsmSession::new(session_id, card_challenge, channel);
+        let session = HsmSession::new(session_id, card_challenge, channel, capabilities);
         assert!(self.sessions.insert(session_id, session).is_none());
 
         self.get_session(session_id).unwrap()
