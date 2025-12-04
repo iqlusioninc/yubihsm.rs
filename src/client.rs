@@ -810,9 +810,15 @@ impl Client {
     pub fn reset_device(&self) -> Result<(), Error> {
         let mut session = self.session()?;
 
-        // TODO: handle potential errors that occur when resetting
-        if let Err(e) = session.send_command(&ResetDeviceCommand {}) {
-            debug!("error sending reset command: {}", e);
+        let result = session.send_command(&ResetDeviceCommand {});
+        if let Err(e) = &result {
+            if *e.kind() == session::ErrorKind::ProtocolError {
+                // real devices can send protocol errors when the request has been accepted
+                debug!("error sending reset command: {}", e);
+            } else {
+                // other errors, such as insufficient permissions, should be propagated
+                result?;
+            }
         }
 
         // Resetting the HSM invalidates our session
