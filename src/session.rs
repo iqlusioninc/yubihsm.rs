@@ -17,6 +17,7 @@ pub use self::{
     error::{Error, ErrorKind},
     guard::Guard,
     id::Id,
+    securechannel::MAX_COMMANDS_PER_SESSION,
     timeout::Timeout,
 };
 
