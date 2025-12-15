@@ -8,6 +8,7 @@ use crate::{
         securechannel::{Challenge, Cryptogram, SecureChannel},
         Id,
     },
+    Capability,
 };
 
 /// Session with the `MockHsm`
@@ -20,15 +21,24 @@ pub(crate) struct HsmSession {
 
     /// Encrypted channel
     pub channel: SecureChannel,
+
+    /// Authentication key's capabilities
+    pub auth_capabilities: Capability,
 }
 
 impl HsmSession {
     /// Create a new session
-    pub fn new(id: Id, card_challenge: Challenge, channel: SecureChannel) -> Self {
+    pub fn new(
+        id: Id,
+        card_challenge: Challenge,
+        channel: SecureChannel,
+        auth_capabilities: Capability,
+    ) -> Self {
         Self {
             id,
             card_challenge,
             channel,
+            auth_capabilities,
         }
     }
 
