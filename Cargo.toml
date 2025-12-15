@@ -48,7 +48,7 @@ zeroize = { version = "1.8", features = ["zeroize_derive"] }
 ed25519-dalek = { version = "3.0.0-pre.2", optional = true, features = ["rand_core"] }
 hmac = { version = "0.13.0-rc.3", optional = true }
 k256 = { version = "0.14.0-rc.1", optional = true, features = ["ecdsa", "sha256"] }
-pbkdf2 = { version = "0.13.0-rc.2", optional = true, default-features = false, features = ["hmac"] }
+pbkdf2 = { version = "0.13.0-rc.5", optional = true, default-features = false, features = ["hmac"] }
 serde_json = { version = "1", optional = true }
 rusb = { version = "0.9.4", optional = true }
 tiny_http = { version = "0.12", optional = true }
