@@ -48,7 +48,7 @@ use std::{io::Cursor, str::FromStr};
 use subtle::ConstantTimeEq;
 use x509_cert::{
     builder::{self, profile, Builder, CertificateBuilder},
-    ext::{AsExtension, Extension},
+    ext::{Extension, ToExtension},
     name::Name,
     serial_number,
     time::Validity,
