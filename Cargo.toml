@@ -52,7 +52,7 @@ pbkdf2 = { version = "0.13.0-rc.2", optional = true, default-features = false, f
 serde_json = { version = "1", optional = true }
 rusb = { version = "0.9.4", optional = true }
 tiny_http = { version = "0.12", optional = true }
-x509-cert = { version = "0.3.0-rc.1", features = ["builder", "hazmat"], optional = true }
+x509-cert = { version = "0.3.0-rc.3", features = ["builder", "hazmat"], optional = true }
 
 [dev-dependencies]
 ed25519-dalek = "=3.0.0-pre.2"
@@ -62,7 +62,7 @@ rsa = { version = "0.10.0-rc.10", features = ["sha1", "sha2"] }
 p256 = { version = "0.14.0-rc.1", features = ["ecdsa"] }
 p384 = { version = "0.14.0-rc.1", features = ["ecdsa"] }
 p521 = { version = "0.14.0-rc.1", features = ["ecdsa"] }
-x509-cert = { version = "0.3.0-rc.2", features = ["builder"] }
+x509-cert = { version = "0.3.0-rc.3", features = ["builder"] }
 
 [features]
 default = ["http", "passwords", "setup"]
