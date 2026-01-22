@@ -4,7 +4,7 @@
 use crate::{algorithm::Algorithm, asymmetric, authentication, hmac, opaque, wrap};
 use digest::{typenum::Unsigned, OutputSizeUser};
 use ecdsa::{
-    elliptic_curve::{sec1::ToEncodedPoint, FieldBytesSize},
+    elliptic_curve::{sec1::ToEncodedPoint, FieldBytesSize, Generate},
     hazmat::DigestAlgorithm,
 };
 use ed25519_dalek as ed25519;
@@ -118,22 +118,18 @@ impl Payload {
                 Payload::WrapKey(wrap_alg, bytes)
             }
             Algorithm::Asymmetric(asymmetric_alg) => match asymmetric_alg {
-                asymmetric::Algorithm::EcP256 => Payload::EcdsaNistP256({
-                    let Ok(key) = p256::SecretKey::try_from_rng(&mut rng);
-                    key
-                }),
-                asymmetric::Algorithm::EcK256 => Payload::EcdsaSecp256k1({
-                    let Ok(key) = k256::SecretKey::try_from_rng(&mut rng);
-                    key
-                }),
-                asymmetric::Algorithm::EcP384 => Payload::EcdsaNistP384({
-                    let Ok(key) = p384::SecretKey::try_from_rng(&mut rng);
-                    key
-                }),
-                asymmetric::Algorithm::EcP521 => Payload::EcdsaNistP521({
-                    let Ok(key) = p521::SecretKey::try_from_rng(&mut rng);
-                    key
-                }),
+                asymmetric::Algorithm::EcP256 => {
+                    Payload::EcdsaNistP256(p256::SecretKey::generate_from_rng(&mut rng))
+                }
+                asymmetric::Algorithm::EcK256 => {
+                    Payload::EcdsaSecp256k1(k256::SecretKey::generate_from_rng(&mut rng))
+                }
+                asymmetric::Algorithm::EcP384 => {
+                    Payload::EcdsaNistP384(p384::SecretKey::generate_from_rng(&mut rng))
+                }
+                asymmetric::Algorithm::EcP521 => {
+                    Payload::EcdsaNistP521(p521::SecretKey::generate_from_rng(&mut rng))
+                }
 
                 asymmetric::Algorithm::Ed25519 => {
                     Payload::Ed25519Key(ed25519::SigningKey::generate(&mut rng))
