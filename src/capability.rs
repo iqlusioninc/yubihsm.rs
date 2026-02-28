@@ -68,6 +68,12 @@ bitflags! {
         /// `delete-wrap-key`: delete WrapKey objects
         const DELETE_WRAP_KEY = 0x400_0000_0000;
 
+        /// `encrypt-cbc`: encrypt CBC
+        const ENCRYPT_CBC = 0x40_0000_0000_0000;
+
+        /// `encrypt-ecb`: encrypt ECB
+        const ENCRYPT_ECB = 0x10_0000_0000_0000;
+
         /// `exportable-under-wrap`: mark an object as exportable under keywrap
         const EXPORTABLE_UNDER_WRAP = 0x1_0000;
 
@@ -115,6 +121,12 @@ bitflags! {
 
         /// `rewrap-to-otp-aead-key`: rewrap AEADs to an OTP AEAD key object from another
         const REWRAP_TO_OTP_AEAD_KEY = 0x2_0000_0000;
+
+        /// `decrypt-cbc`: decrypt CBC
+        const DECRYPT_CBC = 0x20_0000_0000_0000;
+
+        /// `decrypt-ecb`: decrypt ECB
+        const DECRYPT_ECB = 0x8_0000_0000_0000;
 
         /// `decrypt-otp`: decrypt OTP
         const DECRYPT_OTP = 0x2000_0000;

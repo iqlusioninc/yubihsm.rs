@@ -501,6 +501,7 @@ version = "0.4.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "818356c5132c1fede50f837ca96afbe78ff42413047f4abb886217845e1b6c8c"
 dependencies = [
+ "serde",
  "subtle",
  "typenum",
  "zeroize",
@@ -1276,7 +1277,9 @@ dependencies = [
  "bitflags",
  "cbc",
  "ccm",
+ "cipher",
  "cmac",
+ "crypto-common",
  "der",
  "digest",
  "ecdsa",
@@ -1284,6 +1287,7 @@ dependencies = [
  "ed25519-dalek",
  "hex-literal",
  "hmac",
+ "hybrid-array",
  "k256",
  "log",
  "once_cell",
@@ -1316,6 +1320,7 @@ version = "1.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b97154e67e32c85465826e8bcc1c59429aaaf107c1e4a9e53c8d8ccd5eff88d0"
 dependencies = [
+ "serde",
  "zeroize_derive",
 ]
 
