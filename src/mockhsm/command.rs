@@ -26,12 +26,15 @@ use crate::{
     },
     serialization::deserialize,
     session::{self, commands::*},
+    symmetric::{self, commands::*},
     template,
     wrap::{self, commands::*},
     Capability,
 };
 use ::hmac::{Hmac, Mac};
 use ::rsa::{oaep::Oaep, pkcs1v15, pss, traits::PaddingScheme, RsaPrivateKey};
+use cipher::{block_padding::NoPadding, BlockModeDecrypt, BlockModeEncrypt};
+use common::KeyIvInit;
 use digest::{
     array::Array, common::OutputSizeUser, const_oid::AssociatedOid, typenum::Unsigned, Digest,
     FixedOutput, FixedOutputReset, HashMarker, KeyInit, Output, Reset,
@@ -156,6 +159,10 @@ pub(crate) fn session_message(
         Code::SignPkcs1 => sign_pkcs1v15(state, &command.data),
         Code::DecryptOaep => decrypt_oaep(state, &command.data),
         Code::SignAttestationCertificate => sign_attestation_certificate(state, &command.data),
+        Code::PutSymmetricKey => put_symmetric_key(state, &command.data),
+        Code::GenerateSymmetricKey => gen_symmetric_key(state, &command.data),
+        Code::EncryptAesCbc => encrypt_aes_cbc(state, &command.data),
+        Code::DecryptAesCbc => decrypt_aes_cbc(state, &command.data),
         unsupported => panic!("unsupported command type: {unsupported:?}"),
     };
 
@@ -173,6 +180,49 @@ fn close_session(state: &mut State, session_id: session::Id) -> Result<Vec<u8>, 
 
     state.close_session(session_id);
     Ok(response.into())
+}
+
+/// Decrypt AES-CBC payload
+fn decrypt_aes_cbc(state: &State, cmd_data: &[u8]) -> response::Message {
+    let command: DecryptAesCbc = deserialize(cmd_data)
+        .unwrap_or_else(|e| panic!("error parsing Code::EncryptAesCbc: {e:?}"));
+
+    if let Some(obj) = state
+        .objects
+        .get(command.key_id, object::Type::SymmetricKey)
+    {
+        if let Payload::Symmetric(alg, ref key) = obj.payload {
+            macro_rules! impl_encrypt {
+                ($alg_name: expr, $alg: ty) => {
+                    if alg == $alg_name {
+                        type Decryptor = cbc::Decryptor<$alg>;
+
+                        let key = cipher::Key::<Decryptor>::try_from(key.as_slice()).unwrap();
+                        let iv = cipher::Iv::<Decryptor>::try_from(&command.payload[..16]).unwrap();
+
+                        let decryptor = cbc::Decryptor::<$alg>::new(&key, &iv);
+                        let plaintext = decryptor
+                            .decrypt_padded_vec::<NoPadding>(&command.payload[16..])
+                            .unwrap();
+
+                        return DecryptAesCbcResponse(plaintext).serialize();
+                    }
+                };
+            }
+
+            impl_encrypt!(symmetric::Algorithm::Aes128, aes::Aes128);
+            impl_encrypt!(symmetric::Algorithm::Aes192, aes::Aes192);
+            impl_encrypt!(symmetric::Algorithm::Aes256, aes::Aes256);
+
+            device::ErrorKind::ObjectNotFound.into()
+        } else {
+            debug!("not a symmetric key: {:?}", obj.algorithm());
+            device::ErrorKind::InvalidCommand.into()
+        }
+    } else {
+        debug!("no such object ID: {:?}", command.key_id);
+        device::ErrorKind::ObjectNotFound.into()
+    }
 }
 
 /// Delete an object
@@ -249,6 +299,9 @@ fn device_info() -> response::Message {
             Algorithm::Ecdsa(ecdsa::Algorithm::Sha512),
             Algorithm::Asymmetric(asymmetric::Algorithm::Ed25519),
             Algorithm::Asymmetric(asymmetric::Algorithm::EcP224),
+            Algorithm::Symmetric(symmetric::Algorithm::Aes128),
+            Algorithm::Symmetric(symmetric::Algorithm::Aes192),
+            Algorithm::Symmetric(symmetric::Algorithm::Aes256),
         ],
     };
 
@@ -258,6 +311,48 @@ fn device_info() -> response::Message {
 /// Echo a message back to the host
 fn echo(cmd_data: &[u8]) -> response::Message {
     EchoResponse(cmd_data.into()).serialize()
+}
+
+/// Encrypt AES-CBC payload
+fn encrypt_aes_cbc(state: &State, cmd_data: &[u8]) -> response::Message {
+    let command: EncryptAesCbc = deserialize(cmd_data)
+        .unwrap_or_else(|e| panic!("error parsing Code::EncryptAesCbc: {e:?}"));
+
+    if let Some(obj) = state
+        .objects
+        .get(command.key_id, object::Type::SymmetricKey)
+    {
+        if let Payload::Symmetric(alg, ref key) = obj.payload {
+            macro_rules! impl_encrypt {
+                ($alg_name: expr, $alg: ty) => {
+                    if alg == $alg_name {
+                        type Encryptor = cbc::Encryptor<$alg>;
+
+                        let key = cipher::Key::<Encryptor>::try_from(key.as_slice()).unwrap();
+                        let iv = cipher::Iv::<Encryptor>::try_from(&command.payload[..16]).unwrap();
+
+                        let encryptor = cbc::Encryptor::<$alg>::new(&key, &iv);
+                        let ciphertext =
+                            encryptor.encrypt_padded_vec::<NoPadding>(&command.payload[16..]);
+
+                        return EncryptAesCbcResponse(ciphertext).serialize();
+                    }
+                };
+            }
+
+            impl_encrypt!(symmetric::Algorithm::Aes128, aes::Aes128);
+            impl_encrypt!(symmetric::Algorithm::Aes192, aes::Aes192);
+            impl_encrypt!(symmetric::Algorithm::Aes256, aes::Aes256);
+
+            device::ErrorKind::ObjectNotFound.into()
+        } else {
+            debug!("not a symmetric key: {:?}", obj.algorithm());
+            device::ErrorKind::InvalidCommand.into()
+        }
+    } else {
+        debug!("no such object ID: {:?}", command.key_id);
+        device::ErrorKind::ObjectNotFound.into()
+    }
 }
 
 /// Export an object from the HSM in encrypted form
@@ -320,6 +415,27 @@ fn gen_hmac_key(state: &mut State, cmd_data: &[u8]) -> response::Message {
     );
 
     GenHmacKeyResponse {
+        key_id: command.key_id,
+    }
+    .serialize()
+}
+
+/// Generate a new random symmetric key
+fn gen_symmetric_key(state: &mut State, cmd_data: &[u8]) -> response::Message {
+    let GenSymmetricKeyCommand(command) = deserialize(cmd_data)
+        .unwrap_or_else(|e| panic!("error parsing Code::GenSymmetricKey: {e:?}"));
+
+    state.objects.generate(
+        command.key_id,
+        object::Type::SymmetricKey,
+        command.algorithm,
+        command.label,
+        command.capabilities,
+        Capability::default(),
+        command.domains,
+    );
+
+    GenSymmetricKeyResponse {
         key_id: command.key_id,
     }
     .serialize()
@@ -618,6 +734,25 @@ fn put_option(state: &mut State, cmd_data: &[u8]) -> response::Message {
     }
 
     PutOptionResponse {}.serialize()
+}
+
+/// Put an existing symmetric key into the HSM
+fn put_symmetric_key(state: &mut State, cmd_data: &[u8]) -> response::Message {
+    let PutSymmetricKeyCommand { params, data } = deserialize(cmd_data)
+        .unwrap_or_else(|e| panic!("error parsing Code::PutAsymmetricKey: {e:?}"));
+
+    state.objects.put(
+        params.id,
+        object::Type::SymmetricKey,
+        params.algorithm,
+        params.label,
+        params.capabilities,
+        Capability::default(),
+        params.domains,
+        &data,
+    );
+
+    PutSymmetricKeyResponse { key_id: params.id }.serialize()
 }
 
 /// Put an existing wrap (i.e. AES-CCM) key into the HSM

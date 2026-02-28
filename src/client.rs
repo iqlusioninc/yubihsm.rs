@@ -31,6 +31,7 @@ use crate::{
     rsa::{self, oaep::commands::*, pkcs1::commands::*, pss::commands::*, SignatureAlgorithm},
     serialization::{deserialize, serialize},
     session::{self, Session},
+    symmetric::{self, commands::*},
     template::{commands::*, Template},
     uuid,
     wrap::{self, commands::*},
@@ -163,7 +164,7 @@ impl Client {
     }
 
     /// Encrypt a command, send it to the HSM, then read and decrypt the response.
-    fn send_command<T: Command>(&self, command: T) -> Result<T::ResponseType, Error> {
+    pub(crate) fn send_command<T: Command>(&self, command: T) -> Result<T::ResponseType, Error> {
         let mut session = self.session()?;
 
         match session.send_command(&command) {
@@ -328,6 +329,28 @@ impl Client {
     ) -> Result<object::Id, Error> {
         Ok(self
             .send_command(GenHmacKeyCommand(generate::Params {
+                key_id,
+                label,
+                domains,
+                capabilities,
+                algorithm: algorithm.into(),
+            }))?
+            .key_id)
+    }
+
+    /// Generate a new symmetric key within the HSM.
+    ///
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#generate-symmetric-key-command>
+    pub fn generate_symmetric_key(
+        &self,
+        key_id: object::Id,
+        label: object::Label,
+        domains: Domain,
+        capabilities: Capability,
+        algorithm: symmetric::Algorithm,
+    ) -> Result<object::Id, Error> {
+        Ok(self
+            .send_command(GenSymmetricKeyCommand(generate::Params {
                 key_id,
                 label,
                 domains,
@@ -713,6 +736,47 @@ impl Client {
 
         Ok(self
             .send_command(PutOtpAeadKeyCommand {
+                params: object::put::Params {
+                    id: key_id,
+                    label,
+                    domains,
+                    capabilities,
+                    algorithm: algorithm.into(),
+                },
+                data,
+            })?
+            .key_id)
+    }
+
+    /// Put an existing symmetric key into the HSM.
+    ///
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#put-symmetric-key-command>
+    pub fn put_symmetric_key<K>(
+        &self,
+        key_id: object::Id,
+        label: object::Label,
+        domains: Domain,
+        capabilities: Capability,
+        algorithm: symmetric::Algorithm,
+        key_bytes: K,
+    ) -> Result<object::Id, Error>
+    where
+        K: Into<Vec<u8>>,
+    {
+        let data = key_bytes.into();
+
+        if data.len() != algorithm.key_len() {
+            fail!(
+                ErrorKind::ProtocolError,
+                "invalid key length for {:?}: {} (expected {})",
+                algorithm,
+                data.len(),
+                algorithm.key_len()
+            );
+        }
+
+        Ok(self
+            .send_command(PutSymmetricKeyCommand {
                 params: object::put::Params {
                     id: key_id,
                     label,

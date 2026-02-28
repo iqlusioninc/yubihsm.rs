@@ -7,10 +7,12 @@ use crate::{
     ecdsa::algorithm::CurveAlgorithm,
     object,
     serialization::{deserialize, serialize},
+    symmetric::{self},
     wrap, Capability, Domain,
 };
 use aes::cipher::typenum::Unsigned;
 use ccm::aead::Aead;
+use cipher::{Key, KeySizeUser};
 use ecdsa::{
     elliptic_curve::{
         sec1::{ModulusSize, ValidatePublicKey},
@@ -271,6 +273,58 @@ impl Plaintext {
             object_info,
             data,
         })
+    }
+
+    /// Return the ecdsa key of this [`Plaintext`] if it was an EC key.
+    pub fn symmetric<C>(&self) -> Option<Key<C>>
+    where
+        C: KeySizeUser + symmetric::AssociatedHsmSymmetricAlgorithm,
+    {
+        if let algorithm::Algorithm::Symmetric(alg) = self.object_info.algorithm {
+            if C::HSM_SYMMETRIC_ALGORITHM == alg {
+                Key::<C>::try_from(&self.data).ok()
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+
+    /// Build a [`Plaintext`] from a symmetric [`Key`].
+    pub fn from_symmetric<C>(
+        algorithm: Algorithm,
+        object_id: object::Id,
+        capabilities: Capability,
+        domains: Domain,
+        label: object::Label,
+        key: &Key<C>,
+    ) -> Self
+    where
+        C: KeySizeUser + symmetric::AssociatedHsmSymmetricAlgorithm,
+    {
+        let mut object_info = wrap::Info {
+            capabilities,
+            object_id,
+            length: 0,
+            domains,
+            object_type: object::Type::SymmetricKey,
+            algorithm: algorithm::Algorithm::Symmetric(C::HSM_SYMMETRIC_ALGORITHM),
+            sequence: 0,
+            origin: object::Origin::Imported,
+            label,
+        };
+
+        let mut data = Vec::new();
+        data.extend_from_slice(&key);
+
+        object_info.length = data.len() as u16;
+
+        Self {
+            algorithm,
+            object_info,
+            data,
+        }
     }
 }
 
