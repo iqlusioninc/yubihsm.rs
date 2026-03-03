@@ -368,6 +368,19 @@ impl Objects {
                 //  We can rebuild the key from the primes and we'll just discard the internal state here
                 &unwrapped_object.data[..alg.key_len()],
             ),
+            Algorithm::Asymmetric(asymmetric::Algorithm::Ed25519) => {
+                assert_eq!(unwrapped_object.data.len(), 4 * 32);
+                let mut secret = [0; 32];
+                secret.copy_from_slice(&unwrapped_object.data[0..32]);
+                // new ed25519 encoding consists of four 32-byte chunks:
+                //  - secret key seed
+                //  - expanded key scalar
+                //  - expanded key hash prefix
+                //  - verifying key
+                //
+                //  We need only the first chunk
+                Payload::Ed25519Key(ed25519_dalek::SigningKey::from_bytes(&secret))
+            }
             _ => Payload::new(
                 unwrapped_object.object_info.algorithm,
                 &unwrapped_object.data,
