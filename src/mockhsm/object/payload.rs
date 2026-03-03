@@ -9,7 +9,10 @@ use ecdsa::{
 };
 use ed25519_dalek as ed25519;
 use rand_core::RngCore;
-use rsa::{traits::PublicKeyParts, BoxedUint};
+use rsa::{
+    traits::{PrivateKeyParts as _, PublicKeyParts},
+    BoxedUint,
+};
 
 /// Loaded instances of a cryptographic primitives in the MockHsm
 #[derive(Debug)]
@@ -191,7 +194,21 @@ impl Payload {
                 <<p521::NistP521 as DigestAlgorithm>::Digest as OutputSizeUser>::OutputSize::USIZE
             }
             Payload::Ed25519Key(_) => ed25519::SECRET_KEY_LENGTH,
-            Payload::RsaKey(k) => k.size(),
+            Payload::RsaKey(key) => {
+                let primes = key.primes();
+
+                let expectation =
+                    "invariant violation: we already precomputed the values, they should be populated";
+
+                primes.iter().map(|prime| prime.to_be_bytes().len()).sum::<usize>() +
+
+                // Unwrap here is okay, we have ownership of the key and we already precomputed the values.
+                key.dp().expect(expectation).to_be_bytes().len() +
+                key.dq().expect(expectation).to_be_bytes().len() +
+                // TODO: the second unwrap for int -> uint conversion is unfortunate.
+                key.qinv().expect(expectation).retrieve().to_be_bytes().len() +
+                key.n().to_be_bytes().len()
+            }
             Payload::HmacKey(_, ref data) => data.len(),
             Payload::Opaque(_, ref data) => data.len(),
             Payload::WrapKey(_, ref data) => data.len(),
