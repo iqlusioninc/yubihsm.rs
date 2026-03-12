@@ -132,7 +132,7 @@ fn wrap_deserialize() {
     let private_key: p256::SecretKey = plaintext
         .ecdsa()
         .expect("Object did not contain a NistP256 object");
-    let public_key: p256::EncodedPoint = private_key.public_key().into();
+    let public_key: p256::Sec1Point = private_key.public_key().into();
 
     assert_eq!(
         client
