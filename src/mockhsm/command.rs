@@ -33,10 +33,10 @@ use crate::{
 use ::hmac::{Hmac, Mac};
 use ::rsa::{oaep::Oaep, pkcs1v15, pss, traits::PaddingScheme, RsaPrivateKey};
 use digest::{
-    array::Array, const_oid::AssociatedOid, crypto_common::OutputSizeUser, typenum::Unsigned,
-    Digest, FixedOutput, FixedOutputReset, HashMarker, KeyInit, Output, Reset,
+    array::Array, common::OutputSizeUser, const_oid::AssociatedOid, typenum::Unsigned, Digest,
+    FixedOutput, FixedOutputReset, HashMarker, KeyInit, Output, Reset,
 };
-use rand_core::RngCore;
+use rand_core::Rng;
 use sha1::Sha1;
 use sha2::{Sha256, Sha384, Sha512};
 use signature::{
@@ -48,7 +48,7 @@ use std::{io::Cursor, str::FromStr};
 use subtle::ConstantTimeEq;
 use x509_cert::{
     builder::{self, profile, Builder, CertificateBuilder},
-    ext::{AsExtension, Extension},
+    ext::{Extension, ToExtension},
     name::Name,
     serial_number,
     time::Validity,

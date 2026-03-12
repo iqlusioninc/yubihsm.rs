@@ -11,7 +11,7 @@ use der::{
 };
 use spki::ObjectIdentifier;
 use x509_cert::{
-    ext::{AsExtension, Extension},
+    ext::{Criticality, Extension},
     name::Name,
 };
 
@@ -53,8 +53,8 @@ impl AssociatedOid for FirmwareVersion {
     const OID: ObjectIdentifier = YUBICO_FIRMWARE_VERSION;
 }
 
-impl AsExtension for FirmwareVersion {
-    fn critical(&self, _subject: &Name, _extensions: &[Extension]) -> bool {
+impl Criticality for FirmwareVersion {
+    fn criticality(&self, _subject: &Name, _extensions: &[Extension]) -> bool {
         false
     }
 }
@@ -76,8 +76,8 @@ impl AssociatedOid for Serial {
     const OID: ObjectIdentifier = YUBICO_SERIAL_NUMBER;
 }
 
-impl AsExtension for Serial {
-    fn critical(&self, _subject: &Name, _extensions: &[Extension]) -> bool {
+impl Criticality for Serial {
+    fn criticality(&self, _subject: &Name, _extensions: &[Extension]) -> bool {
         false
     }
 }
@@ -100,8 +100,8 @@ impl AssociatedOid for Origin {
     const OID: ObjectIdentifier = YUBICO_ORIGIN;
 }
 
-impl AsExtension for Origin {
-    fn critical(&self, _subject: &Name, _extensions: &[Extension]) -> bool {
+impl Criticality for Origin {
+    fn criticality(&self, _subject: &Name, _extensions: &[Extension]) -> bool {
         false
     }
 }
@@ -124,8 +124,8 @@ impl AssociatedOid for Domain {
     const OID: ObjectIdentifier = YUBICO_DOMAIN;
 }
 
-impl AsExtension for Domain {
-    fn critical(&self, _subject: &Name, _extensions: &[Extension]) -> bool {
+impl Criticality for Domain {
+    fn criticality(&self, _subject: &Name, _extensions: &[Extension]) -> bool {
         false
     }
 }
@@ -148,8 +148,8 @@ impl AssociatedOid for Capability {
     const OID: ObjectIdentifier = YUBICO_CAPABILITY;
 }
 
-impl AsExtension for Capability {
-    fn critical(&self, _subject: &Name, _extensions: &[Extension]) -> bool {
+impl Criticality for Capability {
+    fn criticality(&self, _subject: &Name, _extensions: &[Extension]) -> bool {
         false
     }
 }
@@ -164,8 +164,8 @@ impl AssociatedOid for ObjectId {
     const OID: ObjectIdentifier = YUBICO_OBJECT_ID;
 }
 
-impl AsExtension for ObjectId {
-    fn critical(&self, _subject: &Name, _extensions: &[Extension]) -> bool {
+impl Criticality for ObjectId {
+    fn criticality(&self, _subject: &Name, _extensions: &[Extension]) -> bool {
         false
     }
 }
@@ -190,8 +190,8 @@ impl AssociatedOid for Label {
     const OID: ObjectIdentifier = YUBICO_LABEL;
 }
 
-impl AsExtension for Label {
-    fn critical(&self, _subject: &Name, _extensions: &[Extension]) -> bool {
+impl Criticality for Label {
+    fn criticality(&self, _subject: &Name, _extensions: &[Extension]) -> bool {
         false
     }
 }

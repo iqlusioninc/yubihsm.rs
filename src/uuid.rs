@@ -1,6 +1,6 @@
 //! UUID functionality
 
-use rand_core::RngCore;
+use rand_core::Rng;
 use uuid::Builder;
 pub use uuid::Uuid;
 
