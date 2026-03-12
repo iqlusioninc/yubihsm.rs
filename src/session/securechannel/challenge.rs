@@ -1,6 +1,6 @@
 //! Challenge messages used as part of SCP03's challenge/response protocol.
 
-use rand_core::RngCore;
+use rand_core::Rng;
 use serde::{Deserialize, Serialize};
 
 /// Size of a challenge message

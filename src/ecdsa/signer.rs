@@ -9,7 +9,7 @@ use ecdsa::{
     elliptic_curve::{
         array::ArraySize,
         point::PointCompression,
-        sec1::{self, FromEncodedPoint, ToEncodedPoint},
+        sec1::{self, FromSec1Point, ToSec1Point},
         AffinePoint, CurveArithmetic, FieldBytesSize,
     },
     hazmat::DigestAlgorithm,
@@ -41,13 +41,13 @@ where
 
     /// Public key associated with the private key in the YubiHSM.
     // TODO(tarcieri): remove this in favor of `verifying_key` in the next breaking release
-    public_key: sec1::EncodedPoint<C>,
+    public_key: sec1::Sec1Point<C>,
 }
 
 impl<C> Signer<C>
 where
     C: EcdsaCurve + CurveArithmetic,
-    AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+    AffinePoint<C>: FromSec1Point<C> + ToSec1Point<C>,
     FieldBytesSize<C>: sec1::ModulusSize,
     C: CurveAlgorithm + PointCompression,
 {
@@ -58,7 +58,7 @@ where
             .ecdsa::<C>()
             .ok_or_else(Error::new)?;
 
-        let verifying_key = VerifyingKey::<C>::from_encoded_point(&public_key)?;
+        let verifying_key = VerifyingKey::<C>::from_sec1_point(&public_key)?;
 
         Ok(Self {
             client,
@@ -69,7 +69,7 @@ where
     }
 
     /// Get the public key for the YubiHSM-backed private key.
-    pub fn public_key(&self) -> &sec1::EncodedPoint<C> {
+    pub fn public_key(&self) -> &sec1::Sec1Point<C> {
         &self.public_key
     }
 }
@@ -99,15 +99,15 @@ where
     }
 }
 
-impl<C> From<&Signer<C>> for sec1::EncodedPoint<C>
+impl<C> From<&Signer<C>> for sec1::Sec1Point<C>
 where
     Self: Clone,
     C: EcdsaCurve + CurveArithmetic,
-    AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+    AffinePoint<C>: FromSec1Point<C> + ToSec1Point<C>,
     FieldBytesSize<C>: sec1::ModulusSize,
     C: CurveAlgorithm + PointCompression,
 {
-    fn from(signer: &Signer<C>) -> sec1::EncodedPoint<C> {
+    fn from(signer: &Signer<C>) -> sec1::Sec1Point<C> {
         signer.public_key().clone()
     }
 }
@@ -208,7 +208,7 @@ impl<C> DigestSigner<C::Digest, der::Signature<C>> for Signer<C>
 where
     C: EcdsaCurve + CurveArithmetic,
     C: DigestAlgorithm,
-    AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+    AffinePoint<C>: FromSec1Point<C> + ToSec1Point<C>,
     FieldBytesSize<C>: sec1::ModulusSize,
     der::MaxSize<C>: ArraySize,
     <FieldBytesSize<C> as Add>::Output: Add<der::MaxOverhead> + ArraySize,
@@ -225,7 +225,7 @@ where
 impl<C> SignatureAlgorithmIdentifier for Signer<C>
 where
     C: EcdsaCurve + CurveArithmetic,
-    AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+    AffinePoint<C>: FromSec1Point<C> + ToSec1Point<C>,
     FieldBytesSize<C>: sec1::ModulusSize,
     Signature<C>: AssociatedAlgorithmIdentifier<Params = AnyRef<'static>>,
 {
