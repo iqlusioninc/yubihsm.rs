@@ -13,7 +13,7 @@ use ccm::{
     consts::{U13, U16},
     AeadCore, AeadInOut, Ccm, KeyInit,
 };
-use rand_core::RngCore;
+use rand_core::Rng;
 use std::fmt::{self, Debug};
 use zeroize::{Zeroize, Zeroizing};
 

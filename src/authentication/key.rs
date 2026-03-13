@@ -1,7 +1,7 @@
 //! `YubiHSM 2` authentication keys (2 * AES-128 symmetric PSK) from which session keys are derived
 
 use super::{Error, ErrorKind};
-use rand_core::RngCore;
+use rand_core::Rng;
 use std::fmt::{self, Debug};
 use zeroize::Zeroize;
 
