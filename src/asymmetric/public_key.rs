@@ -51,7 +51,7 @@ impl PublicKey {
     }
 
     /// Return the ECDSA public key of the given curve type if applicable
-    pub fn ecdsa<C>(&self) -> Option<sec1::EncodedPoint<C>>
+    pub fn ecdsa<C>(&self) -> Option<sec1::Sec1Point<C>>
     where
         C: EcdsaCurve + CurveArithmetic + CurveAlgorithm + PointCompression,
         FieldBytesSize<C>: sec1::ModulusSize,
@@ -64,7 +64,7 @@ impl PublicKey {
 
         let mut bytes = Array::default();
         bytes.copy_from_slice(&self.bytes);
-        let result = sec1::EncodedPoint::<C>::from_untagged_bytes(&bytes);
+        let result = sec1::Sec1Point::<C>::from_untagged_bytes(&bytes);
 
         if C::COMPRESS_POINTS {
             Some(result.compress())
