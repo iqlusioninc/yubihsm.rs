@@ -2,6 +2,7 @@ use crate::{
     clear_test_key_slot, test_vectors::AESCCM_TEST_VECTORS, TEST_DOMAINS, TEST_EXPORTED_KEY_ID,
     TEST_EXPORTED_KEY_LABEL, TEST_KEY_ID, TEST_KEY_LABEL,
 };
+use base64::Engine as _;
 use yubihsm::{asymmetric, object, wrap, Capability};
 
 /// Test wrap key workflow using randomly generated keys
@@ -77,6 +78,63 @@ fn wrap_key_test() {
         &imported_key_info.label.to_string(),
         TEST_EXPORTED_KEY_LABEL
     );
+}
+
+#[test]
+fn wrap_key_from_yhw() {
+    let client = crate::get_hsm_client();
+    let algorithm = wrap::Algorithm::Aes128Ccm;
+    let capabilities = Capability::EXPORT_WRAPPED | Capability::IMPORT_WRAPPED;
+    let delegated_capabilities = Capability::all();
+
+    clear_test_key_slot(&client, object::Type::WrapKey);
+
+    let key_id = client
+        .put_wrap_key(
+            TEST_KEY_ID,
+            TEST_KEY_LABEL.into(),
+            TEST_DOMAINS,
+            capabilities,
+            delegated_capabilities,
+            algorithm,
+            [
+                0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd,
+                0xee, 0xff,
+            ],
+        )
+        .unwrap_or_else(|err| panic!("error generating wrap key: {err}"));
+
+    assert_eq!(key_id, TEST_KEY_ID);
+    const TEST_EXPORTED_KEY_ID: u16 = 13;
+
+    let exported_key_type = object::Type::AsymmetricKey;
+    let exported_key_capabilities = Capability::EXPORTABLE_UNDER_WRAP;
+    let exported_key_algorithm = asymmetric::Algorithm::Ed25519;
+
+    // file created using yubihsm-shell tool
+    let wrapped = base64::prelude::BASE64_STANDARD
+        .decode(include_str!("../test_vectors/private-ed25519-seed.yhw").trim())
+        .expect("base64 decode to succeed");
+    let wrap_data = wrap::Message::from_vec(wrapped).expect("wrap file to be correct");
+
+    // Re-import the wrapped key back into the HSM
+    let import_response = client
+        .import_wrapped(TEST_KEY_ID, wrap_data)
+        .unwrap_or_else(|err| panic!("error importing key: {err}"));
+
+    assert_eq!(import_response.object_type, exported_key_type);
+    assert_eq!(import_response.object_id, TEST_EXPORTED_KEY_ID);
+
+    let imported_key_info = client
+        .get_object_info(TEST_EXPORTED_KEY_ID, exported_key_type)
+        .unwrap_or_else(|err| panic!("error getting object info: {err}"));
+
+    assert_eq!(imported_key_info.capabilities, exported_key_capabilities);
+    assert_eq!(imported_key_info.object_id, TEST_EXPORTED_KEY_ID);
+    assert_eq!(imported_key_info.object_type, exported_key_type);
+    assert_eq!(imported_key_info.algorithm, exported_key_algorithm.into());
+    assert_eq!(imported_key_info.origin, object::Origin::Generated);
+    assert_eq!(&imported_key_info.label.to_string(), "Signature_Key_Ed_2");
 }
 
 #[test]

@@ -7,7 +7,7 @@ use ecdsa::{
     elliptic_curve::{sec1::ToEncodedPoint, FieldBytesSize},
     hazmat::DigestAlgorithm,
 };
-use ed25519_dalek as ed25519;
+use ed25519_dalek::{self as ed25519, hazmat::ExpandedSecretKey};
 use rand_core::RngCore;
 use rsa::{traits::PublicKeyParts, BoxedUint};
 
@@ -237,7 +237,15 @@ impl Payload {
             Payload::EcdsaSecp256k1(k) => k.to_bytes().to_vec(),
             Payload::EcdsaNistP384(k) => k.to_bytes().to_vec(),
             Payload::EcdsaNistP521(k) => k.to_bytes().to_vec(),
-            Payload::Ed25519Key(k) => k.verifying_key().to_bytes().into(),
+            Payload::Ed25519Key(k) => {
+                let mut vec = Vec::with_capacity(128);
+                vec.extend_from_slice(k.as_bytes());
+                let expanded = ExpandedSecretKey::from(&k.to_bytes());
+                vec.extend_from_slice(expanded.scalar.as_bytes());
+                vec.extend_from_slice(&expanded.hash_prefix);
+                vec.extend_from_slice(k.verifying_key().as_bytes());
+                vec
+            }
             Payload::RsaKey(k) => {
                 use rsa::traits::PrivateKeyParts;
                 let mut out = Vec::new();

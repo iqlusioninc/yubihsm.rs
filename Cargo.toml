@@ -45,7 +45,7 @@ uuid = { version = "1", default-features = false }
 zeroize = { version = "1.8", features = ["zeroize_derive"] }
 
 # optional dependencies
-ed25519-dalek = { version = "3.0.0-pre.2", optional = true, features = ["rand_core"] }
+ed25519-dalek = { version = "3.0.0-pre.2", optional = true, features = ["rand_core", "hazmat"] }
 hmac = { version = "0.13.0-rc.3", optional = true }
 k256 = { version = "0.14.0-rc.1", optional = true, features = ["ecdsa", "sha256"] }
 pbkdf2 = { version = "0.13.0-rc.2", optional = true, default-features = false, features = ["hmac"] }
@@ -63,6 +63,7 @@ p256 = { version = "0.14.0-rc.1", features = ["ecdsa"] }
 p384 = { version = "0.14.0-rc.1", features = ["ecdsa"] }
 p521 = { version = "0.14.0-rc.1", features = ["ecdsa"] }
 x509-cert = { version = "0.3.0-rc.2", features = ["builder"] }
+base64 = "0.22.1"
 
 [features]
 default = ["http", "passwords", "setup"]
