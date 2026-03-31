@@ -209,9 +209,9 @@ dependencies = [
 
 [[package]]
 name = "curve25519-dalek"
-version = "5.0.0-pre.2"
+version = "5.0.0-pre.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4d8cfa313d59919eda35b420bd37db85bf58d6754d6f128b9949932b0c0fcce7"
+checksum = "6ae8b2fe5e4995d7fd08a7604e794dc569a65ed19659f5939d529813ed816d38"
 dependencies = [
  "cfg-if",
  "cpufeatures",
@@ -316,9 +316,9 @@ dependencies = [
 
 [[package]]
 name = "ed25519-dalek"
-version = "3.0.0-pre.2"
+version = "3.0.0-pre.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fbef01b6e6a5f913ae480bb34ddd798ce6d358054bebf77177200ec84af61ad5"
+checksum = "a4b9f613e0c236c699bf70d39f825594d9b03aadfd8dd856ea40685f782a4ef2"
 dependencies = [
  "curve25519-dalek",
  "ed25519",
@@ -649,9 +649,9 @@ dependencies = [
 
 [[package]]
 name = "rand_core"
-version = "0.10.0-rc-2"
+version = "0.10.0-rc-5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "104a23e4e8b77312a823b6b5613edbac78397e2f34320bc7ac4277013ec4478e"
+checksum = "05a06e03bd1f2ae861ab9e7498b6c64ed3dadb9ce175c0464a2522a5f23c0045"
 
 [[package]]
 name = "rfc6979"
