@@ -13,6 +13,7 @@ mod error;
 pub use self::error::{Error, ErrorKind};
 
 use crate::{
+    aes,
     asymmetric::{self, commands::*, PublicKey},
     attestation::{self, commands::*},
     audit::{commands::*, *},
@@ -389,6 +390,53 @@ impl Client {
                 delegated_capabilities,
             })?
             .key_id)
+    }
+
+    /// Get the raw key material of a symmetric or asymmetric key, encrypted
+    /// via RSA-AES key wrapping (CKM_RSA_AES_KEY_WRAP).
+    ///
+    /// Unlike `export_wrapped`, this exports only the key bytes with no metadata.
+    ///
+    /// The `oaep_label` must be the digest of the OAEP label using the hash
+    /// algorithm specified by `oaep_algorithm` (20, 32, 48, or 64 bytes for
+    /// SHA-1, SHA-256, SHA-384, or SHA-512 respectively). For the standard
+    /// default (empty label), this is the hash of the empty string.
+    pub fn get_rsa_wrapped_key<L>(
+        &self,
+        wrap_key_id: object::Id,
+        target_type: object::Type,
+        target_id: object::Id,
+        aes_algorithm: aes::Algorithm,
+        oaep_algorithm: rsa::oaep::Algorithm,
+        mgf1_algorithm: rsa::mgf::Algorithm,
+        oaep_label: L,
+    ) -> Result<Vec<u8>, Error>
+    where
+        L: Into<Vec<u8>>,
+    {
+        let oaep_label = oaep_label.into();
+
+        if oaep_label.len() != oaep_algorithm.digest_len() {
+            fail!(
+                ErrorKind::ProtocolError,
+                "invalid OAEP label digest length for {:?}: {} (expected {})",
+                oaep_algorithm,
+                oaep_label.len(),
+                oaep_algorithm.digest_len()
+            );
+        }
+
+        Ok(self
+            .send_command(GetRsaWrappedKeyCommand {
+                wrap_key_id,
+                target_type,
+                target_id,
+                aes_algorithm,
+                oaep_algorithm,
+                mgf1_algorithm,
+                oaep_label,
+            })?
+            .0)
     }
 
     /// Get audit logs from the HSM device.
@@ -780,6 +828,62 @@ impl Client {
 
         Ok(self
             .send_command(PutWrapKeyCommand {
+                params: object::put::Params {
+                    id: key_id,
+                    label,
+                    domains,
+                    capabilities,
+                    algorithm: algorithm.into(),
+                },
+                delegated_capabilities,
+                data,
+            })?
+            .key_id)
+    }
+
+    /// Put an RSA public wrap key into the HSM.
+    ///
+    /// Imports an RSA public key (modulus only, public exponent is assumed to be
+    /// 65537) as a public wrap key object (type 0x09). This key is used for
+    /// RSA-AES key wrap operations (`get_rsa_wrapped_key`).
+    ///
+    /// The `algorithm` must be an RSA algorithm (`Rsa2048`, `Rsa3072`, or `Rsa4096`)
+    /// and the modulus length must match (256, 384, or 512 bytes respectively).
+    pub fn put_public_wrap_key<K>(
+        &self,
+        key_id: object::Id,
+        label: object::Label,
+        domains: Domain,
+        capabilities: Capability,
+        delegated_capabilities: Capability,
+        algorithm: asymmetric::Algorithm,
+        modulus: K,
+    ) -> Result<object::Id, Error>
+    where
+        K: Into<Vec<u8>>,
+    {
+        if !algorithm.is_rsa() {
+            fail!(
+                ErrorKind::ProtocolError,
+                "invalid algorithm for public wrap key: {:?} (must be RSA)",
+                algorithm
+            );
+        }
+
+        let data = modulus.into();
+
+        if data.len() != algorithm.key_len() {
+            fail!(
+                ErrorKind::ProtocolError,
+                "invalid modulus length for {:?}: {} (expected {})",
+                algorithm,
+                data.len(),
+                algorithm.key_len()
+            );
+        }
+
+        Ok(self
+            .send_command(PutPublicWrapKeyCommand {
                 params: object::put::Params {
                     id: key_id,
                     label,

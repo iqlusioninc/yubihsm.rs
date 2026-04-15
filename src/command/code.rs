@@ -62,6 +62,8 @@ pub enum Code {
     SignEddsa = 0x6a,
     BlinkDevice = 0x6b,
     ChangeAuthenticationKey = 0x6c,
+    PutPublicWrapKey = 0x73,
+    GetRsaWrappedKey = 0x74,
     Error = 0x7f,
     HsmInitialization = 0xff,
 }
@@ -124,6 +126,8 @@ impl Code {
             0x6a => Code::SignEddsa,
             0x6b => Code::BlinkDevice,
             0x6c => Code::ChangeAuthenticationKey,
+            0x73 => Code::PutPublicWrapKey,
+            0x74 => Code::GetRsaWrappedKey,
             0x7f => Code::Error,
             0xff => Code::HsmInitialization,
             _ => fail!(ErrorKind::CodeInvalid, "invalid command type: {}", byte),

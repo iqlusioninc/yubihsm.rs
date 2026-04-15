@@ -39,6 +39,16 @@ impl Algorithm {
     pub fn to_u8(self) -> u8 {
         self as u8
     }
+
+    /// Return the digest length (in bytes) for this OAEP hash algorithm
+    pub fn digest_len(self) -> usize {
+        match self {
+            Algorithm::Sha1 => 20,
+            Algorithm::Sha256 => 32,
+            Algorithm::Sha384 => 48,
+            Algorithm::Sha512 => 64,
+        }
+    }
 }
 
 impl_algorithm_serializers!(Algorithm);

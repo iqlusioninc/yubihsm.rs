@@ -8,6 +8,8 @@ pub mod export_wrapped;
 pub mod generate_asymmetric_key;
 pub mod generate_hmac_key;
 pub mod generate_wrap_key;
+#[cfg(not(feature = "mockhsm"))]
+pub mod get_rsa_wrapped_key;
 pub mod get_log_entries;
 pub mod get_object_info;
 pub mod get_option;

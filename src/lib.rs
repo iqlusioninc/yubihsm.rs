@@ -55,6 +55,7 @@ pub mod error;
 #[macro_use]
 mod serialization;
 
+pub mod aes;
 pub mod algorithm;
 pub mod asymmetric;
 pub mod attestation;
