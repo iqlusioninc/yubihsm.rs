@@ -1,6 +1,6 @@
 //! Serde-powered deserializer for `YubiHSM` messages
 
-use super::error::Error;
+use super::error::{Error, ErrorKind};
 use serde::de::{DeserializeSeed, SeqAccess, Visitor};
 use std::io::Read;
 
@@ -234,7 +234,11 @@ impl<'de, R: Read> serde::Deserializer<'de> for &mut Deserializer<R> {
             where
                 T: DeserializeSeed<'de>,
             {
-                Ok(DeserializeSeed::deserialize(seed, &mut *self.deserializer).ok())
+                match DeserializeSeed::deserialize(seed, &mut *self.deserializer) {
+                    Ok(value) => Ok(Some(value)),
+                    Err(err) if *err.kind() == ErrorKind::UnexpectedEof => Ok(None),
+                    Err(err) => Err(err),
+                }
             }
 
             fn size_hint(&self) -> Option<usize> {
