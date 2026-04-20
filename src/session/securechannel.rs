@@ -120,7 +120,7 @@ impl SecureChannel {
         if response_message.is_err() {
             match device::ErrorKind::from_response_message(&response_message) {
                 Some(device::ErrorKind::ObjectNotFound) => fail!(
-                    ErrorKind::AuthenticationError,
+                    ErrorKind::AuthenticationKeyError,
                     "auth key not found: 0x{:04x}",
                     credentials.authentication_key_id
                 ),
