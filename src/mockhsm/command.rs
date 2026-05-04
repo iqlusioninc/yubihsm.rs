@@ -266,6 +266,7 @@ fn export_wrapped(state: &mut State, cmd_data: &[u8]) -> response::Message {
         wrap_key_id,
         object_type,
         object_id,
+        include_seed: _,
     } = deserialize(cmd_data)
         .unwrap_or_else(|e| panic!("error parsing Code::ExportWrapped: {e:?}"));
 
