@@ -315,7 +315,7 @@ impl Objects {
         {
             fail!(
                 ErrorKind::AccessDenied,
-                "object {:?} of type {:?} does not have EXPORT_UNDER_WRAP capability",
+                "object {:?} of type {:?} does not have EXPORTABLE_UNDER_WRAP capability",
                 object_id,
                 object_type
             );
