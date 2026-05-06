@@ -10,6 +10,7 @@ use ::ecdsa::{
     signature::{Keypair, Verifier},
     EcdsaCurve,
 };
+use hex_literal::hex;
 use spki::SubjectPublicKeyInfoOwned;
 use std::{str::FromStr, time::Duration};
 use x509_cert::{
@@ -19,9 +20,9 @@ use x509_cert::{
     time::Validity,
 };
 use yubihsm::{
-    asymmetric::signature::Signer as _,
+    asymmetric::{self, signature::Signer as _},
     ecdsa::{self, algorithm::CurveAlgorithm, NistP256, NistP384},
-    object, Client,
+    object, wrap, Capability, Client,
 };
 
 #[cfg(feature = "secp256k1")]
@@ -29,6 +30,8 @@ use {
     ::ecdsa::signature::{digest::Digest, DigestSigner, DigestVerifier},
     yubihsm::ecdsa::Secp256k1,
 };
+
+use crate::{clear_test_key_slot, TEST_DOMAINS, TEST_KEY_ID, TEST_KEY_LABEL};
 
 /// Domain IDs for test key
 const TEST_SIGNING_KEY_DOMAINS: yubihsm::Domain = yubihsm::Domain::DOM1;
@@ -167,4 +170,143 @@ fn ecdsa_nistp384_ca() {
     builder
         .build::<_, der::Signature<NistP384>>(&signer)
         .unwrap();
+}
+
+#[test]
+fn ecdsa_nistp384_import_wrapped() {
+    let secret_key = p384::SecretKey::generate();
+    let public_key = secret_key.public_key();
+
+    let algorithm = wrap::Algorithm::Aes256Ccm;
+    let capabilities =
+        Capability::SIGN_ECDSA | Capability::EXPORT_WRAPPED | Capability::IMPORT_WRAPPED;
+    let delegated_capabilities = Capability::all();
+    let asymmetric_key_id = 206;
+
+    let plaintext = wrap::Plaintext::from_ecdsa(
+        algorithm,
+        asymmetric_key_id,
+        capabilities,
+        TEST_DOMAINS,
+        TEST_SIGNING_KEY_LABEL.into(),
+        //delegated_capabilities,
+        secret_key,
+    )
+    .expect("build message with ecdsa key");
+
+    let wrap_key = wrap::Key::from_bytes(
+        TEST_KEY_ID,
+        &hex!("0000000000000000000000000000000000000000000000000000000000000000"),
+    )
+    .unwrap();
+    let message = plaintext
+        .encrypt(&wrap_key)
+        .expect("failed to encrypt the wrapped key");
+
+    let client = crate::get_hsm_client();
+    clear_test_key_slot(&client, object::Type::WrapKey);
+    let _ = client.delete_object(asymmetric_key_id, object::Type::AsymmetricKey);
+
+    let _key_id = client
+        .put_wrap_key(
+            TEST_KEY_ID,
+            TEST_KEY_LABEL.into(),
+            TEST_DOMAINS,
+            capabilities,
+            delegated_capabilities,
+            algorithm,
+            &hex!("0000000000000000000000000000000000000000000000000000000000000000"),
+        )
+        .unwrap_or_else(|err| panic!("error generating wrap key: {err}"));
+
+    let handle = client
+        .import_wrapped(TEST_KEY_ID, message)
+        .expect("import asymmetric key");
+
+    assert_eq!(handle.object_id, asymmetric_key_id);
+    let public = client
+        .get_public_key(handle.object_id)
+        .expect("read public key");
+    let public = public
+        .ecdsa::<p384::NistP384>()
+        .expect("ecdsa public key expected");
+
+    assert_eq!(
+        p384::PublicKey::try_from(&public).expect("valid point"),
+        public_key
+    );
+}
+
+#[test]
+fn ecdsa_nistp384_put_key() {
+    let secret_key = p384::SecretKey::from_slice(&[
+        0xe7, 0xf8, 0xff, 0xaf, 0xd8, 0xf2, 0xe9, 0xd9, 0x5c, 0x62, 0xd, 0x44, 0x6b, 0x80, 0xb4,
+        0xa0, 0xb8, 0xa9, 0x64, 0xc9, 0x8d, 0xc, 0xf6, 0xb2, 0x2f, 0x2d, 0x5b, 0x88, 0xed, 0x39,
+        0xd4, 0x99, 0x89, 0xfb, 0xa7, 0xf3, 0x71, 0xeb, 0x3d, 0x13, 0x2d, 0x22, 0x22, 0xcd, 0x11,
+        0xbf, 0xb0, 0xd,
+    ])
+    .expect("parse static key");
+    let public_key = secret_key.public_key();
+
+    let capabilities = Capability::SIGN_ECDSA
+        | Capability::EXPORT_WRAPPED
+        | Capability::IMPORT_WRAPPED
+        | Capability::EXPORTABLE_UNDER_WRAP;
+    let delegated_capabilities = Capability::all();
+    let asymmetric_key_id = 207;
+    let algorithm = wrap::Algorithm::Aes256Ccm;
+
+    let client = crate::get_hsm_client();
+    let _ = client.delete_object(asymmetric_key_id, object::Type::AsymmetricKey);
+
+    let _key_id = client
+        .put_asymmetric_key(
+            asymmetric_key_id,
+            TEST_KEY_LABEL.into(),
+            TEST_DOMAINS,
+            capabilities,
+            asymmetric::Algorithm::EcP384,
+            secret_key.to_bytes(),
+        )
+        .unwrap_or_else(|err| panic!("error putting asymmetric key: {err}"));
+
+    let public = client
+        .get_public_key(asymmetric_key_id)
+        .expect("read public key");
+    let public = public
+        .ecdsa::<p384::NistP384>()
+        .expect("ecdsa public key expected");
+
+    assert_eq!(
+        p384::PublicKey::try_from(&public).expect("valid point"),
+        public_key
+    );
+
+    clear_test_key_slot(&client, object::Type::WrapKey);
+    let wrap_key = wrap::Key::from_bytes(
+        TEST_KEY_ID,
+        &hex!("0000000000000000000000000000000000000000000000000000000000000000"),
+    )
+    .unwrap();
+    let _key_id = client
+        .put_wrap_key(
+            TEST_KEY_ID,
+            TEST_KEY_LABEL.into(),
+            TEST_DOMAINS,
+            capabilities,
+            delegated_capabilities,
+            algorithm,
+            &hex!("0000000000000000000000000000000000000000000000000000000000000000"),
+        )
+        .unwrap_or_else(|err| panic!("error generating wrap key: {err}"));
+
+    let message = client
+        .export_wrapped(TEST_KEY_ID, object::Type::AsymmetricKey, asymmetric_key_id)
+        .expect("Export key");
+
+    let plaintext = message
+        .decrypt(&wrap_key)
+        .expect("failed to decrypt the wrapped key");
+
+    assert_eq!(plaintext.object_info.length, 144);
 }

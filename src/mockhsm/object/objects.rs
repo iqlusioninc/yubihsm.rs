@@ -329,10 +329,41 @@ impl Objects {
             Origin::WrappedGenerated | Origin::WrappedImported => (),
         }
 
+        macro_rules! serialize_ec {
+            ($curve:ty) => {{
+                use ecdsa::elliptic_curve::point::AffineCoordinates;
+
+                let key = ecdsa::elliptic_curve::SecretKey::<$curve>::from_slice(
+                    &object_to_wrap.payload.to_bytes(),
+                )
+                .unwrap();
+
+                let public_key = key.public_key();
+                let public_key = public_key.as_affine();
+
+                let mut data = key.to_bytes().as_slice().to_vec();
+                data.extend_from_slice(public_key.x().as_slice());
+                data.extend_from_slice(public_key.y().as_slice());
+
+                data
+            }};
+        }
+
+        let data = match object_info.algorithm {
+            Algorithm::Asymmetric(asymmetric::Algorithm::EcP256) => serialize_ec!(p256::NistP256),
+            Algorithm::Asymmetric(asymmetric::Algorithm::EcP384) => serialize_ec!(p384::NistP384),
+            Algorithm::Asymmetric(asymmetric::Algorithm::EcP521) => serialize_ec!(p521::NistP521),
+            Algorithm::Asymmetric(asymmetric::Algorithm::EcK256) => serialize_ec!(k256::Secp256k1),
+            _other => object_to_wrap.payload.to_bytes(),
+        };
+
+        let mut object_info: wrap::Info = object_info.into();
+        object_info.length = data.len() as u16;
+
         let mut wrapped_object = serialize(&WrappedObject {
             alg_id: wrap_key.algorithm(),
-            object_info: object_info.into(),
-            data: object_to_wrap.payload.to_bytes(),
+            object_info,
+            data,
         })
         .unwrap();
 
@@ -367,6 +398,10 @@ impl Objects {
                 //  - qinv  -/
                 //
                 //  We can rebuild the key from the primes and we'll just discard the internal state here
+                &unwrapped_object.data[..alg.key_len()],
+            ),
+            Algorithm::Asymmetric(alg) if alg.is_ec() => Payload::new(
+                unwrapped_object.object_info.algorithm,
                 &unwrapped_object.data[..alg.key_len()],
             ),
             _ => Payload::new(

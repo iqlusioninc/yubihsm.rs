@@ -51,24 +51,59 @@ pub(crate) enum Payload {
 impl Payload {
     /// Create a new payload from the given algorithm and data
     pub fn new(algorithm: Algorithm, data: &[u8]) -> Self {
+        // A payload for an EC key may have only the private key (put_asymmetric_key), or the
+        // private key and the "internal representation" for wrapped keys, which, in case of the EC, is going to be
+        // the x/y coordinates.
+        //
+        // We will accept the data to be either format (although it should be only the first in the
+        // the put_asymmetric and only the latter in the import_wrapped, but ...)
+        macro_rules! ensure_ec_len {
+            ($data: ident, $curve: ty) => {
+                assert!(
+                    $data.len() == (FieldBytesSize::<$curve>::USIZE)
+                        || $data.len() == (FieldBytesSize::<$curve>::USIZE * 3)
+                );
+            };
+        }
+
         match algorithm {
             Algorithm::Wrap(alg) => Payload::WrapKey(alg, data.into()),
             Algorithm::Asymmetric(asymmetric_alg) => match asymmetric_alg {
                 asymmetric::Algorithm::EcP256 => {
-                    assert_eq!(data.len(), 32);
-                    Payload::EcdsaNistP256(p256::SecretKey::from_slice(data).unwrap())
+                    ensure_ec_len!(data, p256::NistP256);
+                    Payload::EcdsaNistP256(
+                        p256::SecretKey::from_slice(
+                            &data[..FieldBytesSize::<p256::NistP256>::USIZE],
+                        )
+                        .unwrap(),
+                    )
                 }
                 asymmetric::Algorithm::EcK256 => {
-                    assert_eq!(data.len(), 32);
-                    Payload::EcdsaSecp256k1(k256::SecretKey::from_slice(data).unwrap())
+                    ensure_ec_len!(data, k256::Secp256k1);
+                    Payload::EcdsaSecp256k1(
+                        k256::SecretKey::from_slice(
+                            &data[..FieldBytesSize::<k256::Secp256k1>::USIZE],
+                        )
+                        .unwrap(),
+                    )
                 }
                 asymmetric::Algorithm::EcP384 => {
-                    assert_eq!(data.len(), FieldBytesSize::<p384::NistP384>::USIZE);
-                    Payload::EcdsaNistP384(p384::SecretKey::from_slice(data).unwrap())
+                    ensure_ec_len!(data, p384::NistP384);
+                    Payload::EcdsaNistP384(
+                        p384::SecretKey::from_slice(
+                            &data[..FieldBytesSize::<p384::NistP384>::USIZE],
+                        )
+                        .unwrap(),
+                    )
                 }
                 asymmetric::Algorithm::EcP521 => {
-                    assert_eq!(data.len(), FieldBytesSize::<p521::NistP521>::USIZE);
-                    Payload::EcdsaNistP521(p521::SecretKey::from_slice(data).unwrap())
+                    ensure_ec_len!(data, p521::NistP521);
+                    Payload::EcdsaNistP521(
+                        p521::SecretKey::from_slice(
+                            &data[..FieldBytesSize::<p521::NistP521>::USIZE],
+                        )
+                        .unwrap(),
+                    )
                 }
 
                 asymmetric::Algorithm::Ed25519 => {

@@ -97,6 +97,21 @@ impl Algorithm {
             Algorithm::Rsa2048 | Algorithm::Rsa3072 | Algorithm::Rsa4096
         )
     }
+
+    /// Returns true if the algorithm is an elliptic curve
+    pub fn is_ec(self) -> bool {
+        matches!(
+            self,
+            Algorithm::EcP224
+                | Algorithm::EcP256
+                | Algorithm::EcP384
+                | Algorithm::EcP521
+                | Algorithm::EcK256
+                | Algorithm::EcBp256
+                | Algorithm::EcBp384
+                | Algorithm::EcBp512
+        )
+    }
 }
 
 impl_algorithm_serializers!(Algorithm);
