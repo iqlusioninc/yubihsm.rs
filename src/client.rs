@@ -289,6 +289,31 @@ impl Client {
                 wrap_key_id,
                 object_type,
                 object_id,
+                include_seed: false.into(),
+            })?
+            .0)
+    }
+
+    /// Export an encrypted object from the HSM using the given key-wrapping key including the private key seed.
+    ///
+    /// For YubiHSM devices with firmware version 2.4 or later, this command enables exporting ed25519 keys with
+    /// the seed for a private key. To ensure backward compatibility with older versions of the HSM, the default
+    /// is to not export the seed. Importing such a legacy format results in an all-zero seed if such a key is
+    /// exported in the future.
+    ///
+    /// <https://developers.yubico.com/YubiHSM2/Commands/Export_Wrapped.html>
+    pub fn export_wrapped_with_seed(
+        &self,
+        wrap_key_id: object::Id,
+        object_type: object::Type,
+        object_id: object::Id,
+    ) -> Result<wrap::Message, Error> {
+        Ok(self
+            .send_command(ExportWrappedCommand {
+                wrap_key_id,
+                object_type,
+                object_id,
+                include_seed: true.into(),
             })?
             .0)
     }

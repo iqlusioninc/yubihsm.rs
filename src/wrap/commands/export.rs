@@ -21,6 +21,9 @@ pub(crate) struct ExportWrappedCommand {
 
     /// Object ID of the object to be exported (in encrypted form)
     pub object_id: object::Id,
+
+    /// Export ED25519 key with its seed. Default is not to.
+    pub include_seed: u8,
 }
 
 impl Command for ExportWrappedCommand {
