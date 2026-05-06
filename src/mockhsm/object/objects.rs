@@ -17,6 +17,7 @@ use der::{
     asn1::{GeneralizedTime, UtcTime},
     DateTime, Encode,
 };
+use ecdsa::elliptic_curve::Generate;
 use spki::{SubjectPublicKeyInfoOwned, SubjectPublicKeyInfoRef};
 use std::{
     collections::{btree_map::Iter as MapIter, BTreeMap as Map},
@@ -144,7 +145,7 @@ impl Default for Objects {
         );
 
         // Key used for attestation by default
-        let Ok(attestation_key) = p256::SecretKey::try_from_rng(&mut rng);
+        let attestation_key = p256::SecretKey::generate_from_rng(&mut rng);
         let attestation_cert = Self::generate_self_signed_cert(&attestation_key);
 
         let attestation_key_info = Info {

@@ -4,7 +4,7 @@ use ::ecdsa::{
     der,
     elliptic_curve::{
         point::PointCompression,
-        sec1::{self, FromEncodedPoint, ToEncodedPoint},
+        sec1::{self, FromSec1Point, ToSec1Point},
         AffinePoint, CurveArithmetic, FieldBytesSize,
     },
     signature::{Keypair, Verifier},
@@ -48,7 +48,7 @@ const TEST_MESSAGE: &[u8] =
 fn create_signer<C>(key_id: object::Id) -> ecdsa::Signer<C>
 where
     C: CurveAlgorithm + CurveArithmetic + PointCompression + EcdsaCurve,
-    AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+    AffinePoint<C>: FromSec1Point<C> + ToSec1Point<C>,
     FieldBytesSize<C>: sec1::ModulusSize,
 {
     let client = crate::get_hsm_client();
@@ -77,7 +77,7 @@ fn create_yubihsm_key(client: &Client, key_id: object::Id, alg: yubihsm::asymmet
 #[test]
 fn ecdsa_nistp256_sign_test() {
     let signer = create_signer::<NistP256>(201);
-    let verify_key = p256::ecdsa::VerifyingKey::from_encoded_point(signer.public_key()).unwrap();
+    let verify_key = p256::ecdsa::VerifyingKey::from_sec1_point(signer.public_key()).unwrap();
 
     let signature: ecdsa::Signature<NistP256> = signer.sign(TEST_MESSAGE);
     assert!(verify_key.verify(TEST_MESSAGE, &signature).is_ok());
@@ -87,7 +87,7 @@ fn ecdsa_nistp256_sign_test() {
 #[test]
 fn ecdsa_secp256k1_sign_test() {
     let signer = create_signer::<Secp256k1>(202);
-    let verify_key = k256::ecdsa::VerifyingKey::from_encoded_point(signer.public_key()).unwrap();
+    let verify_key = k256::ecdsa::VerifyingKey::from_sec1_point(signer.public_key()).unwrap();
 
     let signature: ecdsa::Signature<Secp256k1> = signer.sign(TEST_MESSAGE);
     assert!(verify_key.verify(TEST_MESSAGE, &signature).is_ok());
@@ -99,7 +99,7 @@ fn ecdsa_secp256k1_sign_recover_test() {
     use k256::{ecdsa::VerifyingKey, PublicKey};
 
     let signer = create_signer::<Secp256k1>(203);
-    let verify_key = VerifyingKey::from_encoded_point(signer.public_key()).unwrap();
+    let verify_key = VerifyingKey::from_sec1_point(signer.public_key()).unwrap();
 
     let (signature, recovery_id) = signer
         .try_sign_digest(|d: &mut sha2::Sha256| {
@@ -127,7 +127,7 @@ fn ecdsa_secp256k1_sign_recover_test() {
         .unwrap();
 
     let recovered_pk = PublicKey::from(recovered_key);
-    let signer_pk = PublicKey::from_encoded_point(signer.public_key()).unwrap();
+    let signer_pk = PublicKey::from_sec1_point(signer.public_key()).unwrap();
     assert_eq!(&recovered_pk, &signer_pk);
 }
 

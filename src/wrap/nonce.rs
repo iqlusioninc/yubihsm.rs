@@ -1,7 +1,7 @@
 //! Nonces used by the YubiHSM 2's AES-CCM encrypted `wrap::Message`
 
 use ccm::consts::U13;
-use rand_core::RngCore;
+use rand_core::Rng;
 
 /// Number of bytes in a nonce used for "wrapping" (i.e AES-CCM encryption)
 pub const SIZE: usize = 13;
