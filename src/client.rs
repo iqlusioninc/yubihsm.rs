@@ -638,6 +638,35 @@ impl Client {
             .key_id)
     }
 
+    /// Change the authentication key used to establish the current session.
+    ///
+    /// Available with firmware version 2.2.0 or later. Atomically replaces
+    /// the key material while preserving all object metadata (ID, label,
+    /// domains, capabilities, delegated capabilities).
+    ///
+    /// Only the Authentication Key that was used to open the current session
+    /// can be changed with this command. The required capability is
+    /// `change-authentication-key`.
+    ///
+    /// <https://developers.yubico.com/YubiHSM2/Commands/Change_Authentication_Key.html>
+    pub fn change_authentication_key<K>(
+        &self,
+        key_id: object::Id,
+        algorithm: authentication::Algorithm,
+        authentication_key: K,
+    ) -> Result<object::Id, Error>
+    where
+        K: Into<authentication::Key>,
+    {
+        Ok(self
+            .send_command(ChangeAuthenticationKeyCommand {
+                key_id,
+                algorithm: algorithm.into(),
+                authentication_key: authentication_key.into(),
+            })?
+            .key_id)
+    }
+
     /// Put an existing HMAC key into the HSM.
     ///
     /// <https://developers.yubico.com/YubiHSM2/Commands/Put_Hmac_Key.html>

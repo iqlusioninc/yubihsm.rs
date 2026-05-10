@@ -128,6 +128,7 @@ pub(crate) fn session_message(
         Code::ImportWrapped => import_wrapped(state, &command.data),
         Code::ListObjects => list_objects(state, &command.data),
         Code::PutAsymmetricKey => put_asymmetric_key(state, &command.data),
+        Code::ChangeAuthenticationKey => change_authentication_key(state, &command.data),
         Code::PutAuthenticationKey => put_authentication_key(state, &command.data),
         Code::PutHmacKey => put_hmac_key(state, &command.data),
         Code::PutOpaqueObject => put_opaque(state, &command.data),
@@ -527,6 +528,37 @@ fn put_asymmetric_key(state: &mut State, cmd_data: &[u8]) -> response::Message {
     );
 
     PutAsymmetricKeyResponse { key_id: params.id }.serialize()
+}
+
+/// Change an existing authentication key in the HSM (atomic key material replacement)
+fn change_authentication_key(state: &mut State, cmd_data: &[u8]) -> response::Message {
+    let ChangeAuthenticationKeyCommand {
+        key_id,
+        algorithm: _,
+        authentication_key,
+    } = deserialize(cmd_data)
+        .unwrap_or_else(|e| panic!("error parsing Code::ChangeAuthenticationKey: {e:?}"));
+
+    // In the mock, just overwrite the key data in-place
+    let obj = state
+        .objects
+        .get(key_id, object::Type::AuthenticationKey)
+        .unwrap_or_else(|| panic!("auth key {key_id} not found for ChangeAuthenticationKey"));
+
+    // Re-put with the same metadata but new key material
+    let info = obj.object_info.clone();
+    state.objects.put(
+        key_id,
+        object::Type::AuthenticationKey,
+        info.algorithm,
+        info.label,
+        info.capabilities,
+        info.delegated_capabilities,
+        info.domains,
+        &authentication_key.0,
+    );
+
+    ChangeAuthenticationKeyResponse { key_id }.serialize()
 }
 
 /// Put a new authentication key into the HSM
