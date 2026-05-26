@@ -215,7 +215,7 @@ fn ecdsa_nistp384_import_wrapped() {
             capabilities,
             delegated_capabilities,
             algorithm,
-            &hex!("0000000000000000000000000000000000000000000000000000000000000000"),
+            hex!("0000000000000000000000000000000000000000000000000000000000000000"),
         )
         .unwrap_or_else(|err| panic!("error generating wrap key: {err}"));
 
@@ -296,7 +296,7 @@ fn ecdsa_nistp384_put_key() {
             capabilities,
             delegated_capabilities,
             algorithm,
-            &hex!("0000000000000000000000000000000000000000000000000000000000000000"),
+            hex!("0000000000000000000000000000000000000000000000000000000000000000"),
         )
         .unwrap_or_else(|err| panic!("error generating wrap key: {err}"));
 
