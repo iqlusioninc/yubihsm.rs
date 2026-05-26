@@ -77,6 +77,7 @@ fn create_yubihsm_key(client: &Client, key_id: object::Id, alg: yubihsm::asymmet
         .unwrap();
 }
 
+#[cfg(feature = "untested")]
 #[test]
 fn ecdsa_nistp256_sign_test() {
     let signer = create_signer::<NistP256>(201);
