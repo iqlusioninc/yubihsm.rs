@@ -141,7 +141,7 @@ impl Code {
             -28 => Code::DeviceObjectExists,
             -29 => Code::ConnectorError,
             -30 => Code::DeviceSshCaConstraintViolation,
-            _ => fail!(ErrorKind::CodeInvalid, "invalid response code: {}", code),
+            _ => Code::GenericError,
         })
     }
 
