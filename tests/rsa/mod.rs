@@ -289,3 +289,32 @@ fn rsa_raw_pss_sha256_sign_test() {
         )
         .is_ok());
 }
+
+#[test]
+fn rsa_pss_custom_salt_sign_test() {
+    let salt_len = 128;
+    let signer = {
+        let client = crate::get_hsm_client();
+        create_yubihsm_key(&client, 228, yubihsm::asymmetric::Algorithm::Rsa2048);
+        assert!(
+            pss::Signer::<sha2::Sha256>::create_with_salt_len(client.clone(), 228, 222).is_ok()
+        );
+        assert!(
+            pss::Signer::<sha2::Sha256>::create_with_salt_len(client.clone(), 228, 223).is_err()
+        );
+        pss::Signer::<sha2::Sha256>::create_with_salt_len(client.clone(), 228, salt_len).unwrap()
+    };
+
+    let verifying_key = signer.verifying_key();
+    let verifying_key_from_public = ::rsa::pss::VerifyingKey::<sha2::Sha256>::new_with_salt_len(
+        signer.public_key(),
+        salt_len.into(),
+    );
+
+    let signature = signer.sign(TEST_MESSAGE);
+
+    assert!(verifying_key.verify(TEST_MESSAGE, &signature).is_ok());
+    assert!(verifying_key_from_public
+        .verify(TEST_MESSAGE, &signature)
+        .is_ok());
+}
