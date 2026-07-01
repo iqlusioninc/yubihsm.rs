@@ -5,7 +5,7 @@ use crate::{algorithm::Algorithm, asymmetric, authentication, hmac, opaque, wrap
 use digest::{typenum::Unsigned, OutputSizeUser};
 use ecdsa::{
     elliptic_curve::{sec1::ToSec1Point, FieldBytesSize, Generate},
-    hazmat::DigestAlgorithm,
+    DigestAlgorithm,
 };
 use ed25519_dalek as ed25519;
 use rand_core::Rng;
