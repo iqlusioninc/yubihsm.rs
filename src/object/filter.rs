@@ -10,6 +10,7 @@ use {
 };
 
 /// Filters to apply when listing objects
+#[derive(Clone, Debug)]
 pub enum Filter {
     /// Filter objects by algorithm
     Algorithm(Algorithm),
