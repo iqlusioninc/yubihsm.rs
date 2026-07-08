@@ -6,7 +6,10 @@ use yubihsm::{
 };
 
 #[cfg(feature = "setup")]
-use yubihsm::setup::{Profile, Role};
+use yubihsm::{
+    object::Label,
+    setup::{Profile, Role},
+};
 
 const ROOT_KEY_ID: object::Id = 1;
 const ROOT_KEY_LABEL: &str = "root key";
@@ -16,7 +19,11 @@ const ROOT_KEY_LABEL: &str = "root key";
 fn setup_test() {
     let root_key = authentication::Key::random();
     let root_role = Role::new(Credentials::new(ROOT_KEY_ID, root_key))
-        .authentication_key_label(ROOT_KEY_LABEL)
+        .authentication_key_label(
+            ROOT_KEY_LABEL
+                .parse::<Label>()
+                .expect("ROOT_KEY_LABEL to be equal to or shorter than 40 bytes"),
+        )
         .capabilities(Capability::all())
         .domains(Domain::all());
 

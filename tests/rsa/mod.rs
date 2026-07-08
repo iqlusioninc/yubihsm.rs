@@ -44,7 +44,9 @@ fn rsa_put_asymmetric_key() {
     let id = client
         .put_asymmetric_key(
             223,
-            TEST_SIGNING_KEY_LABEL.into(),
+            TEST_SIGNING_KEY_LABEL
+                .parse()
+                .expect("TEST_SIGNING_KEY_LABEL to be shorter than or equal to 40 bytes"),
             TEST_SIGNING_KEY_DOMAINS,
             yubihsm::Capability::SIGN_PSS,
             yubihsm::asymmetric::Algorithm::Rsa2048,
@@ -71,7 +73,9 @@ fn rsa_import_export_wrapped_key() {
         asymmetric_key_id,
         Capability::EXPORTABLE_UNDER_WRAP | Capability::SIGN_PKCS,
         TEST_DOMAINS,
-        TEST_KEY_LABEL.into(),
+        TEST_KEY_LABEL
+            .parse()
+            .expect("TEST_KEY_LABEL to be shorter than or equal to 40 bytes"),
         key.clone(),
     )
     .expect("build message with RSA key");
@@ -88,7 +92,9 @@ fn rsa_import_export_wrapped_key() {
     let _key_id = client
         .put_wrap_key(
             TEST_KEY_ID,
-            TEST_KEY_LABEL.into(),
+            TEST_KEY_LABEL
+                .parse()
+                .expect("TEST_KEY_LABEL to be shorter than or equal to 40 bytes"),
             TEST_DOMAINS,
             capabilities,
             delegated_capabilities,
@@ -163,7 +169,9 @@ fn create_yubihsm_key(client: &Client, key_id: object::Id, alg: yubihsm::asymmet
     let _key = client
         .generate_asymmetric_key(
             key_id,
-            TEST_SIGNING_KEY_LABEL.into(),
+            TEST_SIGNING_KEY_LABEL
+                .parse()
+                .expect("TEST_SIGNING_KEY_LABEL to be shorter than or equal to 40 bytes"),
             TEST_SIGNING_KEY_DOMAINS,
             yubihsm::Capability::SIGN_PSS
                 | yubihsm::Capability::SIGN_PKCS

@@ -84,12 +84,6 @@ impl FromStr for Label {
     }
 }
 
-impl<'a> From<&'a str> for Label {
-    fn from(s: &'a str) -> Self {
-        Self::from_str(s).unwrap()
-    }
-}
-
 impl PartialEq for Label {
     fn eq(&self, other: &Self) -> bool {
         self.0[..] == other.0[..]

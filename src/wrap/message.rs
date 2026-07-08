@@ -313,7 +313,9 @@ mod tests {
             0xcf,
             Capability::SIGN_ECDSA | Capability::EXPORT_WRAPPED | Capability::IMPORT_WRAPPED,
             Domain::DOM1,
-            "Signatory test key".into(),
+            "Signatory test key"
+                .parse()
+                .expect("label to be less than or equal to 40 bytes"),
             secret_key,
         )
         .expect("build message with ecdsa key");
