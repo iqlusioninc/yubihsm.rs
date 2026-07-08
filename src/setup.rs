@@ -49,7 +49,9 @@ pub fn init_with_profile(client: Client, profile: Profile) -> Result<Report, Err
     client
         .put_authentication_key(
             setup_auth_key_id,
-            SETUP_KEY_LABEL.into(),
+            SETUP_KEY_LABEL
+                .parse()
+                .map_err(|_error| ErrorKind::LabelInvalid)?,
             Domain::all(),
             Capability::all(),
             Capability::all(),
