@@ -1,5 +1,7 @@
 //! Filters for selecting objects in the list object command
 
+use serde::{Deserialize, Serialize};
+
 use crate::{algorithm::Algorithm, capability::Capability, client, domain::Domain, object};
 use std::io::Write;
 
@@ -10,7 +12,7 @@ use {
 };
 
 /// Filters to apply when listing objects
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum Filter {
     /// Filter objects by algorithm
     Algorithm(Algorithm),
