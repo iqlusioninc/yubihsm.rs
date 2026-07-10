@@ -17,6 +17,9 @@ pub enum Algorithm {
 
     /// `rsa-pkcs1-sha512`
     Sha512 = 0x04,
+
+    /// `rsa-pkcs1-decrypt`
+    Decrypt = 0x30,
 }
 
 impl Algorithm {
@@ -27,6 +30,7 @@ impl Algorithm {
             0x02 => Algorithm::Sha256,
             0x03 => Algorithm::Sha384,
             0x04 => Algorithm::Sha512,
+            0x30 => Algorithm::Decrypt,
             _ => fail!(
                 algorithm::ErrorKind::TagInvalid,
                 "unknown RSASSA-PKCS#1v1.5 algorithm ID: 0x{:02x}",
