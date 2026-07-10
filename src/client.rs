@@ -289,7 +289,7 @@ impl Client {
                 wrap_key_id,
                 object_type,
                 object_id,
-                include_seed: false.into(),
+                include_seed: Seed::Exclude,
             })?
             .0)
     }
@@ -313,7 +313,7 @@ impl Client {
                 wrap_key_id,
                 object_type,
                 object_id,
-                include_seed: true.into(),
+                include_seed: Seed::Include,
             })?
             .0)
     }
