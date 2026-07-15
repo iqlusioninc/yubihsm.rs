@@ -1,9 +1,5 @@
 //! Simulation of the HSM for integration testing.
 
-// TESTING ONLY DO NOT PRODUCTIONIZE IT IS NOT SAFE!!!
-#[cfg(not(debug_assertions))]
-compile_error!("MockHsm is not intended for use in release builds");
-
 use std::sync::{Arc, Mutex};
 
 mod audit;
