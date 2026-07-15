@@ -68,6 +68,8 @@ x509-cert = { version = "0.3.0-rc.4", features = ["builder"] }
 default = ["http", "passwords", "setup"]
 http-server = ["tiny_http"]
 http = []
+# WARNING: The `mockhsm` feature is only for testing purposes!
+# It is **neither safe nor fit** for production use!
 mockhsm = [
   "ecdsa/algorithm",
   "ed25519-dalek",
