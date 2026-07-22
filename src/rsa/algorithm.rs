@@ -5,7 +5,7 @@ use crate::algorithm;
 use digest::{const_oid::AssociatedOid, Digest};
 
 /// RSA algorithms (signing and encryption)
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 #[repr(u8)]
 pub enum Algorithm {
     /// RSA encryption with Optimal Asymmetric Encryption Padding (OAEP)

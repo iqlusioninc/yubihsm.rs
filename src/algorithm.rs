@@ -7,7 +7,7 @@ pub use self::error::{Error, ErrorKind};
 use crate::{asymmetric, authentication, ecdh, ecdsa, hmac, opaque, otp, rsa, template, wrap};
 
 /// Cryptographic algorithm types supported by the `YubiHSM 2`
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 #[repr(u8)]
 pub enum Algorithm {
     /// Asymmetric algorithms
