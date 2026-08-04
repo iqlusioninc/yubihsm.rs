@@ -18,6 +18,10 @@ pub enum ErrorKind {
     #[error("authentication failed")]
     AuthenticationError,
 
+    /// Authentication key doesn't exist
+    #[error("authentication key doesn't exist")]
+    AuthenticationKeyError,
+
     /// Session is closed
     #[error("session closed")]
     ClosedSessionError,
@@ -73,6 +77,7 @@ impl From<session::Error> for Error {
     fn from(err: session::Error) -> Self {
         let kind = match err.kind() {
             session::ErrorKind::AuthenticationError => ErrorKind::AuthenticationError,
+            session::ErrorKind::AuthenticationKeyError => ErrorKind::AuthenticationKeyError,
             session::ErrorKind::ClosedError => ErrorKind::ClosedSessionError,
             session::ErrorKind::CreateFailed => ErrorKind::CreateFailed,
             session::ErrorKind::DeviceError => ErrorKind::DeviceError,
