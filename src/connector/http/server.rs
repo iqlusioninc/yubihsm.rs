@@ -109,7 +109,7 @@ impl Server {
 
         let body = status
             .iter()
-            .map(|(k, v)| [*k, *v].join("\n"))
+            .map(|(k, v)| [*k, *v].join("="))
             .collect::<Vec<_>>()
             .join("\n");
 
