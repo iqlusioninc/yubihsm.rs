@@ -1217,3 +1217,11 @@ impl Client {
             .0)
     }
 }
+
+impl std::fmt::Debug for Client {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Client")
+            .field("connector", &self.connector)
+            .finish_non_exhaustive()
+    }
+}
