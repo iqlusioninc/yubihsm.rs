@@ -193,7 +193,7 @@ fn delete_object(state: &mut State, cmd_data: &[u8]) -> response::Message {
 }
 
 /// Generate a mock device information report
-fn device_info() -> response::Message {
+pub fn device_info() -> response::Message {
     let info = device::Info {
         major_version: 2,
         minor_version: 0,
