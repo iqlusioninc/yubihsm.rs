@@ -640,6 +640,53 @@ impl Client {
             .key_id)
     }
 
+    /// Change the authentication key used to establish the current session.
+    ///
+    /// Available with firmware version 2.2.0 or later. Atomically replaces
+    /// the key material while preserving all object metadata (ID, label,
+    /// domains, capabilities, delegated capabilities).
+    ///
+    /// Only the Authentication Key that was used to open the current session
+    /// can be changed with this command; passing any other `key_id` will be
+    /// rejected by the device. The required capability is
+    /// `change-authentication-key`.
+    ///
+    /// If this client was opened with reconnection enabled, its cached
+    /// credentials are updated to the new key material, so that reconnecting
+    /// after a session timeout continues to work. This is why the method takes
+    /// `&mut self`.
+    ///
+    /// <https://developers.yubico.com/YubiHSM2/Commands/Change_Authentication_Key.html>
+    pub fn change_authentication_key<K>(
+        &mut self,
+        key_id: object::Id,
+        algorithm: authentication::Algorithm,
+        authentication_key: K,
+    ) -> Result<object::Id, Error>
+    where
+        K: Into<authentication::Key>,
+    {
+        let authentication_key = authentication_key.into();
+
+        let changed_id = self
+            .send_command(ChangeAuthenticationKeyCommand {
+                key_id,
+                algorithm: algorithm.into(),
+                authentication_key: authentication_key.clone(),
+            })?
+            .key_id;
+
+        // Keep cached credentials in sync, otherwise a later reconnect would
+        // authenticate with key material the device no longer accepts.
+        if let Some(credentials) = self.credentials.as_mut() {
+            if credentials.authentication_key_id == changed_id {
+                credentials.authentication_key = authentication_key;
+            }
+        }
+
+        Ok(changed_id)
+    }
+
     /// Put an existing HMAC key into the HSM.
     ///
     /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#put-hmac-key-command>

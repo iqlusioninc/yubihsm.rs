@@ -128,6 +128,9 @@ pub(crate) fn session_message(
         Code::ImportWrapped => import_wrapped(state, &command.data),
         Code::ListObjects => list_objects(state, &command.data),
         Code::PutAsymmetricKey => put_asymmetric_key(state, &command.data),
+        Code::ChangeAuthenticationKey => {
+            change_authentication_key(state, session_id, &command.data)
+        }
         Code::PutAuthenticationKey => put_authentication_key(state, &command.data),
         Code::PutHmacKey => put_hmac_key(state, &command.data),
         Code::PutOpaqueObject => put_opaque(state, &command.data),
@@ -527,6 +530,62 @@ fn put_asymmetric_key(state: &mut State, cmd_data: &[u8]) -> response::Message {
     );
 
     PutAsymmetricKeyResponse { key_id: params.id }.serialize()
+}
+
+/// Change an existing authentication key's key material.
+///
+/// The device only permits changing the authentication key that established
+/// the current session, and preserves all of the object's metadata.
+fn change_authentication_key(
+    state: &mut State,
+    session_id: session::Id,
+    cmd_data: &[u8],
+) -> response::Message {
+    let ChangeAuthenticationKeyCommand {
+        key_id,
+        algorithm: _,
+        authentication_key,
+    } = deserialize(cmd_data)
+        .unwrap_or_else(|e| panic!("error parsing Code::ChangeAuthenticationKey: {e:?}"));
+
+    // Only the authentication key backing the current session may be changed.
+    let session_key_id = match state.get_session(session_id) {
+        Ok(session) => session.authentication_key_id,
+        Err(_) => return device::ErrorKind::InvalidSession.into(),
+    };
+
+    if key_id != session_key_id {
+        debug!(
+            "ChangeAuthenticationKey: key {key_id} does not back the current session ({session_key_id})"
+        );
+        return device::ErrorKind::InvalidCommand.into();
+    }
+
+    // Preserve the existing metadata; only the key material changes.
+    let info = match state.objects.get(key_id, object::Type::AuthenticationKey) {
+        Some(obj) => obj.object_info.clone(),
+        None => {
+            debug!("no such authentication key: {key_id}");
+            return device::ErrorKind::ObjectNotFound.into();
+        }
+    };
+
+    // `Objects::put` asserts the slot is empty, so vacate it first.
+    state
+        .objects
+        .remove(key_id, object::Type::AuthenticationKey);
+    state.objects.put(
+        key_id,
+        object::Type::AuthenticationKey,
+        info.algorithm,
+        info.label,
+        info.capabilities,
+        info.delegated_capabilities,
+        info.domains,
+        &authentication_key.0,
+    );
+
+    ChangeAuthenticationKeyResponse { key_id }.serialize()
 }
 
 /// Put a new authentication key into the HSM
