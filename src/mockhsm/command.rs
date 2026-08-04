@@ -278,7 +278,7 @@ fn export_wrapped(state: &mut State, cmd_data: &[u8]) -> response::Message {
     {
         Ok(ciphertext) => ExportWrappedResponse(wrap::Message { nonce, ciphertext }).serialize(),
         Err(e) => {
-            debug!("error wrapping object: {}", e);
+            debug!("error wrapping object: {e}");
             device::ErrorKind::InvalidCommand.into()
         }
     }
@@ -466,7 +466,7 @@ fn import_wrapped(state: &mut State, cmd_data: &[u8]) -> response::Message {
         }
         .serialize(),
         Err(e) => {
-            debug!("error unwrapping object: {}", e);
+            debug!("error unwrapping object: {e}");
             device::ErrorKind::InvalidCommand.into()
         }
     }
@@ -836,7 +836,7 @@ fn sign_pkcs1v15(state: &State, cmd_data: &[u8]) -> response::Message {
                     sign_pkcs1v15_prehash::<Sha512>(private_key, command.digest.as_ref())
                 }
                 len => {
-                    debug!("invalid digest length: {}", len);
+                    debug!("invalid digest length: {len}");
                     return device::ErrorKind::InvalidCommand.into();
                 }
             };
