@@ -14,7 +14,7 @@ readme = "README.md"
 categories = ["cryptography", "hardware-support"]
 keywords = ["ecdsa", "ed25519", "hmac", "hsm", "yubikey"]
 edition = "2021"
-rust-version = "1.85"
+rust-version = "1.88"
 
 [dependencies]
 aes = { version = "0.9", features = ["zeroize"] }

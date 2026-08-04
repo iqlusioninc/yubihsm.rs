@@ -846,7 +846,7 @@ impl Client {
         if let Err(e) = &result {
             if *e.kind() == session::ErrorKind::ProtocolError {
                 // real devices can send protocol errors when the request has been accepted
-                debug!("error sending reset command: {}", e);
+                debug!("error sending reset command: {e}");
             } else {
                 // other errors, such as insufficient permissions, should be propagated
                 result?;
@@ -915,7 +915,7 @@ impl Client {
                             e
                         )
                     } else {
-                        debug!("error reconnecting to HSM: {}", e);
+                        debug!("error reconnecting to HSM: {e}");
                         thread::sleep(Duration::from_millis(DEVICE_POLL_INTERVAL_MS))
                     }
                 }
