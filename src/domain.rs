@@ -101,6 +101,16 @@ impl<'de> Deserialize<'de> for Domain {
             {
                 Domain::from_bits(value).ok_or_else(|| E::custom("invalid domain bitflags"))
             }
+
+            fn visit_u64<E>(self, value: u64) -> Result<Domain, E>
+            where
+                E: de::Error,
+            {
+                self.visit_u16(
+                    u16::try_from(value)
+                        .map_err(|_| E::custom("2-bytes containing domain bitflags"))?,
+                )
+            }
         }
 
         deserializer.deserialize_u16(DomainVisitor)

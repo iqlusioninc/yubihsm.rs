@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 /// Information about an object
 ///
-/// This is a wrap-specific version of [`object::Info']. It does not carry any
+/// This is a wrap-specific version of [`object::Info`]. It does not carry any
 /// delegated_capabilities.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Info {
