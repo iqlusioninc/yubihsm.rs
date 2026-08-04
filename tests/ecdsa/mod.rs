@@ -5,7 +5,7 @@ use ::ecdsa::{
     elliptic_curve::{
         point::PointCompression,
         sec1::{self, FromSec1Point, ToSec1Point},
-        AffinePoint, CurveArithmetic, FieldBytesSize,
+        AffinePoint, CurveArithmetic, FieldBytesSize, Generate,
     },
     signature::{Keypair, Verifier},
     EcdsaCurve,
