@@ -11,6 +11,12 @@ substantial breaking release: the minimum supported Rust version moves from
 1.67 to 1.88, and the entire RustCrypto dependency stack advances a major
 version.
 
+Several changes here originated as pull requests from David Runge ([#665],
+[#672], [#674], [#677]): session auto-close on `Drop`, the `Label` and `Filter`
+safety changes, the ordering derives, and lifting the restriction on using the
+`mockhsm` feature in release builds. They were carried forward and extended in
+[#692]-[#695].
+
 ### Added
 - FIPS mode support: `Client::get_fips_option`, `Client::set_fips_option`, and
   `audit::AuditTag::Fips` ([#460])
@@ -183,10 +189,14 @@ version.
 [#661]: https://github.com/iqlusioninc/yubihsm.rs/pull/661
 [#662]: https://github.com/iqlusioninc/yubihsm.rs/pull/662
 [#664]: https://github.com/iqlusioninc/yubihsm.rs/pull/664
+[#665]: https://github.com/iqlusioninc/yubihsm.rs/pull/665
 [#671]: https://github.com/iqlusioninc/yubihsm.rs/pull/671
+[#672]: https://github.com/iqlusioninc/yubihsm.rs/pull/672
 [#673]: https://github.com/iqlusioninc/yubihsm.rs/pull/673
+[#674]: https://github.com/iqlusioninc/yubihsm.rs/pull/674
 [#675]: https://github.com/iqlusioninc/yubihsm.rs/pull/675
 [#676]: https://github.com/iqlusioninc/yubihsm.rs/pull/676
+[#677]: https://github.com/iqlusioninc/yubihsm.rs/pull/677
 [#679]: https://github.com/iqlusioninc/yubihsm.rs/pull/679
 [#680]: https://github.com/iqlusioninc/yubihsm.rs/pull/680
 [#692]: https://github.com/iqlusioninc/yubihsm.rs/pull/692
