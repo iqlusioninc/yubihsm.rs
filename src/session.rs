@@ -303,6 +303,20 @@ impl Drop for Session {
     /// Without this, sessions are only released when the HSM times them out,
     /// which exhausts the device's limited pool of concurrent sessions.
     fn drop(&mut self) {
+        // Never touch the transport while unwinding.
+        //
+        // `Connector::send_message` locks with `lock().unwrap()`. If a panic
+        // poisoned that mutex — including a panic raised *while* it was held —
+        // closing here would panic a second time inside a destructor, which
+        // aborts the process. A recoverable panic must not become an abort just
+        // because a session went out of scope on the way out.
+        //
+        // The session is still released: the HSM times it out on its own.
+        if std::thread::panicking() {
+            self.abort();
+            return;
+        }
+
         // `close` already short-circuits on a closed or timed-out session.
         //
         // Errors are logged rather than propagated: a destructor has nowhere
