@@ -3,7 +3,7 @@
 use crate::algorithm;
 
 /// Mask generating functions for RSASSA-PSS
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 #[repr(u8)]
 pub enum Algorithm {
     /// `mgf-sha1`

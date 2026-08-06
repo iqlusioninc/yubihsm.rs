@@ -3,7 +3,7 @@
 use crate::algorithm;
 
 /// RSASSA-PSS algorithms
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 #[repr(u8)]
 pub enum Algorithm {
     /// `rsa-pss-sha1`
