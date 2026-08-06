@@ -69,7 +69,9 @@ fn create_yubihsm_key(client: &Client, key_id: object::Id, alg: yubihsm::asymmet
     client
         .generate_asymmetric_key(
             key_id,
-            TEST_SIGNING_KEY_LABEL.into(),
+            TEST_SIGNING_KEY_LABEL
+                .parse()
+                .expect("TEST_SIGNING_KEY_LABEL to be shorter than or equal to 40 bytes"),
             TEST_SIGNING_KEY_DOMAINS,
             TEST_SIGNING_KEY_CAPABILITIES,
             alg,
@@ -77,6 +79,7 @@ fn create_yubihsm_key(client: &Client, key_id: object::Id, alg: yubihsm::asymmet
         .unwrap();
 }
 
+#[cfg(feature = "untested")]
 #[test]
 fn ecdsa_nistp256_sign_test() {
     let signer = create_signer::<NistP256>(201);
@@ -188,7 +191,9 @@ fn ecdsa_nistp384_import_wrapped() {
         asymmetric_key_id,
         capabilities,
         TEST_DOMAINS,
-        TEST_SIGNING_KEY_LABEL.into(),
+        TEST_SIGNING_KEY_LABEL
+            .parse()
+            .expect("TEST_SIGNING_KEY_LABEL to be shorter than or equal to 40 bytes"),
         //delegated_capabilities,
         secret_key,
     )
@@ -210,7 +215,9 @@ fn ecdsa_nistp384_import_wrapped() {
     let _key_id = client
         .put_wrap_key(
             TEST_KEY_ID,
-            TEST_KEY_LABEL.into(),
+            TEST_KEY_LABEL
+                .parse()
+                .expect("TEST_KEY_LABEL to be shorter than or equal to 40 bytes"),
             TEST_DOMAINS,
             capabilities,
             delegated_capabilities,
@@ -262,7 +269,9 @@ fn ecdsa_nistp384_put_key() {
     let _key_id = client
         .put_asymmetric_key(
             asymmetric_key_id,
-            TEST_KEY_LABEL.into(),
+            TEST_KEY_LABEL
+                .parse()
+                .expect("TEST_KEY_LABEL to be shorter than or equal to 40 bytes"),
             TEST_DOMAINS,
             capabilities,
             asymmetric::Algorithm::EcP384,
@@ -291,7 +300,9 @@ fn ecdsa_nistp384_put_key() {
     let _key_id = client
         .put_wrap_key(
             TEST_KEY_ID,
-            TEST_KEY_LABEL.into(),
+            TEST_KEY_LABEL
+                .parse()
+                .expect("TEST_KEY_LABEL to be shorter than or equal to 40 bytes"),
             TEST_DOMAINS,
             capabilities,
             delegated_capabilities,

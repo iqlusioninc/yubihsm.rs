@@ -124,8 +124,23 @@ impl Session {
         idle_time >= timeout_with_fuzz
     }
 
-    /// Close this session, consuming it in the process.
-    pub fn close(mut self) -> Result<(), Error> {
+    /// Close this session, telling the HSM to release its resources rather
+    /// than waiting for the session to time out.
+    ///
+    /// Sessions are also closed automatically on [`Drop`], so calling this is
+    /// only necessary when you want to observe any error that occurs while
+    /// closing. Closing an already-closed or timed-out session is a no-op.
+    ///
+    /// This is reachable through [`Client::session`][crate::Client::session],
+    /// which derefs mutably to `Session`:
+    ///
+    /// ```no_run
+    /// # fn example(client: &yubihsm::Client) -> Result<(), yubihsm::client::Error> {
+    /// client.session()?.close()?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn close(&mut self) -> Result<(), Error> {
         // Only attempt to close the session if we have an active secure
         // channel and our session hasn't already timed out
         if self.secure_channel.is_none() || self.is_timed_out() {
@@ -133,8 +148,13 @@ impl Session {
         }
 
         session_debug!(self, "closing session");
-        self.send_command(&CloseSessionCommand {})?;
-        Ok(())
+        let result = self.send_command(&CloseSessionCommand {});
+
+        // Whether or not the HSM acknowledged it, this channel is finished.
+        // Clearing it also stops the `Drop` handler from trying again.
+        self.abort();
+
+        result.map(|_| ())
     }
 
     /// Abort this session, terminating it without closing it
@@ -274,5 +294,40 @@ impl Session {
         self.secure_channel
             .as_mut()
             .ok_or_else(|| format_err!(ErrorKind::ClosedError, "session is already closed").into())
+    }
+}
+
+impl Drop for Session {
+    /// Make a best effort to close the session if it's still healthy.
+    ///
+    /// Without this, sessions are only released when the HSM times them out,
+    /// which exhausts the device's limited pool of concurrent sessions.
+    fn drop(&mut self) {
+        // Never touch the transport while unwinding.
+        //
+        // `Connector::send_message` locks with `lock().unwrap()`. If a panic
+        // poisoned that mutex — including a panic raised *while* it was held —
+        // closing here would panic a second time inside a destructor, which
+        // aborts the process. A recoverable panic must not become an abort just
+        // because a session went out of scope on the way out.
+        //
+        // The session is still released: the HSM times it out on its own.
+        if std::thread::panicking() {
+            self.abort();
+            return;
+        }
+
+        // `close` already short-circuits on a closed or timed-out session.
+        //
+        // Errors are logged rather than propagated: a destructor has nowhere
+        // to return them, and failing to notify the HSM is recoverable — the
+        // session times out on its own.
+        if let Err(err) = self.close() {
+            error!(
+                "session={} error closing dropped session: {}",
+                self.id.to_u8(),
+                err
+            );
+        }
     }
 }

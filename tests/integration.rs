@@ -16,6 +16,9 @@ mod ed25519;
 /// Rsa tests
 mod rsa;
 
+/// Session lifecycle tests
+mod session;
+
 /// Cryptographic test vectors taken from standards documents
 mod test_vectors;
 
@@ -137,7 +140,9 @@ pub fn generate_asymmetric_key(
 
     match client.generate_asymmetric_key(
         TEST_KEY_ID,
-        TEST_KEY_LABEL.into(),
+        TEST_KEY_LABEL
+            .parse()
+            .expect("TEST_KEY_LABEL to be shorter than or equal to 40 bytes"),
         TEST_DOMAINS,
         capabilities,
         algorithm,
@@ -159,7 +164,9 @@ pub fn put_asymmetric_key<T: Into<Vec<u8>>>(
     let key_id = client
         .put_asymmetric_key(
             TEST_KEY_ID,
-            TEST_KEY_LABEL.into(),
+            TEST_KEY_LABEL
+                .parse()
+                .expect("TEST_KEY_LABEL to be shorter than or equal to 40 bytes"),
             TEST_DOMAINS,
             capabilities,
             algorithm,

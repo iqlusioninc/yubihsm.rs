@@ -19,7 +19,9 @@ fn wrap_key_test() {
     let key_id = client
         .put_wrap_key(
             TEST_KEY_ID,
-            TEST_KEY_LABEL.into(),
+            TEST_KEY_LABEL
+                .parse()
+                .expect("TEST_KEY_LABEL to be shorter than or equal to 40 bytes"),
             TEST_DOMAINS,
             capabilities,
             delegated_capabilities,
@@ -40,7 +42,9 @@ fn wrap_key_test() {
     client
         .generate_asymmetric_key(
             TEST_EXPORTED_KEY_ID,
-            TEST_EXPORTED_KEY_LABEL.into(),
+            TEST_EXPORTED_KEY_LABEL
+                .parse()
+                .expect("TEST_EXPORTED_KEY_LABEL to be shorter than or equal to 40 bytes"),
             TEST_DOMAINS,
             exported_key_capabilities,
             exported_key_algorithm,
@@ -100,7 +104,9 @@ fn wrap_deserialize() {
     let key_id = client
         .put_wrap_key(
             TEST_KEY_ID,
-            TEST_KEY_LABEL.into(),
+            TEST_KEY_LABEL
+                .parse()
+                .expect("TEST_KEY_LABEL to be shorter than or equal to 40 bytes"),
             TEST_DOMAINS,
             capabilities,
             delegated_capabilities,
@@ -121,7 +127,9 @@ fn wrap_deserialize() {
     client
         .generate_asymmetric_key(
             TEST_EXPORTED_KEY_ID,
-            TEST_EXPORTED_KEY_LABEL.into(),
+            TEST_EXPORTED_KEY_LABEL
+                .parse()
+                .expect("TEST_EXPORTED_KEY_LABEL to be shorter than or equal to 40 bytes"),
             TEST_DOMAINS,
             exported_key_capabilities,
             exported_key_algorithm,
@@ -167,7 +175,9 @@ fn wrap_deserialize_rsa() {
     let key_id = client
         .put_wrap_key(
             TEST_KEY_ID,
-            TEST_KEY_LABEL.into(),
+            TEST_KEY_LABEL
+                .parse()
+                .expect("TEST_KEY_LABEL to be shorter than or equal to 40 bytes"),
             TEST_DOMAINS,
             capabilities,
             delegated_capabilities,
@@ -188,7 +198,9 @@ fn wrap_deserialize_rsa() {
     client
         .generate_asymmetric_key(
             TEST_EXPORTED_KEY_ID,
-            TEST_EXPORTED_KEY_LABEL.into(),
+            TEST_EXPORTED_KEY_LABEL
+                .parse()
+                .expect("TEST_EXPORTED_KEY_LABEL to be shorter than or equal to 40 bytes"),
             TEST_DOMAINS,
             exported_key_capabilities,
             exported_key_algorithm,

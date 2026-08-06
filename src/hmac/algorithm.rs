@@ -3,7 +3,7 @@
 use crate::algorithm;
 
 /// Valid algorithms for HMAC keys
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 #[repr(u8)]
 pub enum Algorithm {
     /// `hmac-sha1`

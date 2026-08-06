@@ -68,6 +68,12 @@ x509-cert = { version = "0.3", features = ["builder"] }
 default = ["http", "passwords", "setup"]
 http-server = ["tiny_http"]
 http = []
+# WARNING: The `mockhsm` feature is only for testing purposes!
+# It is **neither safe nor fit** for production use!
+#
+# Enabling it in an optimized build additionally requires
+# `mockhsm-in-release`, so that shipping a simulated HSM has to be a
+# deliberate act rather than a feature that got unified in by accident.
 mockhsm = [
   "ecdsa/algorithm",
   "ed25519-dalek",
@@ -79,6 +85,9 @@ mockhsm = [
   "secp256k1",
   "x509-cert"
 ]
+# Opt-in acknowledgement required to build `mockhsm` without debug assertions.
+# See the `mockhsm` module docs.
+mockhsm-in-release = []
 passwords = ["hmac", "pbkdf2"]
 secp256k1 = ["k256"]
 setup = ["passwords", "serde_json", "uuid/serde"]

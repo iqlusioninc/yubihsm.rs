@@ -14,7 +14,14 @@ bitflags! {
     /// Object attributes specifying which operations are allowed to be performed
     ///
     /// <https://developers.yubico.com/YubiHSM2/Concepts/Capability.html>
-    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+    /// # Ordering
+    ///
+    /// `Ord` compares the underlying bits, so that `Capability` can be used as a
+    /// key in ordered collections and sorted for stable display. The order is
+    /// **not** semantic: `a < b` does not mean `a` grants fewer capabilities than
+    /// `b`. Flag sets are only partially ordered by inclusion — use
+    /// [`contains`][Self::contains] to test that relation.
+    #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
     pub struct Capability: u64 {
         /// `derive-ecdh`: perform ECDH operation
         const DERIVE_ECDH = 0x800;
