@@ -63,12 +63,10 @@ impl Connection {
     }
 
     /// Make an HTTP POST request to the given path
-    pub fn post<P: Into<PathBuf>>(
-        &self,
-        into_path: P,
-        body: &request::Body,
-    ) -> Result<response::Body, Error> {
-        let path = into_path.into();
+    pub fn post(&self, path: &str, body: &request::Body) -> Result<response::Body, Error> {
+        // Parsed rather than converted infallibly: `PathBuf` validates against
+        // request splitting, and that error has to reach the caller.
+        let path: PathBuf = path.parse()?;
         let mut headers = String::new();
 
         writeln!(headers, "POST {path} {HTTP_VERSION}\r")?;
