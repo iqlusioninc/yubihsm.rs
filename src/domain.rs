@@ -36,6 +36,13 @@ bitflags! {
     /// basis. For more information, see the Yubico documentation:
     ///
     /// <https://developers.yubico.com/YubiHSM2/Concepts/Domain.html>
+    /// # Ordering
+    ///
+    /// `Ord` compares the underlying bits, so that `Domain` can be used as a
+    /// key in ordered collections and sorted for stable display. The order is
+    /// **not** semantic: `a < b` does not mean `a` grants fewer domains than
+    /// `b`. Flag sets are only partially ordered by inclusion — use
+    /// [`contains`][Self::contains] to test that relation.
     #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
     pub struct Domain: u16 {
         const DOM1 = 0x0001;

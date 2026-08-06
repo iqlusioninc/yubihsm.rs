@@ -5,7 +5,14 @@ use crate::algorithm;
 use digest::{const_oid::AssociatedOid, Digest};
 
 /// RSA algorithms (signing and encryption)
-#[derive(Copy, Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+///
+/// # Ordering
+///
+/// `Ord` follows the wire tag values from [`Algorithm::to_u8`], not the order
+/// the variants are declared in. Deriving it would order `Oaep` (tags
+/// `0x19..=0x1c`) before `Pkcs1` (`0x01..=0x04`), which is arbitrary and would
+/// shift if the variants were ever rearranged.
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[repr(u8)]
 pub enum Algorithm {
     /// RSA encryption with Optimal Asymmetric Encryption Padding (OAEP)
@@ -40,6 +47,18 @@ impl Algorithm {
             Algorithm::Pkcs1(alg) => alg.to_u8(),
             Algorithm::Pss(alg) => alg.to_u8(),
         }
+    }
+}
+
+impl Ord for Algorithm {
+    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
+        self.to_u8().cmp(&other.to_u8())
+    }
+}
+
+impl PartialOrd for Algorithm {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+        Some(self.cmp(other))
     }
 }
 
