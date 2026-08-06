@@ -12,6 +12,30 @@
 //! It exists so downstream crates can run integration tests without hardware.
 //! Enabling the `mockhsm` feature in a binary that talks to a real device is a
 //! mistake; enabling it in production is a vulnerability.
+//!
+//! # Optimized builds
+//!
+//! Building `mockhsm` without debug assertions additionally requires the
+//! `mockhsm-in-release` feature:
+//!
+//! ```text
+//! cargo test --release --features=mockhsm,mockhsm-in-release
+//! ```
+//!
+//! Running a test suite under `--release` is a legitimate reason to do this, so
+//! it is allowed — but it has to be asked for. Cargo features are additive and
+//! unify across a dependency graph, so `mockhsm` alone can be switched on by
+//! something else in the tree; requiring a second, explicitly-named feature
+//! means a simulated HSM cannot end up in an optimized binary by accident.
+
+// Optimized builds must opt in explicitly; see the module docs above.
+#[cfg(all(not(debug_assertions), not(feature = "mockhsm-in-release")))]
+compile_error!(
+    "the `mockhsm` feature is a simulation with no security properties and is \
+     being built without debug assertions. If this is a test run, also enable \
+     the `mockhsm-in-release` feature to acknowledge that. If it is not, \
+     disable the `mockhsm` feature."
+);
 
 use std::sync::{Arc, Mutex};
 
