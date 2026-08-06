@@ -561,7 +561,7 @@ impl Client {
         let mut filter_bytes = vec![];
 
         for filter in filters {
-            filter.serialize(&mut filter_bytes)?;
+            filter.to_wire(&mut filter_bytes)?;
         }
 
         Ok(self.send_command(ListObjectsCommand(filter_bytes))?.0)
