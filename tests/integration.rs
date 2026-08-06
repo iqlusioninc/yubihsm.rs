@@ -16,6 +16,9 @@ mod ed25519;
 /// Rsa tests
 mod rsa;
 
+/// Session lifecycle tests
+mod session;
+
 /// Cryptographic test vectors taken from standards documents
 mod test_vectors;
 

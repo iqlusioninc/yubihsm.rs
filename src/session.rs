@@ -29,10 +29,7 @@ use crate::{
     device, response,
     serialization::deserialize,
 };
-use std::{
-    panic::{self, AssertUnwindSafe},
-    time::{Duration, Instant},
-};
+use std::time::{Duration, Instant};
 
 /// Timeout fuzz factor: to avoid races/skew with the YubiHSM's clock,
 /// we consider sessions to be timed out slightly earlier than the actual
@@ -125,6 +122,39 @@ impl Session {
         let idle_time = Instant::now().duration_since(self.last_active);
         let timeout_with_fuzz = self.timeout.duration() - TIMEOUT_FUZZ_FACTOR;
         idle_time >= timeout_with_fuzz
+    }
+
+    /// Close this session, telling the HSM to release its resources rather
+    /// than waiting for the session to time out.
+    ///
+    /// Sessions are also closed automatically on [`Drop`], so calling this is
+    /// only necessary when you want to observe any error that occurs while
+    /// closing. Closing an already-closed or timed-out session is a no-op.
+    ///
+    /// This is reachable through [`Client::session`][crate::Client::session],
+    /// which derefs mutably to `Session`:
+    ///
+    /// ```no_run
+    /// # fn example(client: &yubihsm::Client) -> Result<(), yubihsm::client::Error> {
+    /// client.session()?.close()?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn close(&mut self) -> Result<(), Error> {
+        // Only attempt to close the session if we have an active secure
+        // channel and our session hasn't already timed out
+        if self.secure_channel.is_none() || self.is_timed_out() {
+            return Ok(());
+        }
+
+        session_debug!(self, "closing session");
+        let result = self.send_command(&CloseSessionCommand {});
+
+        // Whether or not the HSM acknowledged it, this channel is finished.
+        // Clearing it also stops the `Drop` handler from trying again.
+        self.abort();
+
+        result.map(|_| ())
     }
 
     /// Abort this session, terminating it without closing it
@@ -268,34 +298,21 @@ impl Session {
 }
 
 impl Drop for Session {
-    /// Make a best effort to close the session if it's still healthy
+    /// Make a best effort to close the session if it's still healthy.
+    ///
+    /// Without this, sessions are only released when the HSM times them out,
+    /// which exhausts the device's limited pool of concurrent sessions.
     fn drop(&mut self) {
-        // Only attempt to close the session if we have an active secure
-        // channel and our session hasn't already timed out
-        if self.secure_channel.is_none() || self.is_timed_out() {
-            return;
-        }
-
-        session_debug!(self, "closing dropped session");
-
-        // TODO: ensure we're really unwind safe.
-        // This should still be better than panicking in a drop handler, hopefully
-        let result = panic::catch_unwind(AssertUnwindSafe(|| {
-            self.send_command(&CloseSessionCommand {}).unwrap()
-        }));
-
-        if let Err(err) = result {
-            // Attempt to extract the error message from the `Any` returned from `catch_unwind`
-            let msg = err
-                .downcast_ref::<String>()
-                .map(AsRef::as_ref)
-                .or_else(|| err.downcast_ref::<&str>().cloned())
-                .unwrap_or("unknown cause!");
-
+        // `close` already short-circuits on a closed or timed-out session.
+        //
+        // Errors are logged rather than propagated: a destructor has nowhere
+        // to return them, and failing to notify the HSM is recoverable — the
+        // session times out on its own.
+        if let Err(err) = self.close() {
             error!(
-                "session={} panic closing dropped session: {}",
+                "session={} error closing dropped session: {}",
                 self.id.to_u8(),
-                msg
+                err
             );
         }
     }
