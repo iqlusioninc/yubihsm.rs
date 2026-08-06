@@ -14,6 +14,7 @@ pub const LABEL_SIZE: usize = 40;
 const INVALID_LABEL_STR_PLACEHOLDER: &str = "[INVALID UTF-8 CHARACTER IN LABEL]";
 
 /// Labels attached to objects
+#[derive(Clone)]
 pub struct Label(pub [u8; LABEL_SIZE]);
 
 impl Label {
@@ -49,12 +50,6 @@ impl AsRef<[u8]> for Label {
     }
 }
 
-impl Clone for Label {
-    fn clone(&self) -> Self {
-        Self::from_bytes(self.as_ref()).unwrap()
-    }
-}
-
 impl Default for Label {
     fn default() -> Self {
         Label([0u8; LABEL_SIZE])
@@ -86,12 +81,6 @@ impl FromStr for Label {
 
     fn from_str(s: &str) -> Result<Self, Error> {
         Self::from_bytes(s.as_bytes())
-    }
-}
-
-impl<'a> From<&'a str> for Label {
-    fn from(s: &'a str) -> Self {
-        Self::from_str(s).unwrap()
     }
 }
 

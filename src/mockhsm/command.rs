@@ -485,7 +485,7 @@ fn list_objects(state: &State, cmd_data: &[u8]) -> response::Message {
     let mut filters = vec![];
 
     while cursor.position() < len {
-        filters.push(object::Filter::deserialize(&mut cursor).unwrap());
+        filters.push(object::Filter::from_wire(&mut cursor).unwrap());
     }
 
     let list_entries = state

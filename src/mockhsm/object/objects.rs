@@ -131,7 +131,9 @@ impl Default for Objects {
             length: authentication::key::SIZE as u16,
             sequence: 1,
             origin: Origin::Imported,
-            label: DEFAULT_AUTHENTICATION_KEY_LABEL.into(),
+            label: DEFAULT_AUTHENTICATION_KEY_LABEL.parse().expect(
+                "the default authentication key label to be less than or equal to 40 bytes",
+            ),
         };
 
         let authentication_key_payload = Payload::AuthenticationKey(authentication::Key::default());
@@ -158,7 +160,9 @@ impl Default for Objects {
             length: 0,
             sequence: 0,
             origin: Origin::Generated,
-            label: "MOCKHSM ATTESTATION KEY".into(),
+            label: "MOCKHSM ATTESTATION KEY".parse().expect(
+                "the default mockhsm attestation key label to be less than or equal to 40 bytes",
+            ),
         };
         let attestation_cert_info = Info {
             object_id: DEFAULT_ATTESTATION_KEY_ID,
@@ -170,7 +174,9 @@ impl Default for Objects {
             length: 0,
             sequence: 0,
             origin: Origin::Generated,
-            label: "MOCKHSM ATTESTATION CERT".into(),
+            label: "MOCKHSM ATTESTATION CERT".parse().expect(
+                "the default mockhsm attestation cert label to be less than or equal to 40 bytes",
+            ),
         };
 
         let attestation_cert_payload = Payload::Opaque(
