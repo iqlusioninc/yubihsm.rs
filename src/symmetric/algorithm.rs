@@ -1,9 +1,9 @@
-//! Raw AES algorithms (symmetric key sizes for RSA-AES key wrapping)
+//! Symmetric algorithm support
 
 use crate::algorithm;
 
-/// Raw AES key size algorithms
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+/// Symmetric algorithms
+#[derive(Copy, Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 #[repr(u8)]
 pub enum Algorithm {
     /// AES-128
@@ -25,7 +25,7 @@ impl Algorithm {
             0x34 => Algorithm::Aes256,
             _ => fail!(
                 algorithm::ErrorKind::TagInvalid,
-                "unknown AES algorithm ID: 0x{:02x}",
+                "unknown symmetric algorithm ID: 0x{:02x}",
                 tag
             ),
         })
@@ -34,6 +34,15 @@ impl Algorithm {
     /// Serialize algorithm ID as a byte
     pub fn to_u8(self) -> u8 {
         self as u8
+    }
+
+    /// Return the size of the given key (as expected by the `YubiHSM 2`) in bytes
+    pub fn key_len(self) -> usize {
+        match self {
+            Algorithm::Aes128 => 16,
+            Algorithm::Aes192 => 24,
+            Algorithm::Aes256 => 32,
+        }
     }
 }
 

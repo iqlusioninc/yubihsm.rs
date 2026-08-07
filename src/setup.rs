@@ -49,7 +49,9 @@ pub fn init_with_profile(client: Client, profile: Profile) -> Result<Report, Err
     client
         .put_authentication_key(
             setup_auth_key_id,
-            SETUP_KEY_LABEL.into(),
+            SETUP_KEY_LABEL
+                .parse()
+                .map_err(|_error| ErrorKind::LabelInvalid)?,
             Domain::all(),
             Capability::all(),
             Capability::all(),
@@ -64,10 +66,7 @@ pub fn init_with_profile(client: Client, profile: Profile) -> Result<Report, Err
             )
         })?;
 
-    info!(
-        "installed temporary setup authentication key into slot {}",
-        setup_auth_key_id
-    );
+    info!("installed temporary setup authentication key into slot {setup_auth_key_id}");
 
     let connector = client.connector().clone();
 
@@ -85,10 +84,7 @@ pub fn init_with_profile(client: Client, profile: Profile) -> Result<Report, Err
         )
     })?;
 
-    warn!(
-        "deleting default authentication key from slot {}",
-        DEFAULT_AUTHENTICATION_KEY_ID
-    );
+    warn!("deleting default authentication key from slot {DEFAULT_AUTHENTICATION_KEY_ID}");
 
     client
         .delete_object(
@@ -107,10 +103,7 @@ pub fn init_with_profile(client: Client, profile: Profile) -> Result<Report, Err
     let report = profile.provision(&client)?;
 
     if profile.delete_setup_auth_key {
-        warn!(
-            "deleting temporary setup authentication key from slot {}",
-            setup_auth_key_id
-        );
+        warn!("deleting temporary setup authentication key from slot {setup_auth_key_id}");
         client
             .delete_object(setup_auth_key_id, object::Type::AuthenticationKey)
             .map_err(|e| {

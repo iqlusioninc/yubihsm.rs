@@ -55,7 +55,6 @@ pub mod error;
 #[macro_use]
 mod serialization;
 
-pub mod aes;
 pub mod algorithm;
 pub mod asymmetric;
 pub mod attestation;
@@ -82,6 +81,7 @@ pub mod session;
 #[cfg(feature = "setup")]
 pub mod setup;
 pub mod ssh;
+pub mod symmetric;
 pub mod template;
 mod uuid;
 pub mod wrap;

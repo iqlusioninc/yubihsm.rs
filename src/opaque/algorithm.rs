@@ -3,7 +3,7 @@
 use crate::algorithm;
 
 /// Valid algorithms for opaque data
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 #[repr(u8)]
 pub enum Algorithm {
     /// Arbitrary opaque data

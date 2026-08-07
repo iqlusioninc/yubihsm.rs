@@ -14,6 +14,10 @@ pub enum ErrorKind {
     #[error("authentication failed")]
     AuthenticationError,
 
+    /// Authentication key doesn't exist
+    #[error("authentication key doesn't exist")]
+    AuthenticationKeyError,
+
     /// Session is closed
     #[error("session closed")]
     ClosedError,

@@ -17,7 +17,9 @@ fn hmac_test_vectors() {
         let key_id = client
             .put_hmac_key(
                 TEST_KEY_ID,
-                TEST_KEY_LABEL.into(),
+                TEST_KEY_LABEL
+                    .parse()
+                    .expect("TEST_KEY_LABEL to be shorter than or equal to 40 bytes"),
                 TEST_DOMAINS,
                 capabilities,
                 algorithm,

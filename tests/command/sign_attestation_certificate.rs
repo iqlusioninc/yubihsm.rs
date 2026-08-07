@@ -14,7 +14,7 @@ fn attest_asymmetric_test() {
 
     let certificate = client
         .sign_attestation_certificate(TEST_KEY_ID, None)
-        .unwrap_or_else(|err| panic!("error getting attestation certificate: {}", err));
+        .unwrap_or_else(|err| panic!("error getting attestation certificate: {err}"));
 
     // TODO: more tests, e.g. test that the certificate validates
     assert!(certificate.len() > EC_P256_PUBLIC_KEY_SIZE);

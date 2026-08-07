@@ -3,7 +3,7 @@
 use crate::algorithm;
 
 /// RSA Optimal Asymmetric Encryption Padding (OAEP) algorithms
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 #[repr(u8)]
 pub enum Algorithm {
     /// `rsa-oaep-sha1`

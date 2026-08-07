@@ -15,7 +15,7 @@ fn rsa_decrypt_oaep_test() {
 
     let raw_public_key = client
         .get_public_key(TEST_KEY_ID)
-        .unwrap_or_else(|err| panic!("error getting public key: {}", err));
+        .unwrap_or_else(|err| panic!("error getting public key: {err}"));
 
     assert_eq!(raw_public_key.algorithm, asymmetric::Algorithm::Rsa2048);
     assert_eq!(raw_public_key.bytes.len(), 256);

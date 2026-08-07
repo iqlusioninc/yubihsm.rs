@@ -131,7 +131,9 @@ impl Default for Objects {
             length: authentication::key::SIZE as u16,
             sequence: 1,
             origin: Origin::Imported,
-            label: DEFAULT_AUTHENTICATION_KEY_LABEL.into(),
+            label: DEFAULT_AUTHENTICATION_KEY_LABEL.parse().expect(
+                "the default authentication key label to be less than or equal to 40 bytes",
+            ),
         };
 
         let authentication_key_payload = Payload::AuthenticationKey(authentication::Key::default());
@@ -158,7 +160,9 @@ impl Default for Objects {
             length: 0,
             sequence: 0,
             origin: Origin::Generated,
-            label: "MOCKHSM ATTESTATION KEY".into(),
+            label: "MOCKHSM ATTESTATION KEY".parse().expect(
+                "the default mockhsm attestation key label to be less than or equal to 40 bytes",
+            ),
         };
         let attestation_cert_info = Info {
             object_id: DEFAULT_ATTESTATION_KEY_ID,
@@ -170,7 +174,9 @@ impl Default for Objects {
             length: 0,
             sequence: 0,
             origin: Origin::Generated,
-            label: "MOCKHSM ATTESTATION CERT".into(),
+            label: "MOCKHSM ATTESTATION CERT".parse().expect(
+                "the default mockhsm attestation cert label to be less than or equal to 40 bytes",
+            ),
         };
 
         let attestation_cert_payload = Payload::Opaque(
@@ -238,6 +244,29 @@ impl Objects {
         };
 
         assert!(self.0.insert(handle, object).is_none());
+    }
+
+    /// Replace the payload of an existing object, preserving its metadata.
+    ///
+    /// Returns `false` if nothing occupies that slot.
+    ///
+    /// Unlike [`Objects::put`], this does not assert the slot is empty --
+    /// replacing in place is the point. It models `ChangeAuthenticationKey`,
+    /// where the device swaps the key material and leaves the object's ID,
+    /// label, domains, capabilities and algorithm untouched.
+    ///
+    /// Because the algorithm is metadata, it is preserved rather than passed
+    /// in, and the replacement payload is parsed under it.
+    pub fn replace(&mut self, object_id: Id, object_type: Type, data: &[u8]) -> bool {
+        let Some(object) = self.0.get_mut(&Handle::new(object_id, object_type)) else {
+            return false;
+        };
+
+        let payload = Payload::new(object.object_info.algorithm, data);
+        object.object_info.length = payload.len();
+        object.payload = payload;
+
+        true
     }
 
     /// Get an object
@@ -498,3 +527,67 @@ impl Objects {
 
 /// Iterator over objects
 pub(crate) type Iter<'a> = MapIter<'a, Handle, Object>;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// `Objects::default` seeds the default authentication key, which is a
+    /// convenient object to replace.
+    fn seeded() -> (Objects, Id, Type) {
+        (
+            Objects::default(),
+            DEFAULT_AUTHENTICATION_KEY_ID,
+            Type::AuthenticationKey,
+        )
+    }
+
+    #[test]
+    fn replace_swaps_the_payload_and_keeps_metadata() {
+        let (mut objects, id, ty) = seeded();
+        let before = objects.get(id, ty).expect("seeded key").object_info.clone();
+
+        let new_key = [0x5au8; 32];
+        assert!(objects.replace(id, ty, &new_key));
+
+        let after = &objects.get(id, ty).expect("key still present").object_info;
+
+        // Metadata is preserved: that is the whole contract of `replace`.
+        assert_eq!(after.object_id, before.object_id);
+        assert_eq!(after.object_type, before.object_type);
+        assert_eq!(after.algorithm, before.algorithm);
+        assert_eq!(after.capabilities, before.capabilities);
+        assert_eq!(after.delegated_capabilities, before.delegated_capabilities);
+        assert_eq!(after.domains, before.domains);
+        assert_eq!(after.label, before.label);
+
+        // The payload is the new key material.
+        assert_eq!(
+            objects
+                .get(id, ty)
+                .unwrap()
+                .payload
+                .authentication_key()
+                .expect("auth key payload")
+                .0,
+            new_key
+        );
+    }
+
+    #[test]
+    fn replace_reports_a_missing_object() {
+        let (mut objects, _, ty) = seeded();
+
+        // Nothing occupies this slot, so there is nothing to replace. Returning
+        // `true` here would let the command handler report success for a key
+        // that does not exist.
+        assert!(!objects.replace(0xbeef, ty, &[0u8; 32]));
+    }
+
+    #[test]
+    fn replace_does_not_create_objects() {
+        let (mut objects, _, ty) = seeded();
+        assert!(!objects.replace(0xbeef, ty, &[0u8; 32]));
+        assert!(objects.get(0xbeef, ty).is_none());
+    }
+}

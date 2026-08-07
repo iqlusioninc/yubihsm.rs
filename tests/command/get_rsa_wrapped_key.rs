@@ -9,7 +9,7 @@
 
 use sha1::Sha1;
 use sha2::{Digest, Sha256, Sha512};
-use yubihsm::{aes, asymmetric, object, rsa, Capability, Domain};
+use yubihsm::{asymmetric, object, rsa, symmetric, Capability, Domain};
 
 /// RSA key pair slot (used to generate the key pair, then deleted)
 const RSA_KEY_ID: object::Id = 230;
@@ -49,7 +49,7 @@ fn setup_public_wrap_key(client: &yubihsm::Client, algorithm: asymmetric::Algori
     client
         .generate_asymmetric_key(
             RSA_KEY_ID,
-            "rsa_keypair".into(),
+            "rsa_keypair".parse().unwrap(),
             TEST_DOMAINS,
             Capability::empty(),
             algorithm,
@@ -72,7 +72,7 @@ fn setup_public_wrap_key(client: &yubihsm::Client, algorithm: asymmetric::Algori
     client
         .put_public_wrap_key(
             WRAP_KEY_ID,
-            "rsa_pubwrap".into(),
+            "rsa_pubwrap".parse().unwrap(),
             TEST_DOMAINS,
             Capability::EXPORT_WRAPPED,
             Capability::all(),
@@ -94,7 +94,7 @@ fn wrap_ec_key_with_rsa2048() {
     client
         .generate_asymmetric_key(
             TARGET_KEY_ID,
-            "ec_target".into(),
+            "ec_target".parse().unwrap(),
             TEST_DOMAINS,
             Capability::SIGN_ECDSA | Capability::EXPORTABLE_UNDER_WRAP,
             asymmetric::Algorithm::EcP256,
@@ -103,12 +103,14 @@ fn wrap_ec_key_with_rsa2048() {
 
     let wrapped = client
         .get_rsa_wrapped_key(
-            WRAP_KEY_ID,
-            object::Type::AsymmetricKey,
-            TARGET_KEY_ID,
-            aes::Algorithm::Aes256,
-            rsa::oaep::Algorithm::Sha256,
-            rsa::mgf::Algorithm::Sha256,
+            yubihsm::client::RsaWrappedKeyParams {
+                wrap_key_id: WRAP_KEY_ID,
+                target_type: object::Type::AsymmetricKey,
+                target_id: TARGET_KEY_ID,
+                aes_algorithm: symmetric::Algorithm::Aes256,
+                oaep_algorithm: rsa::oaep::Algorithm::Sha256,
+                mgf1_algorithm: rsa::mgf::Algorithm::Sha256,
+            },
             sha256_empty_label(),
         )
         .unwrap_or_else(|err| panic!("error wrapping EC key: {err}"));
@@ -139,7 +141,7 @@ fn wrap_ec_key_with_rsa3072() {
     client
         .generate_asymmetric_key(
             TARGET_KEY_ID,
-            "ec_target".into(),
+            "ec_target".parse().unwrap(),
             TEST_DOMAINS,
             Capability::SIGN_ECDSA | Capability::EXPORTABLE_UNDER_WRAP,
             asymmetric::Algorithm::EcP256,
@@ -148,12 +150,14 @@ fn wrap_ec_key_with_rsa3072() {
 
     let wrapped = client
         .get_rsa_wrapped_key(
-            WRAP_KEY_ID,
-            object::Type::AsymmetricKey,
-            TARGET_KEY_ID,
-            aes::Algorithm::Aes256,
-            rsa::oaep::Algorithm::Sha256,
-            rsa::mgf::Algorithm::Sha256,
+            yubihsm::client::RsaWrappedKeyParams {
+                wrap_key_id: WRAP_KEY_ID,
+                target_type: object::Type::AsymmetricKey,
+                target_id: TARGET_KEY_ID,
+                aes_algorithm: symmetric::Algorithm::Aes256,
+                oaep_algorithm: rsa::oaep::Algorithm::Sha256,
+                mgf1_algorithm: rsa::mgf::Algorithm::Sha256,
+            },
             sha256_empty_label(),
         )
         .unwrap_or_else(|err| panic!("error wrapping EC key: {err}"));
@@ -180,7 +184,7 @@ fn wrap_ec_key_with_rsa4096() {
     client
         .generate_asymmetric_key(
             TARGET_KEY_ID,
-            "ec_target".into(),
+            "ec_target".parse().unwrap(),
             TEST_DOMAINS,
             Capability::SIGN_ECDSA | Capability::EXPORTABLE_UNDER_WRAP,
             asymmetric::Algorithm::EcP256,
@@ -189,12 +193,14 @@ fn wrap_ec_key_with_rsa4096() {
 
     let wrapped = client
         .get_rsa_wrapped_key(
-            WRAP_KEY_ID,
-            object::Type::AsymmetricKey,
-            TARGET_KEY_ID,
-            aes::Algorithm::Aes256,
-            rsa::oaep::Algorithm::Sha256,
-            rsa::mgf::Algorithm::Sha256,
+            yubihsm::client::RsaWrappedKeyParams {
+                wrap_key_id: WRAP_KEY_ID,
+                target_type: object::Type::AsymmetricKey,
+                target_id: TARGET_KEY_ID,
+                aes_algorithm: symmetric::Algorithm::Aes256,
+                oaep_algorithm: rsa::oaep::Algorithm::Sha256,
+                mgf1_algorithm: rsa::mgf::Algorithm::Sha256,
+            },
             sha256_empty_label(),
         )
         .unwrap_or_else(|err| panic!("error wrapping EC key: {err}"));
@@ -225,7 +231,7 @@ fn wrap_ec_key_mixed_oaep_sha1_mgf1_sha384() {
     client
         .generate_asymmetric_key(
             TARGET_KEY_ID,
-            "ec_target".into(),
+            "ec_target".parse().unwrap(),
             TEST_DOMAINS,
             Capability::SIGN_ECDSA | Capability::EXPORTABLE_UNDER_WRAP,
             asymmetric::Algorithm::EcP256,
@@ -235,12 +241,14 @@ fn wrap_ec_key_mixed_oaep_sha1_mgf1_sha384() {
     // OAEP uses SHA-1, so label digest is SHA-1 of empty string
     let wrapped = client
         .get_rsa_wrapped_key(
-            WRAP_KEY_ID,
-            object::Type::AsymmetricKey,
-            TARGET_KEY_ID,
-            aes::Algorithm::Aes256,
-            rsa::oaep::Algorithm::Sha1,
-            rsa::mgf::Algorithm::Sha384,
+            yubihsm::client::RsaWrappedKeyParams {
+                wrap_key_id: WRAP_KEY_ID,
+                target_type: object::Type::AsymmetricKey,
+                target_id: TARGET_KEY_ID,
+                aes_algorithm: symmetric::Algorithm::Aes256,
+                oaep_algorithm: rsa::oaep::Algorithm::Sha1,
+                mgf1_algorithm: rsa::mgf::Algorithm::Sha384,
+            },
             sha1_empty_label(),
         )
         .unwrap_or_else(|err| panic!("error wrapping EC key with mixed OAEP/MGF1: {err}"));
@@ -270,7 +278,7 @@ fn wrap_ec_key_oaep_sha512_mgf1_sha512() {
     client
         .generate_asymmetric_key(
             TARGET_KEY_ID,
-            "ec_target".into(),
+            "ec_target".parse().unwrap(),
             TEST_DOMAINS,
             Capability::SIGN_ECDSA | Capability::EXPORTABLE_UNDER_WRAP,
             asymmetric::Algorithm::EcP256,
@@ -279,12 +287,14 @@ fn wrap_ec_key_oaep_sha512_mgf1_sha512() {
 
     let wrapped = client
         .get_rsa_wrapped_key(
-            WRAP_KEY_ID,
-            object::Type::AsymmetricKey,
-            TARGET_KEY_ID,
-            aes::Algorithm::Aes256,
-            rsa::oaep::Algorithm::Sha512,
-            rsa::mgf::Algorithm::Sha512,
+            yubihsm::client::RsaWrappedKeyParams {
+                wrap_key_id: WRAP_KEY_ID,
+                target_type: object::Type::AsymmetricKey,
+                target_id: TARGET_KEY_ID,
+                aes_algorithm: symmetric::Algorithm::Aes256,
+                oaep_algorithm: rsa::oaep::Algorithm::Sha512,
+                mgf1_algorithm: rsa::mgf::Algorithm::Sha512,
+            },
             sha512_empty_label(),
         )
         .unwrap_or_else(|err| panic!("error wrapping EC key with SHA-512: {err}"));

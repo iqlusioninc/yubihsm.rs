@@ -4,11 +4,10 @@
 //! encrypted via RSA-AES key wrapping (CKM_RSA_AES_KEY_WRAP).
 
 use crate::{
-    aes,
     command::{self, Command},
     object,
     response::Response,
-    rsa,
+    rsa, symmetric,
 };
 use serde::{Deserialize, Serialize};
 
@@ -25,7 +24,7 @@ pub(crate) struct GetRsaWrappedKeyCommand {
     pub target_id: object::Id,
 
     /// Ephemeral AES key size algorithm
-    pub aes_algorithm: aes::Algorithm,
+    pub aes_algorithm: symmetric::Algorithm,
 
     /// OAEP hash algorithm
     pub oaep_algorithm: rsa::oaep::Algorithm,
@@ -84,7 +83,7 @@ mod tests {
             wrap_key_id: 0x0001,
             target_type: object::Type::AsymmetricKey,
             target_id: 0x0002,
-            aes_algorithm: aes::Algorithm::Aes256,
+            aes_algorithm: symmetric::Algorithm::Aes256,
             oaep_algorithm: rsa::oaep::Algorithm::Sha256,
             mgf1_algorithm: rsa::mgf::Algorithm::Sha256,
             oaep_label: SHA256_EMPTY.to_vec(),
@@ -125,7 +124,7 @@ mod tests {
             wrap_key_id: 0x0003,
             target_type: object::Type::SymmetricKey,
             target_id: 0x0004,
-            aes_algorithm: aes::Algorithm::Aes256,
+            aes_algorithm: symmetric::Algorithm::Aes256,
             oaep_algorithm: rsa::oaep::Algorithm::Sha256,
             mgf1_algorithm: rsa::mgf::Algorithm::Sha256,
             oaep_label: SHA256_EMPTY.to_vec(),
@@ -144,7 +143,7 @@ mod tests {
             wrap_key_id: 0x0001,
             target_type: object::Type::AsymmetricKey,
             target_id: 0x0002,
-            aes_algorithm: aes::Algorithm::Aes256,
+            aes_algorithm: symmetric::Algorithm::Aes256,
             oaep_algorithm: rsa::oaep::Algorithm::Sha1,
             mgf1_algorithm: rsa::mgf::Algorithm::Sha1,
             oaep_label: SHA1_EMPTY.to_vec(),
@@ -166,7 +165,7 @@ mod tests {
             wrap_key_id: 0x0001,
             target_type: object::Type::AsymmetricKey,
             target_id: 0x0002,
-            aes_algorithm: aes::Algorithm::Aes256,
+            aes_algorithm: symmetric::Algorithm::Aes256,
             oaep_algorithm: rsa::oaep::Algorithm::Sha384,
             mgf1_algorithm: rsa::mgf::Algorithm::Sha384,
             oaep_label: label.to_vec(),
@@ -185,7 +184,7 @@ mod tests {
             wrap_key_id: 0x0001,
             target_type: object::Type::AsymmetricKey,
             target_id: 0x0002,
-            aes_algorithm: aes::Algorithm::Aes256,
+            aes_algorithm: symmetric::Algorithm::Aes256,
             oaep_algorithm: rsa::oaep::Algorithm::Sha512,
             mgf1_algorithm: rsa::mgf::Algorithm::Sha512,
             oaep_label: label.to_vec(),
@@ -200,9 +199,9 @@ mod tests {
     #[test]
     fn serialize_aes_key_sizes() {
         for (alg, expected_byte) in [
-            (aes::Algorithm::Aes128, 0x32u8),
-            (aes::Algorithm::Aes192, 0x33u8),
-            (aes::Algorithm::Aes256, 0x34u8),
+            (symmetric::Algorithm::Aes128, 0x32u8),
+            (symmetric::Algorithm::Aes192, 0x33u8),
+            (symmetric::Algorithm::Aes256, 0x34u8),
         ] {
             let cmd = GetRsaWrappedKeyCommand {
                 wrap_key_id: 0x0001,
@@ -228,7 +227,7 @@ mod tests {
             wrap_key_id: 0x1234,
             target_type: object::Type::AsymmetricKey,
             target_id: 0x5678,
-            aes_algorithm: aes::Algorithm::Aes256,
+            aes_algorithm: symmetric::Algorithm::Aes256,
             oaep_algorithm: rsa::oaep::Algorithm::Sha256,
             mgf1_algorithm: rsa::mgf::Algorithm::Sha256,
             oaep_label: SHA256_EMPTY.to_vec(),
@@ -240,7 +239,7 @@ mod tests {
         assert_eq!(decoded.wrap_key_id, 0x1234);
         assert_eq!(decoded.target_type, object::Type::AsymmetricKey);
         assert_eq!(decoded.target_id, 0x5678);
-        assert_eq!(decoded.aes_algorithm, aes::Algorithm::Aes256);
+        assert_eq!(decoded.aes_algorithm, symmetric::Algorithm::Aes256);
         assert_eq!(decoded.oaep_algorithm, rsa::oaep::Algorithm::Sha256);
         assert_eq!(decoded.mgf1_algorithm, rsa::mgf::Algorithm::Sha256);
         assert_eq!(decoded.oaep_label, SHA256_EMPTY.to_vec());
@@ -252,7 +251,7 @@ mod tests {
             wrap_key_id: 0xABCD,
             target_type: object::Type::SymmetricKey,
             target_id: 0x0099,
-            aes_algorithm: aes::Algorithm::Aes128,
+            aes_algorithm: symmetric::Algorithm::Aes128,
             oaep_algorithm: rsa::oaep::Algorithm::Sha1,
             mgf1_algorithm: rsa::mgf::Algorithm::Sha1,
             oaep_label: SHA1_EMPTY.to_vec(),
@@ -264,7 +263,7 @@ mod tests {
         assert_eq!(decoded.wrap_key_id, 0xABCD);
         assert_eq!(decoded.target_type, object::Type::SymmetricKey);
         assert_eq!(decoded.target_id, 0x0099);
-        assert_eq!(decoded.aes_algorithm, aes::Algorithm::Aes128);
+        assert_eq!(decoded.aes_algorithm, symmetric::Algorithm::Aes128);
         assert_eq!(decoded.oaep_algorithm, rsa::oaep::Algorithm::Sha1);
         assert_eq!(decoded.mgf1_algorithm, rsa::mgf::Algorithm::Sha1);
         assert_eq!(decoded.oaep_label, SHA1_EMPTY.to_vec());
@@ -278,7 +277,7 @@ mod tests {
             wrap_key_id: 0x0010,
             target_type: object::Type::AsymmetricKey,
             target_id: 0x0064,
-            aes_algorithm: aes::Algorithm::Aes256,
+            aes_algorithm: symmetric::Algorithm::Aes256,
             oaep_algorithm: rsa::oaep::Algorithm::Sha1,
             mgf1_algorithm: rsa::mgf::Algorithm::Sha384,
             oaep_label: SHA1_EMPTY.to_vec(),
@@ -306,7 +305,7 @@ mod tests {
             wrap_key_id: 0x0010,
             target_type: object::Type::SymmetricKey,
             target_id: 0x00C8,
-            aes_algorithm: aes::Algorithm::Aes256,
+            aes_algorithm: symmetric::Algorithm::Aes256,
             oaep_algorithm: rsa::oaep::Algorithm::Sha384,
             mgf1_algorithm: rsa::mgf::Algorithm::Sha1,
             oaep_label: label.to_vec(),
@@ -333,7 +332,7 @@ mod tests {
             wrap_key_id: 0x0010,
             target_type: object::Type::AsymmetricKey,
             target_id: 0x0064,
-            aes_algorithm: aes::Algorithm::Aes256,
+            aes_algorithm: symmetric::Algorithm::Aes256,
             oaep_algorithm: rsa::oaep::Algorithm::Sha512,
             mgf1_algorithm: rsa::mgf::Algorithm::Sha512,
             oaep_label: label.to_vec(),

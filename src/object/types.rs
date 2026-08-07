@@ -28,7 +28,7 @@ pub enum Type {
     /// Yubikey-AES OTP encryption/decryption key
     OtpAeadKey = 0x07,
 
-    /// Symmetric encryption key
+    /// Symmetric key is a secret key used for encryption and decryption
     SymmetricKey = 0x08,
 
     /// RSA public key used for asymmetric key wrapping

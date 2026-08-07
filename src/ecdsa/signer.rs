@@ -12,8 +12,7 @@ use ecdsa::{
         sec1::{self, FromSec1Point, ToSec1Point},
         AffinePoint, CurveArithmetic, FieldBytesSize,
     },
-    hazmat::DigestAlgorithm,
-    EcdsaCurve, Signature, VerifyingKey,
+    DigestAlgorithm, EcdsaCurve, Signature, VerifyingKey,
 };
 use signature::{digest::Digest, hazmat::PrehashSigner, DigestSigner, Error, KeypairRef};
 use spki::{
