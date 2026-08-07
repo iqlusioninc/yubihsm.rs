@@ -237,23 +237,69 @@ mod tests {
         );
     }
 
+    /// A five-entry log read from a device: boot entry followed by four
+    /// command entries, each chaining to the previous digest.
+    static SAMPLE_LOG: &[u8] = &[
+        0, 0, 0, 0, 5, 0, 1, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+        16, 57, 193, 231, 53, 39, 161, 48, 106, 91, 222, 241, 111, 218, 230, 186, 0, 2, 0, 0, 0,
+        255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 77, 6, 54, 133, 12, 128, 156, 82, 145, 139, 111, 177,
+        109, 100, 204, 5, 0, 3, 106, 0, 14, 0, 1, 0, 7, 255, 255, 234, 0, 0, 1, 6, 202, 0, 137, 24,
+        52, 154, 17, 142, 18, 48, 153, 220, 202, 91, 172, 147, 0, 4, 106, 0, 14, 0, 1, 0, 7, 255,
+        255, 234, 0, 0, 1, 10, 253, 255, 178, 231, 56, 29, 160, 88, 146, 181, 192, 29, 142, 45, 44,
+        215, 0, 5, 106, 0, 14, 0, 1, 0, 7, 255, 255, 234, 0, 0, 1, 13, 83, 130, 159, 15, 119, 58,
+        142, 25, 94, 111, 244, 153, 172, 98, 117, 239,
+    ];
+
     #[test]
     fn verify_log() {
-        let log: LogEntries = deserialize(&[
-            0, 0, 0, 0, 5, 0, 1, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-            255, 16, 57, 193, 231, 53, 39, 161, 48, 106, 91, 222, 241, 111, 218, 230, 186, 0, 2, 0,
-            0, 0, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 77, 6, 54, 133, 12, 128, 156, 82, 145, 139,
-            111, 177, 109, 100, 204, 5, 0, 3, 106, 0, 14, 0, 1, 0, 7, 255, 255, 234, 0, 0, 1, 6,
-            202, 0, 137, 24, 52, 154, 17, 142, 18, 48, 153, 220, 202, 91, 172, 147, 0, 4, 106, 0,
-            14, 0, 1, 0, 7, 255, 255, 234, 0, 0, 1, 10, 253, 255, 178, 231, 56, 29, 160, 88, 146,
-            181, 192, 29, 142, 45, 44, 215, 0, 5, 106, 0, 14, 0, 1, 0, 7, 255, 255, 234, 0, 0, 1,
-            13, 83, 130, 159, 15, 119, 58, 142, 25, 94, 111, 244, 153, 172, 98, 117, 239,
-        ])
-        .expect("log entries should be ok");
+        let log: LogEntries = deserialize(SAMPLE_LOG).expect("log entries should be ok");
 
         let root = &log.entries[0];
         let entries_to_verify = &log.entries[1..];
 
-        verify_log_entries(root, entries_to_verify).expect("verification to succeed");
+        assert!(
+            verify_log_entries(root, entries_to_verify).expect("verification should not error"),
+            "a known-good log chain must verify"
+        );
+    }
+
+    /// A tampered chain must not verify.
+    ///
+    /// Without this, `verify_log_entries` could return `Ok(false)` for every
+    /// input and the positive test above would still pass -- `expect` only
+    /// unwraps the `Result`, and the failure signal is the `bool` inside it.
+    #[test]
+    fn verify_log_detects_tampering() {
+        let mut log: LogEntries = deserialize(SAMPLE_LOG).expect("log entries should be ok");
+
+        // Flip a bit in the digest of the last entry, as a device returning a
+        // doctored log would.
+        let last = log.entries.len() - 1;
+        log.entries[last].digest.0[0] ^= 0x01;
+
+        let root = &log.entries[0];
+        let entries_to_verify = &log.entries[1..];
+
+        assert!(
+            !verify_log_entries(root, entries_to_verify).expect("verification should not error"),
+            "a tampered log chain must not verify"
+        );
+    }
+
+    /// Tampering with the payload rather than the digest must also be caught.
+    #[test]
+    fn verify_log_detects_payload_tampering() {
+        let mut log: LogEntries = deserialize(SAMPLE_LOG).expect("log entries should be ok");
+
+        let last = log.entries.len() - 1;
+        log.entries[last].target_key ^= 0x0001;
+
+        let root = &log.entries[0];
+        let entries_to_verify = &log.entries[1..];
+
+        assert!(
+            !verify_log_entries(root, entries_to_verify).expect("verification should not error"),
+            "a log chain with a doctored entry must not verify"
+        );
     }
 }
