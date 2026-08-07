@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.43.0 (unreleased)
 
-The first release since 0.42.1 (August 2023), covering 92 commits. This is a
+The first release since 0.42.1 (August 2023), covering 99 commits. This is a
 substantial breaking release: the minimum supported Rust version moves from
 1.67 to 1.88, and the entire RustCrypto dependency stack advances a major
 version.
@@ -51,6 +51,8 @@ safety changes, the ordering derives, and lifting the restriction on using the
   `Client::session`, which derefs mutably ([#692])
 - `mockhsm-in-release` feature, required alongside `mockhsm` to build without
   debug assertions ([#693])
+- RSA-PSS signing with a caller-chosen salt length:
+  `rsa::pss::Signer::create_with_salt_len` ([#667])
 - MockHSM: RSA support in `put_asymmetric_key` ([#510]), a `decrypt_oaep`
   backend ([#553]), attestation support ([#576]), and handling of `DeviceInfo`
   without an authenticated session, matching the device ([#676])
@@ -124,6 +126,9 @@ safety changes, the ordering derives, and lifting the restriction on using the
 - HTTP request paths are validated, rejecting the CR/LF that would otherwise
   let a path terminate the request line early and inject headers. The
   panicking `From<&str> for PathBuf` is gone ([#696])
+- A session whose channel never finished authenticating is no longer closed on
+  drop. Doing so tripped an assertion inside `encrypt_command`, turning a
+  failed `Client::open` into a panic in a destructor ([#699])
 
 ### Security
 - Took patched releases of three dependencies with open advisories ([#680]):
@@ -190,6 +195,7 @@ safety changes, the ordering derives, and lifting the restriction on using the
 [#662]: https://github.com/iqlusioninc/yubihsm.rs/pull/662
 [#664]: https://github.com/iqlusioninc/yubihsm.rs/pull/664
 [#665]: https://github.com/iqlusioninc/yubihsm.rs/pull/665
+[#667]: https://github.com/iqlusioninc/yubihsm.rs/pull/667
 [#671]: https://github.com/iqlusioninc/yubihsm.rs/pull/671
 [#672]: https://github.com/iqlusioninc/yubihsm.rs/pull/672
 [#673]: https://github.com/iqlusioninc/yubihsm.rs/pull/673
@@ -204,6 +210,7 @@ safety changes, the ordering derives, and lifting the restriction on using the
 [#694]: https://github.com/iqlusioninc/yubihsm.rs/pull/694
 [#695]: https://github.com/iqlusioninc/yubihsm.rs/pull/695
 [#696]: https://github.com/iqlusioninc/yubihsm.rs/pull/696
+[#699]: https://github.com/iqlusioninc/yubihsm.rs/pull/699
 
 ## 0.42.1 (2023-08-14)
 ### Changed
