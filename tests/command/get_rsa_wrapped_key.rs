@@ -44,10 +44,7 @@ fn clear_key_slots(client: &yubihsm::Client) {
 
 /// Helper: generate an RSA key pair on the HSM, extract the public key (modulus),
 /// delete the key pair, and import the modulus as a `PublicWrapKey`.
-fn setup_public_wrap_key(
-    client: &yubihsm::Client,
-    algorithm: asymmetric::Algorithm,
-) {
+fn setup_public_wrap_key(client: &yubihsm::Client, algorithm: asymmetric::Algorithm) {
     // Generate RSA key pair on the HSM
     client
         .generate_asymmetric_key(

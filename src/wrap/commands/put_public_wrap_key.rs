@@ -87,7 +87,7 @@ mod tests {
         let cmd = PutPublicWrapKeyCommand {
             params: object::put::Params {
                 id: 0x0001,
-                label: "test_pubwrap".into(),
+                label: "test_pubwrap".parse().unwrap(),
                 domains: crate::Domain::DOM1,
                 capabilities: Capability::EXPORT_WRAPPED,
                 algorithm: crate::asymmetric::Algorithm::Rsa2048.into(),
@@ -120,7 +120,7 @@ mod tests {
         let cmd = PutPublicWrapKeyCommand {
             params: object::put::Params {
                 id: 0x0002,
-                label: "test_pubwrap_3072".into(),
+                label: "test_pubwrap_3072".parse().unwrap(),
                 domains: crate::Domain::DOM1,
                 capabilities: Capability::EXPORT_WRAPPED,
                 algorithm: crate::asymmetric::Algorithm::Rsa3072.into(),
@@ -142,7 +142,7 @@ mod tests {
         let cmd = PutPublicWrapKeyCommand {
             params: object::put::Params {
                 id: 0x0003,
-                label: "test_pubwrap_4096".into(),
+                label: "test_pubwrap_4096".parse().unwrap(),
                 domains: crate::Domain::DOM1,
                 capabilities: Capability::EXPORT_WRAPPED,
                 algorithm: crate::asymmetric::Algorithm::Rsa4096.into(),
@@ -164,7 +164,7 @@ mod tests {
         let cmd = PutPublicWrapKeyCommand {
             params: object::put::Params {
                 id: 0x000A,
-                label: "delegated_test".into(),
+                label: "delegated_test".parse().unwrap(),
                 domains: crate::Domain::DOM1 | crate::Domain::DOM2,
                 capabilities: Capability::EXPORT_WRAPPED,
                 algorithm: crate::asymmetric::Algorithm::Rsa2048.into(),
@@ -190,7 +190,7 @@ mod tests {
         let cmd = PutPublicWrapKeyCommand {
             params: object::put::Params {
                 id: 0x1234,
-                label: "roundtrip_test".into(),
+                label: "roundtrip_test".parse().unwrap(),
                 domains: crate::Domain::DOM1,
                 capabilities: Capability::EXPORT_WRAPPED,
                 algorithm: crate::asymmetric::Algorithm::Rsa2048.into(),
@@ -216,7 +216,7 @@ mod tests {
         let cmd = PutPublicWrapKeyCommand {
             params: object::put::Params {
                 id: 0xABCD,
-                label: "roundtrip_4096".into(),
+                label: "roundtrip_4096".parse().unwrap(),
                 domains: crate::Domain::DOM1 | crate::Domain::DOM3,
                 capabilities: Capability::EXPORT_WRAPPED,
                 algorithm: crate::asymmetric::Algorithm::Rsa4096.into(),
