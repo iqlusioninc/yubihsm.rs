@@ -15,7 +15,9 @@ fn opaque_object_test() {
     let object_id = client
         .put_opaque(
             TEST_KEY_ID,
-            TEST_KEY_LABEL.into(),
+            TEST_KEY_LABEL
+                .parse()
+                .expect("TEST_KEY_LABEL to be shorter than or equal to 40 bytes"),
             TEST_DOMAINS,
             Capability::default(),
             opaque::Algorithm::Data,
@@ -44,7 +46,9 @@ fn opaque_object_export_test() {
     let _object_id = client
         .put_opaque(
             TEST_EXPORTED_KEY_ID,
-            TEST_EXPORTED_KEY_LABEL.into(),
+            TEST_EXPORTED_KEY_LABEL
+                .parse()
+                .expect("TEST_EXPORTED_KEY_LABEL to be shorter than or equal to 40 bytes"),
             TEST_DOMAINS,
             Capability::EXPORTABLE_UNDER_WRAP,
             opaque::Algorithm::Data,
@@ -58,7 +62,9 @@ fn opaque_object_export_test() {
     let _export_key_id = client
         .put_wrap_key(
             TEST_KEY_ID,
-            TEST_KEY_LABEL.into(),
+            TEST_KEY_LABEL
+                .parse()
+                .expect("TEST_KEY_LABEL to be shorter than or equal to 40 bytes"),
             TEST_DOMAINS,
             capabilities,
             delegated_capabilities,
@@ -88,7 +94,9 @@ fn opaque_object_export_test() {
         TEST_EXPORTED_KEY_ID,
         Capability::default(),
         TEST_DOMAINS,
-        TEST_EXPORTED_KEY_LABEL.into(),
+        TEST_EXPORTED_KEY_LABEL
+            .parse()
+            .expect("TEST_EXPORTED_KEY_LABEL to be shorter than or equal to 40 bytes"),
         &message,
     )
     .expect("Failed to wrap the opaque payload");
