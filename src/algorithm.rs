@@ -4,7 +4,9 @@ mod error;
 
 pub use self::error::{Error, ErrorKind};
 
-use crate::{asymmetric, authentication, ecdh, ecdsa, hmac, opaque, otp, rsa, template, wrap};
+use crate::{
+    asymmetric, authentication, ecdh, ecdsa, hmac, opaque, otp, rsa, symmetric, template, wrap,
+};
 
 /// Cryptographic algorithm types supported by the `YubiHSM 2`
 ///
@@ -41,6 +43,9 @@ pub enum Algorithm {
     /// RSA algorithms (signing and encryption)
     Rsa(rsa::Algorithm),
 
+    /// Symmetric algorithms
+    Symmetric(symmetric::Algorithm),
+
     /// SSH template algorithms
     Template(template::Algorithm),
 
@@ -68,6 +73,7 @@ impl Algorithm {
             0x24 => Algorithm::Template(template::Algorithm::from_u8(byte)?),
             0x25 | 0x27 | 0x28 => Algorithm::YubicoOtp(otp::Algorithm::from_u8(byte)?),
             0x26 => Algorithm::Authentication(authentication::Algorithm::from_u8(byte)?),
+            0x32..=0x34 => Algorithm::Symmetric(symmetric::Algorithm::from_u8(byte)?),
             _ => fail!(
                 ErrorKind::TagInvalid,
                 "unknown algorithm ID: 0x{:02x}",
@@ -88,6 +94,7 @@ impl Algorithm {
             Algorithm::Opaque(alg) => alg.to_u8(),
             Algorithm::YubicoOtp(alg) => alg.to_u8(),
             Algorithm::Rsa(alg) => alg.to_u8(),
+            Algorithm::Symmetric(alg) => alg.to_u8(),
             Algorithm::Template(alg) => alg.to_u8(),
             Algorithm::Wrap(alg) => alg.to_u8(),
         }
@@ -165,6 +172,14 @@ impl Algorithm {
         }
     }
 
+    /// Get `symmetric::Algorithm`
+    pub fn symmetric(self) -> Option<symmetric::Algorithm> {
+        match self {
+            Algorithm::Symmetric(alg) => Some(alg),
+            _ => None,
+        }
+    }
+
     /// Get `template::Algorithm`
     pub fn template(self) -> Option<template::Algorithm> {
         match self {
@@ -235,6 +250,12 @@ impl From<rsa::Algorithm> for Algorithm {
 impl From<rsa::mgf::Algorithm> for Algorithm {
     fn from(alg: rsa::mgf::Algorithm) -> Algorithm {
         Algorithm::Mgf(alg)
+    }
+}
+
+impl From<symmetric::Algorithm> for Algorithm {
+    fn from(alg: symmetric::Algorithm) -> Algorithm {
+        Algorithm::Symmetric(alg)
     }
 }
 
@@ -341,6 +362,9 @@ mod tests {
         (0x2d, Algorithm::Ecdsa(ecdsa::Algorithm::Sha512)),
         (0x2e, Algorithm::Asymmetric(asymmetric::Algorithm::Ed25519)),
         (0x2f, Algorithm::Asymmetric(asymmetric::Algorithm::EcP224)),
+        (0x32, Algorithm::Symmetric(symmetric::Algorithm::Aes128)),
+        (0x33, Algorithm::Symmetric(symmetric::Algorithm::Aes192)),
+        (0x34, Algorithm::Symmetric(symmetric::Algorithm::Aes256)),
     ];
 
     #[test]
@@ -422,6 +446,7 @@ mod ordering_tests {
         assert_ord_matches_wire!(rsa::oaep::Algorithm);
         assert_ord_matches_wire!(rsa::pkcs1::Algorithm);
         assert_ord_matches_wire!(rsa::pss::Algorithm);
+        assert_ord_matches_wire!(symmetric::Algorithm);
         assert_ord_matches_wire!(template::Algorithm);
         assert_ord_matches_wire!(wrap::Algorithm);
     }

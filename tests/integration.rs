@@ -13,6 +13,9 @@ mod ecdsa;
 /// Ed25519 tests
 mod ed25519;
 
+/// ECDSA tests
+mod symmetric;
+
 /// Rsa tests
 mod rsa;
 
