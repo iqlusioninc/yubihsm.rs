@@ -200,6 +200,14 @@ impl SecureChannel {
         }
     }
 
+    /// Has this channel completed authentication?
+    ///
+    /// Only an authenticated channel can encrypt commands; the encryption and
+    /// MAC paths assert on this.
+    pub(crate) fn is_authenticated(&self) -> bool {
+        self.security_level == SecurityLevel::Authenticated
+    }
+
     /// Get the channel (i.e. session) ID
     pub fn id(&self) -> session::Id {
         self.id

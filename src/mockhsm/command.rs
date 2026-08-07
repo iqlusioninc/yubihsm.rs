@@ -561,29 +561,14 @@ fn change_authentication_key(
         return device::ErrorKind::InvalidCommand.into();
     }
 
-    // Preserve the existing metadata; only the key material changes.
-    let info = match state.objects.get(key_id, object::Type::AuthenticationKey) {
-        Some(obj) => obj.object_info.clone(),
-        None => {
-            debug!("no such authentication key: {key_id}");
-            return device::ErrorKind::ObjectNotFound.into();
-        }
-    };
-
-    // `Objects::put` asserts the slot is empty, so vacate it first.
-    state
-        .objects
-        .remove(key_id, object::Type::AuthenticationKey);
-    state.objects.put(
+    if !state.objects.replace(
         key_id,
         object::Type::AuthenticationKey,
-        info.algorithm,
-        info.label,
-        info.capabilities,
-        info.delegated_capabilities,
-        info.domains,
         &authentication_key.0,
-    );
+    ) {
+        debug!("no such authentication key: {key_id}");
+        return device::ErrorKind::ObjectNotFound.into();
+    }
 
     ChangeAuthenticationKeyResponse { key_id }.serialize()
 }
@@ -818,8 +803,10 @@ fn sign_pss(state: &State, cmd_data: &[u8]) -> response::Message {
     fn sign_pss_digest<D: Digest + FixedOutputReset>(
         private_key: &RsaPrivateKey,
         msg: &[u8],
+        salt_len: u16,
     ) -> pss::Signature {
-        let signing_key = pss::SigningKey::<D>::new(private_key.clone());
+        let signing_key =
+            pss::SigningKey::<D>::new_with_salt_len(private_key.clone(), salt_len.into());
         let mut rng = rand::rng();
         signing_key
             .sign_prehash_with_rng(&mut rng, msg)
@@ -836,17 +823,23 @@ fn sign_pss(state: &State, cmd_data: &[u8]) -> response::Message {
         if let Payload::RsaKey(private_key) = &obj.payload {
             let signature = match command.mgf1_hash_alg {
                 mgf::Algorithm::Sha1 => {
-                    sign_pss_digest::<Sha1>(private_key, command.digest.as_ref())
+                    sign_pss_digest::<Sha1>(private_key, command.digest.as_ref(), command.salt_len)
                 }
-                mgf::Algorithm::Sha256 => {
-                    sign_pss_digest::<Sha256>(private_key, command.digest.as_ref())
-                }
-                mgf::Algorithm::Sha384 => {
-                    sign_pss_digest::<Sha384>(private_key, command.digest.as_ref())
-                }
-                mgf::Algorithm::Sha512 => {
-                    sign_pss_digest::<Sha512>(private_key, command.digest.as_ref())
-                }
+                mgf::Algorithm::Sha256 => sign_pss_digest::<Sha256>(
+                    private_key,
+                    command.digest.as_ref(),
+                    command.salt_len,
+                ),
+                mgf::Algorithm::Sha384 => sign_pss_digest::<Sha384>(
+                    private_key,
+                    command.digest.as_ref(),
+                    command.salt_len,
+                ),
+                mgf::Algorithm::Sha512 => sign_pss_digest::<Sha512>(
+                    private_key,
+                    command.digest.as_ref(),
+                    command.salt_len,
+                ),
             };
 
             SignPssResponse((&signature).into()).serialize()
