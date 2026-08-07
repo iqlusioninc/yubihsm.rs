@@ -83,7 +83,9 @@ fn roundtrip_cbc_test() {
         client
             .put_symmetric_key(
                 key_id,
-                TEST_CIPHER_KEY_LABEL.into(),
+                TEST_CIPHER_KEY_LABEL
+                    .parse()
+                    .expect("TEST_CIPHER_KEY_LABEL to be shorter than or equal to 40 bytes"),
                 TEST_CIPHER_KEY_DOMAINS,
                 test_cipher_key_capabilities,
                 alg,
@@ -127,7 +129,9 @@ fn generate_symmetric_key() {
     client
         .generate_symmetric_key(
             key_id,
-            TEST_CIPHER_KEY_LABEL.into(),
+            TEST_CIPHER_KEY_LABEL
+                .parse()
+                .expect("TEST_CIPHER_KEY_LABEL to be shorter than or equal to 40 bytes"),
             TEST_CIPHER_KEY_DOMAINS,
             test_cipher_key_capabilities,
             aes::Aes128::HSM_SYMMETRIC_ALGORITHM,
@@ -144,7 +148,7 @@ fn generate_symmetric_key() {
     client
         .put_wrap_key(
             wrap_key_id,
-            "Wrap key".into(),
+            "Wrap key".parse().expect("label to be valid"),
             TEST_CIPHER_KEY_DOMAINS,
             capabilities,
             delegated_capabilities,
@@ -176,7 +180,9 @@ fn generate_symmetric_key() {
         key_id,
         test_cipher_key_capabilities,
         TEST_CIPHER_KEY_DOMAINS,
-        TEST_CIPHER_KEY_LABEL.into(),
+        TEST_CIPHER_KEY_LABEL
+            .parse()
+            .expect("TEST_CIPHER_KEY_LABEL to be shorter than or equal to 40 bytes"),
         &symmetric_key,
     );
     let wrap_data = wrap_plaintext
