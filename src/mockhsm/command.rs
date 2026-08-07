@@ -561,29 +561,14 @@ fn change_authentication_key(
         return device::ErrorKind::InvalidCommand.into();
     }
 
-    // Preserve the existing metadata; only the key material changes.
-    let info = match state.objects.get(key_id, object::Type::AuthenticationKey) {
-        Some(obj) => obj.object_info.clone(),
-        None => {
-            debug!("no such authentication key: {key_id}");
-            return device::ErrorKind::ObjectNotFound.into();
-        }
-    };
-
-    // `Objects::put` asserts the slot is empty, so vacate it first.
-    state
-        .objects
-        .remove(key_id, object::Type::AuthenticationKey);
-    state.objects.put(
+    if !state.objects.replace(
         key_id,
         object::Type::AuthenticationKey,
-        info.algorithm,
-        info.label,
-        info.capabilities,
-        info.delegated_capabilities,
-        info.domains,
         &authentication_key.0,
-    );
+    ) {
+        debug!("no such authentication key: {key_id}");
+        return device::ErrorKind::ObjectNotFound.into();
+    }
 
     ChangeAuthenticationKeyResponse { key_id }.serialize()
 }
