@@ -17,7 +17,9 @@ fn put_authentication_key() {
     let key_id = client
         .put_authentication_key(
             TEST_KEY_ID,
-            TEST_KEY_LABEL.into(),
+            TEST_KEY_LABEL
+                .parse()
+                .expect("TEST_KEY_LABEL to be shorter than or equal to 40 bytes"),
             TEST_DOMAINS,
             capabilities,
             delegated_capabilities,

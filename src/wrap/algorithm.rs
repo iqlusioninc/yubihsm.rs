@@ -3,7 +3,7 @@
 use crate::algorithm;
 
 /// Valid algorithms for "wrap" (symmetric encryption/key wrapping) keys
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 #[repr(u8)]
 pub enum Algorithm {
     /// AES-128 in Counter with CBC-MAC (CCM) mode

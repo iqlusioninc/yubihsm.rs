@@ -19,7 +19,9 @@ fn wrap_key_test() {
     let key_id = client
         .put_wrap_key(
             TEST_KEY_ID,
-            TEST_KEY_LABEL.into(),
+            TEST_KEY_LABEL
+                .parse()
+                .expect("TEST_KEY_LABEL to be shorter than or equal to 40 bytes"),
             TEST_DOMAINS,
             capabilities,
             delegated_capabilities,
@@ -40,7 +42,9 @@ fn wrap_key_test() {
     client
         .generate_asymmetric_key(
             TEST_EXPORTED_KEY_ID,
-            TEST_EXPORTED_KEY_LABEL.into(),
+            TEST_EXPORTED_KEY_LABEL
+                .parse()
+                .expect("TEST_EXPORTED_KEY_LABEL to be shorter than or equal to 40 bytes"),
             TEST_DOMAINS,
             exported_key_capabilities,
             exported_key_algorithm,
@@ -48,7 +52,7 @@ fn wrap_key_test() {
         .unwrap_or_else(|err| panic!("error generating asymmetric key: {err}"));
 
     let wrap_data = client
-        .export_wrapped(TEST_KEY_ID, exported_key_type, TEST_EXPORTED_KEY_ID)
+        .export_wrapped_with_seed(TEST_KEY_ID, exported_key_type, TEST_EXPORTED_KEY_ID)
         .unwrap_or_else(|err| panic!("error exporting key: {err}"));
 
     let wrap_key = wrap::Key::from_bytes(TEST_KEY_ID, AESCCM_TEST_VECTORS[0].key).unwrap();
@@ -100,7 +104,9 @@ fn wrap_deserialize() {
     let key_id = client
         .put_wrap_key(
             TEST_KEY_ID,
-            TEST_KEY_LABEL.into(),
+            TEST_KEY_LABEL
+                .parse()
+                .expect("TEST_KEY_LABEL to be shorter than or equal to 40 bytes"),
             TEST_DOMAINS,
             capabilities,
             delegated_capabilities,
@@ -121,7 +127,9 @@ fn wrap_deserialize() {
     client
         .generate_asymmetric_key(
             TEST_EXPORTED_KEY_ID,
-            TEST_EXPORTED_KEY_LABEL.into(),
+            TEST_EXPORTED_KEY_LABEL
+                .parse()
+                .expect("TEST_EXPORTED_KEY_LABEL to be shorter than or equal to 40 bytes"),
             TEST_DOMAINS,
             exported_key_capabilities,
             exported_key_algorithm,
@@ -129,7 +137,7 @@ fn wrap_deserialize() {
         .unwrap_or_else(|err| panic!("error generating asymmetric key: {err}"));
 
     let wrap_data = client
-        .export_wrapped_with_seed(TEST_KEY_ID, exported_key_type, TEST_EXPORTED_KEY_ID)
+        .export_wrapped(TEST_KEY_ID, exported_key_type, TEST_EXPORTED_KEY_ID)
         .unwrap_or_else(|err| panic!("error exporting key: {err}"));
 
     let wrap_key = wrap::Key::from_bytes(TEST_KEY_ID, AESCCM_TEST_VECTORS[0].key).unwrap();
@@ -167,7 +175,9 @@ fn wrap_deserialize_rsa() {
     let key_id = client
         .put_wrap_key(
             TEST_KEY_ID,
-            TEST_KEY_LABEL.into(),
+            TEST_KEY_LABEL
+                .parse()
+                .expect("TEST_KEY_LABEL to be shorter than or equal to 40 bytes"),
             TEST_DOMAINS,
             capabilities,
             delegated_capabilities,
@@ -188,7 +198,9 @@ fn wrap_deserialize_rsa() {
     client
         .generate_asymmetric_key(
             TEST_EXPORTED_KEY_ID,
-            TEST_EXPORTED_KEY_LABEL.into(),
+            TEST_EXPORTED_KEY_LABEL
+                .parse()
+                .expect("TEST_EXPORTED_KEY_LABEL to be shorter than or equal to 40 bytes"),
             TEST_DOMAINS,
             exported_key_capabilities,
             exported_key_algorithm,

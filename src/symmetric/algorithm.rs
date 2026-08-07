@@ -1,31 +1,31 @@
-//! Yubico OTP algorithms
+//! Symmetric algorithm support
 
 use crate::algorithm;
 
-/// Valid algorithms for Yubico OTP (AES-based one time password) keys
+/// Symmetric algorithms
 #[derive(Copy, Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 #[repr(u8)]
 pub enum Algorithm {
-    /// Yubico OTP using AES-128
-    Aes128 = 0x25,
+    /// AES-128
+    Aes128 = 0x32,
 
-    /// Yubico OTP using AES-192
-    Aes192 = 0x27,
+    /// AES-192
+    Aes192 = 0x33,
 
-    /// Yubico OTP using AES-256
-    Aes256 = 0x28,
+    /// AES-256
+    Aes256 = 0x34,
 }
 
 impl Algorithm {
-    /// Convert an unsigned byte tag into an `OtpAlgorithm` (if valid)
+    /// Convert an unsigned byte tag into an `Algorithm` (if valid)
     pub fn from_u8(tag: u8) -> Result<Self, algorithm::Error> {
         Ok(match tag {
-            0x25 => Algorithm::Aes128,
-            0x27 => Algorithm::Aes192,
-            0x28 => Algorithm::Aes256,
+            0x32 => Algorithm::Aes128,
+            0x33 => Algorithm::Aes192,
+            0x34 => Algorithm::Aes256,
             _ => fail!(
                 algorithm::ErrorKind::TagInvalid,
-                "unknown OTP algorithm ID: 0x{:02x}",
+                "unknown symmetric algorithm ID: 0x{:02x}",
                 tag
             ),
         })

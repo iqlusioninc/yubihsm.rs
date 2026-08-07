@@ -3,7 +3,7 @@
 use crate::algorithm;
 
 /// RSA PKCS#1v1.5: legacy algorithms
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 #[repr(u8)]
 pub enum Algorithm {
     /// `rsa-pkcs1-sha1`

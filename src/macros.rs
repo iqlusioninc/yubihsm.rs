@@ -29,6 +29,12 @@ macro_rules! impl_algorithm_serializers {
                     fn visit_u8<E: de::Error>(self, value: u8) -> Result<$alg, E> {
                         $alg::from_u8(value).or_else(|e| Err(E::custom(format!("{}", e))))
                     }
+
+                    fn visit_u64<E: de::Error>(self, value: u64) -> Result<$alg, E> {
+                        self.visit_u8(
+                            u8::try_from(value).map_err(|_| E::custom("an unsigned tag byte"))?,
+                        )
+                    }
                 }
 
                 deserializer.deserialize_u8(AlgorithmVisitor)

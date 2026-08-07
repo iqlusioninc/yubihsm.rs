@@ -36,7 +36,14 @@ bitflags! {
     /// basis. For more information, see the Yubico documentation:
     ///
     /// <https://developers.yubico.com/YubiHSM2/Concepts/Domain.html>
-    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+    /// # Ordering
+    ///
+    /// `Ord` compares the underlying bits, so that `Domain` can be used as a
+    /// key in ordered collections and sorted for stable display. The order is
+    /// **not** semantic: `a < b` does not mean `a` grants fewer domains than
+    /// `b`. Flag sets are only partially ordered by inclusion — use
+    /// [`contains`][Self::contains] to test that relation.
+    #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
     pub struct Domain: u16 {
         const DOM1 = 0x0001;
         const DOM2 = 0x0002;
@@ -100,6 +107,16 @@ impl<'de> Deserialize<'de> for Domain {
                 E: de::Error,
             {
                 Domain::from_bits(value).ok_or_else(|| E::custom("invalid domain bitflags"))
+            }
+
+            fn visit_u64<E>(self, value: u64) -> Result<Domain, E>
+            where
+                E: de::Error,
+            {
+                self.visit_u16(
+                    u16::try_from(value)
+                        .map_err(|_| E::custom("2-bytes containing domain bitflags"))?,
+                )
             }
         }
 
