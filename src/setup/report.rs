@@ -76,7 +76,9 @@ impl Report {
         client
             .put_opaque(
                 report_object_id,
-                object::Label::from(REPORT_OBJECT_LABEL),
+                REPORT_OBJECT_LABEL
+                    .parse()
+                    .map_err(|_error| ErrorKind::LabelInvalid)?,
                 Domain::all(),
                 Capability::GET_OPAQUE,
                 opaque::Algorithm::Data,

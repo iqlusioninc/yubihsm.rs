@@ -5,7 +5,7 @@ use super::{Algorithm, Error, ErrorKind};
 use crate::{
     algorithm, asymmetric,
     ecdsa::algorithm::CurveAlgorithm,
-    object,
+    object, opaque,
     serialization::{deserialize, serialize},
     symmetric::{self},
     wrap, Capability, Domain,
@@ -26,6 +26,11 @@ use rsa::{
     BoxedUint, RsaPrivateKey,
 };
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "x509-cert")]
+use x509_cert::{
+    der::{self, Decode},
+    Certificate,
+};
 
 /// Wrap wessage (encrypted HSM object or arbitrary data) encrypted under a wrap key
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -335,6 +340,59 @@ impl Plaintext {
             data,
         }
     }
+
+    /// Return the opaque in this message
+    fn opaque(&self, opaque_alg: opaque::Algorithm) -> Option<Box<[u8]>> {
+        if self.object_info.algorithm == algorithm::Algorithm::Opaque(opaque_alg) {
+            Some(self.data.clone().into_boxed_slice())
+        } else {
+            None
+        }
+    }
+
+    /// Return the opaque data in this message
+    pub fn opaque_data(&self) -> Option<Box<[u8]>> {
+        self.opaque(opaque::Algorithm::Data)
+    }
+
+    /// Return the opaque data in this message
+    #[cfg(feature = "x509-cert")]
+    pub fn opaque_certificate(&self) -> Option<der::Result<Certificate>> {
+        let slice = self.opaque(opaque::Algorithm::X509Certificate)?;
+
+        Some(Certificate::from_der(&slice))
+    }
+
+    /// Build a [`Plaintext`] from a slice of data.
+    pub fn from_opaque_data(
+        algorithm: Algorithm,
+        opaque_algorithm: opaque::Algorithm,
+        object_id: object::Id,
+        capabilities: Capability,
+        domains: Domain,
+        label: object::Label,
+        data: &[u8],
+    ) -> Result<Self, Error> {
+        let object_info = wrap::Info {
+            capabilities,
+            object_id,
+            length: u16::try_from(data.len()).map_err(|e| ErrorKind::LengthInvalid.context(e))?,
+            domains,
+            object_type: object::Type::Opaque,
+            algorithm: algorithm::Algorithm::Opaque(opaque_algorithm),
+            sequence: 0,
+            origin: object::Origin::Imported,
+            label,
+        };
+
+        let data = data.to_vec();
+
+        Ok(Self {
+            algorithm,
+            object_info,
+            data,
+        })
+    }
 }
 
 /// Support structure to read from a slice like a reader
@@ -367,7 +425,9 @@ mod tests {
             0xcf,
             Capability::SIGN_ECDSA | Capability::EXPORT_WRAPPED | Capability::IMPORT_WRAPPED,
             Domain::DOM1,
-            "Signatory test key".into(),
+            "Signatory test key"
+                .parse()
+                .expect("label to be less than or equal to 40 bytes"),
             secret_key,
         )
         .expect("build message with ecdsa key");

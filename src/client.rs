@@ -584,7 +584,7 @@ impl Client {
         let mut filter_bytes = vec![];
 
         for filter in filters {
-            filter.serialize(&mut filter_bytes)?;
+            filter.to_wire(&mut filter_bytes)?;
         }
 
         Ok(self.send_command(ListObjectsCommand(filter_bytes))?.0)
@@ -1222,6 +1222,7 @@ impl Client {
         &self,
         key_id: object::Id,
         data: &[u8],
+        salt_len: Option<u16>,
     ) -> Result<rsa::pss::Signature, Error> {
         let mut hasher = S::new();
         hasher.update(data);
@@ -1238,7 +1239,7 @@ impl Client {
             .send_command(SignPssCommand {
                 key_id,
                 mgf1_hash_alg: S::MGF_ALGORITHM,
-                salt_len: digest.as_slice().len() as u16,
+                salt_len: salt_len.unwrap_or(digest.as_slice().len() as u16),
                 digest: digest.as_slice().into(),
             })?
             .into())
@@ -1252,7 +1253,7 @@ impl Client {
         key_id: object::Id,
         data: &[u8],
     ) -> Result<rsa::pss::Signature, Error> {
-        self.sign_rsa_pss::<Sha256>(key_id, data)
+        self.sign_rsa_pss::<Sha256>(key_id, data, None)
     }
 
     /// Sign an SSH certificate using the given template.
