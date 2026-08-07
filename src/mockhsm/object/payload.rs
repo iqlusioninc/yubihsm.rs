@@ -38,6 +38,11 @@ pub(crate) enum Payload {
     /// Rsa private key
     RsaKey(rsa::RsaPrivateKey),
 
+    /// RSA public key imported as a wrapping key (`PutPublicWrapKey`).
+    ///
+    /// Only the modulus is transmitted; the device assumes e = 65537.
+    RsaPublicWrapKey(rsa::RsaPublicKey),
+
     /// HMAC key
     HmacKey(hmac::Algorithm, Vec<u8>),
 
@@ -216,6 +221,12 @@ impl Payload {
             Payload::EcdsaNistP384(_) => Algorithm::Asymmetric(asymmetric::Algorithm::EcP384),
             Payload::EcdsaNistP521(_) => Algorithm::Asymmetric(asymmetric::Algorithm::EcP521),
             Payload::Ed25519Key(_) => Algorithm::Asymmetric(asymmetric::Algorithm::Ed25519),
+            Payload::RsaPublicWrapKey(ref k) => match k.size() {
+                256 => Algorithm::Asymmetric(asymmetric::Algorithm::Rsa2048),
+                384 => Algorithm::Asymmetric(asymmetric::Algorithm::Rsa3072),
+                512 => Algorithm::Asymmetric(asymmetric::Algorithm::Rsa4096),
+                other => panic!("unsupported RSA public wrap key size: {other}"),
+            },
             Payload::RsaKey(ref k) => match k.size() {
                 256 => Algorithm::Asymmetric(asymmetric::Algorithm::Rsa2048),
                 384 => Algorithm::Asymmetric(asymmetric::Algorithm::Rsa3072),
@@ -233,6 +244,8 @@ impl Payload {
     pub fn len(&self) -> u16 {
         let l = match self {
             Payload::AuthenticationKey(_) => authentication::key::SIZE,
+            // A public wrap key stores only its modulus.
+            Payload::RsaPublicWrapKey(k) => k.size(),
             Payload::EcdsaNistP256(_) | Payload::EcdsaSecp256k1(_) => {
                 <<p256::NistP256 as DigestAlgorithm>::Digest as OutputSizeUser>::OutputSize::USIZE
             }
@@ -300,6 +313,7 @@ impl Payload {
     pub fn to_bytes(&self) -> Vec<u8> {
         match self {
             Payload::AuthenticationKey(k) => k.0.to_vec(),
+            Payload::RsaPublicWrapKey(k) => k.n().to_be_bytes().to_vec(),
             Payload::EcdsaNistP256(k) => k.to_bytes().to_vec(),
             Payload::EcdsaSecp256k1(k) => k.to_bytes().to_vec(),
             Payload::EcdsaNistP384(k) => k.to_bytes().to_vec(),

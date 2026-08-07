@@ -1,7 +1,7 @@
 //! Integration tests for `get_rsa_wrapped_key` (command 0x74)
 //!
 //! Adapted from asym_wrap_test.c (CKM_RSA_AES_KEY_WRAP scenarios).
-//! These tests require real HSM hardware and are gated on `#[cfg(not(feature = "mockhsm"))]`.
+//! These run against MockHSM as well as real hardware.
 //!
 //! The flow is: generate an RSA key pair on the HSM, extract the public key,
 //! import it as a `PublicWrapKey` via `put_public_wrap_key`, then use
@@ -308,4 +308,99 @@ fn wrap_ec_key_oaep_sha512_mgf1_sha512() {
     );
 
     clear_key_slots(&client);
+}
+
+/// End-to-end round trip: the wrapped blob must actually decrypt back to the
+/// original key material.
+///
+/// The other tests here only assert the response is longer than the RSA
+/// ciphertext, which a device returning random bytes of the right length would
+/// also satisfy. This one holds the RSA private key, so it can undo the whole
+/// CKM_RSA_AES_KEY_WRAP construction and compare.
+///
+/// The label is the digest of the empty string, which is what standard OAEP
+/// computes for an absent label — so the plain `Oaep::new` decryptor here and
+/// the device's pre-hashed-label form agree.
+#[test]
+fn wrapped_key_round_trips_to_the_original_material() {
+    use ::rsa::{oaep::Oaep, traits::PaddingScheme, traits::PublicKeyParts};
+    use aes_kw::cipher::KeyInit;
+    use aes_kw::KwpAes256;
+    use sha2::Sha256;
+
+    let client = crate::get_hsm_client();
+    clear_key_slots(&client);
+    let _ = client.delete_object(TARGET_KEY_ID, object::Type::SymmetricKey);
+
+    // Keypair generated here, so the test holds the private half.
+    let mut rng = rand::rng();
+    let private_key =
+        ::rsa::RsaPrivateKey::new(&mut rng, 2048).expect("generating an RSA-2048 key");
+    let modulus = private_key.n().to_be_bytes().to_vec();
+
+    client
+        .put_public_wrap_key(
+            WRAP_KEY_ID,
+            "roundtrip_wrap".parse().unwrap(),
+            TEST_DOMAINS,
+            Capability::EXPORT_WRAPPED,
+            Capability::all(),
+            asymmetric::Algorithm::Rsa2048,
+            modulus,
+        )
+        .unwrap_or_else(|err| panic!("error importing public wrap key: {err}"));
+
+    // A target whose bytes we know exactly.
+    let target_material: Vec<u8> = (0u8..32).collect();
+    client
+        .put_symmetric_key(
+            TARGET_KEY_ID,
+            "roundtrip_target".parse().unwrap(),
+            TEST_DOMAINS,
+            Capability::EXPORTABLE_UNDER_WRAP,
+            symmetric::Algorithm::Aes256,
+            target_material.clone(),
+        )
+        .unwrap_or_else(|err| panic!("error putting target symmetric key: {err}"));
+
+    let wrapped = client
+        .get_rsa_wrapped_key(
+            yubihsm::client::RsaWrappedKeyParams {
+                wrap_key_id: WRAP_KEY_ID,
+                target_type: object::Type::SymmetricKey,
+                target_id: TARGET_KEY_ID,
+                aes_algorithm: symmetric::Algorithm::Aes256,
+                oaep_algorithm: rsa::oaep::Algorithm::Sha256,
+                mgf1_algorithm: rsa::mgf::Algorithm::Sha256,
+            },
+            sha256_empty_label(),
+        )
+        .unwrap_or_else(|err| panic!("error wrapping symmetric key: {err}"));
+
+    // RSA-OAEP(ephemeral AES key) || AES-KWP(target key material)
+    let rsa_len = private_key.size();
+    assert!(
+        wrapped.len() > rsa_len,
+        "response is too short to contain both parts"
+    );
+    let (encrypted_ephemeral, wrapped_target) = wrapped.split_at(rsa_len);
+
+    let ephemeral = Oaep::<Sha256>::new()
+        .decrypt(Some(&mut rng), &private_key, encrypted_ephemeral)
+        .expect("decrypting the ephemeral AES key");
+    assert_eq!(ephemeral.len(), 32, "expected an AES-256 ephemeral key");
+
+    let mut recovered = vec![0u8; wrapped_target.len()];
+    let recovered = KwpAes256::new_from_slice(&ephemeral)
+        .expect("ephemeral key size")
+        .unwrap_key(wrapped_target, &mut recovered)
+        .expect("AES-KWP unwrap");
+
+    assert_eq!(
+        recovered, target_material,
+        "the unwrapped material must equal the key that was exported"
+    );
+
+    clear_key_slots(&client);
+    let _ = client.delete_object(TARGET_KEY_ID, object::Type::SymmetricKey);
 }
