@@ -303,6 +303,7 @@ impl Plaintext {
     /// Build a [`Plaintext`] from a slice of data.
     pub fn from_opaque_data(
         algorithm: Algorithm,
+        opaque_algorithm: opaque::Algorithm,
         object_id: object::Id,
         capabilities: Capability,
         domains: Domain,
@@ -315,7 +316,7 @@ impl Plaintext {
             length: u16::try_from(data.len()).map_err(|e| ErrorKind::LengthInvalid.context(e))?,
             domains,
             object_type: object::Type::Opaque,
-            algorithm: algorithm::Algorithm::Opaque(opaque::Algorithm::Data),
+            algorithm: algorithm::Algorithm::Opaque(opaque_algorithm),
             sequence: 0,
             origin: object::Origin::Imported,
             label,

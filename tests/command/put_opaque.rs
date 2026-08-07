@@ -91,6 +91,7 @@ fn opaque_object_export_test() {
 
     let plaintext = wrap::Plaintext::from_opaque_data(
         algorithm,
+        opaque::Algorithm::Data,
         TEST_EXPORTED_KEY_ID,
         Capability::default(),
         TEST_DOMAINS,
@@ -116,4 +117,40 @@ fn opaque_object_export_test() {
         .unwrap_or_else(|err| panic!("error getting opaque object: {err}"));
 
     assert_eq!(opaque_data, TEST_MESSAGE);
+}
+
+/// A `Plaintext` built for an X.509 certificate must be readable as one.
+///
+/// `from_opaque_data` previously hardcoded `opaque::Algorithm::Data`, so a
+/// certificate opaque could never be constructed even though
+/// `Plaintext::opaque_certificate` exists to read them back — the writer and
+/// the reader disagreed.
+#[test]
+fn opaque_certificate_round_trips_the_algorithm() {
+    let der = b"not a real certificate, but the algorithm gate is what matters";
+
+    let plaintext = wrap::Plaintext::from_opaque_data(
+        wrap::Algorithm::Aes128Ccm,
+        opaque::Algorithm::X509Certificate,
+        TEST_EXPORTED_KEY_ID,
+        Capability::default(),
+        TEST_DOMAINS,
+        TEST_EXPORTED_KEY_LABEL
+            .parse()
+            .expect("TEST_EXPORTED_KEY_LABEL to be shorter than or equal to 40 bytes"),
+        der,
+    )
+    .expect("building an opaque certificate plaintext");
+
+    // The reader only yields a value when the object algorithm matches.
+    assert!(
+        plaintext.opaque_certificate().is_some(),
+        "an X509Certificate opaque must be reachable via opaque_certificate()"
+    );
+
+    // ...and it must not masquerade as plain data.
+    assert!(
+        plaintext.opaque_data().is_none(),
+        "an X509Certificate opaque must not read back as Data"
+    );
 }
