@@ -141,9 +141,20 @@ impl Session {
     /// # }
     /// ```
     pub fn close(&mut self) -> Result<(), Error> {
-        // Only attempt to close the session if we have an active secure
-        // channel and our session hasn't already timed out
-        if self.secure_channel.is_none() || self.is_timed_out() {
+        // Only close a channel that actually reached `Authenticated`.
+        //
+        // If `Session::open` fails during authentication -- the device rejects
+        // `AuthenticateSession`, or answers it with unexpected data -- the
+        // channel is left unauthenticated or terminated but still present. It
+        // cannot encrypt the close command, and attempting it trips
+        // `encrypt_command`'s assertion inside this destructor. There is also
+        // nothing to release: the HSM never regarded the session as open.
+        let authenticated = self
+            .secure_channel
+            .as_ref()
+            .is_some_and(SecureChannel::is_authenticated);
+
+        if !authenticated || self.is_timed_out() {
             return Ok(());
         }
 
@@ -329,5 +340,71 @@ impl Drop for Session {
                 err
             );
         }
+    }
+}
+
+#[cfg(all(test, feature = "mockhsm", feature = "passwords"))]
+mod tests {
+    use super::*;
+    use crate::authentication;
+    use crate::session::securechannel::Challenge;
+
+    /// A `Session` whose channel never authenticated must not try to close
+    /// itself on drop.
+    ///
+    /// When `Session::open` fails during authentication -- the device rejects
+    /// `AuthenticateSession`, or answers it with unexpected data -- the channel
+    /// is left present but unauthenticated. Closing it reaches
+    /// `SecureChannel::encrypt_command`, which asserts on the security level,
+    /// so the destructor panics and turns a returned error into a crash.
+    #[test]
+    fn dropping_an_unauthenticated_session_does_not_panic() {
+        let channel = SecureChannel::new(
+            Id::from_u8(1).unwrap(),
+            &authentication::Key::default(),
+            Challenge::new(),
+            Challenge::new(),
+        );
+
+        assert!(
+            !channel.is_authenticated(),
+            "a freshly created channel must not be authenticated"
+        );
+
+        let now = Instant::now();
+        let session = Session {
+            id: channel.id(),
+            connector: Connector::mockhsm(),
+            secure_channel: Some(channel),
+            created_at: now,
+            last_active: now,
+            timeout: Timeout::default(),
+        };
+
+        // The assertion under test is that this does not panic.
+        drop(session);
+    }
+
+    /// The same session must also report a clean `close()` rather than panicking.
+    #[test]
+    fn closing_an_unauthenticated_session_is_a_no_op() {
+        let channel = SecureChannel::new(
+            Id::from_u8(1).unwrap(),
+            &authentication::Key::default(),
+            Challenge::new(),
+            Challenge::new(),
+        );
+
+        let now = Instant::now();
+        let mut session = Session {
+            id: channel.id(),
+            connector: Connector::mockhsm(),
+            secure_channel: Some(channel),
+            created_at: now,
+            last_active: now,
+            timeout: Timeout::default(),
+        };
+
+        session.close().expect("closing must not error");
     }
 }
