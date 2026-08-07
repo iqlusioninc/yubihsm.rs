@@ -336,3 +336,59 @@ impl<'de, R: Read> serde::de::VariantAccess<'de> for &mut Deserializer<R> {
         unimplemented!();
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        audit::LogEntries,
+        serialization::{deserialize, error::ErrorKind},
+    };
+
+    /// A malformed element mid-sequence must be reported, not silently treated
+    /// as the end of the sequence.
+    ///
+    /// `SeqAccess::next_element_seed` used to be
+    ///
+    ///     Ok(DeserializeSeed::deserialize(seed, &mut *self.deserializer).ok())
+    ///
+    /// which turned *any* error into `None`. A single corrupt entry therefore
+    /// truncated the whole log and reported success, so a caller reading an
+    /// audit log could silently lose every entry after the first bad one.
+    #[test]
+    fn malformed_element_is_an_error_not_a_truncated_sequence() {
+        // Header: 0 unlogged boot events, 0 unlogged auth events, 2 entries.
+        let mut bytes: Vec<u8> = vec![0, 0, 0, 0, 2];
+
+        // A well-formed entry: item, cmd (0x6a = GetObjectInfo), length,
+        // session/target/second key, result, tick, and a 16-byte digest.
+        let good: [u8; 32] = [
+            0, 3, 0x6a, 0, 14, 0, 1, 0, 7, 255, 255, 234, 0, 0, 1, 6, 202, 0, 137, 24, 52, 154, 17,
+            142, 18, 48, 153, 220, 202, 91, 172, 147,
+        ];
+        bytes.extend_from_slice(&good);
+
+        // A second entry whose command byte is not a valid `command::Code`.
+        // 0x02 is unassigned; `command::Code::from_u8` rejects it.
+        let mut bad = good;
+        bad[2] = 0x02;
+        bytes.extend_from_slice(&bad);
+
+        let err = deserialize::<LogEntries>(&bytes)
+            .expect_err("a corrupt entry must not deserialize successfully");
+
+        assert_ne!(
+            *err.kind(),
+            ErrorKind::UnexpectedEof,
+            "the corrupt entry is not a truncated stream; it must not be reported as EOF"
+        );
+    }
+
+    /// Running out of input, by contrast, is a legitimate end of sequence.
+    #[test]
+    fn exhausted_input_ends_the_sequence() {
+        let bytes: Vec<u8> = vec![0, 0, 0, 0, 0];
+        let entries: LogEntries =
+            deserialize(&bytes).expect("an empty log should deserialize cleanly");
+        assert!(entries.entries.is_empty());
+    }
+}
