@@ -7,7 +7,7 @@ use crate::{algorithm, asymmetric};
 use super::Secp256k1;
 
 /// Valid algorithms for asymmetric keys
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 #[repr(u8)]
 pub enum Algorithm {
     /// `ecdsa-sha1`

@@ -3,7 +3,6 @@
 use rand_core::Rng;
 use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "yubihsm-auth")]
 use crate::session::error::{Error, ErrorKind};
 
 /// Size of a challenge message
@@ -40,35 +39,31 @@ impl Challenge {
         &self.0
     }
 
-    /// Creates `Challenge` from a `yubikey::hsmauth::Challenge`.
+    /// Create a `Challenge` from externally supplied bytes, generating a random
+    /// one if the input is empty.
     ///
-    /// `YubiKey` firmware 5.4.3 will generate an empty challenge, this will
-    /// generate one from RNG if we're provided an empty challenge
-    // Note(baloo): because of the side-effect described above, this is not
-    // made a regular From<yubikey::hsmauth::Challenge>.
-    #[cfg(feature = "yubihsm-auth")]
-    pub fn from_yubikey_challenge(yc: yubikey::hsmauth::Challenge) -> Self {
-        if yc.is_empty() {
-            Self::new()
-        } else {
-            let mut challenge = [0u8; CHALLENGE_SIZE];
-            challenge.copy_from_slice(yc.as_slice());
-            Challenge(challenge)
+    /// The empty case is not hypothetical: YubiKey firmware 5.4.3 returns an
+    /// empty challenge, and the protocol still needs one. Callers holding a
+    /// challenge from such a device pass its bytes through here.
+    ///
+    /// Returns an error if the input is neither empty nor exactly 8 bytes.
+    pub fn from_slice_or_random(bytes: &[u8]) -> Result<Self, Error> {
+        if bytes.is_empty() {
+            return Ok(Self::new());
         }
-    }
-}
 
-#[cfg(feature = "yubihsm-auth")]
-impl TryFrom<Challenge> for yubikey::hsmauth::Challenge {
-    type Error = Error;
+        if bytes.len() != CHALLENGE_SIZE {
+            fail!(
+                ErrorKind::ProtocolError,
+                "challenge must be {} bytes (got {})",
+                CHALLENGE_SIZE,
+                bytes.len()
+            );
+        }
 
-    fn try_from(c: Challenge) -> Result<Self, Error> {
-        let mut challenge = yubikey::hsmauth::Challenge::default();
-        challenge
-            .copy_from_slice(c.as_slice())
-            .map_err(|e| Error::from(ErrorKind::ProtocolError.context(e)))?;
-
-        Ok(challenge)
+        let mut challenge = [0u8; CHALLENGE_SIZE];
+        challenge.copy_from_slice(bytes);
+        Ok(Challenge(challenge))
     }
 }
 

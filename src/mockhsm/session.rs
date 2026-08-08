@@ -3,7 +3,7 @@
 use std::fmt::{self, Debug};
 
 use crate::{
-    command, response,
+    command, object, response,
     session::{
         securechannel::{Challenge, Cryptogram, SecureChannel},
         Id,
@@ -24,6 +24,12 @@ pub(crate) struct HsmSession {
 
     /// Authentication key's capabilities
     pub auth_capabilities: Capability,
+
+    /// ID of the authentication key this session was established with.
+    ///
+    /// `ChangeAuthenticationKey` may only target this key, matching the
+    /// device's behavior.
+    pub authentication_key_id: object::Id,
 }
 
 impl HsmSession {
@@ -33,12 +39,14 @@ impl HsmSession {
         card_challenge: Challenge,
         channel: SecureChannel,
         auth_capabilities: Capability,
+        authentication_key_id: object::Id,
     ) -> Self {
         Self {
             id,
             card_challenge,
             channel,
             auth_capabilities,
+            authentication_key_id,
         }
     }
 

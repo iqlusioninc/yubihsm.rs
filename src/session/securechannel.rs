@@ -47,9 +47,8 @@ use aes::{
     Aes128,
 };
 use cmac::{digest::Mac as _, Cmac};
-use serde::{Deserialize, Serialize};
 use subtle::ConstantTimeEq;
-use zeroize::{Zeroize, Zeroizing};
+use zeroize::{Zeroize, ZeroizeOnDrop, Zeroizing};
 
 /// AES key size in bytes. SCP03 theoretically supports other key sizes, but
 /// the YubiHSM 2 does not. Since this crate is somewhat specialized to the `YubiHSM 2` (at least for now)
@@ -71,17 +70,22 @@ const AES_BLOCK_SIZE: usize = 16;
 type Aes128CbcEnc = cbc::Encryptor<Aes128>;
 type Aes128CbcDec = cbc::Decryptor<Aes128>;
 
-/// SCP03 AES Session Keys
-#[derive(Serialize, Deserialize)]
+/// SCP03 AES session keys.
+///
+/// These are live secrets: whoever holds them can read and forge traffic on the
+/// session. They are deliberately **not** `Serialize`/`Deserialize` and not
+/// `Debug` — nothing in the protocol transmits them, so there is no reason to
+/// make them easy to write to a log or a config file.
+#[derive(ZeroizeOnDrop)]
 pub struct SessionKeys {
     /// Session encryption key (S-ENC)
-    pub enc_key: [u8; KEY_SIZE],
+    enc_key: [u8; KEY_SIZE],
 
     /// Session Command MAC key (S-MAC)
-    pub mac_key: [u8; KEY_SIZE],
+    mac_key: [u8; KEY_SIZE],
 
-    /// Session Respose MAC key (S-RMAC)
-    pub rmac_key: [u8; KEY_SIZE],
+    /// Session Response MAC key (S-RMAC)
+    rmac_key: [u8; KEY_SIZE],
 }
 
 impl Zeroize for SessionKeys {
@@ -92,13 +96,14 @@ impl Zeroize for SessionKeys {
     }
 }
 
-#[cfg(feature = "yubihsm-auth")]
-impl From<yubikey::hsmauth::SessionKeys> for SessionKeys {
-    fn from(keys: yubikey::hsmauth::SessionKeys) -> Self {
-        let enc_key = *keys.enc_key;
-        let mac_key = *keys.mac_key;
-        let rmac_key = *keys.rmac_key;
-
+impl SessionKeys {
+    /// Assemble SCP03 session keys from externally derived key material.
+    ///
+    /// Used by the YubiHSM Auth flow, where the keys are derived by a separate
+    /// device (a YubiKey, say) rather than from a local password. Converting
+    /// from that device's own types is the caller's job, which keeps this crate
+    /// free of a dependency on any particular one.
+    pub fn new(enc_key: [u8; KEY_SIZE], mac_key: [u8; KEY_SIZE], rmac_key: [u8; KEY_SIZE]) -> Self {
         Self {
             enc_key,
             mac_key,
@@ -214,7 +219,7 @@ impl SecureChannel {
         host_challenge: Challenge,
     ) -> Result<(session::Id, CreateSessionResponse), session::Error> {
         let command_message = CreateSessionCommand {
-            authentication_key_id, //: credentials.authentication_key_id,
+            authentication_key_id,
             host_challenge,
         }
         .to_message()?;
@@ -226,7 +231,7 @@ impl SecureChannel {
         if response_message.is_err() {
             match device::ErrorKind::from_response_message(&response_message) {
                 Some(device::ErrorKind::ObjectNotFound) => fail!(
-                    ErrorKind::AuthenticationError,
+                    ErrorKind::AuthenticationKeyError,
                     "auth key not found: 0x{:04x}",
                     authentication_key_id
                 ),
@@ -255,6 +260,14 @@ impl SecureChannel {
         let session_response: CreateSessionResponse = deserialize(response_message.data.as_ref())?;
 
         Ok((id, session_response))
+    }
+
+    /// Has this channel completed authentication?
+    ///
+    /// Only an authenticated channel can encrypt commands; the encryption and
+    /// MAC paths assert on this.
+    pub(crate) fn is_authenticated(&self) -> bool {
+        self.security_level == SecurityLevel::Authenticated
     }
 
     /// Get the channel (i.e. session) ID
@@ -680,6 +693,17 @@ pub(crate) enum SecurityLevel {
 }
 
 /// Derive a key using the SCP03 KDF
+/// Test-only re-export of the SCP03 KDF, so session tests can derive the keys
+/// an external device would supply.
+#[cfg(test)]
+pub(crate) fn test_derive_key(
+    parent_key: &[u8],
+    derivation_constant: u8,
+    context: &Context,
+) -> [u8; KEY_SIZE] {
+    derive_key(parent_key, derivation_constant, context)
+}
+
 fn derive_key(parent_key: &[u8], derivation_constant: u8, context: &Context) -> [u8; KEY_SIZE] {
     let mut key = [0u8; KEY_SIZE];
     kdf::derive(parent_key, derivation_constant, context, &mut key);

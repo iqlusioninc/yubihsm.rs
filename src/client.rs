@@ -1,11 +1,9 @@
 //! YubiHSM client: core functionality of this crate.
 //!
-//! The `Client` type provides a set of methods which map to commands which
+//! The [`Client`] type provides a set of methods which map to commands which
 //! interface with the HSM.
 //!
 //! <https://developers.yubico.com/YubiHSM2/Commands/>
-
-#![allow(clippy::too_many_arguments)]
 
 #[macro_use]
 mod error;
@@ -31,6 +29,7 @@ use crate::{
     rsa::{self, oaep::commands::*, pkcs1::commands::*, pss::commands::*, SignatureAlgorithm},
     serialization::{deserialize, serialize},
     session::{self, Session},
+    symmetric::{self, commands::*},
     template::{commands::*, Template},
     uuid,
     wrap::{self, commands::*},
@@ -45,7 +44,6 @@ use std::{
 #[cfg(feature = "passwords")]
 use std::{thread, time::SystemTime};
 
-#[cfg(feature = "yubihsm-auth")]
 use crate::session::PendingSession;
 
 #[cfg(feature = "untested")]
@@ -73,13 +71,12 @@ pub struct Client {
 }
 
 impl Client {
-    /// Open a connection via a [Connector] to a YubiHSM, returning a `yubihsm::Client`.
-    /// `Connector` may use [Http], [Usb], or [MockHsm].
+    /// Open a connection via a [`Connector`] to a YubiHSM, returning a [`Client`].
+    /// [`Connector`] may use [Http], [Usb], or [MockHsm].
     ///
-    /// [Connector]: https://docs.rs/yubihsm/latest/yubihsm/connector/index.html
-    /// [Http]: https://docs.rs/yubihsm/latest/yubihsm/connector/struct.Connector.html#method.http
-    /// [Usb]: https://docs.rs/yubihsm/latest/yubihsm/connector/struct.Connector.html#method.usb
-    /// [MockHsm]: https://docs.rs/yubihsm/latest/yubihsm/connector/struct.Connector.html#method.mockhsm
+    /// [Http]: Connector::http
+    /// [Usb]: Connector::usb
+    /// [MockHsm]: Connector::mockhsm
     pub fn open(
         connector: Connector,
         credentials: Credentials,
@@ -96,7 +93,7 @@ impl Client {
         Ok(client)
     }
 
-    /// Create a `yubihsm::Client`, but defer connecting until `connect()` is called.
+    /// Create a [`Client`], but defer connecting until [`connect()`][Client::connect] is called.
     pub fn create(connector: Connector, credentials: Credentials) -> Result<Self, Error> {
         let client = Self {
             connector,
@@ -107,21 +104,26 @@ impl Client {
         Ok(client)
     }
 
-    /// Open session with YubiHSM Auth scheme
-    #[cfg(feature = "yubihsm-auth")]
+    /// Open a session using the YubiHSM Auth scheme, where the session keys are
+    /// derived by an external device rather than from a local password.
+    ///
+    /// Returns a [`PendingSession`]: the HSM has allocated a session and issued
+    /// its challenge, but no keys have been supplied yet. Derive the session
+    /// keys elsewhere and finish with [`PendingSession::realize`].
     pub fn yubihsm_auth(
         connector: Connector,
         authentication_key_id: object::Id,
-        host_challenge: session::securechannel::Challenge,
+        host_challenge: session::Challenge,
     ) -> Result<PendingSession, Error> {
-        let timeout = session::Timeout::default();
-
-        let session =
-            PendingSession::new(connector, timeout, authentication_key_id, host_challenge)?;
-        Ok(session)
+        Ok(PendingSession::new(
+            connector,
+            session::Timeout::default(),
+            authentication_key_id,
+            host_challenge,
+        )?)
     }
 
-    /// Borrow this client's YubiHSM connector (which is `Clone`able)
+    /// Borrow this client's YubiHSM connector (which is [`Clone`]able)
     pub fn connector(&self) -> &Connector {
         &self.connector
     }
@@ -133,7 +135,7 @@ impl Client {
         Ok(())
     }
 
-    /// Get current `Session` (either opening a new one or returning an already
+    /// Get current [`Session`] (either opening a new one or returning an already
     /// open one).
     pub fn session(&self) -> Result<session::Guard<'_>, Error> {
         // TODO(tarcieri): handle PoisonError better?
@@ -180,7 +182,7 @@ impl Client {
     }
 
     /// Encrypt a command, send it to the HSM, then read and decrypt the response.
-    fn send_command<T: Command>(&self, command: T) -> Result<T::ResponseType, Error> {
+    pub(crate) fn send_command<T: Command>(&self, command: T) -> Result<T::ResponseType, Error> {
         let mut session = self.session()?;
 
         match session.send_command(&command) {
@@ -203,12 +205,12 @@ impl Client {
 
     //
     // HSM Commands
-    // <https://developers.yubico.com/YubiHSM2/Commands/>
+    // <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html>
     //
 
     /// Blink the HSM's LEDs (to identify it) for the given number of seconds.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Blink_Device.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#blink-device-command>
     pub fn blink_device(&self, num_seconds: u8) -> Result<(), Error> {
         self.send_command(BlinkDeviceCommand { num_seconds })?;
         Ok(())
@@ -216,7 +218,7 @@ impl Client {
 
     /// Decrypt data encrypted with RSA-OAEP
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Decrypt_Oaep.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#decrypt-oaep-command>
     pub fn decrypt_oaep<T>(
         &self,
         key_id: object::Id,
@@ -239,7 +241,7 @@ impl Client {
 
     /// Delete an object of the given ID and type.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Delete_Object.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#delete-object-command>
     pub fn delete_object(
         &self,
         object_id: object::Id,
@@ -254,12 +256,16 @@ impl Client {
 
     /// Elliptic Curve Diffie-Hellman: derive a shared secret via key exchange.
     ///
+    /// <div class="warning">
+    ///
     /// **WARNING**: This functionality has not been tested and has not yet been
     /// confirmed to actually work! USE AT YOUR OWN RISK!
     ///
+    /// </div>
+    ///
     /// You will need to enable the `untested` cargo feature to use it.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Derive_Ecdh.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#derive-ecdh-command>
     #[cfg(feature = "untested")]
     pub fn derive_ecdh(
         &self,
@@ -273,14 +279,14 @@ impl Client {
 
     /// Get information about the HSM device.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Device_Info.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#device-info-command>
     pub fn device_info(&self) -> Result<device::Info, Error> {
         Ok(self.send_command(DeviceInfoCommand {})?.into())
     }
 
     /// Echo a message sent to the HSM.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Echo.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#echo-command>
     pub fn echo<M>(&self, msg: M) -> Result<Vec<u8>, Error>
     where
         M: Into<Vec<u8>>,
@@ -294,7 +300,7 @@ impl Client {
 
     /// Export an encrypted object from the HSM using the given key-wrapping key.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Export_Wrapped.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#export-wrapped-command>
     pub fn export_wrapped(
         &self,
         wrap_key_id: object::Id,
@@ -306,7 +312,7 @@ impl Client {
                 wrap_key_id,
                 object_type,
                 object_id,
-                include_seed: false.into(),
+                include_seed: Seed::Exclude,
             })?
             .0)
     }
@@ -330,14 +336,14 @@ impl Client {
                 wrap_key_id,
                 object_type,
                 object_id,
-                include_seed: true.into(),
+                include_seed: Seed::Include,
             })?
             .0)
     }
 
     /// Generate a new asymmetric key within the HSM.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Generate_Asymmetric_Key.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#generate-asymmetric-key-command>
     pub fn generate_asymmetric_key(
         &self,
         key_id: object::Id,
@@ -359,7 +365,7 @@ impl Client {
 
     /// Generate a new HMAC key within the HSM.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Generate_Hmac_Key.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#generate-hmac-key-command>
     pub fn generate_hmac_key(
         &self,
         key_id: object::Id,
@@ -379,12 +385,34 @@ impl Client {
             .key_id)
     }
 
+    /// Generate a new symmetric key within the HSM.
+    ///
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#generate-symmetric-key-command>
+    pub fn generate_symmetric_key(
+        &self,
+        key_id: object::Id,
+        label: object::Label,
+        domains: Domain,
+        capabilities: Capability,
+        algorithm: symmetric::Algorithm,
+    ) -> Result<object::Id, Error> {
+        Ok(self
+            .send_command(GenSymmetricKeyCommand(generate::Params {
+                key_id,
+                label,
+                domains,
+                capabilities,
+                algorithm: algorithm.into(),
+            }))?
+            .key_id)
+    }
+
     /// Generate a new wrap key within the HSM.
     ///
-    /// Delegated capabilities are the set of `Capability` bits that an object is allowed to have
+    /// Delegated capabilities are the set of [`Capability`] bits that an object is allowed to have
     /// when imported or exported using the wrap key.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Generate_Wrap_Key.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#generate-wrap-key-command>
     pub fn generate_wrap_key(
         &self,
         key_id: object::Id,
@@ -410,14 +438,14 @@ impl Client {
 
     /// Get audit logs from the HSM device.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Get_Log_Entries.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#get-log-entries-command>
     pub fn get_log_entries(&self) -> Result<LogEntries, Error> {
         self.send_command(GetLogEntriesCommand {})
     }
 
     /// Get information about an object.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Get_Object_Info.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#get-object-info-command>
     pub fn get_object_info(
         &self,
         object_id: object::Id,
@@ -433,14 +461,14 @@ impl Client {
 
     /// Get an opaque object stored in the HSM.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Get_Opaque.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#get-opaque-command>
     pub fn get_opaque(&self, object_id: object::Id) -> Result<Vec<u8>, Error> {
         Ok(self.send_command(GetOpaqueCommand { object_id })?.0)
     }
 
     /// Get the audit policy setting for a particular command.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Get_Option.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#get-option-command>
     pub fn get_command_audit_option(&self, command: command::Code) -> Result<AuditOption, Error> {
         let command_audit_options = self.get_commands_audit_options()?;
         Ok(command_audit_options
@@ -452,7 +480,7 @@ impl Client {
 
     /// Get the audit policy settings for all commands.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Get_Option.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#get-option-command>
     pub fn get_commands_audit_options(&self) -> Result<Vec<AuditCommand>, Error> {
         let response = self.send_command(GetOptionCommand {
             tag: AuditTag::Command,
@@ -464,9 +492,9 @@ impl Client {
     /// Get the forced auditing global option: when enabled, the device will
     /// refuse operations if the [log store] becomes full.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Get_Option.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#get-option-command>
     ///
-    /// [log store]: https://developers.yubico.com/YubiHSM2/Concepts/Logs.html
+    /// [log store]: https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-core-concepts.html#logs
     pub fn get_force_audit_option(&self) -> Result<AuditOption, Error> {
         let response = self.send_command(GetOptionCommand {
             tag: AuditTag::Force,
@@ -485,7 +513,7 @@ impl Client {
 
     /// Get the FIPS operation global option
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Get_Option.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#get-option-command>
     pub fn get_fips_option(&self) -> Result<AuditOption, Error> {
         let response = self.send_command(GetOptionCommand {
             tag: AuditTag::Fips,
@@ -504,7 +532,7 @@ impl Client {
 
     /// Get some number of bytes of pseudo random data generated on the device.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Get_Pseudo_Random.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#get-pseudo-random-command>
     pub fn get_pseudo_random(&self, bytes: usize) -> Result<Vec<u8>, Error> {
         ensure!(
             bytes <= MAX_RAND_BYTES,
@@ -523,28 +551,28 @@ impl Client {
 
     /// Get the public key for an asymmetric key stored on the device.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Get_Public_Key.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#get-public-key-command>
     pub fn get_public_key(&self, key_id: object::Id) -> Result<PublicKey, Error> {
         Ok(self.send_command(GetPublicKeyCommand { key_id })?.into())
     }
 
     /// Get storage info (i.e. currently free storage) from the HSM device.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Get_Storage_Info.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#get-storage-info-command>
     pub fn get_storage_info(&self) -> Result<StorageInfo, Error> {
         Ok(self.send_command(GetStorageInfoCommand {})?.into())
     }
 
     /// Get a certificate template (i.e. for SSH CA) stored in the HSM.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Get_Template.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#get-template-command>
     pub fn get_template(&self, object_id: object::Id) -> Result<Vec<u8>, Error> {
         Ok(self.send_command(GetTemplateCommand { object_id })?.0)
     }
 
     /// Import an encrypted object from the HSM using the given key-wrapping key.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Import_Wrapped.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#import-wrapped-command>
     pub fn import_wrapped<M>(
         &self,
         wrap_key_id: object::Id,
@@ -569,15 +597,15 @@ impl Client {
 
     /// List objects visible from the current session.
     ///
-    /// Optionally apply a set of provided `filters` which select objects
+    /// Optionally apply a set of provided [`filters`][object::Filter] which select objects
     /// based on their attributes.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/List_Objects.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#list-objects-command>
     pub fn list_objects(&self, filters: &[object::Filter]) -> Result<Vec<object::Entry>, Error> {
         let mut filter_bytes = vec![];
 
         for filter in filters {
-            filter.serialize(&mut filter_bytes)?;
+            filter.to_wire(&mut filter_bytes)?;
         }
 
         Ok(self.send_command(ListObjectsCommand(filter_bytes))?.0)
@@ -585,7 +613,7 @@ impl Client {
 
     /// Put an existing asymmetric key into the HSM.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Put_Asymmetric.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#put-asymmetric-key-command>
     pub fn put_asymmetric_key<K>(
         &self,
         key_id: object::Id,
@@ -624,9 +652,10 @@ impl Client {
             .key_id)
     }
 
-    /// Put an existing `authentication::Key` into the HSM.
+    /// Put an existing [`authentication::Key`] into the HSM.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Put_Authentication_Key.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#put-authentication-key-command>
+    #[allow(clippy::too_many_arguments)]
     pub fn put_authentication_key<K>(
         &self,
         key_id: object::Id,
@@ -655,9 +684,56 @@ impl Client {
             .key_id)
     }
 
+    /// Change the authentication key used to establish the current session.
+    ///
+    /// Available with firmware version 2.2.0 or later. Atomically replaces
+    /// the key material while preserving all object metadata (ID, label,
+    /// domains, capabilities, delegated capabilities).
+    ///
+    /// Only the Authentication Key that was used to open the current session
+    /// can be changed with this command; passing any other `key_id` will be
+    /// rejected by the device. The required capability is
+    /// `change-authentication-key`.
+    ///
+    /// If this client was opened with reconnection enabled, its cached
+    /// credentials are updated to the new key material, so that reconnecting
+    /// after a session timeout continues to work. This is why the method takes
+    /// `&mut self`.
+    ///
+    /// <https://developers.yubico.com/YubiHSM2/Commands/Change_Authentication_Key.html>
+    pub fn change_authentication_key<K>(
+        &mut self,
+        key_id: object::Id,
+        algorithm: authentication::Algorithm,
+        authentication_key: K,
+    ) -> Result<object::Id, Error>
+    where
+        K: Into<authentication::Key>,
+    {
+        let authentication_key = authentication_key.into();
+
+        let changed_id = self
+            .send_command(ChangeAuthenticationKeyCommand {
+                key_id,
+                algorithm: algorithm.into(),
+                authentication_key: authentication_key.clone(),
+            })?
+            .key_id;
+
+        // Keep cached credentials in sync, otherwise a later reconnect would
+        // authenticate with key material the device no longer accepts.
+        if let Some(credentials) = self.credentials.as_mut() {
+            if credentials.authentication_key_id == changed_id {
+                credentials.authentication_key = authentication_key;
+            }
+        }
+
+        Ok(changed_id)
+    }
+
     /// Put an existing HMAC key into the HSM.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Put_Hmac_Key.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#put-hmac-key-command>
     pub fn put_hmac_key<K>(
         &self,
         key_id: object::Id,
@@ -699,7 +775,7 @@ impl Client {
 
     /// Put an opaque object (X.509 certificate or other bytestring) into the HSM.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Put_Opaque.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#put-opaque-command>
     pub fn put_opaque<B>(
         &self,
         object_id: object::Id,
@@ -728,7 +804,7 @@ impl Client {
 
     /// Put an existing OTP AEAD key into the HSM.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Put_Otp_Aead_Key.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#put-otp-aead-key-command>
     pub fn put_otp_aead_key<K>(
         &self,
         key_id: object::Id,
@@ -767,9 +843,51 @@ impl Client {
             .key_id)
     }
 
+    /// Put an existing symmetric key into the HSM.
+    ///
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#put-symmetric-key-command>
+    pub fn put_symmetric_key<K>(
+        &self,
+        key_id: object::Id,
+        label: object::Label,
+        domains: Domain,
+        capabilities: Capability,
+        algorithm: symmetric::Algorithm,
+        key_bytes: K,
+    ) -> Result<object::Id, Error>
+    where
+        K: Into<Vec<u8>>,
+    {
+        let data = key_bytes.into();
+
+        if data.len() != algorithm.key_len() {
+            fail!(
+                ErrorKind::ProtocolError,
+                "invalid key length for {:?}: {} (expected {})",
+                algorithm,
+                data.len(),
+                algorithm.key_len()
+            );
+        }
+
+        Ok(self
+            .send_command(PutSymmetricKeyCommand {
+                params: object::put::Params {
+                    id: key_id,
+                    label,
+                    domains,
+                    capabilities,
+                    algorithm: algorithm.into(),
+                },
+                data,
+            })?
+            .key_id)
+    }
+
     /// Put an existing wrap key into the HSM.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Put_Wrap_Key.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#put-wrap-key-command>
+    #[allow(clippy::too_many_arguments)]
     pub fn put_wrap_key<K>(
         &self,
         key_id: object::Id,
@@ -812,9 +930,9 @@ impl Client {
 
     /// Put a template object (i.e. for SSH CA) into the HSM.
     ///
-    /// Use the `yubihsm::ssh::Template` type for SSH CA templates.
+    /// Use the [`Template`] type for SSH CA templates.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Put_Template.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#put-template-command>
     pub fn put_template<T>(
         &self,
         object_id: object::Id,
@@ -845,10 +963,14 @@ impl Client {
     /// Reset the HSM to a factory default state and reboot, clearing all
     /// stored objects and restoring the default auth key.
     ///
+    /// <div class="warning">
+    ///
     /// **WARNING:** This wipes all keys and other data from the HSM! Make
     /// absolutely sure you want to use this!
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Reset_Device.html>
+    /// </div>
+    ///
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#reset-device-command>
     pub fn reset_device(&self) -> Result<(), Error> {
         let mut session = self.session()?;
 
@@ -856,7 +978,7 @@ impl Client {
         if let Err(e) = &result {
             if *e.kind() == session::ErrorKind::ProtocolError {
                 // real devices can send protocol errors when the request has been accepted
-                debug!("error sending reset command: {}", e);
+                debug!("error sending reset command: {e}");
             } else {
                 // other errors, such as insufficient permissions, should be propagated
                 result?;
@@ -875,12 +997,16 @@ impl Client {
     ///
     /// Upon successfully resetting the device and autenticating using the
     /// default administrator credentials in key slot 0x01, a new
-    /// `yubihsm::Client` is returned.
+    /// [`Client`] is returned.
+    ///
+    /// <div class="warning">
     ///
     /// **WARNING:** This wipes all keys and other data from the HSM! Make
     /// absolutely sure you want to use this!
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Reset_Device.html>
+    /// </div>
+    ///
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#reset-device-command>
     #[cfg(feature = "passwords")]
     pub fn reset_device_and_reconnect(&mut self, timeout: Duration) -> Result<(), Error> {
         /// How long to initially wait for a device reset to complete (1s)
@@ -921,7 +1047,7 @@ impl Client {
                             e
                         )
                     } else {
-                        debug!("error reconnecting to HSM: {}", e);
+                        debug!("error reconnecting to HSM: {e}");
                         thread::sleep(Duration::from_millis(DEVICE_POLL_INTERVAL_MS))
                     }
                 }
@@ -932,7 +1058,7 @@ impl Client {
     /// Configure the audit policy settings for a particular command, e.g. auditing
     /// should be `On`, `Off`, or `Fix` (i.e. fixed permanently on).
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Set_Option.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#set-option-command>
     pub fn set_command_audit_option(
         &self,
         command: command::Code,
@@ -952,7 +1078,7 @@ impl Client {
     ///
     /// Options are `On`, `Off`, or `Fix` (i.e. fixed permanently on)
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Put_Option.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#set-option-command>
     ///
     /// [log store]: https://developers.yubico.com/YubiHSM2/Concepts/Logs.html
     pub fn set_force_audit_option(&self, option: AuditOption) -> Result<(), Error> {
@@ -970,7 +1096,7 @@ impl Client {
     ///
     /// Options are `Off`, or `On`
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Put_Option.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#set-option-command>
     pub fn set_fips_option(&self, option: AuditOption) -> Result<(), Error> {
         self.send_command(SetOptionCommand {
             tag: AuditTag::Fips,
@@ -983,7 +1109,7 @@ impl Client {
 
     /// Set the index of the last consumed index of the HSM audit log.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Set_Log_Index.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#set-log-index-command>
     pub fn set_log_index(&self, log_index: u16) -> Result<(), Error> {
         self.send_command(SetLogIndexCommand { log_index })?;
         Ok(())
@@ -1000,7 +1126,7 @@ impl Client {
     /// If no attestation key is given, the device's default attestation key
     /// will be used, and can be verified against Yubico's certificate.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Attestation_Certificate.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#sign-attestation-certificate-command>
     pub fn sign_attestation_certificate(
         &self,
         key_id: object::Id,
@@ -1014,7 +1140,9 @@ impl Client {
 
     /// Compute an ECDSA signature of the given digest (i.e. a precomputed SHA-2 digest)
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Ecdsa.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#sign-ecdsa-command>
+    ///
+    /// <div class="warning">
     ///
     /// # Security Warning
     ///
@@ -1023,6 +1151,8 @@ impl Client {
     ///
     /// We recommend using the [`ecdsa::Signer`] type instead, which provides a
     /// high-level, well-typed, misuse resistant API.
+    ///
+    /// </div>
     pub fn sign_ecdsa_prehash_raw<T>(&self, key_id: object::Id, digest: T) -> Result<Vec<u8>, Error>
     where
         T: Into<Vec<u8>>,
@@ -1036,7 +1166,7 @@ impl Client {
 
     /// Compute an Ed25519 signature with the given key ID.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Eddsa.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#sign-eddsa-command>
     pub fn sign_ed25519<T>(&self, key_id: object::Id, data: T) -> Result<ed25519::Signature, Error>
     where
         T: Into<Vec<u8>>,
@@ -1050,7 +1180,7 @@ impl Client {
 
     /// Compute an HMAC tag of the given data with the given key ID.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Hmac.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#sign-hmac-command>
     pub fn sign_hmac<M>(&self, key_id: object::Id, msg: M) -> Result<hmac::Tag, Error>
     where
         M: Into<Vec<u8>>,
@@ -1065,7 +1195,7 @@ impl Client {
 
     /// Compute an RSASSA-PKCS#1v1.5 signature of the SHA-256 hash of the given data.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Pkcs1.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#sign-pkcs1-command>
     pub(crate) fn sign_rsa_pkcs1v15<S: SignatureAlgorithm>(
         &self,
         key_id: object::Id,
@@ -1097,7 +1227,7 @@ impl Client {
 
     /// Compute an RSASSA-PKCS#1v1.5 signature of the SHA-256 hash of the given data.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Pkcs1.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#sign-pkcs1-command>
     pub fn sign_rsa_pkcs1v15_sha256(
         &self,
         key_id: object::Id,
@@ -1108,11 +1238,12 @@ impl Client {
 
     /// Compute an RSASSA-PSS signature of the SHA-256 hash of the given data with the given key ID.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Pss.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#sign-pss-command>
     pub(crate) fn sign_rsa_pss<S: SignatureAlgorithm>(
         &self,
         key_id: object::Id,
         data: &[u8],
+        salt_len: Option<u16>,
     ) -> Result<rsa::pss::Signature, Error> {
         let mut hasher = S::new();
         hasher.update(data);
@@ -1129,7 +1260,7 @@ impl Client {
             .send_command(SignPssCommand {
                 key_id,
                 mgf1_hash_alg: S::MGF_ALGORITHM,
-                salt_len: digest.as_slice().len() as u16,
+                salt_len: salt_len.unwrap_or(digest.as_slice().len() as u16),
                 digest: digest.as_slice().into(),
             })?
             .into())
@@ -1137,23 +1268,27 @@ impl Client {
 
     /// Compute an RSASSA-PSS signature of the SHA-256 hash of the given data with the given key ID.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Pss.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#sign-pss-command>
     pub fn sign_rsa_pss_sha256(
         &self,
         key_id: object::Id,
         data: &[u8],
     ) -> Result<rsa::pss::Signature, Error> {
-        self.sign_rsa_pss::<Sha256>(key_id, data)
+        self.sign_rsa_pss::<Sha256>(key_id, data, None)
     }
 
     /// Sign an SSH certificate using the given template.
     ///
+    /// <div class="warning">
+    ///
     /// **WARNING**: This functionality has not been tested and has not yet been
     /// confirmed to actually work! USE AT YOUR OWN RISK!
     ///
+    /// </div>
+    ///
     /// You will need to enable the `untested` cargo feature to use it.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Ssh_Certificate.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#sign-ssh-certificate-command>
     #[cfg(feature = "untested")]
     pub fn sign_ssh_certificate<A>(
         &self,
@@ -1181,7 +1316,7 @@ impl Client {
 
     /// Decrypt data which was encrypted (using AES-CCM) under a wrap key.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Unwrap_Data.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#unwrap-data-command>
     pub fn unwrap_data<M>(&self, wrap_key_id: object::Id, wrap_message: M) -> Result<Vec<u8>, Error>
     where
         M: Into<wrap::Message>,
@@ -1199,7 +1334,7 @@ impl Client {
 
     /// Verify an HMAC tag of the given data with the given key ID.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Verify_Hmac.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#verify-hmac-command>
     pub fn verify_hmac<M, T>(&self, key_id: object::Id, msg: M, tag: T) -> Result<(), Error>
     where
         M: Into<Vec<u8>>,
@@ -1220,7 +1355,7 @@ impl Client {
 
     /// Encrypt data (with AES-CCM) using the given wrap key.
     ///
-    /// <https://developers.yubico.com/YubiHSM2/Commands/Wrap_Data.html>
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#wrap-data-command>
     pub fn wrap_data(
         &self,
         wrap_key_id: object::Id,
@@ -1235,6 +1370,12 @@ impl Client {
     }
 }
 
+/// Build a [`Client`] from an already-established [`Session`].
+///
+/// Used by the YubiHSM Auth flow, where the session is realized from
+/// externally derived keys. Reconnection is disabled: there are no reusable
+/// credentials to reconnect *with*, so a timed-out session cannot be
+/// re-established and must be opened again from the start.
 impl From<Session> for Client {
     fn from(session: Session) -> Self {
         let connector = session.connector();
@@ -1244,5 +1385,13 @@ impl From<Session> for Client {
             session,
             credentials: None,
         }
+    }
+}
+
+impl std::fmt::Debug for Client {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Client")
+            .field("connector", &self.connector)
+            .finish_non_exhaustive()
     }
 }

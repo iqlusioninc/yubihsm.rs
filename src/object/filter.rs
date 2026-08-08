@@ -1,5 +1,7 @@
 //! Filters for selecting objects in the list object command
 
+use serde::{Deserialize, Serialize};
+
 use crate::{algorithm::Algorithm, capability::Capability, client, domain::Domain, object};
 use std::io::Write;
 
@@ -10,6 +12,7 @@ use {
 };
 
 /// Filters to apply when listing objects
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum Filter {
     /// Filter objects by algorithm
     Algorithm(Algorithm),
@@ -61,8 +64,14 @@ impl Filter {
         }
     }
 
-    // TODO: replace this with serde
-    pub(crate) fn serialize<W: Write>(&self, mut writer: W) -> Result<W, client::Error> {
+    /// Encode this filter in the HSM's wire format for `ListObjects`.
+    ///
+    /// This is **not** the derived [`Serialize`] impl. `Filter` carries two
+    /// unrelated encodings: this one, which the device defines (a tag byte
+    /// followed by the payload), and the serde impls, which exist so filters
+    /// can appear in user-facing config. They are not interchangeable, hence
+    /// the distinct names.
+    pub(crate) fn to_wire<W: Write>(&self, mut writer: W) -> Result<W, client::Error> {
         writer.write_all(&[self.tag()])?;
 
         match *self {
@@ -79,9 +88,12 @@ impl Filter {
         Ok(writer)
     }
 
-    // TODO: replace this with serde
+    /// Decode a filter from the HSM's wire format.
+    ///
+    /// Counterpart to [`Filter::to_wire`]; see the note there on why this is
+    /// not the derived [`Deserialize`] impl.
     #[cfg(feature = "mockhsm")]
-    pub(crate) fn deserialize<R: Read>(mut reader: R) -> Result<Self, client::Error> {
+    pub(crate) fn from_wire<R: Read>(mut reader: R) -> Result<Self, client::Error> {
         let tag = read_byte!(reader);
 
         Ok(match tag {

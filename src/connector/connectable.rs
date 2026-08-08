@@ -3,7 +3,7 @@
 use crate::connector::{self, Connection};
 
 /// Connectors which create `Connection` objects to the HSM
-pub trait Connectable: Send + Sync {
+pub trait Connectable: Send + Sync + std::fmt::Debug {
     /// Make a clone of this connectable as boxed trait object
     fn box_clone(&self) -> Box<dyn Connectable>;
 
