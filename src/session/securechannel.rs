@@ -693,18 +693,11 @@ pub(crate) enum SecurityLevel {
 }
 
 /// Derive a key using the SCP03 KDF
-/// Test-only re-export of the SCP03 KDF, so session tests can derive the keys
-/// an external device would supply.
-#[cfg(all(test, feature = "mockhsm", feature = "passwords"))]
-pub(crate) fn test_derive_key(
+pub(crate) fn derive_key(
     parent_key: &[u8],
     derivation_constant: u8,
     context: &Context,
 ) -> [u8; KEY_SIZE] {
-    derive_key(parent_key, derivation_constant, context)
-}
-
-fn derive_key(parent_key: &[u8], derivation_constant: u8, context: &Context) -> [u8; KEY_SIZE] {
     let mut key = [0u8; KEY_SIZE];
     kdf::derive(parent_key, derivation_constant, context, &mut key);
     key

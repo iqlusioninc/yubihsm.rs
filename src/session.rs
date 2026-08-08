@@ -86,6 +86,16 @@ impl PendingSession {
         authentication_key_id: object::Id,
         host_challenge: Challenge,
     ) -> Result<Self, Error> {
+        // Same floor `Session::open` enforces. Without it a sub-second timeout
+        // makes `is_timed_out` underflow when it subtracts the fuzz factor,
+        // panicking from `close` and from the `Drop` handler.
+        ensure!(
+            timeout.duration() > TIMEOUT_FUZZ_FACTOR,
+            ErrorKind::CreateFailed,
+            "timeout too low: must be longer than {:?}",
+            TIMEOUT_FUZZ_FACTOR
+        );
+
         let (id, session_response) =
             SecureChannel::create(&connector, authentication_key_id, host_challenge)?;
 
@@ -492,10 +502,32 @@ mod tests {
     ) -> SessionKeys {
         let context = Context::from_challenges(host_challenge, hsm_challenge);
         SessionKeys::new(
-            securechannel::test_derive_key(key.enc_key(), 0b100, &context),
-            securechannel::test_derive_key(key.mac_key(), 0b110, &context),
-            securechannel::test_derive_key(key.mac_key(), 0b111, &context),
+            securechannel::derive_key(key.enc_key(), 0b100, &context),
+            securechannel::derive_key(key.mac_key(), 0b110, &context),
+            securechannel::derive_key(key.mac_key(), 0b111, &context),
         )
+    }
+
+    /// `PendingSession::new` must reject timeouts `Session::open` would reject.
+    ///
+    /// `is_timed_out` subtracts `TIMEOUT_FUZZ_FACTOR` from the configured
+    /// timeout, so anything at or below one second underflows and panics with
+    /// "overflow when subtracting durations" -- from `close`, and from the
+    /// `Drop` handler, where it aborts.
+    #[test]
+    fn pending_session_rejects_a_timeout_below_the_fuzz_factor() {
+        for secs in [0, 1] {
+            let err = PendingSession::new(
+                Connector::mockhsm(),
+                Timeout::from_secs(secs),
+                authentication::DEFAULT_AUTHENTICATION_KEY_ID,
+                Challenge::new(),
+            )
+            .err()
+            .unwrap_or_else(|| panic!("a {secs}s timeout must be rejected"));
+
+            assert_eq!(*err.kind(), ErrorKind::CreateFailed);
+        }
     }
 
     /// The YubiHSM Auth flow completes when the supplied keys are correct.
