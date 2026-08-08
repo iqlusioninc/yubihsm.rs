@@ -695,7 +695,7 @@ pub(crate) enum SecurityLevel {
 /// Derive a key using the SCP03 KDF
 /// Test-only re-export of the SCP03 KDF, so session tests can derive the keys
 /// an external device would supply.
-#[cfg(test)]
+#[cfg(all(test, feature = "mockhsm", feature = "passwords"))]
 pub(crate) fn test_derive_key(
     parent_key: &[u8],
     derivation_constant: u8,
