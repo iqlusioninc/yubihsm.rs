@@ -276,7 +276,19 @@ impl SecureChannel {
     ) -> Result<(), session::Error> {
         // The EXTERNAL_AUTHENTICATE command does not send an R-MAC value
         if !response.data.is_empty() {
-            self.terminate();
+            // Do *not* terminate here. The device answered successfully, so it
+            // has allocated and authenticated this session; the channel keys
+            // are valid and the session exists on the device until closed or
+            // timed out. Zeroizing the keys would make it impossible to send
+            // `CloseSession`, stranding the session for the full timeout and,
+            // across retries, exhausting the device's session pool.
+            //
+            // Mark the channel authenticated -- which it is -- so `Session::close`
+            // can release it, then report the protocol violation to the caller.
+            // `Session::open` still fails, so no usable session escapes.
+            self.security_level = SecurityLevel::Authenticated;
+            self.counter = 1;
+
             fail!(
                 ErrorKind::ProtocolError,
                 "expected empty response data (got {}-bytes)",
@@ -742,5 +754,57 @@ mod tests {
             response.err().unwrap().to_string(),
             "cryptographic verification failed: R-MAC mismatch!"
         );
+    }
+}
+
+#[cfg(all(test, feature = "passwords"))]
+mod auth_response_tests {
+    use super::*;
+
+    /// A successful-but-malformed `AuthenticateSession` response must leave the
+    /// channel able to close itself.
+    ///
+    /// The device allocates and authenticates the session before replying, so
+    /// it exists device-side until closed or timed out. Zeroizing the keys here
+    /// would make `CloseSession` impossible, stranding it for the full timeout
+    /// and, across retries, exhausting the 16-session pool.
+    #[test]
+    fn malformed_auth_response_leaves_the_channel_closable() {
+        let mut channel = SecureChannel::new(
+            session::Id::from_u8(1).unwrap(),
+            &crate::authentication::Key::default(),
+            Challenge::new(),
+            Challenge::new(),
+        );
+
+        let response = response::Message::success(command::Code::AuthenticateSession, vec![0xAA]);
+
+        let err = channel
+            .finish_authenticate_session(&response)
+            .expect_err("unexpected response data must be reported");
+        assert_eq!(*err.kind(), ErrorKind::ProtocolError);
+
+        assert!(
+            channel.is_authenticated(),
+            "the channel must remain able to encrypt CloseSession so the \
+             device-side session can be released"
+        );
+    }
+
+    /// A well-formed response still authenticates.
+    #[test]
+    fn well_formed_auth_response_authenticates() {
+        let mut channel = SecureChannel::new(
+            session::Id::from_u8(1).unwrap(),
+            &crate::authentication::Key::default(),
+            Challenge::new(),
+            Challenge::new(),
+        );
+
+        let response = response::Message::success(command::Code::AuthenticateSession, vec![]);
+        channel
+            .finish_authenticate_session(&response)
+            .expect("a well-formed response must authenticate");
+        assert!(channel.is_authenticated());
     }
 }
