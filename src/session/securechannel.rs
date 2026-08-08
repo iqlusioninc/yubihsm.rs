@@ -757,7 +757,7 @@ mod tests {
     }
 }
 
-#[cfg(all(test, feature = "passwords"))]
+#[cfg(all(test, feature = "mockhsm", feature = "passwords"))]
 mod auth_response_tests {
     use super::*;
 
@@ -772,7 +772,7 @@ mod auth_response_tests {
     fn malformed_auth_response_leaves_the_channel_closable() {
         let mut channel = SecureChannel::new(
             session::Id::from_u8(1).unwrap(),
-            &crate::authentication::Key::default(),
+            &authentication::Key::default(),
             Challenge::new(),
             Challenge::new(),
         );
@@ -796,7 +796,7 @@ mod auth_response_tests {
     fn well_formed_auth_response_authenticates() {
         let mut channel = SecureChannel::new(
             session::Id::from_u8(1).unwrap(),
-            &crate::authentication::Key::default(),
+            &authentication::Key::default(),
             Challenge::new(),
             Challenge::new(),
         );
