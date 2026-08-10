@@ -34,6 +34,7 @@ impl Connection for MockConnection {
             Code::CreateSession => command::create_session(&mut state, &command),
             Code::AuthenticateSession => command::authenticate_session(&mut state, &command),
             Code::SessionMessage => command::session_message(&mut state, command),
+            Code::DeviceInfo => Ok(command::device_info().into()),
             unsupported => fail!(ConnectionFailed, "unsupported command: {:?}", unsupported),
         }
         .map(Message::from)

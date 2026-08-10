@@ -3,7 +3,7 @@
 use crate::algorithm;
 
 /// Asymmetric algorithms (RSA or ECC)
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 #[repr(u8)]
 pub enum Algorithm {
     /// 2048-bit RSA
@@ -95,6 +95,21 @@ impl Algorithm {
         matches!(
             self,
             Algorithm::Rsa2048 | Algorithm::Rsa3072 | Algorithm::Rsa4096
+        )
+    }
+
+    /// Returns true if the algorithm is an elliptic curve
+    pub fn is_ec(self) -> bool {
+        matches!(
+            self,
+            Algorithm::EcP224
+                | Algorithm::EcP256
+                | Algorithm::EcP384
+                | Algorithm::EcP521
+                | Algorithm::EcK256
+                | Algorithm::EcBp256
+                | Algorithm::EcBp384
+                | Algorithm::EcBp512
         )
     }
 }

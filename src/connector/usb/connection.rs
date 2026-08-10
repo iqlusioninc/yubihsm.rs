@@ -108,8 +108,7 @@ fn recv_message(
             // retry the read for `MAX_RECV_RETRIES` attempts
             Err(rusb::Error::Io) => {
                 debug!(
-                    "I/O error during USB bulk message receive, retrying ({} attempts remaining)",
-                    attempts_remaining
+                    "I/O error during USB bulk message receive, retrying ({attempts_remaining} attempts remaining)"
                 );
             }
             // All other errors we return immediately

@@ -5,16 +5,19 @@ use super::{Algorithm, Error, ErrorKind};
 use crate::{
     algorithm, asymmetric,
     ecdsa::algorithm::CurveAlgorithm,
-    object,
+    object, opaque,
     serialization::{deserialize, serialize},
+    symmetric::{self},
     wrap, Capability, Domain,
 };
 use aes::cipher::typenum::Unsigned;
 use ccm::aead::Aead;
+use cipher::{Key, KeySizeUser};
 use ecdsa::{
     elliptic_curve::{
+        point::AffineCoordinates,
         sec1::{ModulusSize, ValidatePublicKey},
-        FieldBytesSize, SecretKey,
+        CurveArithmetic, FieldBytesSize, SecretKey,
     },
     PrimeCurve,
 };
@@ -23,6 +26,11 @@ use rsa::{
     BoxedUint, RsaPrivateKey,
 };
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "x509-cert")]
+use x509_cert::{
+    der::{self, Decode},
+    Certificate,
+};
 
 /// Wrap wessage (encrypted HSM object or arbitrary data) encrypted under a wrap key
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -121,6 +129,7 @@ impl Plaintext {
 
         let cipher: super::key::AesCcm = key.into();
         let nonce = Nonce::generate();
+
         let wire = serialize(&self).unwrap();
         let ciphertext = cipher.encrypt(&nonce.to_nonce(), wire.as_slice()).unwrap();
 
@@ -156,12 +165,12 @@ impl Plaintext {
         key: SecretKey<C>,
     ) -> Result<Self, Error>
     where
-        C: PrimeCurve + CurveAlgorithm,
+        C: PrimeCurve + CurveAlgorithm + CurveArithmetic,
         FieldBytesSize<C>: ModulusSize + Unsigned,
     {
         let asym_algorithm = C::asymmetric_algorithm();
 
-        let object_info = wrap::Info {
+        let mut object_info = wrap::Info {
             capabilities,
             object_id,
             length: 0,
@@ -173,7 +182,14 @@ impl Plaintext {
             label,
         };
 
-        let data = key.to_bytes().as_slice().to_vec();
+        let public_key = key.public_key();
+        let public_key = public_key.as_affine();
+
+        let mut data = key.to_bytes().as_slice().to_vec();
+        data.extend_from_slice(public_key.x().as_slice());
+        data.extend_from_slice(public_key.y().as_slice());
+
+        object_info.length = data.len() as u16;
 
         Ok(Self {
             algorithm,
@@ -272,6 +288,111 @@ impl Plaintext {
             data,
         })
     }
+
+    /// Return the ecdsa key of this [`Plaintext`] if it was an EC key.
+    pub fn symmetric<C>(&self) -> Option<Key<C>>
+    where
+        C: KeySizeUser + symmetric::AssociatedHsmSymmetricAlgorithm,
+    {
+        if let algorithm::Algorithm::Symmetric(alg) = self.object_info.algorithm {
+            if C::HSM_SYMMETRIC_ALGORITHM == alg {
+                Key::<C>::try_from(self.data.as_slice()).ok()
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+
+    /// Build a [`Plaintext`] from a symmetric [`Key`].
+    pub fn from_symmetric<C>(
+        algorithm: Algorithm,
+        object_id: object::Id,
+        capabilities: Capability,
+        domains: Domain,
+        label: object::Label,
+        key: &Key<C>,
+    ) -> Self
+    where
+        C: KeySizeUser + symmetric::AssociatedHsmSymmetricAlgorithm,
+    {
+        let mut object_info = wrap::Info {
+            capabilities,
+            object_id,
+            length: 0,
+            domains,
+            object_type: object::Type::SymmetricKey,
+            algorithm: algorithm::Algorithm::Symmetric(C::HSM_SYMMETRIC_ALGORITHM),
+            sequence: 0,
+            origin: object::Origin::Imported,
+            label,
+        };
+
+        let mut data = Vec::new();
+        data.extend_from_slice(key);
+
+        object_info.length = data.len() as u16;
+
+        Self {
+            algorithm,
+            object_info,
+            data,
+        }
+    }
+
+    /// Return the opaque in this message
+    fn opaque(&self, opaque_alg: opaque::Algorithm) -> Option<Box<[u8]>> {
+        if self.object_info.algorithm == algorithm::Algorithm::Opaque(opaque_alg) {
+            Some(self.data.clone().into_boxed_slice())
+        } else {
+            None
+        }
+    }
+
+    /// Return the opaque data in this message
+    pub fn opaque_data(&self) -> Option<Box<[u8]>> {
+        self.opaque(opaque::Algorithm::Data)
+    }
+
+    /// Return the opaque data in this message
+    #[cfg(feature = "x509-cert")]
+    pub fn opaque_certificate(&self) -> Option<der::Result<Certificate>> {
+        let slice = self.opaque(opaque::Algorithm::X509Certificate)?;
+
+        Some(Certificate::from_der(&slice))
+    }
+
+    /// Build a [`Plaintext`] from a slice of data.
+    pub fn from_opaque_data(
+        algorithm: Algorithm,
+        opaque_algorithm: opaque::Algorithm,
+        object_id: object::Id,
+        capabilities: Capability,
+        domains: Domain,
+        label: object::Label,
+        data: &[u8],
+    ) -> Result<Self, Error> {
+        let object_info = wrap::Info {
+            capabilities,
+            object_id,
+            length: u16::try_from(data.len()).map_err(|e| ErrorKind::LengthInvalid.context(e))?,
+            domains,
+            object_type: object::Type::Opaque,
+            algorithm: algorithm::Algorithm::Opaque(opaque_algorithm),
+            sequence: 0,
+            origin: object::Origin::Imported,
+            label,
+        };
+
+        let data = data.to_vec();
+
+        Ok(Self {
+            algorithm,
+            object_info,
+            data,
+        })
+    }
 }
 
 /// Support structure to read from a slice like a reader
@@ -287,5 +408,30 @@ impl<'a> SliceReader<'a> {
             self.0 = new;
             Some(out)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use hex_literal::hex;
+
+    #[test]
+    fn test_ecdsa() {
+        let secret_key = p384::SecretKey::from_bytes((&hex!("e7f8ffafd8f2e9d95c620d446b80b4a0b8a964c98d0cf6b22f2d5b88ed39d49989fba7f371eb3d132d2222cd11bfb00d")).into()).unwrap();
+
+        let plaintext = Plaintext::from_ecdsa(
+            Algorithm::Aes256Ccm,
+            0xcf,
+            Capability::SIGN_ECDSA | Capability::EXPORT_WRAPPED | Capability::IMPORT_WRAPPED,
+            Domain::DOM1,
+            "Signatory test key"
+                .parse()
+                .expect("label to be less than or equal to 40 bytes"),
+            secret_key,
+        )
+        .expect("build message with ecdsa key");
+
+        assert_eq!(plaintext.data, hex!("e7f8ffafd8f2e9d95c620d446b80b4a0b8a964c98d0cf6b22f2d5b88ed39d49989fba7f371eb3d132d2222cd11bfb00d63eb6adb68f45696099e5079db0f3bd0c806397b13471ac9279cca9a597e883957d258ff2baacfc7bdd7f8766299a4271849a4dd7bcb61a576fbf4f527c16bc424dcbdde2b155f6da6bc561e83a2b4058efea986556dd2b3eedfc1c763704db0"));
     }
 }

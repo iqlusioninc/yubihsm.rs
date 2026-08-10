@@ -3,7 +3,7 @@
 use crate::algorithm;
 
 /// Valid algorithms for auth keys
-#[derive(Copy, Clone, Debug, Default, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, Eq, Ord, PartialEq, PartialOrd)]
 #[repr(u8)]
 pub enum Algorithm {
     /// YubiHSM AES PSK authentication

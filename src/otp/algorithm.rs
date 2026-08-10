@@ -3,7 +3,7 @@
 use crate::algorithm;
 
 /// Valid algorithms for Yubico OTP (AES-based one time password) keys
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 #[repr(u8)]
 pub enum Algorithm {
     /// Yubico OTP using AES-128

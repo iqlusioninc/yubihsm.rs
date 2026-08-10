@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display};
-#[cfg(feature = "_tls")]
+#[cfg(feature = "https")]
 use std::path::PathBuf;
 
 /// Default timeouts for reading and writing (5 seconds)
@@ -18,11 +18,11 @@ pub struct HttpConfig {
     pub port: u16,
 
     /// Use https if true
-    #[cfg(feature = "_tls")]
+    #[cfg(feature = "https")]
     pub tls: bool,
 
     /// CA certificate to validate the server certificate
-    #[cfg(feature = "_tls")]
+    #[cfg(feature = "https")]
     pub cacert: Option<PathBuf>,
 
     /// Timeout for connecting, reading, and writing in milliseconds
@@ -38,10 +38,10 @@ impl Default for HttpConfig {
             // Default `yubihsm-connector` port
             port: 12345,
 
-            #[cfg(feature = "_tls")]
+            #[cfg(feature = "https")]
             tls: false,
 
-            #[cfg(feature = "_tls")]
+            #[cfg(feature = "https")]
             cacert: None,
 
             // 5 seconds
@@ -52,14 +52,14 @@ impl Default for HttpConfig {
 
 impl Display for HttpConfig {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        #[cfg(feature = "_tls")]
+        #[cfg(feature = "https")]
         if self.tls {
             write!(f, "https://{}:{}", self.addr, self.port)
         } else {
             write!(f, "http://{}:{}", self.addr, self.port)
         }
 
-        #[cfg(not(feature = "_tls"))]
+        #[cfg(not(feature = "https"))]
         write!(f, "http://{}:{}", self.addr, self.port)
     }
 }

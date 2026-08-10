@@ -67,6 +67,16 @@ impl<'de> Deserialize<'de> for Origin {
             {
                 Origin::from_u8(value).map_err(E::custom)
             }
+
+            fn visit_u64<E>(self, value: u64) -> Result<Origin, E>
+            where
+                E: de::Error,
+            {
+                self.visit_u8(
+                    u8::try_from(value)
+                        .map_err(|_| E::custom("an unsigned byte between 0x01 and 0x07"))?,
+                )
+            }
         }
 
         deserializer.deserialize_u8(OriginVisitor)

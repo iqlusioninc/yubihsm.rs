@@ -81,6 +81,7 @@ pub mod session;
 #[cfg(feature = "setup")]
 pub mod setup;
 pub mod ssh;
+pub mod symmetric;
 pub mod template;
 mod uuid;
 pub mod wrap;

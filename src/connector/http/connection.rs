@@ -4,7 +4,7 @@ use super::config::HttpConfig;
 use crate::connector::{self, Connection};
 use std::io::Read;
 use std::time::Duration;
-#[cfg(feature = "_tls")]
+#[cfg(feature = "https")]
 use ureq::tls::{Certificate, RootCerts, TlsConfig, TlsProvider};
 use ureq::Agent;
 use uuid::Uuid;
@@ -35,10 +35,10 @@ impl HttpConnection {
             .timeout_global(Some(Duration::from_millis(config.timeout_ms)))
             .user_agent(USER_AGENT);
 
-        #[cfg(feature = "_tls")]
+        #[cfg(feature = "https")]
         let mut builder = builder;
 
-        #[cfg(feature = "_tls")]
+        #[cfg(feature = "https")]
         if config.tls {
             builder = builder.tls_config(build_tls_config(config)?);
         }
@@ -67,7 +67,7 @@ impl HttpConnection {
             .get("Content-Length")
             .and_then(|len| len.to_str().ok())
             .and_then(|len| len.parse().ok())
-            .map(|len| Vec::with_capacity(len))
+            .map(Vec::with_capacity)
             .unwrap_or(Vec::new());
 
         response
@@ -91,20 +91,11 @@ impl Connection for HttpConnection {
     }
 }
 
-#[cfg(feature = "_tls")]
+#[cfg(feature = "https")]
 fn build_tls_config(config: &HttpConfig) -> Result<TlsConfig, connector::Error> {
     use crate::connector::ErrorKind;
     use std::fs;
     use std::sync::Arc;
-
-    // to avoid clippy error when running with --all-features
-    // use _provider as `rustls` and `native-tls` should be exclusive
-
-    #[cfg(feature = "native-tls")]
-    let _provider = TlsProvider::NativeTls;
-
-    #[cfg(feature = "rustls")]
-    let _provider = TlsProvider::Rustls;
 
     let certs = match config.cacert.as_ref() {
         Some(path) => {
@@ -117,7 +108,7 @@ fn build_tls_config(config: &HttpConfig) -> Result<TlsConfig, connector::Error> 
     };
 
     Ok(TlsConfig::builder()
-        .provider(_provider)
+        .provider(TlsProvider::Rustls)
         .root_certs(certs)
         .build())
 }

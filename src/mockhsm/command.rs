@@ -26,17 +26,20 @@ use crate::{
     },
     serialization::deserialize,
     session::{self, commands::*},
+    symmetric::{self, commands::*},
     template,
     wrap::{self, commands::*},
     Capability,
 };
 use ::hmac::{Hmac, Mac};
 use ::rsa::{oaep::Oaep, pkcs1v15, pss, traits::PaddingScheme, RsaPrivateKey};
+use cipher::{block_padding::NoPadding, BlockModeDecrypt, BlockModeEncrypt};
+use common::KeyIvInit;
 use digest::{
-    array::Array, const_oid::AssociatedOid, crypto_common::OutputSizeUser, typenum::Unsigned,
-    Digest, FixedOutput, FixedOutputReset, HashMarker, KeyInit, Output, Reset,
+    array::Array, common::OutputSizeUser, const_oid::AssociatedOid, typenum::Unsigned, Digest,
+    FixedOutput, FixedOutputReset, HashMarker, KeyInit, Output, Reset,
 };
-use rand_core::RngCore;
+use rand_core::Rng;
 use sha1::Sha1;
 use sha2::{Sha256, Sha384, Sha512};
 use signature::{
@@ -48,7 +51,7 @@ use std::{io::Cursor, str::FromStr};
 use subtle::ConstantTimeEq;
 use x509_cert::{
     builder::{self, profile, Builder, CertificateBuilder},
-    ext::{AsExtension, Extension},
+    ext::{Extension, ToExtension},
     name::Name,
     serial_number,
     time::Validity,
@@ -128,12 +131,28 @@ pub(crate) fn session_message(
         Code::ImportWrapped => import_wrapped(state, &command.data),
         Code::ListObjects => list_objects(state, &command.data),
         Code::PutAsymmetricKey => put_asymmetric_key(state, &command.data),
+        Code::ChangeAuthenticationKey => {
+            change_authentication_key(state, session_id, &command.data)
+        }
         Code::PutAuthenticationKey => put_authentication_key(state, &command.data),
         Code::PutHmacKey => put_hmac_key(state, &command.data),
         Code::PutOpaqueObject => put_opaque(state, &command.data),
         Code::SetOption => put_option(state, &command.data),
         Code::PutWrapKey => put_wrap_key(state, &command.data),
-        Code::ResetDevice => return Ok(reset_device(state, session_id)),
+        Code::ResetDevice => {
+            if !state
+                .get_session(session_id)?
+                .auth_capabilities
+                .contains(Capability::RESET_DEVICE)
+            {
+                return Ok(response::Message::new(
+                    response::Code::DeviceInsufficientPermissions,
+                    vec![device::ErrorKind::InsufficientPermissions.to_u8()],
+                )
+                .into());
+            }
+            return Ok(reset_device(state, session_id));
+        }
         Code::SetLogIndex => SetLogIndexResponse {}.serialize(),
         Code::SignEcdsa => sign_ecdsa(state, &command.data),
         Code::SignEddsa => sign_eddsa(state, &command.data),
@@ -143,6 +162,10 @@ pub(crate) fn session_message(
         Code::SignPkcs1 => sign_pkcs1v15(state, &command.data),
         Code::DecryptOaep => decrypt_oaep(state, &command.data),
         Code::SignAttestationCertificate => sign_attestation_certificate(state, &command.data),
+        Code::PutSymmetricKey => put_symmetric_key(state, &command.data),
+        Code::GenerateSymmetricKey => gen_symmetric_key(state, &command.data),
+        Code::EncryptAesCbc => encrypt_aes_cbc(state, &command.data),
+        Code::DecryptAesCbc => decrypt_aes_cbc(state, &command.data),
         unsupported => panic!("unsupported command type: {unsupported:?}"),
     };
 
@@ -160,6 +183,49 @@ fn close_session(state: &mut State, session_id: session::Id) -> Result<Vec<u8>, 
 
     state.close_session(session_id);
     Ok(response.into())
+}
+
+/// Decrypt AES-CBC payload
+fn decrypt_aes_cbc(state: &State, cmd_data: &[u8]) -> response::Message {
+    let command: DecryptAesCbc = deserialize(cmd_data)
+        .unwrap_or_else(|e| panic!("error parsing Code::EncryptAesCbc: {e:?}"));
+
+    if let Some(obj) = state
+        .objects
+        .get(command.key_id, object::Type::SymmetricKey)
+    {
+        if let Payload::Symmetric(alg, ref key) = obj.payload {
+            macro_rules! impl_encrypt {
+                ($alg_name: expr, $alg: ty) => {
+                    if alg == $alg_name {
+                        type Decryptor = cbc::Decryptor<$alg>;
+
+                        let key = cipher::Key::<Decryptor>::try_from(key.as_slice()).unwrap();
+                        let iv = cipher::Iv::<Decryptor>::try_from(&command.payload[..16]).unwrap();
+
+                        let decryptor = cbc::Decryptor::<$alg>::new(&key, &iv);
+                        let plaintext = decryptor
+                            .decrypt_padded_vec::<NoPadding>(&command.payload[16..])
+                            .unwrap();
+
+                        return DecryptAesCbcResponse(plaintext).serialize();
+                    }
+                };
+            }
+
+            impl_encrypt!(symmetric::Algorithm::Aes128, aes::Aes128);
+            impl_encrypt!(symmetric::Algorithm::Aes192, aes::Aes192);
+            impl_encrypt!(symmetric::Algorithm::Aes256, aes::Aes256);
+
+            device::ErrorKind::ObjectNotFound.into()
+        } else {
+            debug!("not a symmetric key: {:?}", obj.algorithm());
+            device::ErrorKind::InvalidCommand.into()
+        }
+    } else {
+        debug!("no such object ID: {:?}", command.key_id);
+        device::ErrorKind::ObjectNotFound.into()
+    }
 }
 
 /// Delete an object
@@ -180,7 +246,7 @@ fn delete_object(state: &mut State, cmd_data: &[u8]) -> response::Message {
 }
 
 /// Generate a mock device information report
-fn device_info() -> response::Message {
+pub fn device_info() -> response::Message {
     let info = device::Info {
         major_version: 2,
         minor_version: 0,
@@ -236,6 +302,9 @@ fn device_info() -> response::Message {
             Algorithm::Ecdsa(ecdsa::Algorithm::Sha512),
             Algorithm::Asymmetric(asymmetric::Algorithm::Ed25519),
             Algorithm::Asymmetric(asymmetric::Algorithm::EcP224),
+            Algorithm::Symmetric(symmetric::Algorithm::Aes128),
+            Algorithm::Symmetric(symmetric::Algorithm::Aes192),
+            Algorithm::Symmetric(symmetric::Algorithm::Aes256),
         ],
     };
 
@@ -247,12 +316,55 @@ fn echo(cmd_data: &[u8]) -> response::Message {
     EchoResponse(cmd_data.into()).serialize()
 }
 
+/// Encrypt AES-CBC payload
+fn encrypt_aes_cbc(state: &State, cmd_data: &[u8]) -> response::Message {
+    let command: EncryptAesCbc = deserialize(cmd_data)
+        .unwrap_or_else(|e| panic!("error parsing Code::EncryptAesCbc: {e:?}"));
+
+    if let Some(obj) = state
+        .objects
+        .get(command.key_id, object::Type::SymmetricKey)
+    {
+        if let Payload::Symmetric(alg, ref key) = obj.payload {
+            macro_rules! impl_encrypt {
+                ($alg_name: expr, $alg: ty) => {
+                    if alg == $alg_name {
+                        type Encryptor = cbc::Encryptor<$alg>;
+
+                        let key = cipher::Key::<Encryptor>::try_from(key.as_slice()).unwrap();
+                        let iv = cipher::Iv::<Encryptor>::try_from(&command.payload[..16]).unwrap();
+
+                        let encryptor = cbc::Encryptor::<$alg>::new(&key, &iv);
+                        let ciphertext =
+                            encryptor.encrypt_padded_vec::<NoPadding>(&command.payload[16..]);
+
+                        return EncryptAesCbcResponse(ciphertext).serialize();
+                    }
+                };
+            }
+
+            impl_encrypt!(symmetric::Algorithm::Aes128, aes::Aes128);
+            impl_encrypt!(symmetric::Algorithm::Aes192, aes::Aes192);
+            impl_encrypt!(symmetric::Algorithm::Aes256, aes::Aes256);
+
+            device::ErrorKind::ObjectNotFound.into()
+        } else {
+            debug!("not a symmetric key: {:?}", obj.algorithm());
+            device::ErrorKind::InvalidCommand.into()
+        }
+    } else {
+        debug!("no such object ID: {:?}", command.key_id);
+        device::ErrorKind::ObjectNotFound.into()
+    }
+}
+
 /// Export an object from the HSM in encrypted form
 fn export_wrapped(state: &mut State, cmd_data: &[u8]) -> response::Message {
     let ExportWrappedCommand {
         wrap_key_id,
         object_type,
         object_id,
+        include_seed: _,
     } = deserialize(cmd_data)
         .unwrap_or_else(|e| panic!("error parsing Code::ExportWrapped: {e:?}"));
 
@@ -264,7 +376,7 @@ fn export_wrapped(state: &mut State, cmd_data: &[u8]) -> response::Message {
     {
         Ok(ciphertext) => ExportWrappedResponse(wrap::Message { nonce, ciphertext }).serialize(),
         Err(e) => {
-            debug!("error wrapping object: {}", e);
+            debug!("error wrapping object: {e}");
             device::ErrorKind::InvalidCommand.into()
         }
     }
@@ -307,6 +419,27 @@ fn gen_hmac_key(state: &mut State, cmd_data: &[u8]) -> response::Message {
     );
 
     GenHmacKeyResponse {
+        key_id: command.key_id,
+    }
+    .serialize()
+}
+
+/// Generate a new random symmetric key
+fn gen_symmetric_key(state: &mut State, cmd_data: &[u8]) -> response::Message {
+    let GenSymmetricKeyCommand(command) = deserialize(cmd_data)
+        .unwrap_or_else(|e| panic!("error parsing Code::GenSymmetricKey: {e:?}"));
+
+    state.objects.generate(
+        command.key_id,
+        object::Type::SymmetricKey,
+        command.algorithm,
+        command.label,
+        command.capabilities,
+        Capability::default(),
+        command.domains,
+    );
+
+    GenSymmetricKeyResponse {
         key_id: command.key_id,
     }
     .serialize()
@@ -452,7 +585,7 @@ fn import_wrapped(state: &mut State, cmd_data: &[u8]) -> response::Message {
         }
         .serialize(),
         Err(e) => {
-            debug!("error unwrapping object: {}", e);
+            debug!("error unwrapping object: {e}");
             device::ErrorKind::InvalidCommand.into()
         }
     }
@@ -468,7 +601,7 @@ fn list_objects(state: &State, cmd_data: &[u8]) -> response::Message {
     let mut filters = vec![];
 
     while cursor.position() < len {
-        filters.push(object::Filter::deserialize(&mut cursor).unwrap());
+        filters.push(object::Filter::from_wire(&mut cursor).unwrap());
     }
 
     let list_entries = state
@@ -513,6 +646,47 @@ fn put_asymmetric_key(state: &mut State, cmd_data: &[u8]) -> response::Message {
     );
 
     PutAsymmetricKeyResponse { key_id: params.id }.serialize()
+}
+
+/// Change an existing authentication key's key material.
+///
+/// The device only permits changing the authentication key that established
+/// the current session, and preserves all of the object's metadata.
+fn change_authentication_key(
+    state: &mut State,
+    session_id: session::Id,
+    cmd_data: &[u8],
+) -> response::Message {
+    let ChangeAuthenticationKeyCommand {
+        key_id,
+        algorithm: _,
+        authentication_key,
+    } = deserialize(cmd_data)
+        .unwrap_or_else(|e| panic!("error parsing Code::ChangeAuthenticationKey: {e:?}"));
+
+    // Only the authentication key backing the current session may be changed.
+    let session_key_id = match state.get_session(session_id) {
+        Ok(session) => session.authentication_key_id,
+        Err(_) => return device::ErrorKind::InvalidSession.into(),
+    };
+
+    if key_id != session_key_id {
+        debug!(
+            "ChangeAuthenticationKey: key {key_id} does not back the current session ({session_key_id})"
+        );
+        return device::ErrorKind::InvalidCommand.into();
+    }
+
+    if !state.objects.replace(
+        key_id,
+        object::Type::AuthenticationKey,
+        &authentication_key.0,
+    ) {
+        debug!("no such authentication key: {key_id}");
+        return device::ErrorKind::ObjectNotFound.into();
+    }
+
+    ChangeAuthenticationKeyResponse { key_id }.serialize()
 }
 
 /// Put a new authentication key into the HSM
@@ -605,6 +779,25 @@ fn put_option(state: &mut State, cmd_data: &[u8]) -> response::Message {
     }
 
     PutOptionResponse {}.serialize()
+}
+
+/// Put an existing symmetric key into the HSM
+fn put_symmetric_key(state: &mut State, cmd_data: &[u8]) -> response::Message {
+    let PutSymmetricKeyCommand { params, data } = deserialize(cmd_data)
+        .unwrap_or_else(|e| panic!("error parsing Code::PutAsymmetricKey: {e:?}"));
+
+    state.objects.put(
+        params.id,
+        object::Type::SymmetricKey,
+        params.algorithm,
+        params.label,
+        params.capabilities,
+        Capability::default(),
+        params.domains,
+        &data,
+    );
+
+    PutSymmetricKeyResponse { key_id: params.id }.serialize()
 }
 
 /// Put an existing wrap (i.e. AES-CCM) key into the HSM
@@ -745,8 +938,10 @@ fn sign_pss(state: &State, cmd_data: &[u8]) -> response::Message {
     fn sign_pss_digest<D: Digest + FixedOutputReset>(
         private_key: &RsaPrivateKey,
         msg: &[u8],
+        salt_len: u16,
     ) -> pss::Signature {
-        let signing_key = pss::SigningKey::<D>::new(private_key.clone());
+        let signing_key =
+            pss::SigningKey::<D>::new_with_salt_len(private_key.clone(), salt_len.into());
         let mut rng = rand::rng();
         signing_key
             .sign_prehash_with_rng(&mut rng, msg)
@@ -763,17 +958,23 @@ fn sign_pss(state: &State, cmd_data: &[u8]) -> response::Message {
         if let Payload::RsaKey(private_key) = &obj.payload {
             let signature = match command.mgf1_hash_alg {
                 mgf::Algorithm::Sha1 => {
-                    sign_pss_digest::<Sha1>(private_key, command.digest.as_ref())
+                    sign_pss_digest::<Sha1>(private_key, command.digest.as_ref(), command.salt_len)
                 }
-                mgf::Algorithm::Sha256 => {
-                    sign_pss_digest::<Sha256>(private_key, command.digest.as_ref())
-                }
-                mgf::Algorithm::Sha384 => {
-                    sign_pss_digest::<Sha384>(private_key, command.digest.as_ref())
-                }
-                mgf::Algorithm::Sha512 => {
-                    sign_pss_digest::<Sha512>(private_key, command.digest.as_ref())
-                }
+                mgf::Algorithm::Sha256 => sign_pss_digest::<Sha256>(
+                    private_key,
+                    command.digest.as_ref(),
+                    command.salt_len,
+                ),
+                mgf::Algorithm::Sha384 => sign_pss_digest::<Sha384>(
+                    private_key,
+                    command.digest.as_ref(),
+                    command.salt_len,
+                ),
+                mgf::Algorithm::Sha512 => sign_pss_digest::<Sha512>(
+                    private_key,
+                    command.digest.as_ref(),
+                    command.salt_len,
+                ),
             };
 
             SignPssResponse((&signature).into()).serialize()
@@ -822,7 +1023,7 @@ fn sign_pkcs1v15(state: &State, cmd_data: &[u8]) -> response::Message {
                     sign_pkcs1v15_prehash::<Sha512>(private_key, command.digest.as_ref())
                 }
                 len => {
-                    debug!("invalid digest length: {}", len);
+                    debug!("invalid digest length: {len}");
                     return device::ErrorKind::InvalidCommand.into();
                 }
             };
