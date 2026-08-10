@@ -27,6 +27,9 @@ pub enum Type {
 
     /// Yubikey-AES OTP encryption/decryption key
     OtpAeadKey = 0x07,
+
+    /// Symmetric key is a secret key used for encryption and decryption
+    SymmetricKey = 0x08,
 }
 
 impl Type {
@@ -40,6 +43,7 @@ impl Type {
             0x05 => Type::HmacKey,
             0x06 => Type::Template,
             0x07 => Type::OtpAeadKey,
+            0x08 => Type::SymmetricKey,
             _ => fail!(ErrorKind::TypeInvalid, "invalid object type: {}", byte),
         })
     }
@@ -60,6 +64,7 @@ impl fmt::Display for Type {
             Type::HmacKey => "hmac-key",
             Type::Template => "template",
             Type::OtpAeadKey => "otp-aead-key",
+            Type::SymmetricKey => "symmetric-key",
         })
     }
 }
@@ -76,6 +81,7 @@ impl FromStr for Type {
             "hmac-key" => Type::HmacKey,
             "template" => Type::Template,
             "otp-aead-key" => Type::OtpAeadKey,
+            "symmetric-key" => Type::SymmetricKey,
             _ => return Err(()),
         })
     }

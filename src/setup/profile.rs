@@ -114,10 +114,7 @@ impl Profile {
         let report = Report::new(client.device_info()?.serial_number);
 
         if let Some(report_object_id) = self.report_object_id {
-            info!(
-                "storing provisioning report in opaque object 0x{:x}",
-                report_object_id
-            );
+            info!("storing provisioning report in opaque object 0x{report_object_id:x}");
             report.store(client, report_object_id)?;
         }
 

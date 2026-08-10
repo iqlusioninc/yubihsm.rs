@@ -17,6 +17,7 @@ use der::{
     asn1::{GeneralizedTime, UtcTime},
     DateTime, Encode,
 };
+use ecdsa::elliptic_curve::Generate;
 use spki::{SubjectPublicKeyInfoOwned, SubjectPublicKeyInfoRef};
 use std::{
     collections::{btree_map::Iter as MapIter, BTreeMap as Map},
@@ -130,7 +131,9 @@ impl Default for Objects {
             length: authentication::key::SIZE as u16,
             sequence: 1,
             origin: Origin::Imported,
-            label: DEFAULT_AUTHENTICATION_KEY_LABEL.into(),
+            label: DEFAULT_AUTHENTICATION_KEY_LABEL.parse().expect(
+                "the default authentication key label to be less than or equal to 40 bytes",
+            ),
         };
 
         let authentication_key_payload = Payload::AuthenticationKey(authentication::Key::default());
@@ -144,7 +147,7 @@ impl Default for Objects {
         );
 
         // Key used for attestation by default
-        let Ok(attestation_key) = p256::SecretKey::try_from_rng(&mut rng);
+        let attestation_key = p256::SecretKey::generate_from_rng(&mut rng);
         let attestation_cert = Self::generate_self_signed_cert(&attestation_key);
 
         let attestation_key_info = Info {
@@ -157,7 +160,9 @@ impl Default for Objects {
             length: 0,
             sequence: 0,
             origin: Origin::Generated,
-            label: "MOCKHSM ATTESTATION KEY".into(),
+            label: "MOCKHSM ATTESTATION KEY".parse().expect(
+                "the default mockhsm attestation key label to be less than or equal to 40 bytes",
+            ),
         };
         let attestation_cert_info = Info {
             object_id: DEFAULT_ATTESTATION_KEY_ID,
@@ -169,7 +174,9 @@ impl Default for Objects {
             length: 0,
             sequence: 0,
             origin: Origin::Generated,
-            label: "MOCKHSM ATTESTATION CERT".into(),
+            label: "MOCKHSM ATTESTATION CERT".parse().expect(
+                "the default mockhsm attestation cert label to be less than or equal to 40 bytes",
+            ),
         };
 
         let attestation_cert_payload = Payload::Opaque(
@@ -237,6 +244,29 @@ impl Objects {
         };
 
         assert!(self.0.insert(handle, object).is_none());
+    }
+
+    /// Replace the payload of an existing object, preserving its metadata.
+    ///
+    /// Returns `false` if nothing occupies that slot.
+    ///
+    /// Unlike [`Objects::put`], this does not assert the slot is empty --
+    /// replacing in place is the point. It models `ChangeAuthenticationKey`,
+    /// where the device swaps the key material and leaves the object's ID,
+    /// label, domains, capabilities and algorithm untouched.
+    ///
+    /// Because the algorithm is metadata, it is preserved rather than passed
+    /// in, and the replacement payload is parsed under it.
+    pub fn replace(&mut self, object_id: Id, object_type: Type, data: &[u8]) -> bool {
+        let Some(object) = self.0.get_mut(&Handle::new(object_id, object_type)) else {
+            return false;
+        };
+
+        let payload = Payload::new(object.object_info.algorithm, data);
+        object.object_info.length = payload.len();
+        object.payload = payload;
+
+        true
     }
 
     /// Get an object
@@ -314,7 +344,7 @@ impl Objects {
         {
             fail!(
                 ErrorKind::AccessDenied,
-                "object {:?} of type {:?} does not have EXPORT_UNDER_WRAP capability",
+                "object {:?} of type {:?} does not have EXPORTABLE_UNDER_WRAP capability",
                 object_id,
                 object_type
             );
@@ -328,10 +358,41 @@ impl Objects {
             Origin::WrappedGenerated | Origin::WrappedImported => (),
         }
 
+        macro_rules! serialize_ec {
+            ($curve:ty) => {{
+                use ecdsa::elliptic_curve::point::AffineCoordinates;
+
+                let key = ecdsa::elliptic_curve::SecretKey::<$curve>::from_slice(
+                    &object_to_wrap.payload.to_bytes(),
+                )
+                .unwrap();
+
+                let public_key = key.public_key();
+                let public_key = public_key.as_affine();
+
+                let mut data = key.to_bytes().as_slice().to_vec();
+                data.extend_from_slice(public_key.x().as_slice());
+                data.extend_from_slice(public_key.y().as_slice());
+
+                data
+            }};
+        }
+
+        let data = match object_info.algorithm {
+            Algorithm::Asymmetric(asymmetric::Algorithm::EcP256) => serialize_ec!(p256::NistP256),
+            Algorithm::Asymmetric(asymmetric::Algorithm::EcP384) => serialize_ec!(p384::NistP384),
+            Algorithm::Asymmetric(asymmetric::Algorithm::EcP521) => serialize_ec!(p521::NistP521),
+            Algorithm::Asymmetric(asymmetric::Algorithm::EcK256) => serialize_ec!(k256::Secp256k1),
+            _other => object_to_wrap.payload.to_bytes(),
+        };
+
+        let mut object_info: wrap::Info = object_info.into();
+        object_info.length = data.len() as u16;
+
         let mut wrapped_object = serialize(&WrappedObject {
             alg_id: wrap_key.algorithm(),
-            object_info: object_info.into(),
-            data: object_to_wrap.payload.to_bytes(),
+            object_info,
+            data,
         })
         .unwrap();
 
@@ -381,6 +442,10 @@ impl Objects {
                 //  We need only the first chunk
                 Payload::Ed25519Key(ed25519_dalek::SigningKey::from_bytes(&secret))
             }
+            Algorithm::Asymmetric(alg) if alg.is_ec() => Payload::new(
+                unwrapped_object.object_info.algorithm,
+                &unwrapped_object.data[..alg.key_len()],
+            ),
             _ => Payload::new(
                 unwrapped_object.object_info.algorithm,
                 &unwrapped_object.data,
@@ -475,3 +540,67 @@ impl Objects {
 
 /// Iterator over objects
 pub(crate) type Iter<'a> = MapIter<'a, Handle, Object>;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// `Objects::default` seeds the default authentication key, which is a
+    /// convenient object to replace.
+    fn seeded() -> (Objects, Id, Type) {
+        (
+            Objects::default(),
+            DEFAULT_AUTHENTICATION_KEY_ID,
+            Type::AuthenticationKey,
+        )
+    }
+
+    #[test]
+    fn replace_swaps_the_payload_and_keeps_metadata() {
+        let (mut objects, id, ty) = seeded();
+        let before = objects.get(id, ty).expect("seeded key").object_info.clone();
+
+        let new_key = [0x5au8; 32];
+        assert!(objects.replace(id, ty, &new_key));
+
+        let after = &objects.get(id, ty).expect("key still present").object_info;
+
+        // Metadata is preserved: that is the whole contract of `replace`.
+        assert_eq!(after.object_id, before.object_id);
+        assert_eq!(after.object_type, before.object_type);
+        assert_eq!(after.algorithm, before.algorithm);
+        assert_eq!(after.capabilities, before.capabilities);
+        assert_eq!(after.delegated_capabilities, before.delegated_capabilities);
+        assert_eq!(after.domains, before.domains);
+        assert_eq!(after.label, before.label);
+
+        // The payload is the new key material.
+        assert_eq!(
+            objects
+                .get(id, ty)
+                .unwrap()
+                .payload
+                .authentication_key()
+                .expect("auth key payload")
+                .0,
+            new_key
+        );
+    }
+
+    #[test]
+    fn replace_reports_a_missing_object() {
+        let (mut objects, _, ty) = seeded();
+
+        // Nothing occupies this slot, so there is nothing to replace. Returning
+        // `true` here would let the command handler report success for a key
+        // that does not exist.
+        assert!(!objects.replace(0xbeef, ty, &[0u8; 32]));
+    }
+
+    #[test]
+    fn replace_does_not_create_objects() {
+        let (mut objects, _, ty) = seeded();
+        assert!(!objects.replace(0xbeef, ty, &[0u8; 32]));
+        assert!(objects.get(0xbeef, ty).is_none());
+    }
+}

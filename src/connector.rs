@@ -107,6 +107,14 @@ impl Clone for Connector {
     }
 }
 
+impl std::fmt::Debug for Connector {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Connector")
+            .field("driver", &self.driver)
+            .finish()
+    }
+}
+
 impl From<Box<dyn Connectable>> for Connector {
     fn from(driver: Box<dyn Connectable>) -> Connector {
         Connector {

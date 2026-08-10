@@ -1,6 +1,7 @@
 //! Integration tests for YubiHSM 2 commands
 
 pub mod blink_device;
+pub mod change_authentication_key;
 pub mod decrypt_oaep;
 pub mod delete_object;
 pub mod device_info;

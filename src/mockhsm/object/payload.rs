@@ -1,15 +1,18 @@
 //! Object "payloads" in the MockHsm are instances of software implementations
 //! of supported cryptographic primitives, already initialized with a private key
 
-use crate::{algorithm::Algorithm, asymmetric, authentication, hmac, opaque, wrap};
+use crate::{algorithm::Algorithm, asymmetric, authentication, hmac, opaque, symmetric, wrap};
 use digest::{typenum::Unsigned, OutputSizeUser};
 use ecdsa::{
-    elliptic_curve::{sec1::ToEncodedPoint, FieldBytesSize},
-    hazmat::DigestAlgorithm,
+    elliptic_curve::{sec1::ToSec1Point, FieldBytesSize, Generate},
+    DigestAlgorithm,
 };
 use ed25519_dalek::{self as ed25519, hazmat::ExpandedSecretKey};
-use rand_core::RngCore;
-use rsa::{traits::PublicKeyParts, BoxedUint};
+use rand_core::Rng;
+use rsa::{
+    traits::{PrivateKeyParts as _, PublicKeyParts},
+    BoxedUint,
+};
 
 /// Loaded instances of a cryptographic primitives in the MockHsm
 #[derive(Debug)]
@@ -41,6 +44,9 @@ pub(crate) enum Payload {
     /// Opaque data
     Opaque(opaque::Algorithm, Vec<u8>),
 
+    /// Symmetric key
+    Symmetric(symmetric::Algorithm, Vec<u8>),
+
     /// Wrapping (i.e. symmetric encryption keys)
     WrapKey(wrap::Algorithm, Vec<u8>),
 }
@@ -48,24 +54,59 @@ pub(crate) enum Payload {
 impl Payload {
     /// Create a new payload from the given algorithm and data
     pub fn new(algorithm: Algorithm, data: &[u8]) -> Self {
+        // A payload for an EC key may have only the private key (put_asymmetric_key), or the
+        // private key and the "internal representation" for wrapped keys, which, in case of the EC, is going to be
+        // the x/y coordinates.
+        //
+        // We will accept the data to be either format (although it should be only the first in the
+        // the put_asymmetric and only the latter in the import_wrapped, but ...)
+        macro_rules! ensure_ec_len {
+            ($data: ident, $curve: ty) => {
+                assert!(
+                    $data.len() == (FieldBytesSize::<$curve>::USIZE)
+                        || $data.len() == (FieldBytesSize::<$curve>::USIZE * 3)
+                );
+            };
+        }
+
         match algorithm {
             Algorithm::Wrap(alg) => Payload::WrapKey(alg, data.into()),
             Algorithm::Asymmetric(asymmetric_alg) => match asymmetric_alg {
                 asymmetric::Algorithm::EcP256 => {
-                    assert_eq!(data.len(), 32);
-                    Payload::EcdsaNistP256(p256::SecretKey::from_slice(data).unwrap())
+                    ensure_ec_len!(data, p256::NistP256);
+                    Payload::EcdsaNistP256(
+                        p256::SecretKey::from_slice(
+                            &data[..FieldBytesSize::<p256::NistP256>::USIZE],
+                        )
+                        .unwrap(),
+                    )
                 }
                 asymmetric::Algorithm::EcK256 => {
-                    assert_eq!(data.len(), 32);
-                    Payload::EcdsaSecp256k1(k256::SecretKey::from_slice(data).unwrap())
+                    ensure_ec_len!(data, k256::Secp256k1);
+                    Payload::EcdsaSecp256k1(
+                        k256::SecretKey::from_slice(
+                            &data[..FieldBytesSize::<k256::Secp256k1>::USIZE],
+                        )
+                        .unwrap(),
+                    )
                 }
                 asymmetric::Algorithm::EcP384 => {
-                    assert_eq!(data.len(), FieldBytesSize::<p384::NistP384>::USIZE);
-                    Payload::EcdsaNistP384(p384::SecretKey::from_slice(data).unwrap())
+                    ensure_ec_len!(data, p384::NistP384);
+                    Payload::EcdsaNistP384(
+                        p384::SecretKey::from_slice(
+                            &data[..FieldBytesSize::<p384::NistP384>::USIZE],
+                        )
+                        .unwrap(),
+                    )
                 }
                 asymmetric::Algorithm::EcP521 => {
-                    assert_eq!(data.len(), FieldBytesSize::<p521::NistP521>::USIZE);
-                    Payload::EcdsaNistP521(p521::SecretKey::from_slice(data).unwrap())
+                    ensure_ec_len!(data, p521::NistP521);
+                    Payload::EcdsaNistP521(
+                        p521::SecretKey::from_slice(
+                            &data[..FieldBytesSize::<p521::NistP521>::USIZE],
+                        )
+                        .unwrap(),
+                    )
                 }
 
                 asymmetric::Algorithm::Ed25519 => {
@@ -97,6 +138,7 @@ impl Payload {
             Algorithm::Authentication(_) => {
                 Payload::AuthenticationKey(authentication::Key::from_slice(data).unwrap())
             }
+            Algorithm::Symmetric(alg) => Payload::Symmetric(alg, data.into()),
             _ => panic!("MockHsm does not support putting {algorithm:?} objects"),
         }
     }
@@ -118,23 +160,18 @@ impl Payload {
                 Payload::WrapKey(wrap_alg, bytes)
             }
             Algorithm::Asymmetric(asymmetric_alg) => match asymmetric_alg {
-                asymmetric::Algorithm::EcP256 => Payload::EcdsaNistP256({
-                    let Ok(key) = p256::SecretKey::try_from_rng(&mut rng);
-                    key
-                }),
-                asymmetric::Algorithm::EcK256 => Payload::EcdsaSecp256k1({
-                    let Ok(key) = k256::SecretKey::try_from_rng(&mut rng);
-                    key
-                }),
-                asymmetric::Algorithm::EcP384 => Payload::EcdsaNistP384({
-                    let Ok(key) = p384::SecretKey::try_from_rng(&mut rng);
-                    key
-                }),
-                asymmetric::Algorithm::EcP521 => Payload::EcdsaNistP521({
-                    let Ok(key) = p521::SecretKey::try_from_rng(&mut rng);
-                    key
-                }),
-
+                asymmetric::Algorithm::EcP256 => {
+                    Payload::EcdsaNistP256(p256::SecretKey::generate_from_rng(&mut rng))
+                }
+                asymmetric::Algorithm::EcK256 => {
+                    Payload::EcdsaSecp256k1(k256::SecretKey::generate_from_rng(&mut rng))
+                }
+                asymmetric::Algorithm::EcP384 => {
+                    Payload::EcdsaNistP384(p384::SecretKey::generate_from_rng(&mut rng))
+                }
+                asymmetric::Algorithm::EcP521 => {
+                    Payload::EcdsaNistP521(p521::SecretKey::generate_from_rng(&mut rng))
+                }
                 asymmetric::Algorithm::Ed25519 => {
                     Payload::Ed25519Key(ed25519::SigningKey::generate(&mut rng))
                 }
@@ -144,6 +181,20 @@ impl Payload {
                 _ => {
                     panic!("MockHsm doesn't support this asymmetric algorithm: {asymmetric_alg:?}")
                 }
+            },
+            Algorithm::Symmetric(symmetric_alg) => match symmetric_alg {
+                symmetric::Algorithm::Aes128 => Payload::Symmetric(
+                    symmetric_alg,
+                    cipher::Key::<aes::Aes128>::generate_from_rng(&mut rng).to_vec(),
+                ),
+                symmetric::Algorithm::Aes192 => Payload::Symmetric(
+                    symmetric_alg,
+                    cipher::Key::<aes::Aes192>::generate_from_rng(&mut rng).to_vec(),
+                ),
+                symmetric::Algorithm::Aes256 => Payload::Symmetric(
+                    symmetric_alg,
+                    cipher::Key::<aes::Aes256>::generate_from_rng(&mut rng).to_vec(),
+                ),
             },
             Algorithm::Hmac(hmac_alg) => {
                 let mut bytes = vec![0u8; hmac_alg.key_len()];
@@ -174,6 +225,7 @@ impl Payload {
             Payload::HmacKey(alg, _) => alg.into(),
             Payload::Opaque(alg, _) => alg.into(),
             Payload::WrapKey(alg, _) => alg.into(),
+            Payload::Symmetric(alg, _) => alg.into(),
         }
     }
 
@@ -191,10 +243,25 @@ impl Payload {
                 <<p521::NistP521 as DigestAlgorithm>::Digest as OutputSizeUser>::OutputSize::USIZE
             }
             Payload::Ed25519Key(_) => ed25519::SECRET_KEY_LENGTH,
-            Payload::RsaKey(k) => k.size(),
+            Payload::RsaKey(key) => {
+                let primes = key.primes();
+
+                let expectation =
+                    "invariant violation: we already precomputed the values, they should be populated";
+
+                primes.iter().map(|prime| prime.to_be_bytes().len()).sum::<usize>() +
+
+                // Unwrap here is okay, we have ownership of the key and we already precomputed the values.
+                key.dp().expect(expectation).to_be_bytes().len() +
+                key.dq().expect(expectation).to_be_bytes().len() +
+                // TODO: the second unwrap for int -> uint conversion is unfortunate.
+                key.qinv().expect(expectation).retrieve().to_be_bytes().len() +
+                key.n().to_be_bytes().len()
+            }
             Payload::HmacKey(_, ref data) => data.len(),
             Payload::Opaque(_, ref data) => data.len(),
             Payload::WrapKey(_, ref data) => data.len(),
+            Payload::Symmetric(alg, _) => alg.key_len(),
         };
         l as u16
     }
@@ -203,16 +270,16 @@ impl Payload {
     pub fn public_key_bytes(&self) -> Option<Vec<u8>> {
         match self {
             Payload::EcdsaNistP256(secret_key) => {
-                Some(secret_key.public_key().to_encoded_point(false).as_bytes()[1..].into())
+                Some(secret_key.public_key().to_sec1_point(false).as_bytes()[1..].into())
             }
             Payload::EcdsaSecp256k1(secret_key) => {
-                Some(secret_key.public_key().to_encoded_point(false).as_bytes()[1..].into())
+                Some(secret_key.public_key().to_sec1_point(false).as_bytes()[1..].into())
             }
             Payload::EcdsaNistP384(secret_key) => {
-                Some(secret_key.public_key().to_encoded_point(false).as_bytes()[1..].into())
+                Some(secret_key.public_key().to_sec1_point(false).as_bytes()[1..].into())
             }
             Payload::EcdsaNistP521(secret_key) => {
-                Some(secret_key.public_key().to_encoded_point(false).as_bytes()[1..].into())
+                Some(secret_key.public_key().to_sec1_point(false).as_bytes()[1..].into())
             }
 
             Payload::Ed25519Key(signing_key) => Some(signing_key.verifying_key().to_bytes().into()),
@@ -278,6 +345,7 @@ impl Payload {
             Payload::HmacKey(_, data) => data.clone(),
             Payload::Opaque(_, data) => data.clone(),
             Payload::WrapKey(_, data) => data.clone(),
+            Payload::Symmetric(_, data) => data.clone(),
         }
     }
 }

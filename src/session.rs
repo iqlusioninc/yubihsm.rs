@@ -17,6 +17,7 @@ pub use self::{
     error::{Error, ErrorKind},
     guard::Guard,
     id::Id,
+    securechannel::MAX_COMMANDS_PER_SESSION,
     timeout::Timeout,
 };
 
@@ -123,17 +124,48 @@ impl Session {
         idle_time >= timeout_with_fuzz
     }
 
-    /// Close this session, consuming it in the process.
-    pub fn close(mut self) -> Result<(), Error> {
-        // Only attempt to close the session if we have an active secure
-        // channel and our session hasn't already timed out
-        if self.secure_channel.is_none() || self.is_timed_out() {
+    /// Close this session, telling the HSM to release its resources rather
+    /// than waiting for the session to time out.
+    ///
+    /// Sessions are also closed automatically on [`Drop`], so calling this is
+    /// only necessary when you want to observe any error that occurs while
+    /// closing. Closing an already-closed or timed-out session is a no-op.
+    ///
+    /// This is reachable through [`Client::session`][crate::Client::session],
+    /// which derefs mutably to `Session`:
+    ///
+    /// ```no_run
+    /// # fn example(client: &yubihsm::Client) -> Result<(), yubihsm::client::Error> {
+    /// client.session()?.close()?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn close(&mut self) -> Result<(), Error> {
+        // Only close a channel that actually reached `Authenticated`.
+        //
+        // If `Session::open` fails during authentication -- the device rejects
+        // `AuthenticateSession`, or answers it with unexpected data -- the
+        // channel is left unauthenticated or terminated but still present. It
+        // cannot encrypt the close command, and attempting it trips
+        // `encrypt_command`'s assertion inside this destructor. There is also
+        // nothing to release: the HSM never regarded the session as open.
+        let authenticated = self
+            .secure_channel
+            .as_ref()
+            .is_some_and(SecureChannel::is_authenticated);
+
+        if !authenticated || self.is_timed_out() {
             return Ok(());
         }
 
         session_debug!(self, "closing session");
-        self.send_command(&CloseSessionCommand {})?;
-        Ok(())
+        let result = self.send_command(&CloseSessionCommand {});
+
+        // Whether or not the HSM acknowledged it, this channel is finished.
+        // Clearing it also stops the `Drop` handler from trying again.
+        self.abort();
+
+        result.map(|_| ())
     }
 
     /// Abort this session, terminating it without closing it
@@ -273,5 +305,106 @@ impl Session {
         self.secure_channel
             .as_mut()
             .ok_or_else(|| format_err!(ErrorKind::ClosedError, "session is already closed").into())
+    }
+}
+
+impl Drop for Session {
+    /// Make a best effort to close the session if it's still healthy.
+    ///
+    /// Without this, sessions are only released when the HSM times them out,
+    /// which exhausts the device's limited pool of concurrent sessions.
+    fn drop(&mut self) {
+        // Never touch the transport while unwinding.
+        //
+        // `Connector::send_message` locks with `lock().unwrap()`. If a panic
+        // poisoned that mutex — including a panic raised *while* it was held —
+        // closing here would panic a second time inside a destructor, which
+        // aborts the process. A recoverable panic must not become an abort just
+        // because a session went out of scope on the way out.
+        //
+        // The session is still released: the HSM times it out on its own.
+        if std::thread::panicking() {
+            self.abort();
+            return;
+        }
+
+        // `close` already short-circuits on a closed or timed-out session.
+        //
+        // Errors are logged rather than propagated: a destructor has nowhere
+        // to return them, and failing to notify the HSM is recoverable — the
+        // session times out on its own.
+        if let Err(err) = self.close() {
+            error!(
+                "session={} error closing dropped session: {}",
+                self.id.to_u8(),
+                err
+            );
+        }
+    }
+}
+
+#[cfg(all(test, feature = "mockhsm", feature = "passwords"))]
+mod tests {
+    use super::*;
+    use crate::authentication;
+    use crate::session::securechannel::Challenge;
+
+    /// A `Session` whose channel never authenticated must not try to close
+    /// itself on drop.
+    ///
+    /// When `Session::open` fails during authentication -- the device rejects
+    /// `AuthenticateSession`, or answers it with unexpected data -- the channel
+    /// is left present but unauthenticated. Closing it reaches
+    /// `SecureChannel::encrypt_command`, which asserts on the security level,
+    /// so the destructor panics and turns a returned error into a crash.
+    #[test]
+    fn dropping_an_unauthenticated_session_does_not_panic() {
+        let channel = SecureChannel::new(
+            Id::from_u8(1).unwrap(),
+            &authentication::Key::default(),
+            Challenge::new(),
+            Challenge::new(),
+        );
+
+        assert!(
+            !channel.is_authenticated(),
+            "a freshly created channel must not be authenticated"
+        );
+
+        let now = Instant::now();
+        let session = Session {
+            id: channel.id(),
+            connector: Connector::mockhsm(),
+            secure_channel: Some(channel),
+            created_at: now,
+            last_active: now,
+            timeout: Timeout::default(),
+        };
+
+        // The assertion under test is that this does not panic.
+        drop(session);
+    }
+
+    /// The same session must also report a clean `close()` rather than panicking.
+    #[test]
+    fn closing_an_unauthenticated_session_is_a_no_op() {
+        let channel = SecureChannel::new(
+            Id::from_u8(1).unwrap(),
+            &authentication::Key::default(),
+            Challenge::new(),
+            Challenge::new(),
+        );
+
+        let now = Instant::now();
+        let mut session = Session {
+            id: channel.id(),
+            connector: Connector::mockhsm(),
+            secure_channel: Some(channel),
+            created_at: now,
+            last_active: now,
+            timeout: Timeout::default(),
+        };
+
+        session.close().expect("closing must not error");
     }
 }

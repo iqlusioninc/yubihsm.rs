@@ -2,7 +2,8 @@ use crate::{
     clear_test_key_slot, test_vectors::AESCCM_TEST_VECTORS, TEST_DOMAINS, TEST_EXPORTED_KEY_ID,
     TEST_EXPORTED_KEY_LABEL, TEST_KEY_ID, TEST_KEY_LABEL,
 };
-use base64::Engine as _;
+use base64ct::{Base64, Encoding as _};
+use rsa::RsaPrivateKey;
 use yubihsm::{asymmetric, object, wrap, Capability};
 
 /// Test wrap key workflow using randomly generated keys
@@ -19,7 +20,9 @@ fn wrap_key_test() {
     let key_id = client
         .put_wrap_key(
             TEST_KEY_ID,
-            TEST_KEY_LABEL.into(),
+            TEST_KEY_LABEL
+                .parse()
+                .expect("TEST_KEY_LABEL to be shorter than or equal to 40 bytes"),
             TEST_DOMAINS,
             capabilities,
             delegated_capabilities,
@@ -40,7 +43,9 @@ fn wrap_key_test() {
     client
         .generate_asymmetric_key(
             TEST_EXPORTED_KEY_ID,
-            TEST_EXPORTED_KEY_LABEL.into(),
+            TEST_EXPORTED_KEY_LABEL
+                .parse()
+                .expect("TEST_EXPORTED_KEY_LABEL to be shorter than or equal to 40 bytes"),
             TEST_DOMAINS,
             exported_key_capabilities,
             exported_key_algorithm,
@@ -48,8 +53,16 @@ fn wrap_key_test() {
         .unwrap_or_else(|err| panic!("error generating asymmetric key: {err}"));
 
     let wrap_data = client
-        .export_wrapped(TEST_KEY_ID, exported_key_type, TEST_EXPORTED_KEY_ID)
+        .export_wrapped_with_seed(TEST_KEY_ID, exported_key_type, TEST_EXPORTED_KEY_ID)
         .unwrap_or_else(|err| panic!("error exporting key: {err}"));
+
+    let wrap_key = wrap::Key::from_bytes(TEST_KEY_ID, AESCCM_TEST_VECTORS[0].key).unwrap();
+
+    let plaintext = wrap_data
+        .decrypt(&wrap_key)
+        .expect("failed to decrypt the wrapped key");
+
+    assert_eq!(plaintext.object_info.length as usize, plaintext.data.len());
 
     // Delete the object from the HSM prior to re-importing it
     assert!(client
@@ -92,7 +105,9 @@ fn wrap_key_from_yhw() {
     let key_id = client
         .put_wrap_key(
             TEST_KEY_ID,
-            TEST_KEY_LABEL.into(),
+            TEST_KEY_LABEL
+                .parse()
+                .expect("TEST_KEY_LABEL to be shorter than or equal to 40 bytes"),
             TEST_DOMAINS,
             capabilities,
             delegated_capabilities,
@@ -112,9 +127,9 @@ fn wrap_key_from_yhw() {
     let exported_key_algorithm = asymmetric::Algorithm::Ed25519;
 
     // file created using yubihsm-shell tool
-    let wrapped = base64::prelude::BASE64_STANDARD
-        .decode(include_str!("../test_vectors/private-ed25519-seed.yhw").trim())
-        .expect("base64 decode to succeed");
+    let wrapped =
+        Base64::decode_vec(include_str!("../test_vectors/private-ed25519-seed.yhw").trim())
+            .expect("base64 decode to succeed");
     let wrap_data = wrap::Message::from_vec(wrapped).expect("wrap file to be correct");
 
     // Re-import the wrapped key back into the HSM
@@ -149,7 +164,9 @@ fn wrap_deserialize() {
     let key_id = client
         .put_wrap_key(
             TEST_KEY_ID,
-            TEST_KEY_LABEL.into(),
+            TEST_KEY_LABEL
+                .parse()
+                .expect("TEST_KEY_LABEL to be shorter than or equal to 40 bytes"),
             TEST_DOMAINS,
             capabilities,
             delegated_capabilities,
@@ -170,7 +187,9 @@ fn wrap_deserialize() {
     client
         .generate_asymmetric_key(
             TEST_EXPORTED_KEY_ID,
-            TEST_EXPORTED_KEY_LABEL.into(),
+            TEST_EXPORTED_KEY_LABEL
+                .parse()
+                .expect("TEST_EXPORTED_KEY_LABEL to be shorter than or equal to 40 bytes"),
             TEST_DOMAINS,
             exported_key_capabilities,
             exported_key_algorithm,
@@ -187,10 +206,12 @@ fn wrap_deserialize() {
         .decrypt(&wrap_key)
         .expect("failed to decrypt the wrapped key");
 
+    assert_eq!(plaintext.object_info.length as usize, plaintext.data.len());
+
     let private_key: p256::SecretKey = plaintext
         .ecdsa()
         .expect("Object did not contain a NistP256 object");
-    let public_key: p256::EncodedPoint = private_key.public_key().into();
+    let public_key: p256::Sec1Point = private_key.public_key().into();
 
     assert_eq!(
         client
@@ -198,6 +219,77 @@ fn wrap_deserialize() {
             .unwrap_or_else(|err| panic!("error getting public key: {err}"))
             .ecdsa::<p256::NistP256>()
             .expect("public key was not a NistP256 object"),
+        public_key
+    );
+}
+
+#[test]
+fn wrap_deserialize_rsa() {
+    let client = crate::get_hsm_client();
+    let algorithm = wrap::Algorithm::Aes128Ccm;
+    let capabilities = Capability::EXPORT_WRAPPED | Capability::IMPORT_WRAPPED;
+    let delegated_capabilities = Capability::all();
+
+    clear_test_key_slot(&client, object::Type::WrapKey);
+
+    let key_id = client
+        .put_wrap_key(
+            TEST_KEY_ID,
+            TEST_KEY_LABEL
+                .parse()
+                .expect("TEST_KEY_LABEL to be shorter than or equal to 40 bytes"),
+            TEST_DOMAINS,
+            capabilities,
+            delegated_capabilities,
+            algorithm,
+            AESCCM_TEST_VECTORS[0].key,
+        )
+        .unwrap_or_else(|err| panic!("error generating wrap key: {err}"));
+
+    assert_eq!(key_id, TEST_KEY_ID);
+
+    // Create a key to export
+    let exported_key_type = object::Type::AsymmetricKey;
+    let exported_key_capabilities = Capability::SIGN_PKCS | Capability::EXPORTABLE_UNDER_WRAP;
+    let exported_key_algorithm = asymmetric::Algorithm::Rsa2048;
+
+    let _ = client.delete_object(TEST_EXPORTED_KEY_ID, exported_key_type);
+
+    client
+        .generate_asymmetric_key(
+            TEST_EXPORTED_KEY_ID,
+            TEST_EXPORTED_KEY_LABEL
+                .parse()
+                .expect("TEST_EXPORTED_KEY_LABEL to be shorter than or equal to 40 bytes"),
+            TEST_DOMAINS,
+            exported_key_capabilities,
+            exported_key_algorithm,
+        )
+        .unwrap_or_else(|err| panic!("error generating asymmetric key: {err}"));
+
+    let wrap_data = client
+        .export_wrapped(TEST_KEY_ID, exported_key_type, TEST_EXPORTED_KEY_ID)
+        .unwrap_or_else(|err| panic!("error exporting key: {err}"));
+
+    let wrap_key = wrap::Key::from_bytes(TEST_KEY_ID, AESCCM_TEST_VECTORS[0].key).unwrap();
+
+    let plaintext = wrap_data
+        .decrypt(&wrap_key)
+        .expect("failed to decrypt the wrapped key");
+
+    assert_eq!(plaintext.object_info.length as usize, plaintext.data.len());
+
+    let private_key: RsaPrivateKey = plaintext
+        .rsa()
+        .expect("Object did not contain a valid rsa object");
+    let public_key = private_key.as_public_key();
+
+    assert_eq!(
+        &client
+            .get_public_key(TEST_EXPORTED_KEY_ID)
+            .unwrap_or_else(|err| panic!("error getting public key: {err}"))
+            .rsa()
+            .expect("public key was not the expected RSA key"),
         public_key
     );
 }

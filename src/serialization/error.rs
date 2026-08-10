@@ -45,6 +45,11 @@ impl de::Error for Error {
 
 impl From<io::Error> for Error {
     fn from(err: io::Error) -> Self {
-        ErrorKind::Io.context(err).into()
+        let kind = if err.kind() == io::ErrorKind::UnexpectedEof {
+            ErrorKind::UnexpectedEof
+        } else {
+            ErrorKind::Io
+        };
+        kind.context(err).into()
     }
 }

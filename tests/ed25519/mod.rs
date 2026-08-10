@@ -30,7 +30,9 @@ fn create_yubihsm_key(client: &Client) {
     client
         .generate_asymmetric_key(
             TEST_SIGNING_KEY_ID,
-            TEST_SIGNING_KEY_LABEL.into(),
+            TEST_SIGNING_KEY_LABEL
+                .parse()
+                .expect("TEST_SIGNING_KEY_LABEL to be shorter than or equal to 40 bytes"),
             TEST_SIGNING_KEY_DOMAINS,
             TEST_SIGNING_KEY_CAPABILITIES,
             yubihsm::asymmetric::Algorithm::Ed25519,

@@ -36,6 +36,6 @@ fn generated_nistp256_key_test() {
     )
     .unwrap();
 
-    let verify_key = VerifyingKey::from_encoded_point(&public_key).unwrap();
+    let verify_key = VerifyingKey::from_sec1_point(&public_key).unwrap();
     assert!(verify_key.verify(TEST_MESSAGE, &signature).is_ok());
 }

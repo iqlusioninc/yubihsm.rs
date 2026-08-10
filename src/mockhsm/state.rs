@@ -82,7 +82,13 @@ impl State {
             )
         };
 
-        let session = HsmSession::new(session_id, card_challenge, channel, capabilities);
+        let session = HsmSession::new(
+            session_id,
+            card_challenge,
+            channel,
+            capabilities,
+            authentication_key_id,
+        );
         assert!(self.sessions.insert(session_id, session).is_none());
 
         self.get_session(session_id).unwrap()
