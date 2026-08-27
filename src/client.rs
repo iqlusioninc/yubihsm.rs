@@ -44,6 +44,8 @@ use std::{
 #[cfg(feature = "passwords")]
 use std::{thread, time::SystemTime};
 
+use crate::session::PendingSession;
+
 #[cfg(feature = "untested")]
 use crate::{
     algorithm::Algorithm,
@@ -100,6 +102,25 @@ impl Client {
         };
 
         Ok(client)
+    }
+
+    /// Open a session using the YubiHSM Auth scheme, where the session keys are
+    /// derived by an external device rather than from a local password.
+    ///
+    /// Returns a [`PendingSession`]: the HSM has allocated a session and issued
+    /// its challenge, but no keys have been supplied yet. Derive the session
+    /// keys elsewhere and finish with [`PendingSession::realize`].
+    pub fn yubihsm_auth(
+        connector: Connector,
+        authentication_key_id: object::Id,
+        host_challenge: session::Challenge,
+    ) -> Result<PendingSession, Error> {
+        Ok(PendingSession::new(
+            connector,
+            session::Timeout::default(),
+            authentication_key_id,
+            host_challenge,
+        )?)
     }
 
     /// Borrow this client's YubiHSM connector (which is [`Clone`]able)
@@ -1346,6 +1367,24 @@ impl Client {
                 plaintext,
             })?
             .0)
+    }
+}
+
+/// Build a [`Client`] from an already-established [`Session`].
+///
+/// Used by the YubiHSM Auth flow, where the session is realized from
+/// externally derived keys. Reconnection is disabled: there are no reusable
+/// credentials to reconnect *with*, so a timed-out session cannot be
+/// re-established and must be opened again from the start.
+impl From<Session> for Client {
+    fn from(session: Session) -> Self {
+        let connector = session.connector();
+        let session = Arc::new(Mutex::new(Some(session)));
+        Self {
+            connector,
+            session,
+            credentials: None,
+        }
     }
 }
 

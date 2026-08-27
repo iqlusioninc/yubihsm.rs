@@ -107,3 +107,4 @@ rustdoc-args = ["--cfg", "docsrs"]
 [[example]]
 name = "connector_http_server"
 required-features = ["http-server", "usb"]
+

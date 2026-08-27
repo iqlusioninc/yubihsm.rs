@@ -9,6 +9,14 @@ const CONTEXT_SIZE: usize = CHALLENGE_SIZE * 2;
 pub struct Context([u8; CONTEXT_SIZE]);
 
 impl Context {
+    /// Borrow the raw context bytes (host challenge followed by card challenge).
+    ///
+    /// Exposed so callers driving the YubiHSM Auth flow can hand the context to
+    /// whatever device derives the session keys.
+    pub fn as_bytes(&self) -> &[u8] {
+        &self.0
+    }
+
     /// Create a derivation context from host and card challenges
     pub fn from_challenges(host_challenge: Challenge, card_challenge: Challenge) -> Self {
         let mut context = [0u8; CONTEXT_SIZE];
