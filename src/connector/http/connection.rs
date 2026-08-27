@@ -9,7 +9,7 @@ use ureq::tls::{Certificate, RootCerts, TlsConfig, TlsProvider};
 use ureq::Agent;
 use uuid::Uuid;
 
-const MAX_BODY_SIZE: u64 = 1024 ^ 3; /*1MB*/
+const MAX_BODY_SIZE: u64 = 1024 * 1024; /* 1 MiB */
 const USER_AGENT: &str = concat!("yubihsm.rs ", env!("CARGO_PKG_VERSION"));
 
 /// Connection to YubiHSM via HTTP requests to `yubihsm-connector`.
@@ -62,13 +62,15 @@ impl HttpConnection {
             .header("X-Request-ID", &uuid.to_string())
             .send(body)?;
 
+        // `Content-Length` is attacker-controlled if anything on the path to the
+        // connector is: reserve at most what we are willing to read anyway.
         let mut data = response
             .headers()
             .get("Content-Length")
             .and_then(|len| len.to_str().ok())
-            .and_then(|len| len.parse().ok())
-            .map(Vec::with_capacity)
-            .unwrap_or(Vec::new());
+            .and_then(|len| len.parse::<u64>().ok())
+            .map(|len| Vec::with_capacity(len.min(MAX_BODY_SIZE) as usize))
+            .unwrap_or_default();
 
         response
             .into_body()

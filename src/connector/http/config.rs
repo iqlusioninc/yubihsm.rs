@@ -19,10 +19,12 @@ pub struct HttpConfig {
 
     /// Use https if true
     #[cfg(feature = "https")]
+    #[serde(default)]
     pub tls: bool,
 
     /// CA certificate to validate the server certificate
     #[cfg(feature = "https")]
+    #[serde(default)]
     pub cacert: Option<PathBuf>,
 
     /// Timeout for connecting, reading, and writing in milliseconds
@@ -61,5 +63,27 @@ impl Display for HttpConfig {
 
         #[cfg(not(feature = "https"))]
         write!(f, "http://{}:{}", self.addr, self.port)
+    }
+}
+
+#[cfg(all(test, feature = "setup"))]
+mod tests {
+    use super::HttpConfig;
+
+    /// A config predating the `https` feature must still deserialize: the new
+    /// TLS fields are optional and fall back to plain HTTP.
+    #[test]
+    fn deserializes_config_without_tls_fields() {
+        let config: HttpConfig =
+            serde_json::from_str(r#"{"addr":"127.0.0.1","port":12345,"timeout_ms":5000}"#).unwrap();
+
+        assert_eq!(config.addr, "127.0.0.1");
+        assert_eq!(config.port, 12345);
+
+        #[cfg(feature = "https")]
+        {
+            assert!(!config.tls);
+            assert!(config.cacert.is_none());
+        }
     }
 }
