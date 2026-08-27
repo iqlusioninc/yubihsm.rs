@@ -2,8 +2,8 @@
 //!
 //! <https://developers.yubico.com/YubiHSM2/Component_Reference/yubihsm-connector/>
 
-pub(super) mod client;
 mod config;
+#[cfg(feature = "http")]
 mod connection;
 #[cfg(feature = "http-server")]
 mod server;
@@ -12,6 +12,7 @@ pub use self::config::HttpConfig;
 #[cfg(feature = "http-server")]
 pub use self::server::Server;
 
+#[cfg(feature = "http")]
 use self::connection::HttpConnection;
 use crate::connector::{self, Connectable, Connection};
 
