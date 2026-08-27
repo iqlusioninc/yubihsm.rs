@@ -29,8 +29,14 @@ pub use self::connection::Connection;
 pub use self::error::*;
 
 pub(crate) use self::{connectable::Connectable, message::Message};
+use crate::{
+    command, device,
+    device::commands::DeviceInfoResponse,
+    response,
+    serialization::deserialize,
+    uuid::{self, Uuid},
+};
 use std::sync::{Arc, Mutex};
-use uuid::Uuid;
 
 #[cfg(feature = "http")]
 pub use self::http::HttpConfig;
@@ -95,6 +101,45 @@ impl Connector {
                 // In the event of an error, mark this connection as invalid
                 *connection = None;
             })
+    }
+
+    /// Get information about the HSM device *without* establishing a session.
+    ///
+    /// The response is **not authenticated**. A session response is R-MAC'd
+    /// under the SCP03 session keys, so it is provably from the device and
+    /// provably fresh; this one is not, so anything on the path between this
+    /// process and the device can forge or replay it. Treat these values as a
+    /// hint, never as evidence. Use [`Client::device_info`] when the answer has
+    /// to be trustworthy.
+    ///
+    /// <https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-cmd-reference.html#get-device-info-command>
+    ///
+    /// [`Client::device_info`]: crate::Client::device_info
+    pub fn device_info(&self) -> Result<device::Info, Error> {
+        let command = command::Message::create(command::Code::DeviceInfo, vec![])
+            .map_err(|e| ErrorKind::RequestError.context(e))?;
+
+        let response = response::Message::parse(self.send_message(uuid::new_v4(), command.into())?)
+            .map_err(|e| ErrorKind::ResponseError.context(e))?;
+
+        if response.is_err() {
+            match device::ErrorKind::from_response_message(&response) {
+                Some(kind) => fail!(ErrorKind::ResponseError, "HSM error: {}", kind),
+                None => fail!(ErrorKind::ResponseError, "HSM error: {:?}", response.code),
+            }
+        }
+
+        if response.command() != Some(command::Code::DeviceInfo) {
+            fail!(
+                ErrorKind::ResponseError,
+                "unexpected response type: {:?}",
+                response.code
+            );
+        }
+
+        Ok(deserialize::<DeviceInfoResponse>(&response.data)
+            .map_err(|e| ErrorKind::ResponseError.context(e))?
+            .into())
     }
 }
 
