@@ -4,7 +4,7 @@ use super::config::HttpConfig;
 use crate::connector::{self, Connection};
 use std::io::Read;
 use std::time::Duration;
-#[cfg(feature = "https")]
+#[cfg(feature = "_tls")]
 use ureq::tls::{Certificate, RootCerts, TlsConfig, TlsProvider};
 use ureq::Agent;
 use uuid::Uuid;
@@ -35,10 +35,10 @@ impl HttpConnection {
             .timeout_global(Some(Duration::from_millis(config.timeout_ms)))
             .user_agent(USER_AGENT);
 
-        #[cfg(feature = "https")]
+        #[cfg(feature = "_tls")]
         let mut builder = builder;
 
-        #[cfg(feature = "https")]
+        #[cfg(feature = "_tls")]
         if config.tls {
             builder = builder.tls_config(build_tls_config(config)?);
         }
@@ -93,11 +93,19 @@ impl Connection for HttpConnection {
     }
 }
 
-#[cfg(feature = "https")]
+#[cfg(feature = "_tls")]
 fn build_tls_config(config: &HttpConfig) -> Result<TlsConfig, connector::Error> {
     use crate::connector::ErrorKind;
     use std::fs;
     use std::sync::Arc;
+
+    // Both backends can be compiled in at once (`--all-features` does exactly
+    // that). Rustls wins when they are, so the selection stays deterministic
+    // and the pure-Rust path is what you get unless you asked for the other.
+    #[cfg(feature = "https")]
+    let provider = TlsProvider::Rustls;
+    #[cfg(all(feature = "https-native-tls", not(feature = "https")))]
+    let provider = TlsProvider::NativeTls;
 
     let certs = match config.cacert.as_ref() {
         Some(path) => {
@@ -106,11 +114,14 @@ fn build_tls_config(config: &HttpConfig) -> Result<TlsConfig, connector::Error> 
 
             RootCerts::Specific(Arc::new(vec![cert]))
         }
+        // Verify against the operating system's trust store. For rustls this
+        // requires `ureq/platform-verifier`, which the `https` feature pulls in
+        // unconditionally -- ureq panics here otherwise.
         None => RootCerts::PlatformVerifier,
     };
 
     Ok(TlsConfig::builder()
-        .provider(TlsProvider::Rustls)
+        .provider(provider)
         .root_certs(certs)
         .build())
 }
