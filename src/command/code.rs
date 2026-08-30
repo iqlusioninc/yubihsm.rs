@@ -68,6 +68,8 @@ pub enum Code {
     EncryptAesEcb = 0x70,
     DecryptAesCbc = 0x71,
     EncryptAesCbc = 0x72,
+    PutPublicWrapKey = 0x73,
+    GetRsaWrappedKey = 0x74,
     Error = 0x7f,
     HsmInitialization = 0xff,
 }
@@ -136,6 +138,8 @@ impl Code {
             0x70 => Code::EncryptAesEcb,
             0x71 => Code::DecryptAesCbc,
             0x72 => Code::EncryptAesCbc,
+            0x73 => Code::PutPublicWrapKey,
+            0x74 => Code::GetRsaWrappedKey,
             0x7f => Code::Error,
             0xff => Code::HsmInitialization,
             _ => fail!(ErrorKind::CodeInvalid, "invalid command type: {}", byte),

@@ -30,6 +30,9 @@ pub enum Type {
 
     /// Symmetric key is a secret key used for encryption and decryption
     SymmetricKey = 0x08,
+
+    /// RSA public key used for asymmetric key wrapping
+    PublicWrapKey = 0x09,
 }
 
 impl Type {
@@ -44,6 +47,7 @@ impl Type {
             0x06 => Type::Template,
             0x07 => Type::OtpAeadKey,
             0x08 => Type::SymmetricKey,
+            0x09 => Type::PublicWrapKey,
             _ => fail!(ErrorKind::TypeInvalid, "invalid object type: {}", byte),
         })
     }
@@ -65,6 +69,7 @@ impl fmt::Display for Type {
             Type::Template => "template",
             Type::OtpAeadKey => "otp-aead-key",
             Type::SymmetricKey => "symmetric-key",
+            Type::PublicWrapKey => "public-wrap-key",
         })
     }
 }
@@ -82,6 +87,7 @@ impl FromStr for Type {
             "template" => Type::Template,
             "otp-aead-key" => Type::OtpAeadKey,
             "symmetric-key" => Type::SymmetricKey,
+            "public-wrap-key" => Type::PublicWrapKey,
             _ => return Err(()),
         })
     }
@@ -101,7 +107,7 @@ impl<'de> Deserialize<'de> for Type {
             type Value = Type;
 
             fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-                formatter.write_str("an unsigned byte between 0x01 and 0x07")
+                formatter.write_str("an unsigned byte between 0x01 and 0x09")
             }
 
             fn visit_u8<E: de::Error>(self, value: u8) -> Result<Type, E> {

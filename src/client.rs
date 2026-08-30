@@ -56,6 +56,33 @@ use crate::{
 #[cfg(any(doc, docsrs))]
 use crate::ecdsa;
 
+/// Parameters for [`Client::get_rsa_wrapped_key`].
+///
+/// Grouped rather than passed positionally because `wrap_key_id` and
+/// `target_id` are both [`object::Id`]: in a positional call the two can be
+/// transposed with no type error, which would export the wrong key under the
+/// wrong wrapping key.
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub struct RsaWrappedKeyParams {
+    /// Object ID of the RSA public wrap key to encrypt under.
+    pub wrap_key_id: object::Id,
+
+    /// Type of the object being wrapped (asymmetric-key or symmetric-key).
+    pub target_type: object::Type,
+
+    /// Object ID of the key whose material is being exported.
+    pub target_id: object::Id,
+
+    /// Size of the ephemeral AES key used for the inner key wrap.
+    pub aes_algorithm: symmetric::Algorithm,
+
+    /// Hash algorithm used for RSA-OAEP.
+    pub oaep_algorithm: rsa::oaep::Algorithm,
+
+    /// Hash algorithm used for MGF1.
+    pub mgf1_algorithm: rsa::mgf::Algorithm,
+}
+
 /// YubiHSM client: main API in this crate for accessing functions of the
 /// HSM hardware device.
 #[derive(Clone)]
@@ -434,6 +461,67 @@ impl Client {
                 delegated_capabilities,
             })?
             .key_id)
+    }
+
+    /// Get the raw key material of a symmetric or asymmetric key, encrypted
+    /// via RSA-AES key wrapping (CKM_RSA_AES_KEY_WRAP).
+    ///
+    /// Unlike `export_wrapped`, this exports only the key bytes with no metadata.
+    ///
+    /// The `oaep_label` must be the digest of the OAEP label using the hash
+    /// algorithm specified by `params.oaep_algorithm` (20, 32, 48, or 64 bytes
+    /// for SHA-1, SHA-256, SHA-384, or SHA-512 respectively). For the standard
+    /// default (empty label), this is the hash of the empty string.
+    ///
+    /// The parameters are grouped in [`RsaWrappedKeyParams`] rather than passed
+    /// positionally: `wrap_key_id` and `target_id` are both `object::Id`, so a
+    /// positional form lets them be transposed silently, exporting the wrong
+    /// key under the wrong wrapping key.
+    pub fn get_rsa_wrapped_key<L>(
+        &self,
+        params: RsaWrappedKeyParams,
+        oaep_label: L,
+    ) -> Result<Vec<u8>, Error>
+    where
+        L: Into<Vec<u8>>,
+    {
+        let oaep_label = oaep_label.into();
+
+        if oaep_label.len() != params.oaep_algorithm.digest_len() {
+            fail!(
+                ErrorKind::ProtocolError,
+                "invalid OAEP label digest length for {:?}: {} (expected {})",
+                params.oaep_algorithm,
+                oaep_label.len(),
+                params.oaep_algorithm.digest_len()
+            );
+        }
+
+        // The device only wraps key objects. Reject anything else here rather
+        // than letting it fail with an opaque device error.
+        if !matches!(
+            params.target_type,
+            object::Type::AsymmetricKey | object::Type::SymmetricKey
+        ) {
+            fail!(
+                ErrorKind::ProtocolError,
+                "invalid target type for RSA key wrapping: {:?} \
+                 (must be asymmetric-key or symmetric-key)",
+                params.target_type
+            );
+        }
+
+        Ok(self
+            .send_command(GetRsaWrappedKeyCommand {
+                wrap_key_id: params.wrap_key_id,
+                target_type: params.target_type,
+                target_id: params.target_id,
+                aes_algorithm: params.aes_algorithm,
+                oaep_algorithm: params.oaep_algorithm,
+                mgf1_algorithm: params.mgf1_algorithm,
+                oaep_label,
+            })?
+            .0)
     }
 
     /// Get audit logs from the HSM device.
@@ -915,6 +1003,63 @@ impl Client {
 
         Ok(self
             .send_command(PutWrapKeyCommand {
+                params: object::put::Params {
+                    id: key_id,
+                    label,
+                    domains,
+                    capabilities,
+                    algorithm: algorithm.into(),
+                },
+                delegated_capabilities,
+                data,
+            })?
+            .key_id)
+    }
+
+    /// Put an RSA public wrap key into the HSM.
+    ///
+    /// Imports an RSA public key (modulus only, public exponent is assumed to be
+    /// 65537) as a public wrap key object (type 0x09). This key is used for
+    /// RSA-AES key wrap operations (`get_rsa_wrapped_key`).
+    ///
+    /// The `algorithm` must be an RSA algorithm (`Rsa2048`, `Rsa3072`, or `Rsa4096`)
+    /// and the modulus length must match (256, 384, or 512 bytes respectively).
+    #[allow(clippy::too_many_arguments)]
+    pub fn put_public_wrap_key<K>(
+        &self,
+        key_id: object::Id,
+        label: object::Label,
+        domains: Domain,
+        capabilities: Capability,
+        delegated_capabilities: Capability,
+        algorithm: asymmetric::Algorithm,
+        modulus: K,
+    ) -> Result<object::Id, Error>
+    where
+        K: Into<Vec<u8>>,
+    {
+        if !algorithm.is_rsa() {
+            fail!(
+                ErrorKind::ProtocolError,
+                "invalid algorithm for public wrap key: {:?} (must be RSA)",
+                algorithm
+            );
+        }
+
+        let data = modulus.into();
+
+        if data.len() != algorithm.key_len() {
+            fail!(
+                ErrorKind::ProtocolError,
+                "invalid modulus length for {:?}: {} (expected {})",
+                algorithm,
+                data.len(),
+                algorithm.key_len()
+            );
+        }
+
+        Ok(self
+            .send_command(PutPublicWrapKeyCommand {
                 params: object::put::Params {
                     id: key_id,
                     label,

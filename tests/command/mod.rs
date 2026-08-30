@@ -13,6 +13,7 @@ pub mod get_log_entries;
 pub mod get_object_info;
 pub mod get_option;
 pub mod get_pseudo_random;
+pub mod get_rsa_wrapped_key;
 pub mod get_storage_info;
 pub mod list_objects;
 pub mod put_asymmetric_key;
