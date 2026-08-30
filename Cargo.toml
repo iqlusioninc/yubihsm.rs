@@ -48,7 +48,7 @@ uuid = { version = "1", default-features = false }
 zeroize = { version = "1.8", features = ["serde", "zeroize_derive"] }
 
 # optional dependencies
-ed25519-dalek = { version = "3", optional = true, features = ["rand_core"] }
+ed25519-dalek = { version = "3", optional = true, features = ["rand_core", "hazmat"] }
 hmac = { version = "0.13", optional = true }
 k256 = { version = "0.14", optional = true, features = ["ecdsa", "sha256"] }
 pbkdf2 = { version = "0.13", optional = true, default-features = false, features = ["hmac"] }
@@ -58,6 +58,7 @@ tiny_http = { version = "0.12", optional = true }
 x509-cert = { version = "0.3", features = ["builder", "hazmat"], optional = true }
 
 [dev-dependencies]
+base64ct = { version = "1", features = ["alloc"] }
 cipher = { version = "0.5", features = ["block-padding", "alloc"] }
 ed25519-dalek = "3"
 hex-literal = "1"
