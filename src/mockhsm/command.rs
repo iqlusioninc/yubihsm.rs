@@ -57,6 +57,7 @@ use x509_cert::{
     time::Validity,
     TbsCertificate,
 };
+use zeroize::Zeroizing;
 
 /// Create a new HSM session
 pub(crate) fn create_session(
@@ -134,6 +135,8 @@ pub(crate) fn session_message(
         Code::ChangeAuthenticationKey => {
             change_authentication_key(state, session_id, &command.data)
         }
+        Code::PutPublicWrapKey => put_public_wrap_key(state, &command.data),
+        Code::GetRsaWrappedKey => get_rsa_wrapped_key(state, &command.data),
         Code::PutAuthenticationKey => put_authentication_key(state, &command.data),
         Code::PutHmacKey => put_hmac_key(state, &command.data),
         Code::PutOpaqueObject => put_opaque(state, &command.data),
@@ -687,6 +690,160 @@ fn change_authentication_key(
     }
 
     ChangeAuthenticationKeyResponse { key_id }.serialize()
+}
+
+/// Import an RSA public key to wrap other keys under (`PutPublicWrapKey`).
+fn put_public_wrap_key(state: &mut State, cmd_data: &[u8]) -> response::Message {
+    let PutPublicWrapKeyCommand {
+        params,
+        delegated_capabilities,
+        data,
+    } = deserialize(cmd_data)
+        .unwrap_or_else(|e| panic!("error parsing Code::PutPublicWrapKey: {e:?}"));
+
+    // Only the modulus is transmitted; the device assumes e = 65537.
+    let modulus = ::rsa::BoxedUint::from_be_slice_vartime(&data);
+    let exponent = ::rsa::BoxedUint::from(65537u64);
+
+    let public_key = match ::rsa::RsaPublicKey::new(modulus, exponent) {
+        Ok(key) => key,
+        Err(e) => {
+            debug!("invalid RSA public wrap key: {e}");
+            return device::ErrorKind::InvalidData.into();
+        }
+    };
+
+    state.objects.put_payload(
+        params.id,
+        object::Type::PublicWrapKey,
+        Payload::RsaPublicWrapKey(public_key),
+        params.label,
+        params.capabilities,
+        delegated_capabilities,
+        params.domains,
+    );
+
+    PutPublicWrapKeyResponse { key_id: params.id }.serialize()
+}
+
+/// Export raw key material under an RSA public wrap key (`GetRsaWrappedKey`).
+///
+/// Produces `RSA-OAEP(ephemeral AES key) || AES-KW(target key material)`, the
+/// CKM_RSA_AES_KEY_WRAP construction.
+fn get_rsa_wrapped_key(state: &mut State, cmd_data: &[u8]) -> response::Message {
+    let command: GetRsaWrappedKeyCommand = deserialize(cmd_data)
+        .unwrap_or_else(|e| panic!("error parsing Code::GetRsaWrappedKey: {e:?}"));
+
+    let Some(wrap_obj) = state
+        .objects
+        .get(command.wrap_key_id, object::Type::PublicWrapKey)
+    else {
+        debug!("no such public wrap key: {}", command.wrap_key_id);
+        return device::ErrorKind::ObjectNotFound.into();
+    };
+
+    let Payload::RsaPublicWrapKey(public_key) = &wrap_obj.payload else {
+        debug!("object {} is not a public wrap key", command.wrap_key_id);
+        return device::ErrorKind::InvalidCommand.into();
+    };
+    let public_key = public_key.clone();
+
+    // The device only wraps key objects.
+    if !matches!(
+        command.target_type,
+        object::Type::AsymmetricKey | object::Type::SymmetricKey
+    ) {
+        debug!("invalid target type: {:?}", command.target_type);
+        return device::ErrorKind::InvalidCommand.into();
+    }
+
+    let Some(target) = state.objects.get(command.target_id, command.target_type) else {
+        debug!("no such target key: {}", command.target_id);
+        return device::ErrorKind::ObjectNotFound.into();
+    };
+    let target_material = target.payload.to_bytes();
+
+    // Ephemeral AES key, wrapped under the RSA key; it in turn wraps the target.
+    let mut rng = rand::rng();
+    let mut ephemeral = Zeroizing::new(vec![0u8; command.aes_algorithm.key_len()]);
+    rng.fill_bytes(ephemeral.as_mut_slice());
+
+    // CKM_RSA_AES_KEY_WRAP uses AES-KWP (RFC 5649), which pads to a multiple
+    // of 8 bytes and adds an 8-byte header.
+    let mut wrapped_target = vec![0u8; target_material.len().next_multiple_of(8) + 8];
+
+    let wrap_result = match command.aes_algorithm {
+        symmetric::Algorithm::Aes128 => aes_kw::KwpAes128::new_from_slice(ephemeral.as_slice())
+            .expect("AES-128 KEK size invariant")
+            .wrap_key(&target_material, &mut wrapped_target)
+            .map(|w| w.len()),
+        symmetric::Algorithm::Aes192 => aes_kw::KwpAes192::new_from_slice(ephemeral.as_slice())
+            .expect("AES-192 KEK size invariant")
+            .wrap_key(&target_material, &mut wrapped_target)
+            .map(|w| w.len()),
+        symmetric::Algorithm::Aes256 => aes_kw::KwpAes256::new_from_slice(ephemeral.as_slice())
+            .expect("AES-256 KEK size invariant")
+            .wrap_key(&target_material, &mut wrapped_target)
+            .map(|w| w.len()),
+    };
+
+    match wrap_result {
+        Ok(len) => wrapped_target.truncate(len),
+        Err(e) => {
+            debug!("AES-KWP failed: {e:?}");
+            return device::ErrorKind::InvalidData.into();
+        }
+    }
+
+    // The label arrives pre-hashed. Its size is set by `oaep_algorithm`, which
+    // is independent of `mgf1_algorithm` -- the device permits mixing them.
+    macro_rules! wrap_ephemeral {
+        ($oaep:ty, $mgf:ty) => {{
+            let Ok(fixed) = Array::try_from(command.oaep_label.as_slice()) else {
+                debug!(
+                    "OAEP label digest is {} bytes, wrong for the chosen hash",
+                    command.oaep_label.len()
+                );
+                return device::ErrorKind::InvalidData.into();
+            };
+
+            let oaep = Oaep {
+                digest: PrecomputedHashDigest::<$oaep> { fixed },
+                mgf_digest: <$mgf>::new(),
+                label: None,
+            };
+            oaep.encrypt(&mut rng, &public_key, ephemeral.as_slice())
+        }};
+    }
+
+    macro_rules! by_mgf {
+        ($oaep:ty) => {
+            match command.mgf1_algorithm {
+                mgf::Algorithm::Sha1 => wrap_ephemeral!($oaep, Sha1),
+                mgf::Algorithm::Sha256 => wrap_ephemeral!($oaep, Sha256),
+                mgf::Algorithm::Sha384 => wrap_ephemeral!($oaep, Sha384),
+                mgf::Algorithm::Sha512 => wrap_ephemeral!($oaep, Sha512),
+            }
+        };
+    }
+
+    let wrapped_ephemeral = match command.oaep_algorithm {
+        rsa::oaep::Algorithm::Sha1 => by_mgf!(Sha1),
+        rsa::oaep::Algorithm::Sha256 => by_mgf!(Sha256),
+        rsa::oaep::Algorithm::Sha384 => by_mgf!(Sha384),
+        rsa::oaep::Algorithm::Sha512 => by_mgf!(Sha512),
+    };
+
+    let mut out = match wrapped_ephemeral {
+        Ok(bytes) => bytes,
+        Err(e) => {
+            debug!("RSA-OAEP of the ephemeral key failed: {e:?}");
+            return device::ErrorKind::InvalidData.into();
+        }
+    };
+    out.extend_from_slice(&wrapped_target);
+
+    GetRsaWrappedKeyResponse(out).serialize()
 }
 
 /// Put a new authentication key into the HSM

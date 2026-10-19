@@ -246,6 +246,45 @@ impl Objects {
         assert!(self.0.insert(handle, object).is_none());
     }
 
+    /// Insert an object whose payload has already been constructed.
+    ///
+    /// [`Objects::put`] derives the payload from `(algorithm, data)` via
+    /// [`Payload::new`], which assumes the bytes are private key material.
+    /// `PutPublicWrapKey` carries only a public modulus, so it builds the
+    /// payload itself and inserts it here.
+    #[allow(clippy::too_many_arguments)]
+    pub fn put_payload(
+        &mut self,
+        object_id: Id,
+        object_type: Type,
+        payload: Payload,
+        label: Label,
+        capabilities: Capability,
+        delegated_capabilities: Capability,
+        domains: Domain,
+    ) {
+        let object_info = Info {
+            object_id,
+            object_type,
+            algorithm: payload.algorithm(),
+            capabilities,
+            delegated_capabilities,
+            domains,
+            length: payload.len(),
+            sequence: 1,
+            origin: Origin::Imported,
+            label,
+        };
+
+        self.0.insert(
+            Handle::new(object_id, object_type),
+            Object {
+                object_info,
+                payload,
+            },
+        );
+    }
+
     /// Replace the payload of an existing object, preserving its metadata.
     ///
     /// Returns `false` if nothing occupies that slot.

@@ -125,6 +125,7 @@ fn opaque_object_export_test() {
 /// certificate opaque could never be constructed even though
 /// `Plaintext::opaque_certificate` exists to read them back — the writer and
 /// the reader disagreed.
+#[cfg(feature = "x509-cert")]
 #[test]
 fn opaque_certificate_round_trips_the_algorithm() {
     let der = b"not a real certificate, but the algorithm gate is what matters";
