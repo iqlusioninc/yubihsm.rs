@@ -1039,6 +1039,7 @@ name = "yubihsm"
 version = "0.43.0-pre"
 dependencies = [
  "aes",
+ "base64ct",
  "bitflags",
  "cbc",
  "ccm",
