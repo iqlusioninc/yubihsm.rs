@@ -1,8 +1,16 @@
 //! Persistent HTTP connection to `yubihsm-connector`
 
-use super::{client, config::HttpConfig};
+use super::config::HttpConfig;
 use crate::connector::{self, Connection};
+use std::io::Read;
+use std::time::Duration;
+#[cfg(feature = "_tls")]
+use ureq::tls::{Certificate, RootCerts, TlsConfig, TlsProvider};
+use ureq::Agent;
 use uuid::Uuid;
+
+const MAX_BODY_SIZE: u64 = 1024 * 1024; /* 1 MiB */
+const USER_AGENT: &str = concat!("yubihsm.rs ", env!("CARGO_PKG_VERSION"));
 
 /// Connection to YubiHSM via HTTP requests to `yubihsm-connector`.
 ///
@@ -15,29 +23,61 @@ use uuid::Uuid;
 /// <https://developers.yubico.com/YubiHSM2/Component_Reference/yubihsm-connector/>
 pub struct HttpConnection {
     /// HTTP connection
-    connection: client::Connection,
+    agent: Agent,
+
+    base_url: String,
 }
 
 impl HttpConnection {
     /// Open a connection to a `yubihsm-connector` service
     pub(crate) fn open(config: &HttpConfig) -> Result<Self, connector::Error> {
-        let connection = client::Connection::open(&config.addr, config.port, &Default::default())?;
+        let builder = Agent::config_builder()
+            .timeout_global(Some(Duration::from_millis(config.timeout_ms)))
+            .user_agent(USER_AGENT);
 
-        Ok(HttpConnection { connection })
+        #[cfg(feature = "_tls")]
+        let mut builder = builder;
+
+        #[cfg(feature = "_tls")]
+        if config.tls {
+            builder = builder.tls_config(build_tls_config(config)?);
+        }
+
+        Ok(HttpConnection {
+            agent: builder.build().into(),
+            base_url: format!("{config}"),
+        })
     }
 
     /// Make an HTTP POST request to a `yubihsm-connector` service
     pub(super) fn post(
         &self,
         path: &str,
-        _uuid: Uuid,
+        uuid: Uuid,
         body: &[u8],
     ) -> Result<Vec<u8>, connector::Error> {
-        // TODO: send UUID as `X-Request-ID` header, zero copy body creation
-        Ok(self
-            .connection
-            .post(path, &client::request::Body::new(body))?
-            .into_vec())
+        let response = self
+            .agent
+            .post(&format!("{}{}", self.base_url, path))
+            .header("X-Request-ID", &uuid.to_string())
+            .send(body)?;
+
+        // `Content-Length` is attacker-controlled if anything on the path to the
+        // connector is: reserve at most what we are willing to read anyway.
+        let mut data = response
+            .headers()
+            .get("Content-Length")
+            .and_then(|len| len.to_str().ok())
+            .and_then(|len| len.parse::<u64>().ok())
+            .map(|len| Vec::with_capacity(len.min(MAX_BODY_SIZE) as usize))
+            .unwrap_or_default();
+
+        response
+            .into_body()
+            .as_reader()
+            .take(MAX_BODY_SIZE)
+            .read_to_end(&mut data)?;
+        Ok(data)
     }
 }
 
@@ -51,4 +91,37 @@ impl Connection for HttpConnection {
         self.post("/connector/api", uuid, cmd.as_ref())
             .map(Into::into)
     }
+}
+
+#[cfg(feature = "_tls")]
+fn build_tls_config(config: &HttpConfig) -> Result<TlsConfig, connector::Error> {
+    use crate::connector::ErrorKind;
+    use std::fs;
+    use std::sync::Arc;
+
+    // Both backends can be compiled in at once (`--all-features` does exactly
+    // that). Rustls wins when they are, so the selection stays deterministic
+    // and the pure-Rust path is what you get unless you asked for the other.
+    #[cfg(feature = "https")]
+    let provider = TlsProvider::Rustls;
+    #[cfg(all(feature = "https-native-tls", not(feature = "https")))]
+    let provider = TlsProvider::NativeTls;
+
+    let certs = match config.cacert.as_ref() {
+        Some(path) => {
+            let data = fs::read(path)?;
+            let cert = Certificate::from_pem(&data).map_err(|e| ErrorKind::IoError.context(e))?;
+
+            RootCerts::Specific(Arc::new(vec![cert]))
+        }
+        // Verify against the operating system's trust store. For rustls this
+        // requires `ureq/platform-verifier`, which the `https` feature pulls in
+        // unconditionally -- ureq panics here otherwise.
+        None => RootCerts::PlatformVerifier,
+    };
+
+    Ok(TlsConfig::builder()
+        .provider(provider)
+        .root_certs(certs)
+        .build())
 }

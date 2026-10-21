@@ -56,6 +56,7 @@ serde_json = { version = "1", optional = true }
 rusb = { version = "0.9.4", optional = true }
 tiny_http = { version = "0.12", optional = true }
 x509-cert = { version = "0.3", features = ["builder", "hazmat"], optional = true }
+ureq = { version = "3.4", optional = true, default-features = false, features = ["gzip"] }
 
 [dev-dependencies]
 cipher = { version = "0.5", features = ["block-padding", "alloc"] }
@@ -71,7 +72,24 @@ x509-cert = { version = "0.3", features = ["builder"] }
 [features]
 default = ["http", "passwords", "setup"]
 http-server = ["tiny_http"]
-http = []
+http = ["ureq"]
+# Shared TLS plumbing for the `https*` features. Not meant to be enabled
+# directly; pick a backend below instead.
+_tls = ["http"]
+# HTTPS to `yubihsm-connector`, via rustls. Pure Rust: no system OpenSSL and no
+# vendored C build. This is the recommended backend.
+#
+# `ureq/platform-verifier` is not optional here: without it, rustls panics at
+# connection time on `RootCerts::PlatformVerifier`, which is the path taken
+# whenever no `cacert` is configured -- i.e. the default.
+https = ["_tls", "ureq/rustls", "ureq/platform-verifier"]
+# HTTPS via the platform's native TLS stack: Schannel on Windows,
+# Security.framework on macOS, OpenSSL elsewhere. For targets where rustls'
+# backend will not build, or deployments that must use a FIPS-validated
+# OpenSSL. If both backends are compiled in, rustls is selected.
+https-native-tls = ["_tls", "ureq/native-tls"]
+# Build and statically link OpenSSL rather than using the system copy.
+https-native-tls-vendored = ["https-native-tls", "ureq/vendored"]
 # WARNING: The `mockhsm` feature is only for testing purposes!
 # It is **neither safe nor fit** for production use!
 #
@@ -99,6 +117,7 @@ secp256k1 = ["k256"]
 setup = ["passwords", "serde_json", "uuid/serde"]
 untested = []
 usb = ["rusb"]
+
 
 [package.metadata.docs.rs]
 all-features = true
