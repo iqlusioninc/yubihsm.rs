@@ -2,8 +2,10 @@
 
 use super::nonce::{self, Nonce};
 use super::{Algorithm, Error, ErrorKind};
+#[cfg(feature = "rsa")]
+use crate::asymmetric;
 use crate::{
-    algorithm, asymmetric,
+    algorithm,
     ecdsa::algorithm::CurveAlgorithm,
     object, opaque,
     serialization::{deserialize, serialize},
@@ -21,6 +23,7 @@ use ecdsa::{
     },
     PrimeCurve,
 };
+#[cfg(feature = "rsa")]
 use rsa::{
     traits::{PrivateKeyParts, PublicKeyParts},
     BoxedUint, RsaPrivateKey,
@@ -198,7 +201,8 @@ impl Plaintext {
         })
     }
 
-    /// Return the rsa key of this [`Plaintext`] if it was an RSA key.
+    /// Return the RSA key of this [`Plaintext`] if it was an RSA key.
+    #[cfg(feature = "rsa")]
     pub fn rsa(&self) -> Option<RsaPrivateKey> {
         let (component_size, modulus_size) = match self.object_info.algorithm {
             algorithm::Algorithm::Asymmetric(asymmetric::Algorithm::Rsa2048) => (128, 256),
@@ -227,6 +231,7 @@ impl Plaintext {
     }
 
     /// Build a [`Plaintext`] from an [`RsaPrivateKey`].
+    #[cfg(feature = "rsa")]
     pub fn from_rsa(
         algorithm: Algorithm,
         object_id: object::Id,

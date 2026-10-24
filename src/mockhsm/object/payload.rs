@@ -9,6 +9,7 @@ use ecdsa::{
 };
 use ed25519_dalek as ed25519;
 use rand_core::Rng;
+#[cfg(feature = "rsa")]
 use rsa::{
     traits::{PrivateKeyParts as _, PublicKeyParts},
     BoxedUint,
@@ -35,7 +36,8 @@ pub(crate) enum Payload {
     /// Ed25519 signing key
     Ed25519Key(ed25519::SigningKey),
 
-    /// Rsa private key
+    /// RSA private key
+    #[cfg(feature = "rsa")]
     RsaKey(rsa::RsaPrivateKey),
 
     /// HMAC key
@@ -113,6 +115,7 @@ impl Payload {
                     assert_eq!(data.len(), ed25519::SECRET_KEY_LENGTH);
                     Payload::Ed25519Key(ed25519::SigningKey::try_from(data).unwrap())
                 }
+                #[cfg(feature = "rsa")]
                 asymmetric::Algorithm::Rsa2048
                 | asymmetric::Algorithm::Rsa3072
                 | asymmetric::Algorithm::Rsa4096 => {
@@ -145,6 +148,7 @@ impl Payload {
 
     /// Generate a new key with the given algorithm
     pub fn generate(algorithm: Algorithm) -> Self {
+        #[cfg(feature = "rsa")]
         fn gen_rsa(len: usize) -> Payload {
             let private_key =
                 rsa::RsaPrivateKey::new(&mut rand::rng(), len).expect("failed to generate a key");
@@ -175,8 +179,11 @@ impl Payload {
                 asymmetric::Algorithm::Ed25519 => {
                     Payload::Ed25519Key(ed25519::SigningKey::generate(&mut rng))
                 }
+                #[cfg(feature = "rsa")]
                 asymmetric::Algorithm::Rsa2048 => gen_rsa(2048),
+                #[cfg(feature = "rsa")]
                 asymmetric::Algorithm::Rsa3072 => gen_rsa(3072),
+                #[cfg(feature = "rsa")]
                 asymmetric::Algorithm::Rsa4096 => gen_rsa(4096),
                 _ => {
                     panic!("MockHsm doesn't support this asymmetric algorithm: {asymmetric_alg:?}")
@@ -216,6 +223,7 @@ impl Payload {
             Payload::EcdsaNistP384(_) => Algorithm::Asymmetric(asymmetric::Algorithm::EcP384),
             Payload::EcdsaNistP521(_) => Algorithm::Asymmetric(asymmetric::Algorithm::EcP521),
             Payload::Ed25519Key(_) => Algorithm::Asymmetric(asymmetric::Algorithm::Ed25519),
+            #[cfg(feature = "rsa")]
             Payload::RsaKey(ref k) => match k.size() {
                 256 => Algorithm::Asymmetric(asymmetric::Algorithm::Rsa2048),
                 384 => Algorithm::Asymmetric(asymmetric::Algorithm::Rsa3072),
@@ -243,6 +251,7 @@ impl Payload {
                 <<p521::NistP521 as DigestAlgorithm>::Digest as OutputSizeUser>::OutputSize::USIZE
             }
             Payload::Ed25519Key(_) => ed25519::SECRET_KEY_LENGTH,
+            #[cfg(feature = "rsa")]
             Payload::RsaKey(key) => {
                 let primes = key.primes();
 
@@ -283,6 +292,7 @@ impl Payload {
             }
 
             Payload::Ed25519Key(signing_key) => Some(signing_key.verifying_key().to_bytes().into()),
+            #[cfg(feature = "rsa")]
             Payload::RsaKey(private_key) => Some(private_key.n().to_be_bytes().to_vec()),
             _ => None,
         }
@@ -305,6 +315,7 @@ impl Payload {
             Payload::EcdsaNistP384(k) => k.to_bytes().to_vec(),
             Payload::EcdsaNistP521(k) => k.to_bytes().to_vec(),
             Payload::Ed25519Key(k) => k.verifying_key().to_bytes().into(),
+            #[cfg(feature = "rsa")]
             Payload::RsaKey(k) => {
                 use rsa::traits::PrivateKeyParts;
                 let mut out = Vec::new();

@@ -102,6 +102,14 @@ not work at all. They are disabled by default: to use them you must enable the
 `untested` cargo feature. If you do get them to work, please open an issue
 (or PR) reporting success so we can promote them to ✅.
 
+### RSA feature
+
+The optional `rsa` Cargo feature enables interoperability with the RustCrypto
+`rsa` crate, including HSM-backed signer types, conversion of RSA public and
+wrapped private keys, and software RSA support in MockHSM. It is disabled by
+default. The wire-level RSA algorithms and client commands remain available
+without this feature and do not require the RustCrypto `rsa` crate.
+
 ## Testing
 
 This crate allows you to run the [integration test] suite in three different ways:
@@ -139,7 +147,8 @@ YUBIHSM2 WHICH CONTAINS KEYS YOU CARE ABOUT**
 ### `cargo test --features=mockhsm`: simulated tests against a mock HSM
 
 This mode is useful for when you don't have access to physical YubiHSM2
-hardware, such as CI environments.
+hardware, such as CI environments. Add the `rsa` feature to exercise MockHSM's
+software RSA implementation.
 
 ## License
 

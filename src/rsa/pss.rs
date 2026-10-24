@@ -4,6 +4,7 @@
 mod algorithm;
 pub(crate) mod commands;
 mod signature;
+#[cfg(feature = "rsa")]
 mod signer;
 
 /// Maximum message size supported for RSASSA-PSS
@@ -11,4 +12,5 @@ pub const MAX_MESSAGE_SIZE: usize = 0xFFFF;
 
 pub use self::algorithm::Algorithm;
 pub use self::signature::Signature;
+#[cfg(feature = "rsa")]
 pub use self::signer::Signer;
