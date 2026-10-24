@@ -40,7 +40,16 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.toolchain }}
-      - run: cargo test --features=mockhsm,secp256k1,untested
+      - name: Test without RSA
+        run: cargo test --no-default-features --features=mockhsm,secp256k1,setup
+      - name: Ensure the non-RSA feature set does not resolve rsa
+        run: |
+          if cargo tree --no-default-features --features=mockhsm,secp256k1,setup,usb --edges=normal -i rsa 2>&1 | grep -q '^rsa '; then
+            echo 'the non-RSA feature set unexpectedly resolved the rsa crate'
+            exit 1
+          fi
+      - name: Test with RSA
+        run: cargo test --features=mockhsm,rsa,secp256k1,untested
 
   rustfmt:
     runs-on: ubuntu-latest

@@ -26,6 +26,7 @@ fn ed25519_key_test() {
 
 /// Generate an RSA2048 key
 #[cfg(not(feature = "mockhsm"))]
+#[cfg(feature = "rsa")]
 #[test]
 fn rsa2048_key_test() {
     let client = crate::get_hsm_client();

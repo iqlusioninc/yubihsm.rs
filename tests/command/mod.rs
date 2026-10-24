@@ -2,6 +2,7 @@
 
 pub mod blink_device;
 pub mod change_authentication_key;
+#[cfg(feature = "rsa")]
 pub mod decrypt_oaep;
 pub mod delete_object;
 pub mod device_info;

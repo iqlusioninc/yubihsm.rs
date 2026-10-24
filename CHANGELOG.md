@@ -58,6 +58,9 @@ safety changes, the ordering derives, and lifting the restriction on using the
   without an authenticated session, matching the device ([#676])
 
 ### Changed
+- The RustCrypto `rsa` dependency is now optional and enabled by the new `rsa`
+  feature. Wire-level RSA commands remain available without it; RustCrypto
+  interoperability and MockHSM's software RSA implementation require it.
 - **MSRV is now 1.88** (was 1.67) ([#551], [#568], [#571], [#613], [#616], [#680])
 - **Breaking:** the `Connectable` trait now requires `std::fmt::Debug`.
   Downstream crates implementing custom connectors must add it ([#660])

@@ -1,6 +1,12 @@
 //! Commands supported by the `MockHsm`
 
 use super::{object::Payload, state::State, MOCK_SERIAL_NUMBER};
+#[cfg(feature = "rsa")]
+use crate::rsa::{
+    oaep::{commands::*, DecryptedData},
+    pkcs1::commands::*,
+    pss::commands::*,
+};
 use crate::{
     algorithm::*,
     asymmetric::{self, commands::*, PublicKey},
@@ -18,12 +24,7 @@ use crate::{
     opaque::{self, commands::*},
     otp,
     response::{self, Response},
-    rsa::{
-        self, mgf,
-        oaep::{commands::*, DecryptedData},
-        pkcs1::commands::*,
-        pss::commands::*,
-    },
+    rsa::{self, mgf},
     serialization::deserialize,
     session::{self, commands::*},
     symmetric::{self, commands::*},
@@ -32,20 +33,26 @@ use crate::{
     Capability,
 };
 use ::hmac::{Hmac, Mac};
+#[cfg(feature = "rsa")]
 use ::rsa::{oaep::Oaep, pkcs1v15, pss, traits::PaddingScheme, RsaPrivateKey};
 use cipher::{block_padding::NoPadding, BlockModeDecrypt, BlockModeEncrypt};
 use common::KeyIvInit;
+use digest::KeyInit;
+#[cfg(feature = "rsa")]
 use digest::{
     array::Array, common::OutputSizeUser, const_oid::AssociatedOid, typenum::Unsigned, Digest,
-    FixedOutput, FixedOutputReset, HashMarker, KeyInit, Output, Reset,
+    FixedOutput, FixedOutputReset, HashMarker, Output, Reset,
 };
 use rand_core::Rng;
+#[cfg(feature = "rsa")]
 use sha1::Sha1;
-use sha2::{Sha256, Sha384, Sha512};
-use signature::{
-    hazmat::{PrehashSigner, RandomizedPrehashSigner},
-    Signer,
-};
+use sha2::Sha256;
+#[cfg(feature = "rsa")]
+use sha2::{Sha384, Sha512};
+use signature::hazmat::PrehashSigner;
+#[cfg(feature = "rsa")]
+use signature::hazmat::RandomizedPrehashSigner;
+use signature::Signer;
 use spki::{der::Encode, SubjectPublicKeyInfoOwned, SubjectPublicKeyInfoRef};
 use std::{io::Cursor, str::FromStr};
 use subtle::ConstantTimeEq;
@@ -158,8 +165,11 @@ pub(crate) fn session_message(
         Code::SignEddsa => sign_eddsa(state, &command.data),
         Code::GetStorageInfo => get_storage_info(),
         Code::VerifyHmac => verify_hmac(state, &command.data),
+        #[cfg(feature = "rsa")]
         Code::SignPss => sign_pss(state, &command.data),
+        #[cfg(feature = "rsa")]
         Code::SignPkcs1 => sign_pkcs1v15(state, &command.data),
+        #[cfg(feature = "rsa")]
         Code::DecryptOaep => decrypt_oaep(state, &command.data),
         Code::SignAttestationCertificate => sign_attestation_certificate(state, &command.data),
         Code::PutSymmetricKey => put_symmetric_key(state, &command.data),
@@ -247,6 +257,69 @@ fn delete_object(state: &mut State, cmd_data: &[u8]) -> response::Message {
 
 /// Generate a mock device information report
 pub fn device_info() -> response::Message {
+    let algorithms = vec![
+        Algorithm::Rsa(rsa::Algorithm::Pkcs1(rsa::pkcs1::Algorithm::Sha1)),
+        Algorithm::Rsa(rsa::Algorithm::Pkcs1(rsa::pkcs1::Algorithm::Sha256)),
+        Algorithm::Rsa(rsa::Algorithm::Pkcs1(rsa::pkcs1::Algorithm::Sha384)),
+        Algorithm::Rsa(rsa::Algorithm::Pkcs1(rsa::pkcs1::Algorithm::Sha512)),
+        Algorithm::Rsa(rsa::Algorithm::Pss(rsa::pss::Algorithm::Sha1)),
+        Algorithm::Rsa(rsa::Algorithm::Pss(rsa::pss::Algorithm::Sha256)),
+        Algorithm::Rsa(rsa::Algorithm::Pss(rsa::pss::Algorithm::Sha384)),
+        Algorithm::Rsa(rsa::Algorithm::Pss(rsa::pss::Algorithm::Sha512)),
+        Algorithm::Asymmetric(asymmetric::Algorithm::Rsa2048),
+        Algorithm::Asymmetric(asymmetric::Algorithm::Rsa3072),
+        Algorithm::Asymmetric(asymmetric::Algorithm::Rsa4096),
+        Algorithm::Asymmetric(asymmetric::Algorithm::EcP256),
+        Algorithm::Asymmetric(asymmetric::Algorithm::EcP384),
+        Algorithm::Asymmetric(asymmetric::Algorithm::EcP521),
+        Algorithm::Asymmetric(asymmetric::Algorithm::EcK256),
+        Algorithm::Asymmetric(asymmetric::Algorithm::EcBp256),
+        Algorithm::Asymmetric(asymmetric::Algorithm::EcBp384),
+        Algorithm::Asymmetric(asymmetric::Algorithm::EcBp512),
+        Algorithm::Hmac(hmac::Algorithm::Sha1),
+        Algorithm::Hmac(hmac::Algorithm::Sha256),
+        Algorithm::Hmac(hmac::Algorithm::Sha384),
+        Algorithm::Hmac(hmac::Algorithm::Sha512),
+        Algorithm::Ecdsa(ecdsa::Algorithm::Sha1),
+        Algorithm::Ecdh(ecdh::Algorithm::Ecdh),
+        Algorithm::Rsa(rsa::Algorithm::Oaep(rsa::oaep::Algorithm::Sha1)),
+        Algorithm::Rsa(rsa::Algorithm::Oaep(rsa::oaep::Algorithm::Sha256)),
+        Algorithm::Rsa(rsa::Algorithm::Oaep(rsa::oaep::Algorithm::Sha384)),
+        Algorithm::Rsa(rsa::Algorithm::Oaep(rsa::oaep::Algorithm::Sha512)),
+        Algorithm::Wrap(wrap::Algorithm::Aes128Ccm),
+        Algorithm::Opaque(opaque::Algorithm::Data),
+        Algorithm::Opaque(opaque::Algorithm::X509Certificate),
+        Algorithm::Mgf(mgf::Algorithm::Sha1),
+        Algorithm::Mgf(mgf::Algorithm::Sha256),
+        Algorithm::Mgf(mgf::Algorithm::Sha384),
+        Algorithm::Mgf(mgf::Algorithm::Sha512),
+        Algorithm::Template(template::Algorithm::Ssh),
+        Algorithm::YubicoOtp(otp::Algorithm::Aes128),
+        Algorithm::Authentication(authentication::Algorithm::YubicoAes),
+        Algorithm::YubicoOtp(otp::Algorithm::Aes192),
+        Algorithm::YubicoOtp(otp::Algorithm::Aes256),
+        Algorithm::Wrap(wrap::Algorithm::Aes192Ccm),
+        Algorithm::Wrap(wrap::Algorithm::Aes256Ccm),
+        Algorithm::Ecdsa(ecdsa::Algorithm::Sha256),
+        Algorithm::Ecdsa(ecdsa::Algorithm::Sha384),
+        Algorithm::Ecdsa(ecdsa::Algorithm::Sha512),
+        Algorithm::Asymmetric(asymmetric::Algorithm::Ed25519),
+        Algorithm::Asymmetric(asymmetric::Algorithm::EcP224),
+        Algorithm::Symmetric(symmetric::Algorithm::Aes128),
+        Algorithm::Symmetric(symmetric::Algorithm::Aes192),
+        Algorithm::Symmetric(symmetric::Algorithm::Aes256),
+    ];
+
+    #[cfg(not(feature = "rsa"))]
+    let algorithms = algorithms
+        .into_iter()
+        .filter(|algorithm| match algorithm {
+            Algorithm::Rsa(_) | Algorithm::Mgf(_) => false,
+            Algorithm::Asymmetric(algorithm) => !algorithm.is_rsa(),
+            _ => true,
+        })
+        .collect();
+
     let info = device::Info {
         major_version: 2,
         minor_version: 0,
@@ -254,58 +327,7 @@ pub fn device_info() -> response::Message {
         serial_number: SerialNumber::from_str(MOCK_SERIAL_NUMBER).unwrap(),
         log_store_capacity: 62,
         log_store_used: 62,
-        algorithms: vec![
-            Algorithm::Rsa(rsa::Algorithm::Pkcs1(rsa::pkcs1::Algorithm::Sha1)),
-            Algorithm::Rsa(rsa::Algorithm::Pkcs1(rsa::pkcs1::Algorithm::Sha256)),
-            Algorithm::Rsa(rsa::Algorithm::Pkcs1(rsa::pkcs1::Algorithm::Sha384)),
-            Algorithm::Rsa(rsa::Algorithm::Pkcs1(rsa::pkcs1::Algorithm::Sha512)),
-            Algorithm::Rsa(rsa::Algorithm::Pss(rsa::pss::Algorithm::Sha1)),
-            Algorithm::Rsa(rsa::Algorithm::Pss(rsa::pss::Algorithm::Sha256)),
-            Algorithm::Rsa(rsa::Algorithm::Pss(rsa::pss::Algorithm::Sha384)),
-            Algorithm::Rsa(rsa::Algorithm::Pss(rsa::pss::Algorithm::Sha512)),
-            Algorithm::Asymmetric(asymmetric::Algorithm::Rsa2048),
-            Algorithm::Asymmetric(asymmetric::Algorithm::Rsa3072),
-            Algorithm::Asymmetric(asymmetric::Algorithm::Rsa4096),
-            Algorithm::Asymmetric(asymmetric::Algorithm::EcP256),
-            Algorithm::Asymmetric(asymmetric::Algorithm::EcP384),
-            Algorithm::Asymmetric(asymmetric::Algorithm::EcP521),
-            Algorithm::Asymmetric(asymmetric::Algorithm::EcK256),
-            Algorithm::Asymmetric(asymmetric::Algorithm::EcBp256),
-            Algorithm::Asymmetric(asymmetric::Algorithm::EcBp384),
-            Algorithm::Asymmetric(asymmetric::Algorithm::EcBp512),
-            Algorithm::Hmac(hmac::Algorithm::Sha1),
-            Algorithm::Hmac(hmac::Algorithm::Sha256),
-            Algorithm::Hmac(hmac::Algorithm::Sha384),
-            Algorithm::Hmac(hmac::Algorithm::Sha512),
-            Algorithm::Ecdsa(ecdsa::Algorithm::Sha1),
-            Algorithm::Ecdh(ecdh::Algorithm::Ecdh),
-            Algorithm::Rsa(rsa::Algorithm::Oaep(rsa::oaep::Algorithm::Sha1)),
-            Algorithm::Rsa(rsa::Algorithm::Oaep(rsa::oaep::Algorithm::Sha256)),
-            Algorithm::Rsa(rsa::Algorithm::Oaep(rsa::oaep::Algorithm::Sha384)),
-            Algorithm::Rsa(rsa::Algorithm::Oaep(rsa::oaep::Algorithm::Sha512)),
-            Algorithm::Wrap(wrap::Algorithm::Aes128Ccm),
-            Algorithm::Opaque(opaque::Algorithm::Data),
-            Algorithm::Opaque(opaque::Algorithm::X509Certificate),
-            Algorithm::Mgf(mgf::Algorithm::Sha1),
-            Algorithm::Mgf(mgf::Algorithm::Sha256),
-            Algorithm::Mgf(mgf::Algorithm::Sha384),
-            Algorithm::Mgf(mgf::Algorithm::Sha512),
-            Algorithm::Template(template::Algorithm::Ssh),
-            Algorithm::YubicoOtp(otp::Algorithm::Aes128),
-            Algorithm::Authentication(authentication::Algorithm::YubicoAes),
-            Algorithm::YubicoOtp(otp::Algorithm::Aes192),
-            Algorithm::YubicoOtp(otp::Algorithm::Aes256),
-            Algorithm::Wrap(wrap::Algorithm::Aes192Ccm),
-            Algorithm::Wrap(wrap::Algorithm::Aes256Ccm),
-            Algorithm::Ecdsa(ecdsa::Algorithm::Sha256),
-            Algorithm::Ecdsa(ecdsa::Algorithm::Sha384),
-            Algorithm::Ecdsa(ecdsa::Algorithm::Sha512),
-            Algorithm::Asymmetric(asymmetric::Algorithm::Ed25519),
-            Algorithm::Asymmetric(asymmetric::Algorithm::EcP224),
-            Algorithm::Symmetric(symmetric::Algorithm::Aes128),
-            Algorithm::Symmetric(symmetric::Algorithm::Aes192),
-            Algorithm::Symmetric(symmetric::Algorithm::Aes256),
-        ],
+        algorithms,
     };
 
     DeviceInfoResponse(info).serialize()
@@ -933,6 +955,7 @@ fn sign_hmac(state: &State, cmd_data: &[u8]) -> response::Message {
 }
 
 /// Sign a message using the RSASSA-PSS signature algorithm
+#[cfg(feature = "rsa")]
 fn sign_pss(state: &State, cmd_data: &[u8]) -> response::Message {
     #[inline]
     fn sign_pss_digest<D: Digest + FixedOutputReset>(
@@ -989,6 +1012,7 @@ fn sign_pss(state: &State, cmd_data: &[u8]) -> response::Message {
 }
 
 /// Sign a message using the RSASSA-PKCS1-v1_5 signature algorithm
+#[cfg(feature = "rsa")]
 fn sign_pkcs1v15(state: &State, cmd_data: &[u8]) -> response::Message {
     #[inline]
     fn sign_pkcs1v15_prehash<D: Digest + AssociatedOid>(
@@ -1083,10 +1107,12 @@ fn verify_hmac(state: &State, cmd_data: &[u8]) -> response::Message {
 /// Trying to reset the fixed hash will trigger a panic, and should be treated as a
 /// bug.
 #[derive(Clone, Default)]
+#[cfg(feature = "rsa")]
 struct PrecomputedHashDigest<D: OutputSizeUser> {
     fixed: Output<D>,
 }
 
+#[cfg(feature = "rsa")]
 impl<D: OutputSizeUser> OutputSizeUser for PrecomputedHashDigest<D> {
     type OutputSize = D::OutputSize;
     fn output_size() -> usize {
@@ -1094,30 +1120,36 @@ impl<D: OutputSizeUser> OutputSizeUser for PrecomputedHashDigest<D> {
     }
 }
 
+#[cfg(feature = "rsa")]
 impl<D: OutputSizeUser> FixedOutput for PrecomputedHashDigest<D> {
     fn finalize_into(self, out: &mut Output<Self>) {
         out.clone_from_slice(self.fixed.as_slice())
     }
 }
 
+#[cfg(feature = "rsa")]
 impl<D: OutputSizeUser> digest::Update for PrecomputedHashDigest<D> {
     fn update(&mut self, _data: &[u8]) {}
 }
 
+#[cfg(feature = "rsa")]
 impl<D: OutputSizeUser> Reset for PrecomputedHashDigest<D> {
     fn reset(&mut self) {
         unimplemented!("Tried to update PrecomputedHashDigest, this is unexpected")
     }
 }
 
+#[cfg(feature = "rsa")]
 impl<D: OutputSizeUser> FixedOutputReset for PrecomputedHashDigest<D> {
     fn finalize_into_reset(&mut self, out: &mut Output<Self>) {
         out.clone_from_slice(self.fixed.as_slice())
     }
 }
 
+#[cfg(feature = "rsa")]
 impl<D: OutputSizeUser + HashMarker> HashMarker for PrecomputedHashDigest<D> {}
 
+#[cfg(feature = "rsa")]
 fn decrypt_oaep(state: &State, cmd_data: &[u8]) -> response::Message {
     let mut rng = rand::rng();
     let command: DecryptOaepCommand = deserialize(cmd_data)
@@ -1253,6 +1285,7 @@ fn sign_attestation_certificate(state: &State, cmd_data: &[u8]) -> response::Mes
         let serial_number = serial_number::SerialNumber::generate(&mut rng);
         let validity = Validity::infinity().unwrap();
         let pub_key = match &target.payload {
+            #[cfg(feature = "rsa")]
             Payload::RsaKey(private_key) => {
                 SubjectPublicKeyInfoOwned::from_key(&private_key.to_public_key()).unwrap()
             }
@@ -1290,6 +1323,7 @@ fn sign_attestation_certificate(state: &State, cmd_data: &[u8]) -> response::Mes
             .map(|k| &k.payload)
         {
             None => todo!("object not found"),
+            #[cfg(feature = "rsa")]
             Some(Payload::RsaKey(private_key)) => {
                 // https://docs.yubico.com/hardware/yubihsm-2/hsm-2-user-guide/hsm2-core-concepts.html#attestation
                 // Signer is SHA256-PKCS#1v1.5

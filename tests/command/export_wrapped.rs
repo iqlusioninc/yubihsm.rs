@@ -2,6 +2,7 @@ use crate::{
     clear_test_key_slot, test_vectors::AESCCM_TEST_VECTORS, TEST_DOMAINS, TEST_EXPORTED_KEY_ID,
     TEST_EXPORTED_KEY_LABEL, TEST_KEY_ID, TEST_KEY_LABEL,
 };
+#[cfg(feature = "rsa")]
 use rsa::RsaPrivateKey;
 use yubihsm::{asymmetric, object, wrap, Capability};
 
@@ -163,6 +164,7 @@ fn wrap_deserialize() {
     );
 }
 
+#[cfg(feature = "rsa")]
 #[test]
 fn wrap_deserialize_rsa() {
     let client = crate::get_hsm_client();

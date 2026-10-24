@@ -34,6 +34,7 @@ use crate::{
     uuid,
     wrap::{self, commands::*},
 };
+#[cfg(feature = "rsa")]
 use digest::Output;
 use sha2::Sha256;
 use std::{
@@ -1212,6 +1213,7 @@ impl Client {
     /// Compute an RSASSA-PKCS#1v1.5 signature of the SHA-256 hash of the given prehash.
     ///
     /// <https://developers.yubico.com/YubiHSM2/Commands/Sign_Pkcs1.html>
+    #[cfg(feature = "rsa")]
     pub(crate) fn sign_rsa_pkcs1v15_prehash<S: SignatureAlgorithm>(
         &self,
         key_id: object::Id,

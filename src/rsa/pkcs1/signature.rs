@@ -1,6 +1,7 @@
 //! RSASSA-PKCS#1v1.5 signatures
 
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "rsa")]
 use signature::SignatureEncoding;
 
 /// RSASSA-PKCS#1v1.5 signatures (ASN.1 DER encoded)
@@ -37,6 +38,7 @@ impl Into<Vec<u8>> for Signature {
     }
 }
 
+#[cfg(feature = "rsa")]
 impl From<&::rsa::pkcs1v15::Signature> for Signature {
     fn from(s: &::rsa::pkcs1v15::Signature) -> Self {
         Self(<::rsa::pkcs1v15::Signature as SignatureEncoding>::to_vec(s))

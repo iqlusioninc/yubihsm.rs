@@ -17,6 +17,7 @@ mod ed25519;
 mod symmetric;
 
 /// Rsa tests
+#[cfg(feature = "rsa")]
 mod rsa;
 
 /// Session lifecycle tests
