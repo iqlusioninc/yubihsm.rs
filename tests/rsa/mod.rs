@@ -4,7 +4,7 @@ use crate::{
     clear_test_key_slot, test_vectors::AESCCM_TEST_VECTORS, TEST_DOMAINS, TEST_KEY_ID,
     TEST_KEY_LABEL,
 };
-use ::rsa::{pkcs8::DecodePrivateKey, traits::PrivateKeyParts, RsaPrivateKey};
+use ::rsa::{pkcs8::DecodePrivateKey, traits::PrivateKeyParts};
 use signature::{Keypair, Verifier};
 use spki::SubjectPublicKeyInfoOwned;
 use std::{str::FromStr, time::Duration};
@@ -32,7 +32,7 @@ const RSA_2048_PRIV_DER: &[u8] = include_bytes!("./rsa2048-priv.der");
 
 #[test]
 fn rsa_put_asymmetric_key() {
-    let key = RsaPrivateKey::from_pkcs8_der(RSA_2048_PRIV_DER).unwrap();
+    let key = ::rsa::PrivateKey::from_pkcs8_der(RSA_2048_PRIV_DER).unwrap();
     let primes = key.primes();
 
     let mut bytes = Vec::new();
@@ -62,7 +62,7 @@ fn rsa_put_asymmetric_key() {
 
 #[test]
 fn rsa_import_export_wrapped_key() {
-    let key = RsaPrivateKey::from_pkcs8_der(RSA_2048_PRIV_DER).unwrap();
+    let key = ::rsa::PrivateKey::from_pkcs8_der(RSA_2048_PRIV_DER).unwrap();
     let algorithm = wrap::Algorithm::Aes128Ccm;
     let capabilities = Capability::EXPORT_WRAPPED | Capability::IMPORT_WRAPPED;
     let delegated_capabilities = Capability::all();

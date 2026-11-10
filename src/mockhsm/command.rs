@@ -34,7 +34,7 @@ use crate::{
 };
 use ::hmac::{Hmac, Mac};
 #[cfg(feature = "rsa")]
-use ::rsa::{oaep::Oaep, pkcs1v15, pss, traits::PaddingScheme, RsaPrivateKey};
+use ::rsa::{oaep::Oaep, pkcs1v15, pss, traits::PaddingScheme};
 use cipher::{block_padding::NoPadding, BlockModeDecrypt, BlockModeEncrypt};
 use common::KeyIvInit;
 use digest::KeyInit;
@@ -959,7 +959,7 @@ fn sign_hmac(state: &State, cmd_data: &[u8]) -> response::Message {
 fn sign_pss(state: &State, cmd_data: &[u8]) -> response::Message {
     #[inline]
     fn sign_pss_digest<D: Digest + FixedOutputReset>(
-        private_key: &RsaPrivateKey,
+        private_key: &::rsa::PrivateKey,
         msg: &[u8],
         salt_len: u16,
     ) -> pss::Signature {
@@ -1016,7 +1016,7 @@ fn sign_pss(state: &State, cmd_data: &[u8]) -> response::Message {
 fn sign_pkcs1v15(state: &State, cmd_data: &[u8]) -> response::Message {
     #[inline]
     fn sign_pkcs1v15_prehash<D: Digest + AssociatedOid>(
-        private_key: &RsaPrivateKey,
+        private_key: &::rsa::PrivateKey,
         prehash: &[u8],
     ) -> pkcs1v15::Signature {
         let signing_key = pkcs1v15::SigningKey::<D>::new(private_key.clone());

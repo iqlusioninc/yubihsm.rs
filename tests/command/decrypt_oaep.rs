@@ -26,7 +26,7 @@ fn rsa_decrypt_oaep_test() {
     let precision = u32::try_from(raw_public_key.as_slice().len() * 8).unwrap();
     let rsa_modulus = rsa::BoxedUint::from_be_slice(bytes, precision).unwrap();
     let rsa_exponent = rsa::BoxedUint::from(65537u32);
-    let rsa_public_key = rsa::RsaPublicKey::new(rsa_modulus, rsa_exponent).unwrap();
+    let rsa_public_key = rsa::PublicKey::new(rsa_modulus, rsa_exponent).unwrap();
 
     let mut rng = rand::rng();
     let ciphertext = rsa_public_key

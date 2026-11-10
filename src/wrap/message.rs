@@ -26,7 +26,7 @@ use ecdsa::{
 #[cfg(feature = "rsa")]
 use rsa::{
     traits::{PrivateKeyParts, PublicKeyParts},
-    BoxedUint, RsaPrivateKey,
+    BoxedUint,
 };
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "x509-cert")]
@@ -203,7 +203,7 @@ impl Plaintext {
 
     /// Return the RSA key of this [`Plaintext`] if it was an RSA key.
     #[cfg(feature = "rsa")]
-    pub fn rsa(&self) -> Option<RsaPrivateKey> {
+    pub fn rsa(&self) -> Option<rsa::PrivateKey> {
         let (component_size, modulus_size) = match self.object_info.algorithm {
             algorithm::Algorithm::Asymmetric(asymmetric::Algorithm::Rsa2048) => (128, 256),
             algorithm::Algorithm::Asymmetric(asymmetric::Algorithm::Rsa3072) => (192, 384),
@@ -225,12 +225,12 @@ impl Plaintext {
         const EXP: u64 = 65537;
         let e = BoxedUint::from(EXP);
 
-        let private_key = RsaPrivateKey::from_p_q(p, q, e).ok()?;
+        let private_key = rsa::PrivateKey::from_p_q(p, q, e).ok()?;
 
         Some(private_key)
     }
 
-    /// Build a [`Plaintext`] from an [`RsaPrivateKey`].
+    /// Build a [`Plaintext`] from an [`rsa::PrivateKey`].
     #[cfg(feature = "rsa")]
     pub fn from_rsa(
         algorithm: Algorithm,
@@ -238,7 +238,7 @@ impl Plaintext {
         capabilities: Capability,
         domains: Domain,
         label: object::Label,
-        mut key: RsaPrivateKey,
+        mut key: rsa::PrivateKey,
     ) -> Result<Self, Error> {
         let mut object_info = wrap::Info {
             capabilities,
