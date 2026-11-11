@@ -2,8 +2,6 @@ use crate::{
     clear_test_key_slot, test_vectors::AESCCM_TEST_VECTORS, TEST_DOMAINS, TEST_EXPORTED_KEY_ID,
     TEST_EXPORTED_KEY_LABEL, TEST_KEY_ID, TEST_KEY_LABEL,
 };
-#[cfg(feature = "rsa")]
-use rsa::RsaPrivateKey;
 use yubihsm::{asymmetric, object, wrap, Capability};
 
 /// Test wrap key workflow using randomly generated keys
@@ -221,7 +219,7 @@ fn wrap_deserialize_rsa() {
 
     assert_eq!(plaintext.object_info.length as usize, plaintext.data.len());
 
-    let private_key: RsaPrivateKey = plaintext
+    let private_key: rsa::PrivateKey = plaintext
         .rsa()
         .expect("Object did not contain a valid rsa object");
     let public_key = private_key.as_public_key();

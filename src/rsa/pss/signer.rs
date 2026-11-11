@@ -3,7 +3,6 @@ use digest::Digest;
 use rsa::{
     pss::{get_default_pss_signature_algo_id, Signature, VerifyingKey},
     traits::PublicKeyParts,
-    RsaPublicKey,
 };
 use signature::Error;
 use spki::{der::oid::AssociatedOid, AlgorithmIdentifierOwned, DynSignatureAlgorithmIdentifier};
@@ -84,7 +83,7 @@ where
     }
 
     /// Return the RSA public key used by this signer
-    pub fn public_key(&self) -> RsaPublicKey {
+    pub fn public_key(&self) -> rsa::PublicKey {
         let verifying_key = self.verifying_key.clone();
         verifying_key.into()
     }

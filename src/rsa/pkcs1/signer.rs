@@ -1,9 +1,6 @@
 use crate::{object, rsa::SignatureAlgorithm, Client};
 use digest::{Output, Update};
-use rsa::{
-    pkcs1v15::{RsaSignatureAssociatedOid, Signature, VerifyingKey},
-    RsaPublicKey,
-};
+use rsa::pkcs1v15::{RsaSignatureAssociatedOid, Signature, VerifyingKey};
 use signature::Error;
 use spki::{AlgorithmIdentifier, SignatureAlgorithmIdentifier};
 use std::marker::PhantomData;
@@ -48,7 +45,7 @@ where
     }
 
     /// Return the RSA public key used by this signer
-    pub fn public_key(&self) -> RsaPublicKey {
+    pub fn public_key(&self) -> rsa::PublicKey {
         let verifying_key = self.verifying_key.clone();
         verifying_key.into()
     }
