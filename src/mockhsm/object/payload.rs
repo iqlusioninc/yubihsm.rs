@@ -38,7 +38,7 @@ pub(crate) enum Payload {
 
     /// RSA private key
     #[cfg(feature = "rsa")]
-    RsaKey(rsa::RsaPrivateKey),
+    RsaKey(rsa::PrivateKey),
 
     /// HMAC key
     HmacKey(hmac::Algorithm, Vec<u8>),
@@ -129,7 +129,7 @@ impl Payload {
                         BoxedUint::from_be_slice(&data[asymmetric_alg.key_len() / 2..], precision)
                             .unwrap();
 
-                    let key = rsa::RsaPrivateKey::from_p_q(p, q, exp).unwrap();
+                    let key = rsa::PrivateKey::from_p_q(p, q, exp).unwrap();
                     Payload::RsaKey(key)
                 }
                 _ => {
@@ -151,7 +151,7 @@ impl Payload {
         #[cfg(feature = "rsa")]
         fn gen_rsa(len: usize) -> Payload {
             let private_key =
-                rsa::RsaPrivateKey::new(&mut rand::rng(), len).expect("failed to generate a key");
+                rsa::PrivateKey::new(&mut rand::rng(), len).expect("failed to generate a key");
 
             Payload::RsaKey(private_key)
         }

@@ -9,9 +9,10 @@ use ::ecdsa::{
     },
     EcdsaCurve,
 };
-#[cfg(feature = "rsa")]
-use rsa::{BoxedUint, RsaPublicKey};
 use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "rsa")]
+use rsa::BoxedUint;
 
 /// Response from `command::get_public_key`
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -85,7 +86,7 @@ impl PublicKey {
 
     /// Return the RSA public key.
     #[cfg(feature = "rsa")]
-    pub fn rsa(&self) -> Option<RsaPublicKey> {
+    pub fn rsa(&self) -> Option<rsa::PublicKey> {
         if !self.algorithm.is_rsa() {
             return None;
         }
@@ -97,7 +98,7 @@ impl PublicKey {
                 .unwrap();
         let exp = BoxedUint::from(EXP);
 
-        RsaPublicKey::new(modulus, exp).ok()
+        rsa::PublicKey::new(modulus, exp).ok()
     }
 }
 
