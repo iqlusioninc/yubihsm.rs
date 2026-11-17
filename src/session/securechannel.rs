@@ -110,6 +110,24 @@ impl SessionKeys {
             rmac_key,
         }
     }
+
+    /// Obtain the session encryption key (S-ENC).
+    #[inline]
+    pub fn enc_key(&self) -> &[u8; KEY_SIZE] {
+        &self.enc_key
+    }
+
+    /// Obtain the session command MAC key (S-MAC).
+    #[inline]
+    pub fn mac_key(&self) -> &[u8; KEY_SIZE] {
+        &self.mac_key
+    }
+
+    /// Obtain the session response MAC key (S-RMAC).
+    #[inline]
+    pub fn rmac_key(&self) -> &[u8; KEY_SIZE] {
+        &self.rmac_key
+    }
 }
 
 /// SCP03 Secure Channel
@@ -181,15 +199,7 @@ impl SecureChannel {
         card_challenge: Challenge,
     ) -> Self {
         let context = Context::from_challenges(host_challenge, card_challenge);
-        let enc_key = derive_key(authentication_key.enc_key(), 0b100, &context);
-        let mac_key = derive_key(authentication_key.mac_key(), 0b110, &context);
-        let rmac_key = derive_key(authentication_key.mac_key(), 0b111, &context);
-
-        let session_keys = SessionKeys {
-            enc_key,
-            mac_key,
-            rmac_key,
-        };
+        let session_keys = context.derive_keys(authentication_key);
         Self::with_session_keys(id, context, session_keys)
     }
 
