@@ -29,7 +29,7 @@ impl Algorithm {
     /// Convert an unsigned byte tag into an `Algorithm` (if valid)
     pub fn from_u8(tag: u8) -> Result<Self, algorithm::Error> {
         Ok(match tag {
-            0x01..=0x04 => Algorithm::Pkcs1(pkcs1::Algorithm::from_u8(tag)?),
+            0x01..=0x04 | 0x30 => Algorithm::Pkcs1(pkcs1::Algorithm::from_u8(tag)?),
             0x05..=0x08 => Algorithm::Pss(pss::Algorithm::from_u8(tag)?),
             0x19..=0x1c => Algorithm::Oaep(oaep::Algorithm::from_u8(tag)?),
             _ => fail!(

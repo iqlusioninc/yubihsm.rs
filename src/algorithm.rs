@@ -60,7 +60,7 @@ impl Algorithm {
     /// Convert an unsigned byte into an Algorithm (if valid)
     pub fn from_u8(byte: u8) -> Result<Self, Error> {
         Ok(match byte {
-            0x01..=0x08 | 0x19..=0x1c => Algorithm::Rsa(rsa::Algorithm::from_u8(byte)?),
+            0x01..=0x08 | 0x19..=0x1c | 0x30 => Algorithm::Rsa(rsa::Algorithm::from_u8(byte)?),
             0x09..=0x12 | 0x2e | 0x2f => {
                 Algorithm::Asymmetric(asymmetric::Algorithm::from_u8(byte)?)
             }
