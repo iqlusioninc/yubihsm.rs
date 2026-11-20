@@ -4,7 +4,9 @@
 //! call the appropriate signer methods to obtain signers.
 
 use crate::{ed25519::PublicKey, object, Client};
+use ed25519_dalek::VerifyingKey;
 use signature::Error;
+use spki::{AlgorithmIdentifier, SignatureAlgorithmIdentifier};
 
 /// Ed25519 signature provider for yubihsm-client
 pub struct Signer {
@@ -13,6 +15,10 @@ pub struct Signer {
 
     /// ID of an Ed25519 key to perform signatures with
     signing_key_id: object::Id,
+
+    /// Verifying key (dalek) for this signer, used by the `Keypair` trait.
+    /// Pre-computed at construction so `Keypair::verifying_key` never fails.
+    verifying_key: VerifyingKey,
 
     /// Public key
     public_key: PublicKey,
@@ -25,10 +31,13 @@ impl Signer {
             .get_public_key(signing_key_id)?
             .ed25519()
             .ok_or_else(Error::new)?;
+        let verifying_key =
+            VerifyingKey::from_bytes(&public_key.as_bytes()).map_err(|_| Error::new())?;
 
         Ok(Self {
             client,
             signing_key_id,
+            verifying_key,
             public_key,
         })
     }
@@ -49,4 +58,19 @@ impl signature::Signer<ed25519::Signature> for Signer {
     fn try_sign(&self, msg: &[u8]) -> Result<ed25519::Signature, Error> {
         Ok(self.client.sign_ed25519(self.signing_key_id, msg)?)
     }
+}
+
+impl signature::Keypair for Signer {
+    type VerifyingKey = VerifyingKey;
+
+    fn verifying_key(&self) -> Self::VerifyingKey {
+        self.verifying_key
+    }
+}
+
+impl SignatureAlgorithmIdentifier for Signer {
+    type Params = <VerifyingKey as SignatureAlgorithmIdentifier>::Params;
+
+    const SIGNATURE_ALGORITHM_IDENTIFIER: AlgorithmIdentifier<Self::Params> =
+        <VerifyingKey as SignatureAlgorithmIdentifier>::SIGNATURE_ALGORITHM_IDENTIFIER;
 }

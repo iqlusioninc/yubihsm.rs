@@ -1,7 +1,10 @@
 //! Ed25519 tests
 
 use ed25519_dalek::{Verifier, VerifyingKey};
-use yubihsm::{asymmetric::signature::Signer as _, ed25519, Client};
+use yubihsm::{
+    asymmetric::signature::{Signer as _, Verifier as _},
+    ed25519, Client,
+};
 
 /// Key ID to use for test key
 const TEST_SIGNING_KEY_ID: yubihsm::object::Id = 200;
@@ -50,4 +53,28 @@ fn ed25519_sign_test() {
 
     let verifier = VerifyingKey::from_bytes(signer.public_key().as_bytes()).unwrap();
     assert!(verifier.verify(TEST_MESSAGE, &signature).is_ok());
+}
+
+#[test]
+fn ed25519_signer_implements_keypair() {
+    let client = crate::get_hsm_client();
+    create_yubihsm_key(&client);
+
+    use signature::Keypair as _;
+    let signer = ed25519::Signer::create(client.clone(), TEST_SIGNING_KEY_ID).unwrap();
+    let vk = signer.verifying_key();
+    let pk = signer.public_key();
+    assert_eq!(vk.as_bytes(), pk.as_bytes());
+}
+
+#[test]
+fn ed25519_signer_verifies_via_keypair() {
+    let client = crate::get_hsm_client();
+    create_yubihsm_key(&client);
+
+    use signature::Keypair as _;
+    use signature::Verifier as _;
+    let signer = ed25519::Signer::create(client.clone(), TEST_SIGNING_KEY_ID).unwrap();
+    let sig = signer.sign(TEST_MESSAGE);
+    assert!(signer.verifying_key().verify(TEST_MESSAGE, &sig).is_ok());
 }
