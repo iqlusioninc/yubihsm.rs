@@ -21,6 +21,16 @@ pub struct ConnectionOptions {
     timeout: Duration,
 }
 
+impl ConnectionOptions {
+    /// Build a `ConnectionOptions` with the given socket/connect timeout
+    /// (connect, read, and write all use this value).
+    pub fn new(timeout_ms: u64) -> Self {
+        Self {
+            timeout: Duration::from_millis(timeout_ms),
+        }
+    }
+}
+
 impl Default for ConnectionOptions {
     fn default() -> Self {
         Self {
