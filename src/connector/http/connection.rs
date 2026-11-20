@@ -21,7 +21,11 @@ pub struct HttpConnection {
 impl HttpConnection {
     /// Open a connection to a `yubihsm-connector` service
     pub(crate) fn open(config: &HttpConfig) -> Result<Self, connector::Error> {
-        let connection = client::Connection::open(&config.addr, config.port, &Default::default())?;
+        let connection = client::Connection::open(
+            &config.addr,
+            config.port,
+            &client::ConnectionOptions::new(config.timeout_ms),
+        )?;
 
         Ok(HttpConnection { connection })
     }
