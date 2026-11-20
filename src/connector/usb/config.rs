@@ -9,7 +9,8 @@ pub struct UsbConfig {
     /// Serial number of the YubiHSM to connect to
     pub serial: Option<SerialNumber>,
 
-    /// Timeout for USB operations (default 1s)
+    /// Timeout for USB operations (default 30s, see
+    /// [`UsbConfig::DEFAULT_TIMEOUT_MILLIS`])
     pub timeout_ms: u64,
 }
 
